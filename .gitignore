@@ -1,0 +1,38 @@
+# Visual Studio
+.vscode/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.userprefs
+*.rsuser
+*.opendb
+*.VC.db
+*.VC.VC.opendb
+
+# Build Results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+# NuGet Packages
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# Rider
+.idea/
+.idea_modules/
+
+# Misc
+*.log
+*.lock.json
+*.temp
