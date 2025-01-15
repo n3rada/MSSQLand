@@ -74,9 +74,9 @@ The output is as follows:
 [>] Executing action: Links
 |-> Retrieving Linked SQL Servers
 
-| Linked Server | product    | provider | data_source | Local Login | Is Self Mapping | Remote Login |
-| ------------- | ---------- | -------- | ----------- | ----------- | --------------- | ------------ |
-| SQL05         | SQL Server | SQLNCLI  | SQL04       | webapp05    | False           | webadmin     |
+| Last Modified        | Link  | Product    | Provider | Data Source | Local Login | Remote Login | RPC Out | OPENQUERY | Collation |
+| -------------------- | ----- | ---------- | -------- | ----------- | ----------- | ------------ | ------- | --------- | --------- |
+| 7/7/2020 1:02:17 PM  | SQL05 | SQL Server | SQLNCLI  | SQL05       | webapp05    | webadmin     | True    | True      | False     |
 
 ====================================
   End at 2025-01-14 21:31:39 UTC
