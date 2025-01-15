@@ -3,7 +3,7 @@ using MSSQLand.Utilities;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions
+namespace MSSQLand.Actions.Execution
 {
     public class Query : BaseAction
     {
@@ -12,15 +12,15 @@ namespace MSSQLand.Actions
         /// <summary>
         /// Validates the additional argument provided for the query action.
         /// </summary>
-        /// <param name="additionalArgument">The SQL query to validate.</param>
-        public override void ValidateArguments(string additionalArgument)
+        /// <param name="additionalArguments">The SQL query to validate.</param>
+        public override void ValidateArguments(string additionalArguments)
         {
-            if (string.IsNullOrEmpty(additionalArgument))
+            if (string.IsNullOrEmpty(additionalArguments))
             {
                 throw new ArgumentException("Query action requires a valid SQL query as an additional argument.");
             }
 
-            _query = additionalArgument;
+            _query = additionalArguments;
         }
 
 

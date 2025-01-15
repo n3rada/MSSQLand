@@ -4,7 +4,7 @@ using System;
 using System.Data;
 
 
-namespace MSSQLand.Actions.Database
+namespace MSSQLand.Actions.Administration
 {
     internal class RemoteProcedureCall : BaseAction
     {

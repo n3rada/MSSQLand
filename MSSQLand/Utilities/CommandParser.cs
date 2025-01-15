@@ -98,7 +98,7 @@ namespace MSSQLand.Utilities
 
             if (parsedArgs.Target == null)
             {
-                throw new ArgumentException("Targeted server (/t or /target) is mandatory.");
+                throw new ArgumentException("Targeted server (/t or /target) is mandatory. Use /h or /help for more information");
             }
             else
             {

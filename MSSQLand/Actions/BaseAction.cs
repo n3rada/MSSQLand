@@ -11,8 +11,8 @@ namespace MSSQLand.Actions
         /// <summary>
         /// Validates the additional argument passed for the action.
         /// </summary>
-        /// <param name="additionalArgument">The additional argument for the action.</param>
-        public abstract void ValidateArguments(string additionalArgument);
+        /// <param name="additionalArguments">The additional argument for the action.</param>
+        public abstract void ValidateArguments(string additionalArguments);
 
 
         /// <summary>

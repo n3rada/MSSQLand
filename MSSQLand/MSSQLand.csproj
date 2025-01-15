@@ -63,6 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Actions\ActionFactory.cs" />
+    <Compile Include="Actions\Administration\Configure.cs" />
     <Compile Include="Utilities\Helper.cs" />
     <Compile Include="Actions\BaseAction.cs" />
     <Compile Include="Actions\Database\Databases.cs" />
@@ -75,7 +76,7 @@
     <Compile Include="Actions\FileSystem\FileRead.cs" />
     <Compile Include="Actions\Execution\PowerShell.cs" />
     <Compile Include="Actions\Execution\RemotePowerShellExecutor.cs" />
-    <Compile Include="Actions\Database\RemoteProcedureCall.cs" />
+    <Compile Include="Actions\Administration\RemoteProcedureCall.cs" />
     <Compile Include="Actions\Database\Rows.cs" />
     <Compile Include="Actions\Execution\XpCmd.cs" />
     <Compile Include="Actions\Network\Smb.cs" />
@@ -88,7 +89,7 @@
     <Compile Include="Services\QueryService.cs" />
     <Compile Include="Services\UserService.cs" />
     <Compile Include="Utilities\CommandParser.cs" />
-    <Compile Include="Actions\Query.cs" />
+    <Compile Include="Actions\Execution\Query.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Settings.Designer.cs">

@@ -34,7 +34,7 @@ namespace MSSQLand.Actions.Database
             { "Active SQL Sessions", "SELECT COUNT(*) FROM sys.dm_exec_sessions WHERE status = 'running';" }
         };
 
-        public override void ValidateArguments(string additionalArgument)
+        public override void ValidateArguments(string additionalArguments)
         {
             // No additional arguments needed
         }

@@ -10,10 +10,10 @@ namespace MSSQLand.Actions.Database
     {
         private string _database;
 
-        public override void ValidateArguments(string additionalArgument)
+        public override void ValidateArguments(string additionalArguments)
         {
 
-            _database = additionalArgument;
+            _database = additionalArguments;
         }
 
         public override void Execute(DatabaseContext connectionManager)
@@ -26,7 +26,6 @@ namespace MSSQLand.Actions.Database
 
             Logger.TaskNested($"Retrieving tables from {_database}");
 
-            // string query = $"SELECT * FROM [{_database}].INFORMATION_SCHEMA.TABLES;";
 
             string query = $@"
                 SELECT 

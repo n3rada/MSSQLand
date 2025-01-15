@@ -11,14 +11,14 @@ namespace MSSQLand.Actions.Database
         private string _schema = "dbo"; // Default schema
         private string _table;
 
-        public override void ValidateArguments(string additionalArgument)
+        public override void ValidateArguments(string additionalArguments)
         {
-            if (string.IsNullOrEmpty(additionalArgument))
+            if (string.IsNullOrEmpty(additionalArguments))
             {
                 throw new ArgumentException("Rows action requires a single argument in the format 'database.schema.table'.");
             }
 
-            var parts = additionalArgument.Split('.');
+            var parts = additionalArguments.Split('.');
 
             if (parts.Length == 3) // If schema is provided
             {

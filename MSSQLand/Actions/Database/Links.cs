@@ -10,7 +10,7 @@ namespace MSSQLand.Actions.Database
     {
 
 
-        public override void ValidateArguments(string additionalArgument)
+        public override void ValidateArguments(string additionalArguments)
         {
             // No additional arguments needed
         }

@@ -1,10 +1,11 @@
-﻿using MSSQLand.Actions;
+﻿using System;
+using System.Collections.Generic;
+using MSSQLand.Actions;
 using MSSQLand.Actions.Network;
 using MSSQLand.Actions.Database;
 using MSSQLand.Actions.FileSystem;
 using MSSQLand.Actions.Execution;
-using System;
-using System.Collections.Generic;
+using MSSQLand.Actions.Administration;
 
 namespace MSSQLand.Utilities
 {
@@ -28,6 +29,7 @@ namespace MSSQLand.Utilities
                 { "permissions", (new Permissions(), "Enumerate permissions.") },
                 { "tables", (new Tables(), "List tables in a database.") },
                 { "databases", (new Databases(), "List available databases.") },
+                { "setconfig", (new Configure(), "Use sp_configure to something.")}
             };
 
         public static BaseAction GetAction(string actionType, string additionalArgument)

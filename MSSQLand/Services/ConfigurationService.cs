@@ -102,10 +102,16 @@ namespace MSSQLand.Services
             try
             {
                 var advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM sys.configurations WHERE name = 'show advanced options';");
+
+
                 if (advancedOptionsEnabled == null || Convert.ToInt32(advancedOptionsEnabled) != 1)
                 {
                     // Enable 'show advanced options'
                     SetConfigurationOption("show advanced options", 1);
+                }
+                else
+                {
+                    Logger.Info("Adanced options already on");
                 }
             }
             catch (Exception ex)

@@ -12,21 +12,21 @@ namespace MSSQLand.Actions.Network
         /// <summary>
         /// Validates the arguments passed to the PowerShellScriptDownloader action.
         /// </summary>
-        /// <param name="additionalArgument">The URL of the PowerShell script to download and execute.</param>
-        public override void ValidateArguments(string additionalArgument)
+        /// <param name="additionalArguments">The URL of the PowerShell script to download and execute.</param>
+        public override void ValidateArguments(string additionalArguments)
         {
-            if (string.IsNullOrEmpty(additionalArgument))
+            if (string.IsNullOrEmpty(additionalArguments))
             {
                 throw new ArgumentException("SMB action requires targeted UNC path (e.g., \\\\172.16.118.218\\shared).");
             }
 
             // Verify UNC path
-            if (!ValidateUNCPath(additionalArgument))
+            if (!ValidateUNCPath(additionalArguments))
             {
-                throw new ArgumentException($"Invalid UNC path format: {additionalArgument}. Ensure it starts with \\\\ and includes a valid host and share name.");
+                throw new ArgumentException($"Invalid UNC path format: {additionalArguments}. Ensure it starts with \\\\ and includes a valid host and share name.");
             }
 
-            _uncPath = additionalArgument;
+            _uncPath = additionalArguments;
         }
 
         /// <summary>

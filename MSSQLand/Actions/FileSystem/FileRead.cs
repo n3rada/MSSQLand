@@ -11,15 +11,15 @@ namespace MSSQLand.Actions.FileSystem
         /// <summary>
         /// Validates the arguments passed to the Read action.
         /// </summary>
-        /// <param name="additionalArgument">The file path to read.</param>
-        public override void ValidateArguments(string additionalArgument)
+        /// <param name="additionalArguments">The file path to read.</param>
+        public override void ValidateArguments(string additionalArguments)
         {
-            if (string.IsNullOrEmpty(additionalArgument))
+            if (string.IsNullOrEmpty(additionalArguments))
             {
                 throw new ArgumentException("Read action requires a file path as an argument.");
             }
 
-            _filePath = additionalArgument;
+            _filePath = additionalArguments;
         }
 
         /// <summary>

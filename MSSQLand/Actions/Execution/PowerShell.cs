@@ -12,15 +12,15 @@ namespace MSSQLand.Actions.Execution
         /// <summary>
         /// Validates the arguments passed to the PowerShell action.
         /// </summary>
-        /// <param name="additionalArgument">The PowerShell script to execute.</param>
-        public override void ValidateArguments(string additionalArgument)
+        /// <param name="additionalArguments">The PowerShell script to execute.</param>
+        public override void ValidateArguments(string additionalArguments)
         {
-            if (string.IsNullOrEmpty(additionalArgument))
+            if (string.IsNullOrEmpty(additionalArguments))
             {
                 throw new ArgumentException("PowerShell action requires a script to execute.");
             }
 
-            _script = additionalArgument;
+            _script = additionalArguments;
         }
 
         /// <summary>

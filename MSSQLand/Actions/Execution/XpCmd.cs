@@ -13,15 +13,15 @@ namespace MSSQLand.Actions.Execution
         /// <summary>
         /// Validates the arguments passed to the Shell action.
         /// </summary>
-        /// <param name="additionalArgument">The command to execute using xp_cmdshell.</param>
-        public override void ValidateArguments(string additionalArgument)
+        /// <param name="additionalArguments">The command to execute using xp_cmdshell.</param>
+        public override void ValidateArguments(string additionalArguments)
         {
-            if (string.IsNullOrEmpty(additionalArgument))
+            if (string.IsNullOrEmpty(additionalArguments))
             {
                 throw new ArgumentException("Shell action requires a CMD command.");
             }
 
-            _command = additionalArgument;
+            _command = additionalArguments;
         }
 
         /// <summary>
