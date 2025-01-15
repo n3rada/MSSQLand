@@ -1,8 +1,3 @@
-# Project Specific
-[Rr]ealise/*.config
-[Rr]ealise/*.pdb
-[Rr]ealise/*.exe
-
 # Visual Studio
 .vscode/
 .vs/
@@ -40,3 +35,6 @@ packages/
 *.log
 *.lock.json
 *.temp
+*.config
+*.pdb
+*.exe
