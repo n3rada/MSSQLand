@@ -149,6 +149,12 @@ Helper classes like Logger and MarkdownFormatter that make your life easier.
 ### `Models` Folder
 Contains classes representing SQL Server entities, such as Server and LinkedServers.
 
+## Contributing 🫂
+
+Contributions to MSSQLand are welcome and appreciated! Whether it's fixing bugs, adding new features, improving the documentation, or sharing feedback, your effort is valued and makes a difference.
+Open-source thrives on collaboration and recognition. Contributions, large or small, help improve the tool and its community. Your time and effort are truly valued. Here, no one will be erased from Git history.
+
+Please see the [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines on how to get started.
 
 ## Disclaimer ⚠️
 This tool is designed for educational purposes only and is intended to assist security professionals in understanding and testing the security of SQL Server environments in authorized engagements. It is specifically crafted to be used in controlled environments, such as:
