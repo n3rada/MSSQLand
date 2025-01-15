@@ -17,7 +17,7 @@ MSSQLand.exe /t:SQL01:webapp01 /u:mjo /p:yapot117 /c:local /l:SQL02:webapp03,SQL
 Create the following output:
 ```txt
 ====================================
-  Start at 2025-01-15 21:53:53
+  Start at 2025-01-15 21:53:53 UTC
 ====================================
 [>] Trying to connect with TokenCredentials
 [+] Connection opened successfully
@@ -92,7 +92,7 @@ The output shows:
 
 ```txt
 ====================================
-  Start at 2025-01-14 08:35:22 UTC
+  Start at 2025-01-14 21:35:22 UTC
 ====================================
 [>] Trying to connect with TokenCredentials
 [+] Connection opened successfully
@@ -118,7 +118,7 @@ The output shows:
 | Moulinier   | No            |
 
 ====================================
-  End at 2025-01-14 08:35:22
+  End at 2025-01-14 21:35:22  UTC
   Total duration: 0.10 seconds
 ====================================
 ```
