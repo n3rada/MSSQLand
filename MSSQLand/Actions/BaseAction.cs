@@ -1,12 +1,18 @@
 ﻿using MSSQLand.Services;
+using MSSQLand.Utilities;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
 namespace MSSQLand.Actions
 {
     /// <summary>
     /// Abstract base class for all actions, enforcing validation and execution logic.
     /// </summary>
-    public abstract class BaseAction
+    
+    [AttributeUsage(AttributeTargets.Field)]
+    public abstract class BaseAction : Attribute
     {
         /// <summary>
         /// Validates the additional argument passed for the action.
@@ -28,6 +34,47 @@ namespace MSSQLand.Actions
         public string GetName()
         {
             return GetType().Name;
+        }
+
+        /// <summary>
+        /// Retrieves argument names, types, and default values of private fields in the derived class.
+        /// </summary>
+        /// <returns>A formatted string of argument details.</returns>
+        public virtual string GetArguments()
+        {
+            var fields = this.GetType()
+                .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
+                .Where(field => !Attribute.IsDefined(field, typeof(ExcludeFromArgumentsAttribute))) // Exclude marked fields
+                .Select(field =>
+                {
+                    string fieldName = field.Name.TrimStart('_'); // Remove leading underscore
+                    string fieldType = SimplifyType(field.FieldType); // Get the simplified type name
+                    var defaultValue = field.GetValue(this); // Get the default value, if any
+                    string defaultValueStr = defaultValue != null ? $", default: {defaultValue}" : string.Empty;
+
+                    return $"{fieldName} ({fieldType}{defaultValueStr})".Trim();
+                });
+
+            return string.Join(",", fields);
+        }
+
+
+        /// <summary>
+        /// Simplifies the type name for better readability.
+        /// </summary>
+        /// <param name="type">The type to simplify.</param>
+        /// <returns>The simplified type name.</returns>
+        private string SimplifyType(Type type)
+        {
+            return type.Name switch
+            {
+                "Int32" => "int",
+                "String" => "string",
+                "Boolean" => "bool",
+                "Dictionary" => "Dictionary",
+                "List" => "List",
+                _ => type.Name
+            };
         }
     }
 }

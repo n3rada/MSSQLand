@@ -12,6 +12,7 @@ namespace MSSQLand.Actions.Database
     /// </summary>
     internal class Info : BaseAction
     {
+        [ExcludeFromArguments]
         private readonly Dictionary<string, string> _queries = new()
         {
             { "Server Name", "SELECT @@SERVERNAME;" },

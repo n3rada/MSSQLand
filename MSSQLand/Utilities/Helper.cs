@@ -28,17 +28,16 @@ namespace MSSQLand.Utilities
         {
             var actions = ActionFactory.GetAvailableActions();
 
-            // Build a DataTable for actions
             DataTable actionsTable = new();
             actionsTable.Columns.Add("Action", typeof(string));
             actionsTable.Columns.Add("Description", typeof(string));
+            actionsTable.Columns.Add("Arguments", typeof(string));
 
-            foreach (var action in actions)
+            foreach (var (ActionName, Description, Arguments) in actions)
             {
-                actionsTable.Rows.Add(action.Key, action.Value.Description);
+                actionsTable.Rows.Add(ActionName, Description, Arguments);
             }
 
-            // Use MarkdownFormatter to display the table
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(actionsTable));
         }
 

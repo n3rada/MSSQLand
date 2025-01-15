@@ -29,7 +29,8 @@ namespace MSSQLand.Utilities
                 { "permissions", (new Permissions(), "Enumerate permissions.") },
                 { "tables", (new Tables(), "List tables in a database.") },
                 { "databases", (new Databases(), "List available databases.") },
-                { "setconfig", (new Configure(), "Use sp_configure to something.")}
+                { "setconfig", (new Configure(), "Use sp_configure to modify settings.") },
+                { "search", (new Search(), "Search for specific keyword in database.") }
             };
 
         public static BaseAction GetAction(string actionType, string additionalArgument)
@@ -55,9 +56,17 @@ namespace MSSQLand.Utilities
             }
         }
 
-        public static Dictionary<string, (BaseAction ActionInstance, string Description)> GetAvailableActions()
+        public static List<(string ActionName, string Description, string Arguments)> GetAvailableActions()
         {
-            return ActionMetadata;
+            var result = new List<(string ActionName, string Description, string Arguments)>();
+
+            foreach (var action in ActionMetadata)
+            {
+                string arguments = action.Value.ActionInstance.GetArguments();
+                result.Add((action.Key, action.Value.Description, arguments));
+            }
+
+            return result;
         }
     }
 }

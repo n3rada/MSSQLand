@@ -32,7 +32,7 @@ namespace MSSQLand.Actions.Database
             }
             else
             {
-                throw new ArgumentException("Invalid format for the argument. Expected 'database.schema.table' or 'database.table'.");
+                throw new ArgumentException("Invalid format for the argument. Expected 'database.schema.table' or 'database..table'.");
             }
         }
 
