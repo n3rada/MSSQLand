@@ -136,18 +136,21 @@ And yes, all the outputted tables are Markdown friendly. What a kind gesture!
 Use the `/silent` switch for a streamlined experience. It minimizes output, showing only the action results, making it particularly useful for some engagements where less is more.
 
 ## Project Structure 📚
+The tool is built with OOP in mind and good programming principles.
 
-### `Actions`
-This directory contains all the specific operations that MSSQLand can perform. Each action follows a modular design using the command pattern to encapsulate its logic, such as PowerShell execution, querying, impersonation, and more.
+### [`Models`](./MSSQLand/Models)
+Contains classes representing SQL Server entities, such as Server and LinkedServers.
 
-### `Services`
+### [`Services`](./MSSQLand/Services)
 The backbone of the application, responsible for connection management, query execution, user management, and configuration handling.
 
-### `Utilities`
+### [`Actions`](./MSSQLand/Actions)
+This directory contains all the specific operations that MSSQLand can perform. Each action follows a modular design using the command pattern to encapsulate its logic, such as PowerShell execution, querying, impersonation, and more.
+
+### [`Utilities`](./MSSQLand/Utilities)
 Helper classes like Logger and MarkdownFormatter that make your life easier.
 
-### `Models` Folder
-Contains classes representing SQL Server entities, such as Server and LinkedServers.
+
 
 ## Contributing 🫂
 
