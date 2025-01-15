@@ -177,7 +177,8 @@ The backbone of the application, responsible for connection management, query ex
 
 This directory contains all the specific operations that MSSQLand can perform. Each action follows a modular design using the command pattern to encapsulate its logic, such as PowerShell execution, querying, impersonation, and more.
 
-### [`Utilities`](./MSSQLand/Utilities)
+- [`Utilities`](./MSSQLand/Utilities)
+
 Helper classes like Logger and MarkdownFormatter that make your life easier.
 
 
