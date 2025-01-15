@@ -163,13 +163,18 @@ Systems should be as simple as possible but no simpler. Complex linked server qu
 
 The system should be easy to extend with new features. New actions can be added without altering core functionality by extending [`BaseAction`](./MSSQLand/Actions/BaseAction.cs).
 
-### [`Models`](./MSSQLand/Models)
+#### Directories
+
+- [`Models`](./MSSQLand/Models)
+
 Contains classes representing SQL Server entities, such as Server and LinkedServers.
 
-### [`Services`](./MSSQLand/Services)
+- [`Services`](./MSSQLand/Services)
+
 The backbone of the application, responsible for connection management, query execution, user management, and configuration handling.
 
-### [`Actions`](./MSSQLand/Actions)
+- [`Actions`](./MSSQLand/Actions)
+
 This directory contains all the specific operations that MSSQLand can perform. Each action follows a modular design using the command pattern to encapsulate its logic, such as PowerShell execution, querying, impersonation, and more.
 
 ### [`Utilities`](./MSSQLand/Utilities)
