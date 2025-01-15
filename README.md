@@ -197,7 +197,13 @@ This directory contains all the specific operations that MSSQLand can perform. E
 
 Helper classes like Logger and MarkdownFormatter that make your life easier.
 
+## Miscellaneous 
 
+### `sliver`
+Prebuilt `alias.json` file for Sliver. In your `sliver` console:
+```shell
+alias load /home/n3rada/git/public/MSSQLand/Release/alias.json
+```
 
 ## Contributing 🫂
 
