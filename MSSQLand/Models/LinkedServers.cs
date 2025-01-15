@@ -89,9 +89,9 @@ namespace MSSQLand.Models
         /// </summary>
         /// <param name="linkedServers">An array of server names representing the path of linked servers to traverse. '0' in front of them is mandatory to make the query work properly.</param>
         /// <param name="query">The SQL query to be executed at the final server in the linked server path.</param>
-        /// <param name="ticks">A counter used to double the single quotes for each level of nesting.</param>
+        /// <param name="thicksCounter">A counter used to double the single quotes for each level of nesting.</param>
         /// <returns>A string containing the nested `OPENQUERY` statement.</returns>
-        private string BuildOpenQueryChainRecursive(string[] linkedServers, string query, int ticks = 0, string[] linkedImpersonation = null)
+        private string BuildOpenQueryChainRecursive(string[] linkedServers, string query, int thicksCounter = 0, string[] linkedImpersonation = null)
         {
             if (linkedServers == null || linkedServers.Length == 0)
             {
@@ -99,15 +99,20 @@ namespace MSSQLand.Models
             }
 
             string currentQuery = query;
+            
 
             // Prepare the impersonation login, if any
             string login = null;
-            if (linkedImpersonation != null || linkedImpersonation.Length > 0)
+            if (linkedImpersonation != null && linkedImpersonation.Length > 0)
             {
+
                 login = linkedImpersonation[0];
                 // Create a new array without the first element
                 linkedImpersonation = linkedImpersonation.Skip(1).ToArray();
             }
+
+
+            string thicksRepr = new('\'', (int)Math.Pow(2, thicksCounter));
 
             // Base case: if this is the last server in the chain
             if (linkedServers.Length == 1)
@@ -118,7 +123,7 @@ namespace MSSQLand.Models
                     currentQuery = $"EXECUTE AS LOGIN = '{login}'; {currentQuery.TrimEnd(';')}; REVERT;";
                 }
 
-                currentQuery = currentQuery.Replace("'", new string('\'', (int)Math.Pow(2, ticks)));
+                currentQuery = currentQuery.Replace("'", thicksRepr);
 
                 return currentQuery;
             }
@@ -130,15 +135,16 @@ namespace MSSQLand.Models
             // Taking the next server in the path.
             stringBuilder.Append($"\"{linkedServers[1]}\", ");
 
-            string numberOfTicks = new('\'', (int)Math.Pow(2, ticks));
-            stringBuilder.Append(numberOfTicks);
+            
+            stringBuilder.Append(thicksRepr);
 
             // We are now inside the query, on the linked server
 
             // Add impersonation if applicable
             if (!string.IsNullOrEmpty(login))
             {
-                stringBuilder.Append($"EXECUTE AS LOGIN = '{login}';");
+                string impersonationQuery = $"EXECUTE AS LOGIN = '{login}'; ";
+                stringBuilder.Append(impersonationQuery.Replace("'", new('\'', (int)Math.Pow(2, thicksCounter + 1))));
             }
 
 
@@ -147,7 +153,7 @@ namespace MSSQLand.Models
                 linkedServers: linkedServers.Skip(1).ToArray(), // Skip the current server
                 linkedImpersonation: linkedImpersonation,
                 query: currentQuery,
-                ticks: ticks + 1
+                thicksCounter: thicksCounter + 1
              );
 
             stringBuilder.Append(recursiveCall);
@@ -159,8 +165,9 @@ namespace MSSQLand.Models
             }
 
             // Closing the remote request
-            stringBuilder.Append(numberOfTicks);
+            stringBuilder.Append(thicksRepr);
             stringBuilder.Append(")");
+
 
             return stringBuilder.ToString();
         }

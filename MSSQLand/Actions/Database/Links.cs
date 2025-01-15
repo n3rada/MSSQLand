@@ -23,7 +23,24 @@ namespace MSSQLand.Actions.Database
         public override void Execute(DatabaseContext connectionManager)
         {
             Logger.TaskNested($"Retrieving Linked SQL Servers");
-            DataTable resultTable = connectionManager.QueryService.ExecuteTable("SELECT srv.name AS [Linked Server], srv.product, srv.provider, srv.data_source, COALESCE(prin.name, 'N/A') AS [Local Login], ll.uses_self_credential AS [Is Self Mapping], ll.remote_name AS [Remote Login] FROM sys.servers srv LEFT JOIN sys.linked_logins ll ON srv.server_id = ll.server_id LEFT JOIN sys.server_principals prin ON ll.local_principal_id = prin.principal_id WHERE srv.is_linked = 1;");
+            string query = @"
+                SELECT
+                    srv.modify_date AS [Last Modified],
+                    srv.name AS [Link],
+                    srv.product AS [Product],
+                    srv.provider AS [Provider],
+                    srv.data_source AS [Data Source],
+                    COALESCE(prin.name, 'N/A') AS [Local Login],
+                    ll.remote_name AS [Remote Login],
+                    srv.is_rpc_out_enabled AS [RPC Out],
+                    srv.is_data_access_enabled AS [OPENQUERY],
+                    srv.is_collation_compatible AS [Collation]
+                FROM sys.servers srv
+                LEFT JOIN sys.linked_logins ll ON srv.server_id = ll.server_id
+                LEFT JOIN sys.server_principals prin ON ll.local_principal_id = prin.principal_id
+                WHERE srv.is_linked = 1
+                ORDER BY srv.modify_date DESC;";
+            DataTable resultTable = connectionManager.QueryService.ExecuteTable(query);
 
 
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));

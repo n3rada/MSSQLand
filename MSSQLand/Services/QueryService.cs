@@ -67,6 +67,7 @@ namespace MSSQLand.Services
             catch (Exception ex)
             {
                 Logger.Warning($"Query execution failed: {ex.Message}");
+                Logger.WarningNested(finalQuery);
 
                 if (ex.Message.Contains("not configured for RPC"))
                 {
