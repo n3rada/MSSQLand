@@ -1,6 +1,7 @@
 # Project Specific
 [Rr]ealise/*.config
 [Rr]ealise/*.pdb
+[Rr]ealise/
 
 # Visual Studio
 .vscode/
