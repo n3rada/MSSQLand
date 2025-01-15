@@ -3,7 +3,7 @@ using MSSQLand.Utilities;
 using System;
 using System.Text;
 
-namespace MSSQLand.Actions
+namespace MSSQLand.Actions.Execution
 {
     internal class PowerShell : XpCmd
     {

@@ -24,21 +24,26 @@ namespace MSSQLand.Utilities
             Console.WriteLine();
         }
 
-        public static void Banner(string message, char borderChar = '=')
+        public static int Banner(string message, char borderChar = '=', int totalWidth=0)
         {
-            if (IsSilentModeEnabled) return;
+            if (IsSilentModeEnabled) return 0;
 
             Console.ForegroundColor = ConsoleColor.DarkGray;
             if (string.IsNullOrWhiteSpace(message))
             {
                 Console.WriteLine(new string(borderChar, 30)); // Default width for empty or null messages
-                return;
+                return 0;
             }
 
             string[] lines = message.Split('\n');
-            int maxLineLength = lines.Max(line => line.Length);
             int padding = 2; // Padding on each side of the message
-            int totalWidth = maxLineLength + (padding * 2);
+
+            if (totalWidth == 0)
+            {
+                int maxLineLength = lines.Max(line => line.Length);
+                totalWidth = maxLineLength + (padding * 2);
+            }
+            
 
             string border = new string(borderChar, totalWidth);
             Console.WriteLine(border);
@@ -49,6 +54,8 @@ namespace MSSQLand.Utilities
             }
             Console.WriteLine(border);
             Console.ResetColor();
+
+            return totalWidth;
         }
 
         public static void Info(string message)

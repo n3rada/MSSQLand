@@ -72,7 +72,11 @@ namespace MSSQLand.Utilities
                 }
                 else if (arg.StartsWith("/port:", StringComparison.OrdinalIgnoreCase))
                 {
-                    port = int.Parse(ExtractValue(arg, "/port:", "/port:"));
+                    port = int.Parse(ExtractValue(arg, "/port:"));
+                }
+                else if (arg.StartsWith("/db:", StringComparison.OrdinalIgnoreCase))
+                {
+                    parsedArgs.Target.Database = ExtractValue(arg, "/db:");
                 }
                 else if (!arg.StartsWith("/"))
                 {
@@ -85,10 +89,16 @@ namespace MSSQLand.Utilities
                 
             }
 
-            // Assign optional port to target if provided
-            if (parsedArgs.Target != null && port.HasValue)
+            if (parsedArgs.Target == null)
             {
-                parsedArgs.Target.Port = port.Value;
+                throw new ArgumentException("Targeted server (/t or /target) is mandatory.");
+            }
+            else
+            {
+                if (port.HasValue)
+                {
+                    parsedArgs.Target.Port = port.Value;
+                }
             }
 
             // Validate the provided arguments against the selected credential type
@@ -130,6 +140,7 @@ namespace MSSQLand.Utilities
 
         private void ValidateCredentialArguments(string credentialType, string username, string password, string domain)
         {
+
             if (string.IsNullOrEmpty(credentialType))
             {
                 throw new ArgumentException("Credential type (/c or /credentials) is required.");
@@ -166,12 +177,17 @@ namespace MSSQLand.Utilities
             }
         }
 
-        private string ExtractValue(string arg, string shortVersion, string longVersion)
+        private string ExtractValue(string arg, string shortVersion, string longVersion = null)
         {
             if (arg.StartsWith(shortVersion, StringComparison.OrdinalIgnoreCase))
                 return arg.Substring(shortVersion.Length);
-            if (arg.StartsWith(longVersion, StringComparison.OrdinalIgnoreCase))
-                return arg.Substring(longVersion.Length);
+
+            if (longVersion  != null)
+            {
+                if (arg.StartsWith(longVersion, StringComparison.OrdinalIgnoreCase))
+                    return arg.Substring(longVersion.Length);
+            }
+            
             throw new ArgumentException($"Invalid argument format: {arg}");
         }
 

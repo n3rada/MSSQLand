@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 
 
-namespace MSSQLand.Actions
+namespace MSSQLand.Actions.Database
 {
     internal class Info : BaseAction
     {

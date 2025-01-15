@@ -97,6 +97,7 @@ namespace MSSQLand.Services
 
             if (sqlDataReader is null)
             {
+                
                 return resultTable;
             }
 

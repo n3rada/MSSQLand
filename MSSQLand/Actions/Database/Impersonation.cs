@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 
 
-namespace MSSQLand.Actions
+namespace MSSQLand.Actions.Database
 {
     internal class Impersonation : BaseAction
     {
@@ -42,7 +42,7 @@ namespace MSSQLand.Actions
             }
             else
             {
-                Logger.Task("Checking impersonation permissions individually");
+                Logger.TaskNested("Checking impersonation permissions individually");
                 foreach (DataRow row in queryResult.Rows)
                 {
                     string user = row["name"].ToString();

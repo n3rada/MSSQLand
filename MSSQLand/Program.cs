@@ -15,8 +15,8 @@ namespace MSSQLand
         static void Main(string[] args)
         {
 
-            var stopwatch = Stopwatch.StartNew();
-            var startTime = DateTime.Now;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            DateTime startTime = DateTime.UtcNow;
 
             try
             {
@@ -24,7 +24,7 @@ namespace MSSQLand
 
                 CommandArgs parsedArgs = parser.Parse(args);
 
-                Logger.Banner($"Start at {startTime:yyyy-MM-dd HH:mm:ss}");
+                int bannerWidth = Logger.Banner($"Start at {startTime:yyyy-MM-dd HH:mm:ss} UTC");
                 
 
                 using AuthenticationService authService = new(parsedArgs.Target);
@@ -33,7 +33,7 @@ namespace MSSQLand
                 if (!authService.Authenticate(
                     credentialsType: parsedArgs.CredentialType,
                     sqlServer: $"{parsedArgs.Target.Hostname},{parsedArgs.Target.Port}",
-                    database: "master", username: parsedArgs.Username,
+                    database: parsedArgs.Target.Database, username: parsedArgs.Username,
                     password: parsedArgs.Password,
                     domain: parsedArgs.Domain
                  ))
@@ -59,8 +59,8 @@ namespace MSSQLand
                 parsedArgs.Action.Execute(connectionManager);
 
                 stopwatch.Stop();
-                var endTime = DateTime.Now;
-                Logger.Banner($"End at {endTime:yyyy-MM-dd HH:mm:ss}\nTotal duration: {stopwatch.Elapsed.TotalSeconds:F2} seconds");
+                DateTime endTime = DateTime.UtcNow;
+                Logger.Banner($"End at {endTime:yyyy-MM-dd HH:mm:ss} UTC\nTotal duration: {stopwatch.Elapsed.TotalSeconds:F2} seconds", totalWidth: bannerWidth);
 
             }
             catch (Exception ex)

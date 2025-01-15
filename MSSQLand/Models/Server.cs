@@ -14,20 +14,12 @@ namespace MSSQLand.Models
 
         public int Port { get; set; } = 1433; // Default SQL Server port
 
+        public string Database { get; set; } = "master";
+
         /// <summary>
         /// The user to impersonate on this server (optional).
         /// </summary>
         public string ImpersonationUser { get; set; }
 
-
-
-        /// <summary>
-        /// Returns a string representation of the server, including the impersonation user if provided.
-        /// </summary>
-        public override string ToString()
-        {
-            var userPart = string.IsNullOrEmpty(ImpersonationUser) ? "" : $" ({ImpersonationUser})";
-            return $"{Hostname}:{Port}{userPart}";
-        }
     }
 }

@@ -1,13 +1,10 @@
 ﻿using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace MSSQLand.Actions
+
+namespace MSSQLand.Actions.Database
 {
     internal class Links : BaseAction
     {

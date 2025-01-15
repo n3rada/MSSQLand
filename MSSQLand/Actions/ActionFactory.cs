@@ -1,5 +1,10 @@
 ﻿using MSSQLand.Actions;
+using MSSQLand.Actions.Network;
+using MSSQLand.Actions.Database;
+using MSSQLand.Actions.FileSystem;
+using MSSQLand.Actions.Execution;
 using System;
+
 
 namespace MSSQLand.Utilities
 {
@@ -22,6 +27,11 @@ namespace MSSQLand.Utilities
                     "rpc" => new RemoteProcedureCall(),
                     "impersonate" => new Impersonation(),
                     "info" => new Info(),
+                    "smb" => new Smb(),
+                    "users" => new Users(),
+                    "permissions" => new Permissions(),
+                    "tables" => new Tables(),
+                    "databases" => new Databases(),
                     _ => throw new ArgumentException($"Unsupported action type: {actionType}")
                 };
 

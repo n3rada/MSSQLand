@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MSSQLand.Actions
+namespace MSSQLand.Actions.Execution
 {
     internal class RemotePowerShellExecutor : PowerShell
     {

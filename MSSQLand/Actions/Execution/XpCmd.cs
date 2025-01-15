@@ -4,7 +4,7 @@ using System;
 using System.Data;
 using System.Data.SqlClient;
 
-namespace MSSQLand.Actions
+namespace MSSQLand.Actions.Execution
 {
     internal class XpCmd : BaseAction
     {

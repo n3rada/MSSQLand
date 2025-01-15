@@ -1,9 +1,8 @@
 ﻿using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
-using System.Data;
 
-namespace MSSQLand.Actions
+namespace MSSQLand.Actions.FileSystem
 {
     internal class FileRead : BaseAction
     {

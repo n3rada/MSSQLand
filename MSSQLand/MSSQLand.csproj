@@ -64,15 +64,20 @@
   <ItemGroup>
     <Compile Include="Actions\ActionFactory.cs" />
     <Compile Include="Actions\BaseAction.cs" />
+    <Compile Include="Actions\Database\Databases.cs" />
     <Compile Include="Actions\Database\Impersonation.cs" />
     <Compile Include="Actions\Database\Info.cs" />
     <Compile Include="Actions\Database\Links.cs" />
+    <Compile Include="Actions\Database\Permissions.cs" />
+    <Compile Include="Actions\Database\Tables.cs" />
+    <Compile Include="Actions\Database\Users.cs" />
     <Compile Include="Actions\FileSystem\FileRead.cs" />
     <Compile Include="Actions\Execution\PowerShell.cs" />
     <Compile Include="Actions\Execution\RemotePowerShellExecutor.cs" />
     <Compile Include="Actions\Database\RemoteProcedureCall.cs" />
     <Compile Include="Actions\Database\Rows.cs" />
     <Compile Include="Actions\Execution\XpCmd.cs" />
+    <Compile Include="Actions\Network\Smb.cs" />
     <Compile Include="Models\CommandArgs.cs" />
     <Compile Include="Models\LinkedServers.cs" />
     <Compile Include="Models\Server.cs" />

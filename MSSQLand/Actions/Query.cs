@@ -32,9 +32,15 @@ namespace MSSQLand.Actions
         {
             Logger.TaskNested($"Executing: {_query}");
             DataTable resultTable = connectionManager.QueryService.ExecuteTable(_query);
-              
-        
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+
+            if (resultTable.Rows.Count == 0)
+            {
+                Logger.Warning("The query executed successfully, but no rows were returned.");
+            }
+            else
+            {
+                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+            }
 
         }
     }

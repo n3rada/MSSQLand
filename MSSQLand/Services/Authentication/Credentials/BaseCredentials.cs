@@ -33,7 +33,7 @@ namespace MSSQLand.Services.Credentials
             
             connectionString = $"{connectionString} Connect Timeout={_connectTimeout}";
 
-            Logger.Task("Trying to connect");
+            Logger.Task($"Trying to connect with {GetName()}");
             Logger.DebugNested(connectionString);
 
             var connection = new SqlConnection(connectionString);
@@ -69,6 +69,15 @@ namespace MSSQLand.Services.Credentials
                 connection.Dispose();
                 throw new InvalidOperationException("An unexpected error occurred while opening SQL connection.", ex);
             }
+        }
+
+        /// <summary>
+        /// Returns the name of the class as a string.
+        /// </summary>
+        /// <returns>The name of the current class.</returns>
+        public string GetName()
+        {
+            return GetType().Name;
         }
 
     }

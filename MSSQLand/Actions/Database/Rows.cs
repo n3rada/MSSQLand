@@ -3,7 +3,7 @@ using MSSQLand.Utilities;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions
+namespace MSSQLand.Actions.Database
 {
     public class Rows : BaseAction
     {
@@ -19,15 +19,15 @@ namespace MSSQLand.Actions
             }
 
             var parts = additionalArgument.Split('.');
-            if (parts.Length == 2) // If no schema is provided, default to "dbo"
+
+            if (parts.Length == 3) // If schema is provided
             {
                 _database = parts[0];
-                _table = parts[1];
-            }
-            else if (parts.Length == 3) // If schema is provided
-            {
-                _database = parts[0];
-                _schema = parts[1];
+                
+                if (!string.IsNullOrEmpty(parts[1]))
+                {
+                    _schema = parts[1];
+                }
                 _table = parts[2];
             }
             else
@@ -39,19 +39,10 @@ namespace MSSQLand.Actions
         public override void Execute(DatabaseContext connectionManager)
         {
             string target = $"[{_database}].[{_schema}].[{_table}]";
-            Logger.TaskNested($"Retrieving row count for {target}");
+            Logger.TaskNested($"Retrieving rows from {target}");
+            
+            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(connectionManager.QueryService.ExecuteTable($"SELECT * FROM {target};")));
 
-            string query = $"SELECT COUNT(*) AS RowCount FROM {target};";
-            DataTable resultTable = connectionManager.QueryService.ExecuteTable(query);
-
-            if (resultTable.Rows.Count > 0)
-            {
-                Console.WriteLine(resultTable.Rows[0]["RowCount"]);
-            }
-            else
-            {
-                Logger.Warning("No rows found.");
-            }
         }
     }
 }
