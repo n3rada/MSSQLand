@@ -1,4 +1,4 @@
-# MSSQLand
+# MSSQLand - Land gracefully in your target MSSQL DBMS, as if arriving on a business-class flight with a champagne glass in hand. 🥂
 MSSQLand is your ultimate tool for interacting with Microsoft SQL Server (MSSQL) database management system (DBMS) in your red activities. It allows you to pave your way across multiple linked servers and impersonate anyone (authorised) on the road, popping out of the last hop with any desired action.
 
 <p align="center">
