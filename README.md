@@ -152,8 +152,9 @@ Contains classes representing SQL Server entities, such as Server and LinkedServ
 ## Contributing 🫂
 
 Contributions to MSSQLand are welcome and appreciated! Whether it's fixing bugs, adding new features, improving the documentation, or sharing feedback, your effort is valued and makes a difference.
-Open-source thrives on collaboration and recognition. Contributions, large or small, help improve the tool and its community. Your time and effort are truly valued. Here, no one will be erased from Git history. 
-No fear to have here—no one will copy-paste your code without adhering to the collaborative ethos of open-source.
+Open-source thrives on collaboration and recognition. Contributions, large or small, help improve the tool and its community. Your time and effort are truly valued. 
+
+Here, no one will be erased from Git history. No fear to have here—no one will copy-paste your code without adhering to the collaborative ethos of open-source.
 
 Please see the [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines on how to get started.
 
