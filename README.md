@@ -1,4 +1,4 @@
-# MSSQLand 
+# MSSQLand ✈️
 Land gracefully in your target MSSQL DBMS, as if arriving on a business-class flight with a champagne glass in hand. 🥂
 
 <p align="center">
