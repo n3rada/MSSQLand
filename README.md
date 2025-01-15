@@ -14,6 +14,7 @@ For example, running this command:
 MSSQLand.exe /t:SQL01:webapp01 /u:mjo /p:yapot117 /c:local /l:SQL02:webapp03,SQL03:webapp04,SQL04:Jacquard /a:rows balard..users
 ```
 
+Create the following output:
 ```txt
 ====================================
   Start at 2025-01-15 21:53:53
