@@ -14,7 +14,7 @@ git checkout -b feature/add-new-feature
 ## Signing Your Commits 🗝️
 To ensure accountability and transparency in contributions, always sign your commits. This helps verify the authenticity of the commit and ensures a clear history of who contributed what.
 
-Set Up GPG Signing: Follow [GitHub’s guide on signing commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) to generate a GPG key and configure it for Git.
+Follow [GitHub’s guide on signing commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) to generate a GPG key and configure it for Git.
 
 Signed commits ensure the integrity and authenticity of contributions, reflecting the highest standards of professionalism in the project.
 
