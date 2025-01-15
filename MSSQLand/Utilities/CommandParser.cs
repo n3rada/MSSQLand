@@ -6,7 +6,7 @@ namespace MSSQLand.Utilities
 {
     public class CommandParser
     {
-        private static readonly Dictionary<string, List<string>> CredentialArgumentGroups = new()
+        public static readonly Dictionary<string, List<string>> CredentialArgumentGroups = new()
         {
             { "token", new List<string>() },
             { "domain", new List<string> { "username", "password", "domain" } },
