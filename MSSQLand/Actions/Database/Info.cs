@@ -7,6 +7,9 @@ using System.Data;
 
 namespace MSSQLand.Actions.Database
 {
+    /// <summary>
+    /// Retrieving information of current DBMS server.
+    /// </summary>
     internal class Info : BaseAction
     {
         private readonly Dictionary<string, string> _queries = new()

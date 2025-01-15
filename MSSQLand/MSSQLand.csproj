@@ -63,6 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Actions\ActionFactory.cs" />
+    <Compile Include="Utilities\Helper.cs" />
     <Compile Include="Actions\BaseAction.cs" />
     <Compile Include="Actions\Database\Databases.cs" />
     <Compile Include="Actions\Database\Impersonation.cs" />

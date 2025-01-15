@@ -35,6 +35,12 @@ namespace MSSQLand.Utilities
                 {
                     Logger.IsSilentModeEnabled = true;
                 }
+                else if (arg.StartsWith("/h", StringComparison.OrdinalIgnoreCase) ||
+                         arg.StartsWith("/help", StringComparison.OrdinalIgnoreCase))
+                {
+                    Helper.Show();
+                    Environment.Exit(0); // Exit the program gracefully with exit code 0
+                }
                 else if (arg.StartsWith("/c:", StringComparison.OrdinalIgnoreCase) ||
                          arg.StartsWith("/credentials:", StringComparison.OrdinalIgnoreCase))
                 {
@@ -89,6 +95,7 @@ namespace MSSQLand.Utilities
                 
             }
 
+
             if (parsedArgs.Target == null)
             {
                 throw new ArgumentException("Targeted server (/t or /target) is mandatory.");
@@ -101,6 +108,12 @@ namespace MSSQLand.Utilities
                 }
             }
 
+            // Remove trailing pipe
+            parsedArgs.AdditionalArguments = additionalArguments.TrimEnd('|');
+
+            // Get the action from the factory
+            parsedArgs.Action = ActionFactory.GetAction(actionType, parsedArgs.AdditionalArguments);
+
             // Validate the provided arguments against the selected credential type
             ValidateCredentialArguments(parsedArgs.CredentialType, username, password, domain);
                
@@ -108,12 +121,7 @@ namespace MSSQLand.Utilities
             parsedArgs.Username = username;
             parsedArgs.Password = password;
             parsedArgs.Domain = domain;
-
-
-            parsedArgs.AdditionalArguments = additionalArguments.TrimEnd('|'); // Remove trailing pipe
-
-            // Get the action from the factory
-            parsedArgs.Action = ActionFactory.GetAction(actionType, parsedArgs.AdditionalArguments);
+           
 
             if (Logger.IsDebugEnabled)
             {
