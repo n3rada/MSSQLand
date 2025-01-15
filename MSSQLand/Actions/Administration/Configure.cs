@@ -12,11 +12,8 @@ namespace MSSQLand.Actions.Administration
 
         public override void ValidateArguments(string additionalArguments)
         {
-
             // Split the additional argument into parts (optionName and state)
             string[] args = additionalArguments.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
-
-
 
             // Check if both arguments (option name and state) are provided
             if (args == null || args.Length != 2)
