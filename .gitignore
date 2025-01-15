@@ -1,3 +1,7 @@
+# Project Specific
+[Rr]ealise/*.config
+[Rr]ealise/*.pdb
+
 # Visual Studio
 .vscode/
 .vs/
@@ -12,7 +16,6 @@
 
 # Build Results
 [Dd]ebug/
-[Rr]elease/
 x64/
 x86/
 [Aa][Rr][Mm]/
