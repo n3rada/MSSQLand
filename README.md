@@ -42,8 +42,9 @@ Create the following output:
 
 | id | name  | pass               |
 | -- | ----- | ------------------ |
-| 0  | Calot | password04/06/1958 |
+| 51 | Calot | password04/06/1958 |
 
+[+] Search completed.
 ====================================
   End at 2025-01-15 21:53:53 UTC
   Total duration: 0.11 seconds
