@@ -42,7 +42,7 @@ Create the following output:
 
 | id | name  | pass               |
 | -- | ----- | ------------------ |
-| 07 | Calot | password04/06/1958 |
+| 7  | Calot | password04/06/1958 |
 
 [+] Search completed.
 ====================================
