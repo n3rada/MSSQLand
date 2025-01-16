@@ -183,7 +183,7 @@ Avoid duplicating logic across the codebase. The [`QueryService`](./MSSQLand/Ser
 
 Systems should be as simple as possible but no simpler. Complex linked server queries and impersonation are abstracted into services, simplifying their usage.
 
-8. Extensibility
+8. **Extensibility**
 
 The system should be easy to extend with new features. New actions can be added without altering core functionality by extending [`BaseAction`](./MSSQLand/Actions/BaseAction.cs).
 
