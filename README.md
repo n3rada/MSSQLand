@@ -19,14 +19,16 @@ Create the following output:
 ====================================
   Start at 2025-01-15 21:53:53 UTC
 ====================================
-[>] Trying to connect with TokenCredentials
+[>] Trying to connect with LocalCredentials
 [+] Connection opened successfully
-|-> Workstation ID: SQL11
+|-> Workstation ID: SQL01
 |-> Server Version: 15.00.2000
 |-> Database: master
 |-> Client Connection ID: 09dfa162-725c-4aaa-9881-f788ed282db4
 [i] You can impersonate anyone as a sysadmin
-[+] Successfully impersonated user: webapp11
+[+] Successfully impersonated user: webapp01
+[i] Logged in as webapp01
+|-> Mapped to the user dbo
 [>] Executing action: Rows
 |-> Retrieving rows from [balard].[dbo].[users]
 
@@ -84,6 +86,8 @@ The output is as follows:
 |-> Mapped to the user dbo
 [i] You can impersonate anyone as a sysadmin
 [+] Successfully impersonated user: webapp01
+[i] Logged in as webapp01
+|-> Mapped to the user dbo
 [i] Execution chain: localhost -> SQL02 -> SQL03 -> SQL04
 [i] Logged in as webapp05
 |-> Mapped to the user dbo
