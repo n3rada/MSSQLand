@@ -39,7 +39,7 @@ namespace MSSQLand.Actions.Network
         {
             Logger.TaskNested($"Sending SMB request to: {_uncPath}");
 
-            string query = $"exec xp_subdirs '{_uncPath}';";
+            string query = $"EXEC xp_dirtree '{_uncPath}';";
 
             var response = databaseContext.QueryService.ExecuteScalar(query);
             if (response != null)
