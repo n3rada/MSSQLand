@@ -29,13 +29,20 @@ Create the following output:
 [+] Successfully impersonated user: Moulinier
 [i] Logged in as Moulinier
 |-> Mapped to the user guest
-[>] Executing action: Tables
-|-> Retrieving tables from [balard]
+[>] Executing action: Search
+|-> Searching for 'pass' in database 'agents'
 
-| SchemaName | TableName | TableType  | Rows | Permissions                                                                                           |
-| ---------- | --------- | ---------- | ---- | ----------------------------------------------------------------------------------------------------- |
-| dbo        | secrets   | USER_TABLE | 42   | SELECT, VIEW DEFINITION                                                                               |
-| dbo        | drinks    | USER_TABLE | 51   | ALTER, CONTROL, EXECUTE, INSERT, RECEIVE, REFERENCES, SELECT, TAKE OWNERSHIP, UPDATE, VIEW DEFINITION |
+[+] Found 'pass' in column headers:
+
+| FQTN                   | Header | Ordinal Position |
+| ---------------------- | ------ | ---------------- |
+| [agents].[dbo].[users] | pass   | 3                |
+
+[+] Found 'pass' in [music].[dbo].[users] rows:
+
+| id | name  | pass               |
+| -- | ----- | ------------------ |
+| 0  | Calot | password04/06/1958 |
 
 ====================================
   End at 2025-01-15 21:53:53 UTC
@@ -43,7 +50,7 @@ Create the following output:
 ====================================
 ```
 
-And yes, all the output tables are Markdown-friendly and can be directly copied and pasted into your notes.
+And yes, all the output tables are Markdown-friendly and can be directly copied and pasted into your notes. Below is an example of `/a:tables` output:
 
 | SchemaName | TableName | TableType  | Rows | Permissions                                                                                           |
 | ---------- | --------- | ---------- | ---- | ----------------------------------------------------------------------------------------------------- |
