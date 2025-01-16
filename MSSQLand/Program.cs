@@ -11,6 +11,8 @@ namespace MSSQLand
     [ComVisible(true)]
     internal class Program
     {
+        private static readonly string BuildTimestamp = $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}";
+        
         [STAThread]
         static void Main(string[] args)
         {
@@ -23,6 +25,9 @@ namespace MSSQLand
                 CommandParser parser = new();
 
                 CommandArgs parsedArgs = parser.Parse(args);
+
+                Logger.Info($"Build timestamp: {BuildTimestamp}");
+                Logger.NewLine();
 
                 int bannerWidth = Logger.Banner($"Start at {startTime:yyyy-MM-dd HH:mm:ss} UTC");
                 
