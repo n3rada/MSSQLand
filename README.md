@@ -198,7 +198,7 @@ Systems should be as simple as possible but no simpler. Complex linked server qu
 
 8. **Extensibility**
 
-The system should be easy to extend with new features. New actions can be added without altering core functionality by extending [`BaseAction`](./MSSQLand/Actions/BaseAction.cs).
+The system should be easy to extend with new features. New actions can be added without altering core functionality by extending [`BaseAction`](./MSSQLand/Actions/BaseAction.cs) and adding the created-one to the [factory](./MSSQLand/Actions/ActionFactory.cs).
 
 #### Directories
 
