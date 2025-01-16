@@ -12,34 +12,35 @@ namespace MSSQLand.Utilities
 {
     public static class ActionFactory
     {
-        private static Dictionary<string, (BaseAction ActionInstance, string Description)> ActionMetadata =
+        private static readonly Dictionary<string, (Type ActionClass, string Description)> ActionMetadata =
             new()
             {
-                { "rows", (new Rows(), "Retrieve rows from a table.") },
-                { "query", (new Query(), "Execute a custom SQL query.") },
-                { "links", (new Links(), "Retrieve linked server information.") },
-                { "xpcmd", (new XpCmd(), "Execute commands using xp_cmdshell.") },
-                { "pwsh", (new PowerShell(), "Execute PowerShell commands.") },
-                { "pwshdl", (new RemotePowerShellExecutor(), "Download and execute a PowerShell script.") },
-                { "read", (new FileRead(), "Read file contents.") },
-                { "rpc", (new RemoteProcedureCall(), "Call remote procedures on linked servers.") },
-                { "impersonate", (new Impersonation(), "Check and perform user impersonation.") },
-                { "info", (new Info(), "Retrieve information about the DBMS server.") },
-                { "smb", (new Smb(), "Send SMB requests.") },
-                { "users", (new Users(), "List database users.") },
-                { "permissions", (new Permissions(), "Enumerate permissions.") },
-                { "tables", (new Tables(), "List tables in a database.") },
-                { "databases", (new Databases(), "List available databases.") },
-                { "config", (new Configure(), "Use sp_configure to modify settings.") },
-                { "search", (new Search(), "Search for specific keyword in database.") },
-                { "ole", (new ObjectLinkingEmbedding(), "Executes the specified command using OLE Automation Procedures.") },
-                { "clr", (new ClrExecution(), "Execute commands using Common Language Runtime (CLR) assemblies.") }
+                { "rows", (typeof(Rows), "Retrieve rows from a table.") },
+                { "query", (typeof(Query), "Execute a custom SQL query.") },
+                { "links", (typeof(Links), "Retrieve linked server information.") },
+                { "xpcmd", (typeof(XpCmd), "Execute commands using xp_cmdshell.") },
+                { "pwsh", (typeof(PowerShell), "Execute PowerShell commands.") },
+                { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a PowerShell script.") },
+                { "read", (typeof(FileRead), "Read file contents.") },
+                { "rpc", (typeof(RemoteProcedureCall), "Call remote procedures on linked servers.") },
+                { "impersonate", (typeof(Impersonation), "Check and perform user impersonation.") },
+                { "info", (typeof(Info), "Retrieve information about the DBMS server.") },
+                { "smb", (typeof(Smb), "Send SMB requests.") },
+                { "users", (typeof(Users), "List database users.") },
+                { "permissions", (typeof(Permissions), "Enumerate permissions.") },
+                { "tables", (typeof(Tables), "List tables in a database.") },
+                { "databases", (typeof(Databases), "List available databases.") },
+                { "config", (typeof(Configure), "Use sp_configure to modify settings.") },
+                { "search", (typeof(Search), "Search for specific keyword in database.") },
+                { "ole", (typeof(ObjectLinkingEmbedding), "Executes the specified command using OLE Automation Procedures.") },
+                { "clr", (typeof(ClrExecution), "Execute commands using Common Language Runtime (CLR) assemblies.") },
+                { "jobs", (typeof(Jobs), "Add jobs to remote SQL server.") }
             };
 
-        private static Dictionary<string, (BaseAction ActionInstance, string Description)> EnumerationMetadata =
+        private static readonly Dictionary<string, (Type ActionClass, string Description)> EnumerationMetadata =
             new()
             {
-                { "servers", (new FindSQLServers(), "Search for MS SQL Servers.") }
+                { "servers", (typeof(FindSQLServers), "Search for MS SQL Servers.") }
             };
 
         public static BaseAction GetAction(string actionType, string additionalArguments)
@@ -51,15 +52,11 @@ namespace MSSQLand.Utilities
                     throw new ArgumentException($"Unsupported action type: {actionType}");
                 }
 
-                // Get the action instance
-                BaseAction action = metadata.ActionInstance;
-
-                ActionMetadata = null;
+                // Create an instance of the action class
+                BaseAction action = (BaseAction)Activator.CreateInstance(metadata.ActionClass);
 
                 // Validate and initialize the action with the additional argument
                 action.ValidateArguments(additionalArguments);
-
-
                 return action;
             }
             catch (Exception ex)
@@ -78,12 +75,8 @@ namespace MSSQLand.Utilities
                     throw new ArgumentException($"Unsupported enum type: {enumType}");
                 }
 
-                // Get the action instance
-                BaseAction action = metadata.ActionInstance;
-
-                EnumerationMetadata = null;
-
-                
+                // Create an instance of the enumeration class
+                BaseAction action = (BaseAction)Activator.CreateInstance(metadata.ActionClass);
 
                 // Validate and initialize the action with the additional argument
                 action.ValidateArguments(additionalArguments);
@@ -97,14 +90,14 @@ namespace MSSQLand.Utilities
             }
         }
 
-
         public static List<(string ActionName, string Description, string Arguments)> GetAvailableActions()
         {
             var result = new List<(string ActionName, string Description, string Arguments)>();
 
             foreach (var action in ActionMetadata)
             {
-                string arguments = action.Value.ActionInstance.GetArguments();
+                BaseAction actionInstance = (BaseAction)Activator.CreateInstance(action.Value.ActionClass);
+                string arguments = actionInstance.GetArguments();
                 result.Add((action.Key, action.Value.Description, arguments));
             }
 
