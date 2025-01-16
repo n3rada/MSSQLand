@@ -41,11 +41,7 @@ namespace MSSQLand.Actions.Network
 
             string query = $"EXEC xp_dirtree '{_uncPath}';";
 
-            var response = databaseContext.QueryService.ExecuteScalar(query);
-            if (response != null)
-            {
-                Console.WriteLine(response);
-            }
+            databaseContext.QueryService.ExecuteNonProcessing(query);
 
             Logger.Success("SMB request sent");
 
