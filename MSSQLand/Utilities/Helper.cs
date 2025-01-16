@@ -83,7 +83,7 @@ namespace MSSQLand.Utilities
             argumentsTable.Rows.Add("/db", "Specify the target database (optional).");
             argumentsTable.Rows.Add("/silent", "Enable silent mode (minimal output).");
             argumentsTable.Rows.Add("/debug", "Enable debug mode for detailed logs.");
-            argumentsTable.Rows.Add("/help or /h", "Display this help message and exit.");
+            argumentsTable.Rows.Add("/help", "Display this help message and exit.");
 
             // Use MarkdownFormatter to display the table
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(argumentsTable));

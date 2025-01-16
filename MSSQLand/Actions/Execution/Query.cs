@@ -27,11 +27,11 @@ namespace MSSQLand.Actions.Execution
         /// <summary>
         /// Executes the query action using the provided ConnectionManager.
         /// </summary>
-        /// <param name="connectionManager">The ConnectionManager for executing the query.</param>
-        public override void Execute(DatabaseContext connectionManager)
+        /// <param name="databaseContext">The ConnectionManager for executing the query.</param>
+        public override void Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Executing: {_query}");
-            DataTable resultTable = connectionManager.QueryService.ExecuteTable(_query);
+            DataTable resultTable = databaseContext.QueryService.ExecuteTable(_query);
 
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
         }

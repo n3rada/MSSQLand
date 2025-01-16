@@ -19,8 +19,8 @@ namespace MSSQLand.Actions.Database
         /// <summary>
         /// Executes the query action using the provided ConnectionManager.
         /// </summary>
-        /// <param name="connectionManager">The ConnectionManager for executing the query.</param>
-        public override void Execute(DatabaseContext connectionManager)
+        /// <param name="databaseContext">The ConnectionManager for executing the query.</param>
+        public override void Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Retrieving Linked SQL Servers");
             string query = @"
@@ -40,7 +40,7 @@ namespace MSSQLand.Actions.Database
                 LEFT JOIN sys.server_principals prin ON ll.local_principal_id = prin.principal_id
                 WHERE srv.is_linked = 1
                 ORDER BY srv.modify_date DESC;";
-            DataTable resultTable = connectionManager.QueryService.ExecuteTable(query);
+            DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
 
 
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));

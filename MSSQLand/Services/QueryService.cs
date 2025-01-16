@@ -47,6 +47,27 @@ namespace MSSQLand.Services
         /// <returns>The SqlDataReader resulting from the query.</returns>
         public SqlDataReader Execute(string query)
         {
+            return ExecuteWithHandling(query, executeReader: true) as SqlDataReader;
+        }
+
+
+        /// <summary>
+        /// Executes a SQL query against the database without returning a result (e.g., for INSERT, UPDATE, DELETE).
+        /// </summary>
+        /// <param name="query">The SQL query to execute.</param>
+        public int ExecuteNonProcessing(string query)
+        {
+            return (int)ExecuteWithHandling(query, executeReader: false);
+        }
+
+        /// <summary>
+        /// Shared execution logic for handling SQL queries, with error handling for both Execute and ExecuteNonProcessing.
+        /// </summary>
+        /// <param name="query">The SQL query to execute.</param>
+        /// <param name="executeReader">True to use ExecuteReader, false to use ExecuteNonQuery.</param>
+        /// <returns>Result of ExecuteReader if executeReader is true; otherwise null.</returns>
+        private object ExecuteWithHandling(string query, bool executeReader)
+        {
             if (string.IsNullOrEmpty(query))
             {
                 throw new ArgumentException("Query cannot be null or empty.", nameof(query));
@@ -62,7 +83,14 @@ namespace MSSQLand.Services
                     CommandType = CommandType.Text
                 };
 
-                return command.ExecuteReader();
+                if (executeReader)
+                {
+                    return command.ExecuteReader();
+                }
+                else
+                {
+                    return command.ExecuteNonQuery();
+                }
             }
             catch (Exception ex)
             {
@@ -77,11 +105,6 @@ namespace MSSQLand.Services
                 }
                 return null;
             }
-        }
-
-        public void ExecuteNonProcessing(string query)
-        {
-            using var reader = Execute(query);
         }
 
         /// <summary>

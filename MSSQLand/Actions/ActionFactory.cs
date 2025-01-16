@@ -31,7 +31,8 @@ namespace MSSQLand.Utilities
                 { "databases", (new Databases(), "List available databases.") },
                 { "config", (new Configure(), "Use sp_configure to modify settings.") },
                 { "search", (new Search(), "Search for specific keyword in database.") },
-                { "ole", (new ObjectLinkingEmbedding(), "Executes the specified command using OLE Automation Procedures.") }
+                { "ole", (new ObjectLinkingEmbedding(), "Executes the specified command using OLE Automation Procedures.") },
+                { "clr", (new ClrExecution(), "Execute commands using CLR assemblies.") }
             };
 
         public static BaseAction GetAction(string actionType, string additionalArgument)

@@ -1,9 +1,9 @@
 ﻿using MSSQLand.Utilities;
 using System;
-using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace MSSQLand.Services
 {
@@ -15,6 +15,97 @@ namespace MSSQLand.Services
         {
             _queryService = queryService;
         }
+
+        
+
+        public bool CheckAssembly(string assemblyName)
+        {
+            string query = $"SELECT name FROM sys.assemblies WHERE name='{assemblyName}';";
+
+            return _queryService.ExecuteScalar(query)?.ToString() == assemblyName;
+        }
+
+        public bool CheckTrustedAssembly(string assemblyName)
+        {
+            try
+            {
+                // Query to retrieve all trusted assemblies
+                string query = "SELECT description FROM sys.trusted_assemblies;";
+                DataTable trustedAssembliesTable = _queryService.ExecuteTable(query);
+
+                if (trustedAssembliesTable.Rows.Count == 0)
+                {
+                    Logger.Warning("No trusted assemblies found");
+                    return false;
+                }
+
+                // Log all trusted assemblies for debugging
+                Logger.Debug("Trusted assemblies:");
+                foreach (DataRow row in trustedAssembliesTable.Rows)
+                {
+                    string description = row["description"].ToString();
+                    Logger.DebugNested(description);
+
+                    string name = description.Split(',')[0];
+
+                    // Check if the assemblyName is a substring of the description
+                    if (name == assemblyName)
+                    {
+                        Logger.Success($"Assembly '{assemblyName}' is trusted");
+                        return true;
+                    }
+                }
+
+                Logger.Warning($"Assembly '{assemblyName}' is not trusted");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error retrieving trusted assemblies: {ex.Message}");
+                return false;
+            }
+        }
+
+
+        public bool CheckProcedures(string procedureName)
+        {
+            try
+            {
+                // Query to retrieve all trusted assemblies
+                string query = "SELECT SCHEMA_NAME(schema_id), name, type FROM sys.procedures;";
+                DataTable trustedAssembliesTable = _queryService.ExecuteTable(query);
+
+                if (trustedAssembliesTable.Rows.Count == 0)
+                {
+                    Logger.Warning("No procedures found");
+                    return false;
+                }
+
+                // Log all trusted assemblies for debugging
+                Logger.Debug("Procedures:");
+                foreach (DataRow row in trustedAssembliesTable.Rows)
+                {
+                    string name = row["name"].ToString();
+                    Logger.DebugNested(name);
+
+                    // Check if the assemblyName is a substring of the description
+                    if (name == procedureName)
+                    {
+                        Logger.Success($"Procedure '{procedureName}' exist");
+                        return true;
+                    }
+                }
+
+                Logger.Warning($"Procedure '{procedureName}' does not exist");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error retrieving procedures: {ex.Message}");
+                return false;
+            }
+        }
+
 
         /// <summary>
         /// Enables or disables a specified SQL Server configuration option using sp_configure.
@@ -33,13 +124,13 @@ namespace MSSQLand.Services
                 var configValue = _queryService.ExecuteScalar($"SELECT value FROM sys.configurations WHERE name = '{optionName}';");
                 if (configValue == null)
                 {
-                    Logger.Warning($"Configuration '{optionName}' not found or inaccessible.");
+                    Logger.Warning($"Configuration '{optionName}' not found or inaccessible");
                     return;
                 }
 
                 if (Convert.ToInt32(configValue) == value)
                 {
-                    Logger.Info($"Configuration option '{optionName}' is already set to {value}.");
+                    Logger.Info($"Configuration option '{optionName}' is already set to {value}");
                     return;
                 }
             }

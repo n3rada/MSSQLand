@@ -44,11 +44,11 @@ namespace MSSQLand.Actions.Database
 
         }
 
-        public override void Execute(DatabaseContext connectionManager)
+        public override void Execute(DatabaseContext databaseContext)
         {
             if (string.IsNullOrEmpty(_database))
             {
-                _database = connectionManager.Server.Database;
+                _database = databaseContext.Server.Database;
             }
 
             Logger.TaskNested($"Searching for '{_keyword}' in database '{_database}'");
@@ -58,7 +58,7 @@ namespace MSSQLand.Actions.Database
             SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION
             FROM [{_database}].INFORMATION_SCHEMA.COLUMNS;";
 
-            DataTable columnsTable = connectionManager.QueryService.ExecuteTable(metadataQuery);
+            DataTable columnsTable = databaseContext.QueryService.ExecuteTable(metadataQuery);
 
             if (columnsTable.Rows.Count == 0)
             {
@@ -125,7 +125,7 @@ namespace MSSQLand.Actions.Database
                 WHERE {whereClause};";
 
 
-                DataTable resultTable = connectionManager.QueryService.ExecuteTable(searchQuery);
+                DataTable resultTable = databaseContext.QueryService.ExecuteTable(searchQuery);
 
                 if (resultTable.Rows.Count > 0)
                 {

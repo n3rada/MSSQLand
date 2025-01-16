@@ -29,8 +29,8 @@ namespace MSSQLand.Actions.Execution
         /// <summary>
         /// Executes the PowerShell command to download and run the script from the provided URL.
         /// </summary>
-        /// <param name="connectionManager">The ConnectionManager instance to execute the query.</param>
-        public override void Execute(DatabaseContext connectionManager)
+        /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
+        public override void Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Downloading and executing PowerShell script from URL: {_url}");
 
@@ -41,7 +41,7 @@ namespace MSSQLand.Actions.Execution
             base.ValidateArguments(powerShellCommand);
 
             // Call the parent's Execute method to execute the command
-            base.Execute(connectionManager);
+            base.Execute(databaseContext);
         }
     }
 }

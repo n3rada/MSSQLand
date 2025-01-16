@@ -49,18 +49,18 @@ namespace MSSQLand.Actions.Database
             }
         }
 
-        public override void Execute(DatabaseContext connectionManager)
+        public override void Execute(DatabaseContext databaseContext)
         {
             // Use the current database if no database is specified
             if (string.IsNullOrEmpty(_database))
             {
-                _database = connectionManager.Server.Database;
+                _database = databaseContext.Server.Database;
             }
 
             string targetTable = $"[{_database}].[{_schema}].[{_table}]";
             Logger.TaskNested($"Retrieving rows from {targetTable}");
             
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(connectionManager.QueryService.ExecuteTable($"SELECT * FROM {targetTable};")));
+            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable($"SELECT * FROM {targetTable};")));
 
         }
     }

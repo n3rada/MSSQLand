@@ -27,17 +27,17 @@ namespace MSSQLand.Actions.Execution
         /// <summary>
         /// Executes the provided shell command on the SQL server using xp_cmdshell.
         /// </summary>
-        /// <param name="connectionManager">The ConnectionManager instance to execute the query.</param>
-        public override void Execute(DatabaseContext connectionManager)
+        /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
+        public override void Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Executing command: {_command}");
 
             string query = $"EXEC master..xp_cmdshell '{_command.Replace("'", "''")}'"; // Sanitize single quotes in the command
 
             // Enable 'xp_cmdshell'
-            connectionManager.ConfigService.SetConfigurationOption("xp_cmdshell", 1);
+            databaseContext.ConfigService.SetConfigurationOption("xp_cmdshell", 1);
 
-            using SqlDataReader result = connectionManager.QueryService.Execute(query);
+            using SqlDataReader result = databaseContext.QueryService.Execute(query);
 
             if (result.HasRows)
             {

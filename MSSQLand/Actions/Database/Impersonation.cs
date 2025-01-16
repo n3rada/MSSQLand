@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.Database
             // No additional arguments needed
         }
 
-        public override void Execute(DatabaseContext connectionManager)
+        public override void Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested("Starting impersonation check for all logins");
 
@@ -22,7 +22,7 @@ namespace MSSQLand.Actions.Database
 
             // Query to obtain all SQL logins and Windows principals
             string query = "SELECT name FROM sys.server_principals WHERE type_desc IN ('SQL_LOGIN', 'WINDOWS_LOGIN') AND name NOT LIKE '##%';";
-            DataTable queryResult = connectionManager.QueryService.ExecuteTable(query);
+            DataTable queryResult = databaseContext.QueryService.ExecuteTable(query);
 
             if (queryResult.Rows.Count == 0)
             {
@@ -31,7 +31,7 @@ namespace MSSQLand.Actions.Database
             }
 
             // Check if the current user is a sysadmin
-            if (connectionManager.UserService.IsAdmin())
+            if (databaseContext.UserService.IsAdmin())
             {
                 Logger.Success("Current user is 'sysadmin'; it can impersonate any login.");
                 foreach (DataRow row in queryResult.Rows)
@@ -46,7 +46,7 @@ namespace MSSQLand.Actions.Database
                 foreach (DataRow row in queryResult.Rows)
                 {
                     string user = row["name"].ToString();
-                    bool canImpersonate = connectionManager.UserService.CanImpersonate(user);
+                    bool canImpersonate = databaseContext.UserService.CanImpersonate(user);
                     allLogins.Add(user, canImpersonate ? "Yes" : "No");
                 }
             }

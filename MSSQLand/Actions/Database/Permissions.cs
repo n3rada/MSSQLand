@@ -37,7 +37,7 @@ namespace MSSQLand.Actions.Database
             }
         }
 
-        public override void Execute(DatabaseContext connectionManager)
+        public override void Execute(DatabaseContext databaseContext)
         {
             
             if (string.IsNullOrEmpty(_table))
@@ -47,19 +47,19 @@ namespace MSSQLand.Actions.Database
                 Logger.Info("Server permissions");
 
 
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(connectionManager.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'SERVER');")));
+                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'SERVER');")));
 
                 Logger.Info("Database permissions");
 
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(connectionManager.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'DATABASE');")));
+                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'DATABASE');")));
 
                 Logger.Info("Database access");
 
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(connectionManager.QueryService.ExecuteTable("SELECT name AS [Accessible Database] FROM sys.databases WHERE HAS_DBACCESS(name) = 1;")));
+                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable("SELECT name AS [Accessible Database] FROM sys.databases WHERE HAS_DBACCESS(name) = 1;")));
             } else
             {
                 string targetTable = $"[{_schema}].[{_table}]";
-                Logger.TaskNested($"Listing permissions for {connectionManager.UserService.UserName} on [{_database}].{targetTable}");
+                Logger.TaskNested($"Listing permissions for {databaseContext.UserService.UserName} on [{_database}].{targetTable}");
 
                 // Query to get permissions
                 string query = $@"
@@ -70,7 +70,7 @@ namespace MSSQLand.Actions.Database
                     fn_my_permissions('{targetTable}', 'OBJECT');
                 ";
 
-                var dataTable = connectionManager.QueryService.ExecuteTable(query);
+                var dataTable = databaseContext.QueryService.ExecuteTable(query);
 
                 Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(dataTable));
 

@@ -38,8 +38,7 @@ namespace MSSQLand.Utilities
                 {
                     Logger.IsSilentModeEnabled = true;
                 }
-                else if (arg.StartsWith("/h", StringComparison.OrdinalIgnoreCase) ||
-                         arg.StartsWith("/help", StringComparison.OrdinalIgnoreCase))
+                else if (arg.StartsWith("/help", StringComparison.OrdinalIgnoreCase))
                 {
                     Helper.Show();
                     Environment.Exit(0); // Exit the program gracefully with exit code 0

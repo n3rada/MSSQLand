@@ -35,7 +35,7 @@ namespace MSSQLand.Actions.Administration
             }
         }
 
-        public override void Execute(DatabaseContext connectionManager)
+        public override void Execute(DatabaseContext databaseContext)
         {
             string rpcValue = _action == "add" ? "true" : "false";
 
@@ -46,7 +46,7 @@ namespace MSSQLand.Actions.Administration
 
             string query = $"EXEC sp_serveroption @server = '{_linkedServerName}', @optname = 'rpc out', @optvalue = '{rpcValue}';";
 
-            DataTable resultTable = connectionManager.QueryService.ExecuteTable(query);
+            DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
         }
     }

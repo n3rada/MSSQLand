@@ -25,8 +25,8 @@ namespace MSSQLand.Actions.FileSystem
         /// <summary>
         /// Executes the Read action to fetch the content of a file using OPENROWSET.
         /// </summary>
-        /// <param name="connectionManager">The ConnectionManager instance to execute the query.</param>
-        public override void Execute(DatabaseContext connectionManager)
+        /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
+        public override void Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Reading file: {_filePath}");
 
@@ -38,7 +38,7 @@ namespace MSSQLand.Actions.FileSystem
                 ) AS R(A);";
 
 
-            Console.WriteLine(connectionManager.QueryService.ExecuteScalar(query).ToString());
+            Console.WriteLine(databaseContext.QueryService.ExecuteScalar(query).ToString());
         }
     }
 }

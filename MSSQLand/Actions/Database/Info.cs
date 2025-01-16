@@ -40,7 +40,7 @@ namespace MSSQLand.Actions.Database
             // No additional arguments needed
         }
 
-        public override void Execute(DatabaseContext connectionManager)
+        public override void Execute(DatabaseContext databaseContext)
         {
             var results = new Dictionary<string, string>();
 
@@ -49,7 +49,7 @@ namespace MSSQLand.Actions.Database
                 string key = entry.Key;
                 string query = entry.Value;
 
-                DataTable queryResult = connectionManager.QueryService.ExecuteTable(query);
+                DataTable queryResult = databaseContext.QueryService.ExecuteTable(query);
 
                 // Extract the first row and first column value if present
                 string result = queryResult.Rows.Count > 0

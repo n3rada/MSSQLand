@@ -30,12 +30,12 @@ namespace MSSQLand.Actions.Administration
             }
         }
 
-        public override void Execute(DatabaseContext connectionManager)
+        public override void Execute(DatabaseContext databaseContext)
         {
 
             Logger.TaskNested($"Passing {_optionName} to {_state}");
 
-            connectionManager.ConfigService.SetConfigurationOption(_optionName, _state);
+            databaseContext.ConfigService.SetConfigurationOption(_optionName, _state);
 
         }
     }

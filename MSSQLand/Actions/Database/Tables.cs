@@ -16,12 +16,12 @@ namespace MSSQLand.Actions.Database
             _database = additionalArguments;
         }
 
-        public override void Execute(DatabaseContext connectionManager)
+        public override void Execute(DatabaseContext databaseContext)
         {
             // Use the current database if no database is specified
             if (string.IsNullOrEmpty(_database))
             {
-                _database = connectionManager.Server.Database;
+                _database = databaseContext.Server.Database;
             }
 
             Logger.TaskNested($"Retrieving tables from [{_database}]");
@@ -47,7 +47,7 @@ namespace MSSQLand.Actions.Database
                 ORDER BY 
                     SchemaName, TableName;";
 
-            DataTable resultTable = connectionManager.QueryService.ExecuteTable(query);
+            DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
 
             // Add a column for permissions
             resultTable.Columns.Add("Permissions", typeof(string));
@@ -69,7 +69,7 @@ namespace MSSQLand.Actions.Database
                     fn_my_permissions('[{schemaName}].[{tableName}]', 'OBJECT');
                 ";
 
-                DataTable permissionResult = connectionManager.QueryService.ExecuteTable(permissionQuery);
+                DataTable permissionResult = databaseContext.QueryService.ExecuteTable(permissionQuery);
 
                 // Concatenate permissions as a comma-separated string
                 string permissions = string.Join(", ", permissionResult.AsEnumerable()

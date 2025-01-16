@@ -25,8 +25,8 @@ namespace MSSQLand.Actions
         /// <summary>
         /// Executes the action using the provided ConnectionManager.
         /// </summary>
-        /// <param name="connectionManager">The ConnectionManager for database operations.</param>
-        public abstract void Execute(DatabaseContext connectionManager);
+        /// <param name="databaseContext">The ConnectionManager for database operations.</param>
+        public abstract void Execute(DatabaseContext databaseContext);
 
 
         protected string[] SplitArguments(string additionalArguments, string separator = CommandParser.AdditionalArgumentsSeparator)

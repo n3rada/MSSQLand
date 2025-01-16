@@ -12,13 +12,9 @@ namespace MSSQLand.Actions.Database
         }
         
 
-        public override void Execute(DatabaseContext connectionManager)
+        public override void Execute(DatabaseContext databaseContext)
         {
-            Logger.Info("Databases on the database management system (DBMS)");
-
-
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(connectionManager.QueryService.ExecuteTable("SELECT dbid, name, crdate, filename FROM master.dbo.sysdatabases ORDER BY crdate DESC;")));
-
+            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable("SELECT dbid, name, crdate, filename FROM master.dbo.sysdatabases ORDER BY crdate DESC;")));
         }
     }
 }
