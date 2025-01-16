@@ -88,6 +88,8 @@
     <Compile Include="Actions\ExcludeFromArgumentsAttribute.cs" />
     <Compile Include="Actions\Execution\ClrExecution.cs" />
     <Compile Include="Actions\Execution\ObjectLinkingEmbedding.cs" />
+    <Compile Include="Actions\Enumeration\FindSQLServers.cs" />
+    <Compile Include="Services\ActiveDirectoryService.cs" />
     <Compile Include="Utilities\Helper.cs" />
     <Compile Include="Actions\BaseAction.cs" />
     <Compile Include="Actions\Database\Databases.cs" />

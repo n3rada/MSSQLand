@@ -165,7 +165,7 @@ namespace MSSQLand.Services
             {
                 try
                 {
-                    Logger.Info("Enabling advanced options...");
+                    Logger.Info("Enabling advanced options");
                     _queryService.ExecuteNonProcessing("EXEC sp_configure 'show advanced options', 1; RECONFIGURE;");
                 }
                 catch (Exception ex)
@@ -175,7 +175,7 @@ namespace MSSQLand.Services
             }
             else
             {
-                Logger.Info("Advanced options already enabled.");
+                Logger.Info("Advanced options already enabled");
             }
         }
     }

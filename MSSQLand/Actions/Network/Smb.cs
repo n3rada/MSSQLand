@@ -29,17 +29,7 @@ namespace MSSQLand.Actions.Network
             _uncPath = additionalArguments;
         }
 
-        /// <summary>
-        /// Validates the format of a UNC path.
-        /// </summary>
-        /// <param name="path">The UNC path to validate.</param>
-        /// <returns>True if the path is valid; otherwise, false.</returns>
-        private bool ValidateUNCPath(string path)
-        {
-            // Basic UNC path validation using regular expressions
-            const string uncPattern = @"^\\\\[a-zA-Z0-9\-\.]+\\[a-zA-Z0-9\-_\.]+$";
-            return Regex.IsMatch(path, uncPattern);
-        }
+        
 
         /// <summary>
         /// Executes the PowerShell command to download and run the script from the provided URL.
@@ -59,6 +49,18 @@ namespace MSSQLand.Actions.Network
 
             Logger.Success("SMB request sent");
 
+        }
+
+        /// <summary>
+        /// Validates the format of a UNC path.
+        /// </summary>
+        /// <param name="path">The UNC path to validate.</param>
+        /// <returns>True if the path is valid; otherwise, false.</returns>
+        private bool ValidateUNCPath(string path)
+        {
+            // Basic UNC path validation using regular expressions
+            const string uncPattern = @"^\\\\[a-zA-Z0-9\-\.]+\\[a-zA-Z0-9\-_\.]+$";
+            return Regex.IsMatch(path, uncPattern);
         }
     }
 }

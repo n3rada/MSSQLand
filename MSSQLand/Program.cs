@@ -63,9 +63,8 @@ namespace MSSQLand
                 Logger.Banner($"End at {endTime:yyyy-MM-dd HH:mm:ss} UTC\nTotal duration: {stopwatch.Elapsed.TotalSeconds:F2} seconds", totalWidth: bannerWidth);
 
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Logger.Debug($"Stack Trace:\n{ex.StackTrace}");
                 Environment.Exit(1);
             }
         }

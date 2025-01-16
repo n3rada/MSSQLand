@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using MSSQLand.Actions;
 using MSSQLand.Models;
 
 namespace MSSQLand.Utilities
@@ -26,6 +27,7 @@ namespace MSSQLand.Utilities
             string username = null, password = null, domain = null;
             int? port = null;
             string actionType = "info";
+            string enumType = null;
             string additionalArguments = "";
 
             foreach (var arg in args)
@@ -78,6 +80,11 @@ namespace MSSQLand.Utilities
                 {
                     actionType = ExtractValue(arg, "/a:", "/action:");
                 }
+                else if (arg.StartsWith("/e:", StringComparison.OrdinalIgnoreCase) ||
+                         arg.StartsWith("/enum:", StringComparison.OrdinalIgnoreCase))
+                {
+                    enumType = ExtractValue(arg, "/e:", "/enum:");
+                }
                 else if (arg.StartsWith("/port:", StringComparison.OrdinalIgnoreCase))
                 {
                     port = int.Parse(ExtractValue(arg, "/port:"));
@@ -97,6 +104,20 @@ namespace MSSQLand.Utilities
                 
             }
 
+            // Remove trailing pipe
+            parsedArgs.AdditionalArguments = Regex.Replace(additionalArguments, $"{Regex.Escape(CommandParser.AdditionalArgumentsSeparator)}$","");
+
+
+            // Verify if in enumeration mode
+            if (!string.IsNullOrEmpty(enumType))
+            {
+                Logger.Info("Enumeration mode");
+                BaseAction action = ActionFactory.GetEnumeration(enumType, parsedArgs.AdditionalArguments);
+                Logger.Task($"Executing action: {action.GetName()}");
+                action.Execute();
+                Environment.Exit(0);
+            }
+
 
             if (parsedArgs.Target == null)
             {
@@ -110,10 +131,7 @@ namespace MSSQLand.Utilities
                 }
             }
 
-            // Remove trailing pipe
-            parsedArgs.AdditionalArguments = Regex.Replace(additionalArguments, $"{Regex.Escape(CommandParser.AdditionalArgumentsSeparator)}$",
-                                                "");
-
+         
             // Get the action from the factory
             parsedArgs.Action = ActionFactory.GetAction(actionType, parsedArgs.AdditionalArguments);
 

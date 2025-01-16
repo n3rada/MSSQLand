@@ -1,8 +1,6 @@
 ﻿using MSSQLand.Utilities;
 using System;
 using System.Data.SqlClient;
-using System.Net;
-using System.Net.NetworkInformation;
 
 namespace MSSQLand.Services.Credentials
 {
@@ -47,7 +45,6 @@ namespace MSSQLand.Services.Credentials
                 Logger.SuccessNested($"Server Version: {connection.ServerVersion}");
                 Logger.SuccessNested($"Database: {connection.Database}");
                 Logger.SuccessNested($"Client Connection ID: {connection.ClientConnectionId}");
-
 
                 return connection;
             }

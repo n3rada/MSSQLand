@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using static System.Collections.Specialized.BitVector32;
 
 namespace MSSQLand.Actions
 {
@@ -15,6 +16,7 @@ namespace MSSQLand.Actions
     [AttributeUsage(AttributeTargets.Field)]
     public abstract class BaseAction : Attribute
     {
+
         /// <summary>
         /// Validates the additional argument passed for the action.
         /// </summary>
@@ -26,7 +28,7 @@ namespace MSSQLand.Actions
         /// Executes the action using the provided ConnectionManager.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager for database operations.</param>
-        public abstract void Execute(DatabaseContext databaseContext);
+        public abstract void Execute(DatabaseContext databaseContext = null);
 
 
         protected string[] SplitArguments(string additionalArguments, string separator = CommandParser.AdditionalArgumentsSeparator)

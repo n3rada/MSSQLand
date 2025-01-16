@@ -1,5 +1,6 @@
 ﻿using MSSQLand.Models;
 using MSSQLand.Services.Credentials;
+using MSSQLand.Utilities;
 using System;
 using System.Data.SqlClient;
 
@@ -45,8 +46,9 @@ namespace MSSQLand.Services
 
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Logger.Error($"Failed to authenticate: {ex.Message}");
                 return false;
             }
         }

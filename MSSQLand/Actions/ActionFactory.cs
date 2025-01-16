@@ -6,12 +6,13 @@ using MSSQLand.Actions.Database;
 using MSSQLand.Actions.FileSystem;
 using MSSQLand.Actions.Execution;
 using MSSQLand.Actions.Administration;
+using MSSQLand.Actions.Enumeration;
 
 namespace MSSQLand.Utilities
 {
     public static class ActionFactory
     {
-        private static readonly Dictionary<string, (BaseAction ActionInstance, string Description)> ActionMetadata =
+        private static Dictionary<string, (BaseAction ActionInstance, string Description)> ActionMetadata =
             new()
             {
                 { "rows", (new Rows(), "Retrieve rows from a table.") },
@@ -35,7 +36,13 @@ namespace MSSQLand.Utilities
                 { "clr", (new ClrExecution(), "Execute commands using Common Language Runtime (CLR) assemblies.") }
             };
 
-        public static BaseAction GetAction(string actionType, string additionalArgument)
+        private static Dictionary<string, (BaseAction ActionInstance, string Description)> EnumerationMetadata =
+            new()
+            {
+                { "servers", (new FindSQLServers(), "Search for MS SQL Servers.") }
+            };
+
+        public static BaseAction GetAction(string actionType, string additionalArguments)
         {
             try
             {
@@ -47,8 +54,10 @@ namespace MSSQLand.Utilities
                 // Get the action instance
                 BaseAction action = metadata.ActionInstance;
 
+                ActionMetadata = null;
+
                 // Validate and initialize the action with the additional argument
-                action.ValidateArguments(additionalArgument);
+                action.ValidateArguments(additionalArguments);
                 return action;
             }
             catch (Exception ex)
@@ -58,6 +67,35 @@ namespace MSSQLand.Utilities
             }
         }
 
+        public static BaseAction GetEnumeration(string enumType, string additionalArguments)
+        {
+            try
+            {
+                if (!EnumerationMetadata.TryGetValue(enumType.ToLower(), out var metadata))
+                {
+                    throw new ArgumentException($"Unsupported enum type: {enumType}");
+                }
+
+                // Get the action instance
+                BaseAction action = metadata.ActionInstance;
+
+                EnumerationMetadata = null;
+
+                
+
+                // Validate and initialize the action with the additional argument
+                action.ValidateArguments(additionalArguments);
+
+                return action;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error creating enumeration for type '{enumType}': {ex.Message}");
+                throw;
+            }
+        }
+
+
         public static List<(string ActionName, string Description, string Arguments)> GetAvailableActions()
         {
             var result = new List<(string ActionName, string Description, string Arguments)>();
@@ -66,6 +104,18 @@ namespace MSSQLand.Utilities
             {
                 string arguments = action.Value.ActionInstance.GetArguments();
                 result.Add((action.Key, action.Value.Description, arguments));
+            }
+
+            return result;
+        }
+
+        public static List<(string EnumerationName, string Description)> GetAvailableEnumerations()
+        {
+            var result = new List<(string EnumerationName, string Description)>();
+
+            foreach (var enumeration in EnumerationMetadata)
+            {
+                result.Add((enumeration.Key, enumeration.Value.Description));
             }
 
             return result;
