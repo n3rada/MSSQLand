@@ -18,7 +18,7 @@ namespace MSSQLand.Actions.Database
                 throw new ArgumentException("Rows action requires a single argument in the format 'database.schema.table'.");
             }
 
-            var parts = additionalArguments.Split('.');
+            string[] parts = SplitArguments(additionalArguments, ".");
 
             if (parts.Length == 3) // If schema is provided
             {
@@ -38,10 +38,10 @@ namespace MSSQLand.Actions.Database
 
         public override void Execute(DatabaseContext connectionManager)
         {
-            string target = $"[{_database}].[{_schema}].[{_table}]";
-            Logger.TaskNested($"Retrieving rows from {target}");
+            string targetTable = $"[{_database}].[{_schema}].[{_table}]";
+            Logger.TaskNested($"Retrieving rows from {targetTable}");
             
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(connectionManager.QueryService.ExecuteTable($"SELECT * FROM {target};")));
+            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(connectionManager.QueryService.ExecuteTable($"SELECT * FROM {targetTable};")));
 
         }
     }

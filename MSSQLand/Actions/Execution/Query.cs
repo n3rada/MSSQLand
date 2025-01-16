@@ -33,15 +33,7 @@ namespace MSSQLand.Actions.Execution
             Logger.TaskNested($"Executing: {_query}");
             DataTable resultTable = connectionManager.QueryService.ExecuteTable(_query);
 
-            if (resultTable.Rows.Count == 0)
-            {
-                Logger.Warning("The query executed successfully, but no rows were returned.");
-            }
-            else
-            {
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
-            }
-
+            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
         }
     }
 }

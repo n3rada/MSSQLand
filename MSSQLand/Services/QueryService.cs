@@ -98,7 +98,7 @@ namespace MSSQLand.Services
 
             if (sqlDataReader is null)
             {
-                
+                Logger.Warning("No rows returned");   
                 return resultTable;
             }
 
@@ -135,7 +135,7 @@ namespace MSSQLand.Services
             string finalQuery = query;
 
             Logger.Debug($"Executing on: {ExecutionServer}");
-            Logger.DebugNested($"Initial Query: {query}");
+            Logger.DebugNested($"{query}");
 
             // If LinkedServers variable exists and has valid server names
             if (_linkedServers?.ServerNames != null && _linkedServers.ServerNames.Length > 0)

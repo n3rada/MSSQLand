@@ -1,9 +1,10 @@
 ﻿using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace MSSQLand.Actions
 {
@@ -26,6 +27,19 @@ namespace MSSQLand.Actions
         /// </summary>
         /// <param name="connectionManager">The ConnectionManager for database operations.</param>
         public abstract void Execute(DatabaseContext connectionManager);
+
+
+        protected string[] SplitArguments(string additionalArguments, string separator = CommandParser.AdditionalArgumentsSeparator)
+        {
+            string[] splitted = Regex.Split(additionalArguments, $"({Regex.Escape(separator)})")
+                              .Where(arg => arg != separator) // Remove standalone separators
+                              .ToArray();
+
+            Logger.Debug("Splitted arguments: {" + string.Join(",", splitted) + "}");
+
+            return splitted;
+        }
+
 
         /// <summary>
         /// Returns the name of the class as a string.

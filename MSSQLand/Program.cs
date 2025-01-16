@@ -42,21 +42,21 @@ namespace MSSQLand
                     return;
                 }
 
-                DatabaseContext connectionManager = new(authService);
+                DatabaseContext databaseContext = new(authService);
 
                 // If LinkedServers variable exists and has valid server names
                 if (parsedArgs.LinkedServers?.ServerNames != null && parsedArgs.LinkedServers.ServerNames.Length > 0)
                 {
-                    connectionManager.QueryService.LinkedServers = parsedArgs.LinkedServers;
+                    databaseContext.QueryService.LinkedServers = parsedArgs.LinkedServers;
 
                     Logger.Info($"Server chain: {parsedArgs.Target.Hostname} -> " + string.Join(" -> ", parsedArgs.LinkedServers.ServerNames));
-
-                    connectionManager.UserService.GetInfo();
                 }
+
+                databaseContext.UserService.GetInfo();
 
                 Logger.Task($"Executing action: {parsedArgs.Action.GetName()}");
 
-                parsedArgs.Action.Execute(connectionManager);
+                parsedArgs.Action.Execute(databaseContext);
 
                 stopwatch.Stop();
                 DateTime endTime = DateTime.UtcNow;

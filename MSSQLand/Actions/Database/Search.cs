@@ -15,7 +15,7 @@ namespace MSSQLand.Actions.Database
         public override void ValidateArguments(string additionalArguments)
         {
             // Split the additional argument into parts (database and keywords)
-            string[] parts = additionalArguments.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] parts = SplitArguments(additionalArguments);
 
             if (parts.Length == 1)
             {
@@ -105,7 +105,7 @@ namespace MSSQLand.Actions.Database
                     if (resultTable.Rows.Count > 0)
                     {
                         Logger.NewLine();
-                        Logger.Success($"Found '{_keyword}' in [{schema}].[{table}]:");
+                        Logger.Success($"Found '{_keyword}' in [{_database}].[{schema}].[{table}]:");
                         Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
                     }
                 }

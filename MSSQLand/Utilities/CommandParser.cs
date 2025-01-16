@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using MSSQLand.Models;
 
 namespace MSSQLand.Utilities
@@ -14,6 +15,8 @@ namespace MSSQLand.Utilities
             { "entraid", new List<string> { "username", "password" } },
             { "azure", new List<string> { "username", "password" } }
         };
+
+        public const string AdditionalArgumentsSeparator = "/|/";
 
         public CommandArgs Parse(string[] args)
         {
@@ -86,7 +89,7 @@ namespace MSSQLand.Utilities
                 }
                 else if (!arg.StartsWith("/"))
                 {
-                    additionalArguments += $"{arg}|";
+                    additionalArguments += $"{arg}{CommandParser.AdditionalArgumentsSeparator}";
                 }
                 else
                 {
@@ -109,7 +112,8 @@ namespace MSSQLand.Utilities
             }
 
             // Remove trailing pipe
-            parsedArgs.AdditionalArguments = additionalArguments.TrimEnd('|');
+            parsedArgs.AdditionalArguments = Regex.Replace(additionalArguments, $"{Regex.Escape(CommandParser.AdditionalArgumentsSeparator)}$",
+                                                "");
 
             // Get the action from the factory
             parsedArgs.Action = ActionFactory.GetAction(actionType, parsedArgs.AdditionalArguments);

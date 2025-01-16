@@ -15,6 +15,8 @@ namespace MSSQLand.Services
         /// </summary>
         private readonly ConcurrentDictionary<string, bool> _adminStatusCache = new();
 
+        public string UserName { get; private set; }
+
 
         public UserService(QueryService queryService)
         {
@@ -62,7 +64,7 @@ namespace MSSQLand.Services
         /// </summary>
         /// <param name="connection">An open SQL connection to use for the query.</param>
         /// <returns>A tuple containing the username and system user.</returns>
-        public (string UserName, string SystemUser) GetInfo()
+        public (string Name, string SystemUser) GetInfo()
         {
             const string query = "SELECT USER_NAME() AS U, SYSTEM_USER AS S;";
 
@@ -79,6 +81,8 @@ namespace MSSQLand.Services
                 Logger.Info($"Logged in as {loggedInUserName}");
                 Logger.InfoNested($"Mapped to the user {name}");
             }
+
+            UserName = name;
 
             return (name, loggedInUserName);
         }

@@ -24,7 +24,7 @@ namespace MSSQLand.Actions.Database
                 _database = connectionManager.Server.Database;
             }
 
-            Logger.TaskNested($"Retrieving tables from {_database}");
+            Logger.TaskNested($"Retrieving tables from [{_database}]");
 
 
             string query = $@"
@@ -49,15 +49,42 @@ namespace MSSQLand.Actions.Database
 
             DataTable resultTable = connectionManager.QueryService.ExecuteTable(query);
 
-            if (resultTable.Rows.Count == 0)
+            // Add a column for permissions
+            resultTable.Columns.Add("Permissions", typeof(string));
+
+            foreach (DataRow row in resultTable.Rows)
             {
-                Console.WriteLine("No tables");
+                string schemaName = row["SchemaName"].ToString();
+                string tableName = row["TableName"].ToString();
+
+
+                // Query to get user permissions on the table
+
+                // Query to get permissions
+                string permissionQuery = $@"
+                USE [{_database}];
+                SELECT DISTINCT
+                    permission_name
+                FROM 
+                    fn_my_permissions('[{schemaName}].[{tableName}]', 'OBJECT');
+                ";
+
+                DataTable permissionResult = connectionManager.QueryService.ExecuteTable(permissionQuery);
+
+                // Concatenate permissions as a comma-separated string
+                string permissions = string.Join(", ", permissionResult.AsEnumerable()
+                    .Select(r => r["permission_name"].ToString()));
+
+                // Add permissions to the result row
+                row["Permissions"] = permissions;
+
             }
-            else
+
+
+            if (resultTable.Rows.Count > 0)
             {
                 Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
             }
-
         }
     }
 }
