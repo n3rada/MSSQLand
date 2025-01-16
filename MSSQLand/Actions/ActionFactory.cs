@@ -29,8 +29,9 @@ namespace MSSQLand.Utilities
                 { "permissions", (new Permissions(), "Enumerate permissions.") },
                 { "tables", (new Tables(), "List tables in a database.") },
                 { "databases", (new Databases(), "List available databases.") },
-                { "setconfig", (new Configure(), "Use sp_configure to modify settings.") },
-                { "search", (new Search(), "Search for specific keyword in database.") }
+                { "config", (new Configure(), "Use sp_configure to modify settings.") },
+                { "search", (new Search(), "Search for specific keyword in database.") },
+                { "ole", (new ObjectLinkingEmbedding(), "Executes the specified command using OLE Automation Procedures.") }
             };
 
         public static BaseAction GetAction(string actionType, string additionalArgument)

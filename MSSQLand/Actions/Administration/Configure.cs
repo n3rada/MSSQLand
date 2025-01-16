@@ -13,7 +13,7 @@ namespace MSSQLand.Actions.Administration
         public override void ValidateArguments(string additionalArguments)
         {
             // Split the additional argument into parts (optionName and state)
-            string[] parts = additionalArguments.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] parts = SplitArguments(additionalArguments);
 
             // Check if both arguments (option name and state) are provided
             if (parts == null || parts.Length != 2)
@@ -35,7 +35,6 @@ namespace MSSQLand.Actions.Administration
 
             Logger.TaskNested($"Passing {_optionName} to {_state}");
 
-            connectionManager.ConfigService.EnsureAdvancedOptions();
             connectionManager.ConfigService.SetConfigurationOption(_optionName, _state);
 
         }

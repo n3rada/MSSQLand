@@ -65,8 +65,8 @@ namespace MSSQLand
             }
             catch (Exception ex)
             {
-                Logger.Error(ex.Message);
                 Logger.Debug($"Stack Trace:\n{ex.StackTrace}");
+                Environment.Exit(1);
             }
         }
 

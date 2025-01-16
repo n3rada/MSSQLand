@@ -18,7 +18,7 @@ namespace MSSQLand.Actions.Administration
                 throw new ArgumentException("Remote Procedure Call (RPC) action requires exactly two arguments: action ('add' or 'del') and linked server name.");
             }
 
-            string[] args = additionalArguments.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] args = SplitArguments(additionalArguments);
 
 
             if (args.Length != 2)

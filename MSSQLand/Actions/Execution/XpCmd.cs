@@ -34,7 +34,6 @@ namespace MSSQLand.Actions.Execution
 
             string query = $"EXEC master..xp_cmdshell '{_command.Replace("'", "''")}'"; // Sanitize single quotes in the command
 
-            connectionManager.ConfigService.EnsureAdvancedOptions();
             // Enable 'xp_cmdshell'
             connectionManager.ConfigService.SetConfigurationOption("xp_cmdshell", 1);
 
