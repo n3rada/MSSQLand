@@ -15,29 +15,48 @@ namespace MSSQLand.Actions.Database
         {
             if (string.IsNullOrEmpty(additionalArguments))
             {
-                throw new ArgumentException("Rows action requires a single argument in the format 'database.schema.table'.");
+                throw new ArgumentException("Rows action requires at least a Table Name as an argument or a Fully Qualified Table Name (FQTN) in the format 'database.schema.table'.");
             }
 
             string[] parts = SplitArguments(additionalArguments, ".");
 
-            if (parts.Length == 3) // If schema is provided
+            if (parts.Length == 3) // Format: database.schema.table
             {
                 _database = parts[0];
-                
-                if (!string.IsNullOrEmpty(parts[1]))
-                {
-                    _schema = parts[1];
-                }
+                _schema = string.IsNullOrEmpty(parts[1]) ? _schema : parts[1];
                 _table = parts[2];
+            }
+            else if (parts.Length == 2) // Format: schema.table
+            {
+                _database = null; // Use the current database
+                _schema = parts[0];
+                _table = parts[1];
+            }
+            else if (parts.Length == 1) // Format: table
+            {
+                _database = null; // Use the current database
+                _schema = "dbo"; // Default schema
+                _table = parts[0];
             }
             else
             {
-                throw new ArgumentException("Invalid format for the argument. Expected 'database.schema.table' or 'database..table'.");
+                throw new ArgumentException("Invalid format for the argument. Expected formats: 'database.schema.table', 'schema.table', or 'table'.");
+            }
+
+            if (string.IsNullOrEmpty(_table))
+            {
+                throw new ArgumentException("Table name cannot be empty.");
             }
         }
 
         public override void Execute(DatabaseContext connectionManager)
         {
+            // Use the current database if no database is specified
+            if (string.IsNullOrEmpty(_database))
+            {
+                _database = connectionManager.Server.Database;
+            }
+
             string targetTable = $"[{_database}].[{_schema}].[{_table}]";
             Logger.TaskNested($"Retrieving rows from {targetTable}");
             

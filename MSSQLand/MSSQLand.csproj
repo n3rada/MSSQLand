@@ -85,6 +85,7 @@
     <Compile Include="Actions\Administration\Configure.cs" />
     <Compile Include="Actions\Database\Search.cs" />
     <Compile Include="Actions\ExcludeFromArgumentsAttribute.cs" />
+    <Compile Include="Actions\Execution\ObjectLinkingEmbedding.cs" />
     <Compile Include="Utilities\Helper.cs" />
     <Compile Include="Actions\BaseAction.cs" />
     <Compile Include="Actions\Database\Databases.cs" />
