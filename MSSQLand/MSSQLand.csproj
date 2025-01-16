@@ -87,6 +87,7 @@
     <Compile Include="Actions\Database\Search.cs" />
     <Compile Include="Actions\ExcludeFromArgumentsAttribute.cs" />
     <Compile Include="Actions\Execution\ClrExecution.cs" />
+    <Compile Include="Actions\Execution\Jobs.cs" />
     <Compile Include="Actions\Execution\ObjectLinkingEmbedding.cs" />
     <Compile Include="Actions\Enumeration\FindSQLServers.cs" />
     <Compile Include="Services\ActiveDirectoryService.cs" />

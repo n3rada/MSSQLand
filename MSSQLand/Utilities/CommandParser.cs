@@ -30,139 +30,143 @@ namespace MSSQLand.Utilities
             string enumType = null;
             string additionalArguments = "";
 
-            foreach (var arg in args)
-            {
-                if (arg.Equals("/debug", StringComparison.OrdinalIgnoreCase))
+            try {
+                foreach (var arg in args)
                 {
-                    Logger.IsDebugEnabled = true;
+                    if (arg.Equals("/debug", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Logger.IsDebugEnabled = true;
+                    }
+                    else if (arg.Equals("/silent", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Logger.IsSilentModeEnabled = true;
+                    }
+                    else if (arg.StartsWith("/help", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Helper.Show();
+                        Environment.Exit(0); // Exit the program gracefully with exit code 0
+                    }
+                    else if (arg.StartsWith("/c:", StringComparison.OrdinalIgnoreCase) ||
+                             arg.StartsWith("/credentials:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        parsedArgs.CredentialType = ExtractValue(arg, "/c:", "/credentials:");
+                    }
+                    else if (arg.StartsWith("/u:", StringComparison.OrdinalIgnoreCase) ||
+                             arg.StartsWith("/username:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        username = ExtractValue(arg, "/u:", "/username:");
+                    }
+                    else if (arg.StartsWith("/p:", StringComparison.OrdinalIgnoreCase) ||
+                             arg.StartsWith("/password:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        password = ExtractValue(arg, "/p:", "/password:");
+                    }
+                    else if (arg.StartsWith("/d:", StringComparison.OrdinalIgnoreCase) ||
+                             arg.StartsWith("/domain:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        domain = ExtractValue(arg, "/d:", "/domain:");
+                    }
+                    else if (arg.StartsWith("/t:", StringComparison.OrdinalIgnoreCase) ||
+                             arg.StartsWith("/target:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        parsedArgs.Target = ParseServer(ExtractValue(arg, "/t:", "/target:"));
+                    }
+                    else if (arg.StartsWith("/l:", StringComparison.OrdinalIgnoreCase) ||
+                             arg.StartsWith("/links:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        parsedArgs.LinkedServers = new LinkedServers(ParseServerChain(ExtractValue(arg, "/l:", "/links:")));
+                    }
+                    else if (arg.StartsWith("/a:", StringComparison.OrdinalIgnoreCase) ||
+                             arg.StartsWith("/action:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        actionType = ExtractValue(arg, "/a:", "/action:");
+                    }
+                    else if (arg.StartsWith("/e:", StringComparison.OrdinalIgnoreCase) ||
+                             arg.StartsWith("/enum:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        enumType = ExtractValue(arg, "/e:", "/enum:");
+                    }
+                    else if (arg.StartsWith("/port:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        port = int.Parse(ExtractValue(arg, "/port:"));
+                    }
+                    else if (arg.StartsWith("/db:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        parsedArgs.Target.Database = ExtractValue(arg, "/db:");
+                    }
+                    else if (!arg.StartsWith("/"))
+                    {
+                        additionalArguments += $"{arg}{CommandParser.AdditionalArgumentsSeparator}";
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"Unrecognized argument: {arg}");
+                    }
+
                 }
-                else if (arg.Equals("/silent", StringComparison.OrdinalIgnoreCase))
+
+                // Remove trailing pipe
+                parsedArgs.AdditionalArguments = Regex.Replace(additionalArguments, $"{Regex.Escape(CommandParser.AdditionalArgumentsSeparator)}$", "");
+
+
+                // Verify if in enumeration mode
+                if (!string.IsNullOrEmpty(enumType))
                 {
-                    Logger.IsSilentModeEnabled = true;
+                    Logger.Info("Enumeration mode");
+                    BaseAction action = ActionFactory.GetEnumeration(enumType, parsedArgs.AdditionalArguments);
+                    Logger.Task($"Executing action: {action.GetName()}");
+                    action.Execute();
+                    Environment.Exit(0);
                 }
-                else if (arg.StartsWith("/help", StringComparison.OrdinalIgnoreCase))
+
+
+                if (parsedArgs.Target == null)
                 {
-                    Helper.Show();
-                    Environment.Exit(0); // Exit the program gracefully with exit code 0
-                }
-                else if (arg.StartsWith("/c:", StringComparison.OrdinalIgnoreCase) ||
-                         arg.StartsWith("/credentials:", StringComparison.OrdinalIgnoreCase))
-                {
-                    parsedArgs.CredentialType = ExtractValue(arg, "/c:", "/credentials:");
-                }
-                else if (arg.StartsWith("/u:", StringComparison.OrdinalIgnoreCase) ||
-                         arg.StartsWith("/username:", StringComparison.OrdinalIgnoreCase))
-                {
-                    username = ExtractValue(arg, "/u:", "/username:");
-                }
-                else if (arg.StartsWith("/p:", StringComparison.OrdinalIgnoreCase) ||
-                         arg.StartsWith("/password:", StringComparison.OrdinalIgnoreCase))
-                {
-                    password = ExtractValue(arg, "/p:", "/password:");
-                }
-                else if (arg.StartsWith("/d:", StringComparison.OrdinalIgnoreCase) ||
-                         arg.StartsWith("/domain:", StringComparison.OrdinalIgnoreCase))
-                {
-                    domain = ExtractValue(arg, "/d:", "/domain:");
-                }
-                else if (arg.StartsWith("/t:", StringComparison.OrdinalIgnoreCase) ||
-                         arg.StartsWith("/target:", StringComparison.OrdinalIgnoreCase))
-                {
-                    parsedArgs.Target = ParseServer(ExtractValue(arg, "/t:", "/target:"));
-                }
-                else if (arg.StartsWith("/l:", StringComparison.OrdinalIgnoreCase) ||
-                         arg.StartsWith("/links:", StringComparison.OrdinalIgnoreCase))
-                {
-                    parsedArgs.LinkedServers = new LinkedServers(ParseServerChain(ExtractValue(arg, "/l:", "/links:")));
-                }
-                else if (arg.StartsWith("/a:", StringComparison.OrdinalIgnoreCase) ||
-                         arg.StartsWith("/action:", StringComparison.OrdinalIgnoreCase))
-                {
-                    actionType = ExtractValue(arg, "/a:", "/action:");
-                }
-                else if (arg.StartsWith("/e:", StringComparison.OrdinalIgnoreCase) ||
-                         arg.StartsWith("/enum:", StringComparison.OrdinalIgnoreCase))
-                {
-                    enumType = ExtractValue(arg, "/e:", "/enum:");
-                }
-                else if (arg.StartsWith("/port:", StringComparison.OrdinalIgnoreCase))
-                {
-                    port = int.Parse(ExtractValue(arg, "/port:"));
-                }
-                else if (arg.StartsWith("/db:", StringComparison.OrdinalIgnoreCase))
-                {
-                    parsedArgs.Target.Database = ExtractValue(arg, "/db:");
-                }
-                else if (!arg.StartsWith("/"))
-                {
-                    additionalArguments += $"{arg}{CommandParser.AdditionalArgumentsSeparator}";
+                    throw new ArgumentException("Targeted server (/t or /target) is mandatory. Use /h or /help for more information");
                 }
                 else
                 {
-                    throw new ArgumentException($"Unrecognized argument: {arg}");
-                }
-                
-            }
-
-            // Remove trailing pipe
-            parsedArgs.AdditionalArguments = Regex.Replace(additionalArguments, $"{Regex.Escape(CommandParser.AdditionalArgumentsSeparator)}$","");
-
-
-            // Verify if in enumeration mode
-            if (!string.IsNullOrEmpty(enumType))
-            {
-                Logger.Info("Enumeration mode");
-                BaseAction action = ActionFactory.GetEnumeration(enumType, parsedArgs.AdditionalArguments);
-                Logger.Task($"Executing action: {action.GetName()}");
-                action.Execute();
-                Environment.Exit(0);
-            }
-
-
-            if (parsedArgs.Target == null)
-            {
-                throw new ArgumentException("Targeted server (/t or /target) is mandatory. Use /h or /help for more information");
-            }
-            else
-            {
-                if (port.HasValue)
-                {
-                    parsedArgs.Target.Port = port.Value;
-                }
-            }
-
-         
-            // Get the action from the factory
-            parsedArgs.Action = ActionFactory.GetAction(actionType, parsedArgs.AdditionalArguments);
-
-            // Validate the provided arguments against the selected credential type
-            ValidateCredentialArguments(parsedArgs.CredentialType, username, password, domain);
-               
-            // Assign optional arguments to parsedArgs
-            parsedArgs.Username = username;
-            parsedArgs.Password = password;
-            parsedArgs.Domain = domain;
-           
-
-            if (Logger.IsDebugEnabled)
-            {
-                Logger.Debug("Parsed arguments");
-                Logger.DebugNested($"Credential Type: {parsedArgs.CredentialType}");
-                Logger.DebugNested($"Target: {parsedArgs.Target}");
-
-                if (parsedArgs.LinkedServers?.ServerNames != null && parsedArgs.LinkedServers.ServerNames.Length > 0)
-                {
-                    Logger.DebugNested("Server Chain");
-                    foreach (var server in parsedArgs.LinkedServers.ServerNames)
+                    if (port.HasValue)
                     {
-                        Logger.DebugNested($"{server}", 1, "-");
+                        parsedArgs.Target.Port = port.Value;
                     }
                 }
 
-                Logger.DebugNested($"Action: {parsedArgs.Action}");
-                Logger.DebugNested($"Additional Arguments: {parsedArgs.AdditionalArguments}");
-            }
 
+                // Get the action from the factory
+                parsedArgs.Action = ActionFactory.GetAction(actionType, parsedArgs.AdditionalArguments);
+
+                // Validate the provided arguments against the selected credential type
+                ValidateCredentialArguments(parsedArgs.CredentialType, username, password, domain);
+
+                // Assign optional arguments to parsedArgs
+                parsedArgs.Username = username;
+                parsedArgs.Password = password;
+                parsedArgs.Domain = domain;
+
+
+                if (Logger.IsDebugEnabled)
+                {
+                    Logger.Debug("Parsed arguments");
+                    Logger.DebugNested($"Credential Type: {parsedArgs.CredentialType}");
+                    Logger.DebugNested($"Target: {parsedArgs.Target}");
+
+                    if (parsedArgs.LinkedServers?.ServerNames != null && parsedArgs.LinkedServers.ServerNames.Length > 0)
+                    {
+                        Logger.DebugNested("Server Chain");
+                        foreach (var server in parsedArgs.LinkedServers.ServerNames)
+                        {
+                            Logger.DebugNested($"{server}", 1, "-");
+                        }
+                    }
+
+                    Logger.DebugNested($"Action: {parsedArgs.Action}");
+                    Logger.DebugNested($"Additional Arguments: {parsedArgs.AdditionalArguments}");
+                }
+            } catch (Exception ex) {
+                Logger.Error($"Parsing error occured: {ex.Message}");
+                Environment.Exit(0);
+            }
 
             return parsedArgs;
         }

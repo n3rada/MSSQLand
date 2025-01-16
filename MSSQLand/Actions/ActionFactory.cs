@@ -58,6 +58,8 @@ namespace MSSQLand.Utilities
 
                 // Validate and initialize the action with the additional argument
                 action.ValidateArguments(additionalArguments);
+
+
                 return action;
             }
             catch (Exception ex)

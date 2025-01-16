@@ -37,8 +37,12 @@ namespace MSSQLand.Actions.FileSystem
                     SINGLE_CLOB
                 ) AS R(A);";
 
+            string fileContent = databaseContext.QueryService.ExecuteScalar(query).ToString();
 
-            Console.WriteLine(databaseContext.QueryService.ExecuteScalar(query).ToString());
+            Logger.NewLine();
+
+            // Print file content
+            Console.WriteLine(fileContent);
         }
     }
 }

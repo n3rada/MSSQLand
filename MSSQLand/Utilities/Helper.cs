@@ -93,6 +93,7 @@ namespace MSSQLand.Utilities
             argumentsTable.Columns.Add("Argument", typeof(string));
             argumentsTable.Columns.Add("Description", typeof(string));
 
+            
             argumentsTable.Rows.Add("/t or /target", "Specify the target SQL Server (mandatory).");
             argumentsTable.Rows.Add("/c or /credentials", "Specify the credential type (mandatory).");
             argumentsTable.Rows.Add("/u or /username", "Provide the username (if required by credential type).");
@@ -101,6 +102,7 @@ namespace MSSQLand.Utilities
             argumentsTable.Rows.Add("/a or /action", "Specify the action to execute (default: 'info').");
             argumentsTable.Rows.Add("/l or /links", "Specify linked server chain for multi-hop connections.");
             argumentsTable.Rows.Add("/db", "Specify the target database (optional).");
+            argumentsTable.Rows.Add("/e or /enum", "Execute tasks related to enumeration.");
             argumentsTable.Rows.Add("/silent", "Enable silent mode (minimal output).");
             argumentsTable.Rows.Add("/debug", "Enable debug mode for detailed logs.");
             argumentsTable.Rows.Add("/help", "Display this help message and exit.");

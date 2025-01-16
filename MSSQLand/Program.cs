@@ -63,10 +63,22 @@ namespace MSSQLand
                 Logger.Banner($"End at {endTime:yyyy-MM-dd HH:mm:ss} UTC\nTotal duration: {stopwatch.Elapsed.TotalSeconds:F2} seconds", totalWidth: bannerWidth);
 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Logger.Error("An unhandled exception occurred.");
+                Logger.Error($"Message: {ex.Message}");
+                Logger.Error($"Stack Trace: {ex.StackTrace}");
+
+                if (ex.InnerException != null)
+                {
+                    Logger.Error("Inner Exception:");
+                    Logger.Error($"Message: {ex.InnerException.Message}");
+                    Logger.Error($"Stack Trace: {ex.InnerException.StackTrace}");
+                }
+
                 Environment.Exit(1);
             }
+
         }
 
     }
