@@ -55,21 +55,6 @@
   <PropertyGroup>
     <StartupObject>MSSQLand.Program</StartupObject>
   </PropertyGroup>
-  <PropertyGroup>
-    <SignManifests>false</SignManifests>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ManifestCertificateThumbprint>88702F41BCF72E45DF8F6AA365409AB12C6D514A</ManifestCertificateThumbprint>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ManifestKeyFile>MSSQLand_TemporaryKey.pfx</ManifestKeyFile>
-  </PropertyGroup>
-  <PropertyGroup>
-    <NoWin32Manifest>true</NoWin32Manifest>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ApplicationIcon>database.ico</ApplicationIcon>
-  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -82,40 +67,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Actions\ActionFactory.cs" />
-    <Compile Include="Actions\Administration\Configure.cs" />
-    <Compile Include="Actions\Database\Search.cs" />
-    <Compile Include="Actions\ExcludeFromArgumentsAttribute.cs" />
-    <Compile Include="Actions\Execution\ClrExecution.cs" />
-    <Compile Include="Actions\Execution\ObjectLinkingEmbedding.cs" />
-    <Compile Include="Actions\Enumeration\FindSQLServers.cs" />
-    <Compile Include="Services\ActiveDirectoryService.cs" />
-    <Compile Include="Utilities\Helper.cs" />
-    <Compile Include="Actions\BaseAction.cs" />
-    <Compile Include="Actions\Database\Databases.cs" />
-    <Compile Include="Actions\Database\Impersonation.cs" />
-    <Compile Include="Actions\Database\Info.cs" />
-    <Compile Include="Actions\Database\Links.cs" />
-    <Compile Include="Actions\Database\Permissions.cs" />
-    <Compile Include="Actions\Database\Tables.cs" />
-    <Compile Include="Actions\Database\Users.cs" />
-    <Compile Include="Actions\FileSystem\FileRead.cs" />
-    <Compile Include="Actions\Execution\PowerShell.cs" />
-    <Compile Include="Actions\Execution\RemotePowerShellExecutor.cs" />
-    <Compile Include="Actions\Administration\RemoteProcedureCall.cs" />
-    <Compile Include="Actions\Database\Rows.cs" />
-    <Compile Include="Actions\Execution\XpCmd.cs" />
-    <Compile Include="Actions\Network\Smb.cs" />
-    <Compile Include="Models\CommandArgs.cs" />
-    <Compile Include="Models\LinkedServers.cs" />
-    <Compile Include="Models\Server.cs" />
-    <Compile Include="Services\Authentication\AuthenticationService.cs" />
-    <Compile Include="Services\ConfigurationService.cs" />
-    <Compile Include="Services\DatabaseContext.cs" />
-    <Compile Include="Services\QueryService.cs" />
-    <Compile Include="Services\UserService.cs" />
-    <Compile Include="Utilities\CommandParser.cs" />
-    <Compile Include="Actions\Execution\Query.cs" />
+    <Compile Include="Actions\**\*.cs" />
+    <Compile Include="Services\**\*.cs" />
+    <Compile Include="Utilities\**\*.cs" />
+    <Compile Include="Models\**\*.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
@@ -147,15 +102,6 @@
       <ProductName>Microsoft .NET Framework 4.8.1 %28x86 and x64%29</ProductName>
       <Install>true</Install>
     </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="database.ico" />
-    <Content Include="db.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
