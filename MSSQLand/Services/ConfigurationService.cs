@@ -1,4 +1,5 @@
-﻿using MSSQLand.Utilities;
+﻿using MSSQLand.Models;
+using MSSQLand.Utilities;
 using System;
 using System.Data;
 using System.Data.SqlClient;
@@ -10,10 +11,12 @@ namespace MSSQLand.Services
     public class ConfigurationService
     {
         private readonly QueryService _queryService;
+        private readonly Server _server;
 
-        public ConfigurationService(QueryService queryService)
+        public ConfigurationService(QueryService queryService, Server server)
         {
             _queryService = queryService;
+            _server = server;
         }
 
         
@@ -150,6 +153,71 @@ namespace MSSQLand.Services
             catch (Exception ex)
             {
                 Logger.Warning($"Failed to set configuration option '{optionName}': {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Adds a CLR assembly hash to the list of trusted assemblies in SQL Server.
+        /// </summary>
+        /// <param name="assemblyHash">The SHA-512 hash of the assembly to trust.</param>
+        /// <param name="assemblyDescription">A description of the assembly (e.g., name, version, etc.).</param>
+        /// <returns>True if the hash was successfully added, false otherwise.</returns>
+        public bool RegisterTrustedAssembly(string assemblyHash, string assemblyDescription)
+        {
+            if (_server.Legacy)
+            {
+                Logger.Warning("CLR hash cannot be added to legacy servers");
+                return false;
+            }
+
+            try
+            {
+                // Check if the hash already exists
+                string checkHash = _queryService.ExecuteScalar($"SELECT * FROM sys.trusted_assemblies WHERE hash = 0x{assemblyHash};")?.ToString()?.ToLower();
+
+                if (checkHash?.Contains("permission was denied") == true)
+                {
+                    Logger.Error("Insufficient privileges to perform this action");
+                    return false;
+                }
+
+                if (checkHash?.Contains("system.byte[]") == true)
+                {
+                    Logger.Warning("Hash already exists in sys.trusted_assemblies");
+
+                    // Attempt to remove the existing hash
+                    string deletionQuery = _queryService.ExecuteScalar($"EXEC sp_drop_trusted_assembly 0x{assemblyHash};")?.ToString()?.ToLower();
+
+                    if (deletionQuery?.Contains("permission was denied") == true)
+                    {
+                        Logger.Error("Insufficient privileges to remove existing trusted assembly");
+                        return false;
+                    }
+
+                    Logger.Success("Existing hash removed successfully");
+                }
+
+                // Add the new hash to the trusted assemblies
+                _queryService.ExecuteNonProcessing($@"
+            EXEC sp_add_trusted_assembly
+            0x{assemblyHash},
+            N'{assemblyDescription}, version=0.0.0.0, culture=neutral, publickeytoken=null, processorarchitecture=msil';
+        ");
+
+                // Verify if the hash was successfully added
+                if (CheckTrustedAssembly(assemblyDescription))
+                {
+                    Logger.Success($"Added assembly hash 0x{assemblyHash} as trusted");
+                    return true;
+                }
+
+                Logger.Error("Failed to add hash to sys.trusted_assemblies");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"An error occurred while adding the CLR hash: {ex.Message}");
                 return false;
             }
         }
