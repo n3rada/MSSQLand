@@ -66,10 +66,10 @@ namespace MSSQLand.Utilities
                     {
                         domain = ExtractValue(arg, "/d:", "/domain:");
                     }
-                    else if (arg.StartsWith("/t:", StringComparison.OrdinalIgnoreCase) ||
-                             arg.StartsWith("/target:", StringComparison.OrdinalIgnoreCase))
+                    else if (arg.StartsWith("/h:", StringComparison.OrdinalIgnoreCase) ||
+                             arg.StartsWith("/host:", StringComparison.OrdinalIgnoreCase))
                     {
-                        parsedArgs.Target = ParseServer(ExtractValue(arg, "/t:", "/target:"));
+                        parsedArgs.Host = ParseServer(ExtractValue(arg, "/h:", "/host:"));
                     }
                     else if (arg.StartsWith("/l:", StringComparison.OrdinalIgnoreCase) ||
                              arg.StartsWith("/links:", StringComparison.OrdinalIgnoreCase))
@@ -92,7 +92,7 @@ namespace MSSQLand.Utilities
                     }
                     else if (arg.StartsWith("/db:", StringComparison.OrdinalIgnoreCase))
                     {
-                        parsedArgs.Target.Database = ExtractValue(arg, "/db:");
+                        parsedArgs.Host.Database = ExtractValue(arg, "/db:");
                     }
                     else if (!arg.StartsWith("/"))
                     {
@@ -120,15 +120,15 @@ namespace MSSQLand.Utilities
                 }
 
 
-                if (parsedArgs.Target == null)
+                if (parsedArgs.Host == null)
                 {
-                    throw new ArgumentException("Targeted server (/t or /target) is mandatory. Use /h or /help for more information");
+                    throw new ArgumentException("Targeted server (/h or /host) is mandatory. Use /help for more information");
                 }
                 else
                 {
                     if (port.HasValue)
                     {
-                        parsedArgs.Target.Port = port.Value;
+                        parsedArgs.Host.Port = port.Value;
                     }
                 }
 
@@ -149,7 +149,7 @@ namespace MSSQLand.Utilities
                 {
                     Logger.Debug("Parsed arguments");
                     Logger.DebugNested($"Credential Type: {parsedArgs.CredentialType}");
-                    Logger.DebugNested($"Target: {parsedArgs.Target}");
+                    Logger.DebugNested($"Target: {parsedArgs.Host}");
 
                     if (parsedArgs.LinkedServers?.ServerNames != null && parsedArgs.LinkedServers.ServerNames.Length > 0)
                     {

@@ -25,6 +25,7 @@ namespace MSSQLand.Utilities
                 { "rpc", (typeof(RemoteProcedureCall), "Call remote procedures on linked servers.") },
                 { "impersonate", (typeof(Impersonation), "Check and perform user impersonation.") },
                 { "info", (typeof(Info), "Retrieve information about the DBMS server.") },
+                { "whoami", (typeof(Whoami), "Retrieve information about the current user.") },
                 { "smb", (typeof(Smb), "Send SMB requests.") },
                 { "users", (typeof(Users), "List database users.") },
                 { "permissions", (typeof(Permissions), "Enumerate permissions.") },

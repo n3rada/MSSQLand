@@ -68,7 +68,6 @@ namespace MSSQLand.Actions.Enumeration
                     long lastLogonTimestamp = (long)ldapEntry["lastlogon"][0];
                     string lastLogonDate = DateTime.FromFileTime(lastLogonTimestamp).ToString("G");
 
-                    // Build SPN information dictionary
                     Dictionary<string, string> spnDetails = new()
                     {
                         { "Server Name", serverName },
@@ -82,7 +81,7 @@ namespace MSSQLand.Actions.Enumeration
                         { "Last Logon", lastLogonDate }
                     };
 
-                    // Output SPN details as a Markdown table
+                    // Output details as a Markdown table
                     Console.WriteLine(MarkdownFormatter.ConvertDictionaryToMarkdownTable(spnDetails, "Property", "Value"));
                     sqlServerCount++;
                 }

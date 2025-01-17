@@ -77,9 +77,6 @@ namespace MSSQLand.Services
             {
                 name = reader["U"]?.ToString() ?? "Unknown";
                 loggedInUserName = reader["S"]?.ToString() ?? "Unknown";
-
-                Logger.Info($"Logged in as {loggedInUserName}");
-                Logger.InfoNested($"Mapped to the user {name}");
             }
 
             UserName = name;
@@ -97,7 +94,7 @@ namespace MSSQLand.Services
             // A sysadmin user can impersonate anyone
             if (IsAdmin())
             {
-                Logger.Info("You can impersonate anyone as a sysadmin");
+                Logger.Info($"You can impersonate anyone on {_queryService.ExecutionServer} as a sysadmin");
                 return true;
             }
 

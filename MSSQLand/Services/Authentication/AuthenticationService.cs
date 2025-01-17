@@ -41,7 +41,6 @@ namespace MSSQLand.Services
                 // Use the credentials service to authenticate and establish the connection
                 Connection = credentials.Authenticate(sqlServer, database, username, password, domain);
 
-                Server.Hostname = Connection.WorkstationId;
                 Server.Version = Connection.ServerVersion;
 
                 return true;

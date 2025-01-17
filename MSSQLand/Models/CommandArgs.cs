@@ -31,7 +31,7 @@ namespace MSSQLand.Models
         /// <summary>
         /// The primary target server to interact with.
         /// </summary>
-        public Server Target { get; set; }
+        public Server Host { get; set; }
 
         /// <summary>
         /// A list of linked servers in the server chain.

@@ -12,7 +12,8 @@
     <LangVersion>11.0</LangVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <Deterministic>true</Deterministic>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Deterministic>false</Deterministic>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
@@ -71,8 +72,10 @@
     <Compile Include="Actions\ActionFactory.cs" />
     <Compile Include="Actions\Administration\Configure.cs" />
     <Compile Include="Actions\Database\Search.cs" />
+    <Compile Include="Actions\Database\Whoami.cs" />
     <Compile Include="Actions\ExcludeFromArgumentsAttribute.cs" />
     <Compile Include="Actions\Execution\ClrExecution.cs" />
+    <Compile Include="Actions\Execution\Jobs.cs" />
     <Compile Include="Actions\Execution\ObjectLinkingEmbedding.cs" />
     <Compile Include="Actions\Enumeration\FindSQLServers.cs" />
     <Compile Include="Services\ActiveDirectoryService.cs" />

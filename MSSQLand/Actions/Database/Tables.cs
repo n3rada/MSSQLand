@@ -81,10 +81,7 @@ namespace MSSQLand.Actions.Database
             }
 
 
-            if (resultTable.Rows.Count > 0)
-            {
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
-            }
+            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
         }
     }
 }

@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Xml.Linq;
 using MSSQLand.Models;
 using MSSQLand.Services;
 using MSSQLand.Utilities;
@@ -11,8 +14,11 @@ namespace MSSQLand
     [ComVisible(true)]
     internal class Program
     {
-        private static readonly string BuildTimestamp = $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}";
-        
+
+        public static readonly Version currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        public static readonly DateTime compileDate = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(currentVersion.Build - 1).Date; // Strips the time portion
+
+
         [STAThread]
         static void Main(string[] args)
         {
@@ -20,27 +26,41 @@ namespace MSSQLand
             Stopwatch stopwatch = Stopwatch.StartNew();
             DateTime startTime = DateTime.UtcNow;
 
+            // Get time zone details
+            DateTime localTime = DateTime.Now;
+            TimeZoneInfo localTimeZone = TimeZoneInfo.Local;
+            string timeZoneId = localTimeZone.Id;
+            TimeSpan offset = localTimeZone.BaseUtcOffset;
+            string formattedOffset = $"{(offset.Hours >= 0 ? "+" : "-")}{Math.Abs(offset.Hours)}:{Math.Abs(offset.Minutes):D2}";
+
+
             try
             {
                 CommandParser parser = new();
 
-                CommandArgs parsedArgs = parser.Parse(args);
+                CommandArgs arguments = parser.Parse(args);
 
-                Logger.Info($"Build timestamp: {BuildTimestamp}");
+                Logger.Banner($"Version: {currentVersion}\nCompile date: {compileDate:yyyy-MM-dd}", borderChar: '*');
+
                 Logger.NewLine();
 
-                int bannerWidth = Logger.Banner($"Start at {startTime:yyyy-MM-dd HH:mm:ss} UTC");
-                
+                int bannerWidth = Logger.Banner($"Executing from: {Environment.MachineName}\nTime Zone ID: {timeZoneId}\nLocal Time: {localTime:HH:mm:ss}, UTC Offset: {formattedOffset}");
 
-                using AuthenticationService authService = new(parsedArgs.Target);
+                Logger.NewLine();
+
+                Logger.Banner($"Start at {startTime:yyyy-MM-dd HH:mm:ss:fffff} UTC", totalWidth: bannerWidth);
+                
+                Logger.NewLine();
+
+                using AuthenticationService authService = new(arguments.Host);
 
                 // Authenticate with the provided credentials
                 if (!authService.Authenticate(
-                    credentialsType: parsedArgs.CredentialType,
-                    sqlServer: $"{parsedArgs.Target.Hostname},{parsedArgs.Target.Port}",
-                    database: parsedArgs.Target.Database, username: parsedArgs.Username,
-                    password: parsedArgs.Password,
-                    domain: parsedArgs.Domain
+                    credentialsType: arguments.CredentialType,
+                    sqlServer: $"{arguments.Host.Hostname},{arguments.Host.Port}",
+                    database: arguments.Host.Database, username: arguments.Username,
+                    password: arguments.Password,
+                    domain: arguments.Domain
                  ))
                 {
                     Logger.Error("Failed to authenticate with the provided credentials.");
@@ -50,22 +70,27 @@ namespace MSSQLand
                 DatabaseContext databaseContext = new(authService);
 
                 // If LinkedServers variable exists and has valid server names
-                if (parsedArgs.LinkedServers?.ServerNames != null && parsedArgs.LinkedServers.ServerNames.Length > 0)
+                if (arguments.LinkedServers?.ServerNames != null && arguments.LinkedServers.ServerNames.Length > 0)
                 {
-                    databaseContext.QueryService.LinkedServers = parsedArgs.LinkedServers;
+                    databaseContext.QueryService.LinkedServers = arguments.LinkedServers;
 
-                    Logger.Info($"Server chain: {parsedArgs.Target.Hostname} -> " + string.Join(" -> ", parsedArgs.LinkedServers.ServerNames));
+                    Logger.Info($"Server chain: {arguments.Host.Hostname} -> " + string.Join(" -> ", arguments.LinkedServers.ServerNames));
+                    
+                    (string userName, string systemUser) = databaseContext.UserService.GetInfo();
+
+                    Logger.Info($"Logged in on {databaseContext.QueryService.ExecutionServer} as {systemUser}");
+                    Logger.InfoNested($"Mapped to the user {userName} ");
                 }
 
-                databaseContext.UserService.GetInfo();
+                Logger.NewLine();
+                Logger.Task($"Executing action '{arguments.Action.GetName()}' against {databaseContext.QueryService.ExecutionServer}");
 
-                Logger.Task($"Executing action: {parsedArgs.Action.GetName()}");
-
-                parsedArgs.Action.Execute(databaseContext);
+                arguments.Action.Execute(databaseContext);
 
                 stopwatch.Stop();
                 DateTime endTime = DateTime.UtcNow;
-                Logger.Banner($"End at {endTime:yyyy-MM-dd HH:mm:ss} UTC\nTotal duration: {stopwatch.Elapsed.TotalSeconds:F2} seconds", totalWidth: bannerWidth);
+                Logger.NewLine();
+                Logger.Banner($"End at {endTime:yyyy-MM-dd HH:mm:ss:fffff} UTC\nTotal duration: {stopwatch.Elapsed.TotalSeconds:F2} seconds", totalWidth: bannerWidth);
 
             }
             catch (Exception ex)

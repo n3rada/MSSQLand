@@ -24,11 +24,12 @@ namespace MSSQLand.Utilities
             Console.WriteLine();
         }
 
-        public static int Banner(string message, char borderChar = '=', int totalWidth=0)
+        public static int Banner(string message, char borderChar = '=', int totalWidth = 0)
         {
             if (IsSilentModeEnabled) return 0;
 
             Console.ForegroundColor = ConsoleColor.DarkGray;
+
             if (string.IsNullOrWhiteSpace(message))
             {
                 Console.WriteLine(new string(borderChar, 30)); // Default width for empty or null messages
@@ -36,27 +37,33 @@ namespace MSSQLand.Utilities
             }
 
             string[] lines = message.Split('\n');
-            int padding = 2; // Padding on each side of the message
+            int padding = 2; // Minimum padding on each side of the message
 
             if (totalWidth == 0)
             {
                 int maxLineLength = lines.Max(line => line.Length);
                 totalWidth = maxLineLength + (padding * 2);
             }
-            
 
-            string border = new string(borderChar, totalWidth);
+            string border = new(borderChar, totalWidth);
             Console.WriteLine(border);
+
             foreach (string line in lines)
             {
-                string paddedLine = line.PadLeft((line.Length + padding), ' ').PadRight(totalWidth, ' ');
-                Console.WriteLine(paddedLine);
+                int spaces = totalWidth - line.Length;
+                int leftPadding = spaces / 2; // Center by dividing spaces evenly
+                int rightPadding = spaces - leftPadding;
+
+                string centeredLine = new string(' ', leftPadding) + line + new string(' ', rightPadding);
+                Console.WriteLine(centeredLine);
             }
+
             Console.WriteLine(border);
             Console.ResetColor();
 
             return totalWidth;
         }
+
 
         public static void Info(string message)
         {

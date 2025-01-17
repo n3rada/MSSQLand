@@ -36,8 +36,24 @@ namespace MSSQLand.Services
         public QueryService(SqlConnection connection)
         {
             Connection = connection;
-            ExecutionServer = connection.WorkstationId;
+            ExecutionServer = GetServerName();
         }
+
+        private string GetServerName()
+        {
+            // SELECT SERVERPROPERTY('MachineName')
+            // SELECT @@SERVERNAME
+            string serverName = ExecuteScalar("SELECT @@SERVERNAME").ToString();
+
+            if (serverName != null)
+            {
+                // Extract only the hostname before the backslash
+                return serverName.Contains("\\") ? serverName.Split('\\')[0] : serverName;
+            }
+
+            return "Unknown";
+        }
+
 
 
         /// <summary>

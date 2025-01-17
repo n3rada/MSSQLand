@@ -16,7 +16,7 @@ namespace MSSQLand.Actions.Database
 
         public override void Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Starting impersonation check for all logins");
+            Logger.TaskNested("Starting impersonation check");
 
             Dictionary<string, string> allLogins = new();
 

@@ -26,15 +26,26 @@ namespace MSSQLand.Services
             ConfigService = new ConfigurationService(QueryService);
             UserService = new UserService(QueryService);
 
+
+            Server.Hostname = QueryService.ExecutionServer;
+
+            (string userName, string systemUser) = UserService.GetInfo();
+
+            Logger.Info($"Logged in on {QueryService.ExecutionServer} as {systemUser}");
+            Logger.InfoNested($"Mapped to the user {userName} ");
+
             // Perform user impersonation if specified
-            HandleImpersonation();
+            if (HandleImpersonation() == false)
+            {
+                Environment.Exit(1);
+            };
         }
 
 
         /// <summary>
         /// Handles user impersonation if specified in the target.
         /// </summary>
-        private void HandleImpersonation()
+        private bool HandleImpersonation()
         {
             string impersonateTarget = Server.ImpersonationUser;
             if (!string.IsNullOrEmpty(impersonateTarget))
@@ -44,13 +55,17 @@ namespace MSSQLand.Services
   
                     UserService.ImpersonateUser(impersonateTarget);
                     Logger.Success($"Successfully impersonated user: {impersonateTarget}");
+                    return true;
                 }
                 else
                 {
-                    throw new InvalidOperationException($"Cannot impersonate user: {impersonateTarget}");
+                    Logger.Error($"Cannot impersonate user: {impersonateTarget}");
+                    return false;
 
                 }
             }
+
+            return true;
         }
 
     }

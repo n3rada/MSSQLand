@@ -1,6 +1,7 @@
 ﻿using MSSQLand.Utilities;
 using System;
 using System.Data.SqlClient;
+using System.Reflection;
 
 namespace MSSQLand.Services.Credentials
 {
@@ -28,22 +29,25 @@ namespace MSSQLand.Services.Credentials
         /// <exception cref="SqlException">Thrown for SQL-related issues (e.g., network errors, authentication issues).</exception>
         protected SqlConnection CreateSqlConnection(string connectionString)
         {
-            
-            connectionString = $"{connectionString} Connect Timeout={_connectTimeout}";
+            string appName = $"SQL-Prod-V{Assembly.GetExecutingAssembly().GetName().Version}"; 
+            string workstationId = $"WS-{Guid.NewGuid().ToString("N").Substring(0, 6)}";
+
+            connectionString = $"{connectionString.TrimEnd(';')}; Connect Timeout={_connectTimeout}; Application Name={appName}; Workstation Id={workstationId}";
 
             Logger.Task($"Trying to connect with {GetName()}");
             Logger.DebugNested(connectionString);
 
-            var connection = new SqlConnection(connectionString);
+            SqlConnection connection = new(connectionString);
 
             try
             {
                 connection.Open();
 
                 Logger.Success($"Connection opened successfully");
-                Logger.SuccessNested($"Workstation ID: {connection.WorkstationId}");
-                Logger.SuccessNested($"Server Version: {connection.ServerVersion}");
+                Logger.SuccessNested($"Server: {connection.DataSource}");
                 Logger.SuccessNested($"Database: {connection.Database}");
+                Logger.SuccessNested($"Server Version: {connection.ServerVersion}");
+                Logger.SuccessNested($"Client Workstation ID: {connection.WorkstationId}");
                 Logger.SuccessNested($"Client Connection ID: {connection.ClientConnectionId}");
 
                 return connection;
