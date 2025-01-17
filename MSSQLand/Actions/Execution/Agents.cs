@@ -169,11 +169,12 @@ namespace MSSQLand.Actions.Execution
 
                 foreach (DataRow row in dataTable.Rows)
                 {
+                    int status = Convert.ToInt32(row["status"]);
                     string statusDesc = row["status_desc"]?.ToString()?.ToLower();
 
-                    if (statusDesc == "running")
+                    if (status == 4 && statusDesc == "running")
                     {
-                        Logger.Success($"SQL Server Agent is running");
+                        Logger.Success("SQL Server Agent is running.");
                         return true;
                     }
                 }
