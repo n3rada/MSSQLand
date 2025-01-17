@@ -42,7 +42,7 @@ Create the following output:
 
 | id | name  | pass               |
 | -- | ----- | ------------------ |
-| 51 | Calot | password04/06/1958 |
+| 7  | Calot | password04/06/1958 |
 
 [+] Search completed.
 ====================================
@@ -198,7 +198,7 @@ Systems should be as simple as possible but no simpler. Complex linked server qu
 
 8. **Extensibility**
 
-The system should be easy to extend with new features. New actions can be added without altering core functionality by extending [`BaseAction`](./MSSQLand/Actions/BaseAction.cs).
+The system should be easy to extend with new features. New actions can be added without altering core functionality by extending [`BaseAction`](./MSSQLand/Actions/BaseAction.cs) and adding the created-one to the [factory](./MSSQLand/Actions/ActionFactory.cs).
 
 #### Directories
 
@@ -227,7 +227,6 @@ alias load /home/n3rada/git/public/MSSQLand/Release/alias.json
 ```
 
 ## Contributing 🫂
-
 Contributions to MSSQLand are welcome and appreciated! Whether it's fixing bugs, adding new features, improving the documentation, or sharing feedback, your effort is valued and makes a difference.
 Open-source thrives on collaboration and recognition. Contributions, large or small, help improve the tool and its community. Your time and effort are truly valued. 
 
@@ -237,7 +236,7 @@ Please see the [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines on h
 
 ## Disclaimer ⚠️
 This tool is designed for educational purposes only and is intended to assist security professionals in understanding and testing the security of SQL Server environments in authorized engagements. It is specifically crafted to be used in controlled environments, such as:
-- Penetration testing labs (e.g., HackTheBox, TryHackMe, OffSec exam scenarios).
+- Penetration testing labs (e.g., HackTheBox, OffSec exam scenarios).
 - Personal lab setups designed for ethical hacking and security research.
 
 ## Important Note
