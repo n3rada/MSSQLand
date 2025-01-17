@@ -35,7 +35,7 @@ namespace MSSQLand.Utilities
                 { "search", (typeof(Search), "Search for specific keyword in database.") },
                 { "ole", (typeof(ObjectLinkingEmbedding), "Executes the specified command using OLE Automation Procedures.") },
                 { "clr", (typeof(ClrExecution), "Execute commands using Common Language Runtime (CLR) assemblies.") },
-                { "jobs", (typeof(Jobs), "Add jobs to remote SQL server.") }
+                { "agents", (typeof(Agents), "Add jobs to remote SQL server.") }
             };
 
         private static readonly Dictionary<string, (Type ActionClass, string Description)> EnumerationMetadata =

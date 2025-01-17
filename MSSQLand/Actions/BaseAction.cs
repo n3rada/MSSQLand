@@ -33,6 +33,12 @@ namespace MSSQLand.Actions
 
         protected string[] SplitArguments(string additionalArguments, string separator = CommandParser.AdditionalArgumentsSeparator)
         {
+            if (string.IsNullOrWhiteSpace(additionalArguments))
+            {
+                Logger.Debug("No arguments provided.");
+                return Array.Empty<string>();
+            }
+
             string[] splitted = Regex.Split(additionalArguments, $"({Regex.Escape(separator)})")
                               .Where(arg => arg != separator) // Remove standalone separators
                               .ToArray();

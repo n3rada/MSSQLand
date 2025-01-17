@@ -6,30 +6,24 @@ using System.Data;
 
 namespace MSSQLand.Actions.Execution
 {
-    internal class Jobs : BaseAction
+    internal class Agents : BaseAction
     {
-        public string _action;
-        public string _command;
-        public string _subSystem;
+        public string _action = "status";
+        public string _command = null;
+        public string _subSystem = "PowerShell";
 
         public override void ValidateArguments(string additionalArguments)
         {
-            if (string.IsNullOrWhiteSpace(additionalArguments))
-            {
-                throw new ArgumentException("Arguments cannot be empty. Usage: action command <subsystem>");
-            }
 
             // Split the additional argument into parts (dll URI and function)
             string[] parts = SplitArguments(additionalArguments);
 
-            if (parts.Length < 2)
+            if (parts.Length == 0)
             {
-                throw new ArgumentException("Insufficient arguments provided. Usage: action command <subsystem>");
+                return;
             }
 
-            // Assign required arguments
             _action = parts[0].Trim().ToLower();
-            _command = parts[1].Trim();
 
             // Validate action
             if (_action != "status" && _action != "exec")
@@ -37,8 +31,16 @@ namespace MSSQLand.Actions.Execution
                 throw new ArgumentException($"Invalid action: {_action}. Valid actions are: status, exec.");
             }
 
+            if (parts.Length == 2)
+            {
+                _command = parts[1].Trim();
+            }
+
             // Optional subsystem argument
-            _subSystem = parts.Length > 2 ? parts[2].Trim() : "PowerShell";
+            if (parts.Length > 2)
+            {
+                _subSystem = parts[2].Trim();
+            }
 
         }
 
@@ -46,8 +48,7 @@ namespace MSSQLand.Actions.Execution
         public override void Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested(_action);
-            Logger.TaskNested($"Executing: {_command}");
-            Logger.TaskNested($"Using subsystem: {_subSystem}");
+
 
             if (_action == "status")
             {
@@ -75,6 +76,15 @@ namespace MSSQLand.Actions.Execution
 
             if (_action == "exec")
             {
+                if (string.IsNullOrEmpty(_command))
+                {
+                    Logger.Warning("No command provided to execute");
+                    return;
+                }
+
+                Logger.TaskNested($"Executing: {_command}");
+                Logger.TaskNested($"Using subsystem: {_subSystem}");
+
                 if (AgentStatus(databaseContext) == false) { return; }
 
                 string jobName = Guid.NewGuid().ToString("N").Substring(0, 6);
@@ -148,6 +158,8 @@ namespace MSSQLand.Actions.Execution
 
                 // Execute the query
                 var dataTable = databaseContext.QueryService.ExecuteTable(agentStatusQuery);
+
+                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(dataTable));
 
                 if (dataTable.Rows.Count == 0)
                 {

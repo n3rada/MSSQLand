@@ -30,7 +30,7 @@ namespace MSSQLand.Actions.Execution
         /// <param name="databaseContext">The ConnectionManager for executing the query.</param>
         public override void Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Executing: {_query}");
+            Logger.TaskNested($"Executing against {databaseContext.QueryService.ExecutionServer}: {_query}");
             DataTable resultTable = databaseContext.QueryService.ExecuteTable(_query);
 
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));

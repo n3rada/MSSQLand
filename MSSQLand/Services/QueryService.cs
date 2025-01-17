@@ -170,10 +170,8 @@ namespace MSSQLand.Services
         /// <returns>The modified query, accounting for linked servers if applicable.</returns>
         private string PrepareQuery(string query)
         {
+            Logger.Debug($"Executing: {query}");
             string finalQuery = query;
-
-            Logger.Debug($"Executing on: {ExecutionServer}");
-            Logger.DebugNested($"{query}");
 
             // If LinkedServers variable exists and has valid server names
             if (_linkedServers?.ServerNames != null && _linkedServers.ServerNames.Length > 0)

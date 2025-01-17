@@ -75,7 +75,7 @@
     <Compile Include="Actions\Database\Whoami.cs" />
     <Compile Include="Actions\ExcludeFromArgumentsAttribute.cs" />
     <Compile Include="Actions\Execution\ClrExecution.cs" />
-    <Compile Include="Actions\Execution\Jobs.cs" />
+    <Compile Include="Actions\Execution\Agents.cs" />
     <Compile Include="Actions\Execution\ObjectLinkingEmbedding.cs" />
     <Compile Include="Actions\Enumeration\FindSQLServers.cs" />
     <Compile Include="Services\ActiveDirectoryService.cs" />
