@@ -18,7 +18,7 @@ namespace MSSQLand.Utilities
                 { "rows", (typeof(Rows), "Retrieve rows from a table.") },
                 { "query", (typeof(Query), "Execute a custom SQL query.") },
                 { "links", (typeof(Links), "Retrieve linked server information.") },
-                { "xpcmd", (typeof(XpCmd), "Execute commands using xp_cmdshell.") },
+                { "exec", (typeof(XpCmd), "Execute commands using xp_cmdshell.") },
                 { "pwsh", (typeof(PowerShell), "Execute PowerShell commands.") },
                 { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a PowerShell script.") },
                 { "read", (typeof(FileRead), "Read file contents.") },

@@ -6,6 +6,11 @@ using System.Data;
 
 namespace MSSQLand.Actions.Execution
 {
+
+    /// <summary>
+    /// https://learn.microsoft.com/en-us/sql/ssms/agent/start-stop-or-pause-the-sql-server-agent-service
+    /// https://learn.microsoft.com/en-us/sql/ssms/agent/create-a-job
+    /// </summary>
     internal class Agents : BaseAction
     {
         public string _action = "status";
