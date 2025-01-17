@@ -78,6 +78,7 @@
     <Compile Include="Actions\Execution\Agents.cs" />
     <Compile Include="Actions\Execution\ObjectLinkingEmbedding.cs" />
     <Compile Include="Actions\Enumeration\FindSQLServers.cs" />
+    <Compile Include="Actions\Network\Adsi.cs" />
     <Compile Include="Services\ActiveDirectoryService.cs" />
     <Compile Include="Utilities\Helper.cs" />
     <Compile Include="Actions\BaseAction.cs" />

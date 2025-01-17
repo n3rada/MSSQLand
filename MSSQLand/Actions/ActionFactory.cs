@@ -34,8 +34,10 @@ namespace MSSQLand.Utilities
                 { "config", (typeof(Configure), "Use sp_configure to modify settings.") },
                 { "search", (typeof(Search), "Search for specific keyword in database.") },
                 { "ole", (typeof(ObjectLinkingEmbedding), "Executes the specified command using OLE Automation Procedures.") },
-                { "clr", (typeof(ClrExecution), "Execute commands using Common Language Runtime (CLR) assemblies.") },
-                { "agents", (typeof(Agents), "Add jobs to remote SQL server.") }
+                { "clr", (typeof(ClrExecution), "Deploy and execute CLR assemblies.") },
+                { "adsi", (typeof(Adsi), "Extract credentials or query Active Directory using the ADSI provider.") },
+
+                { "adsi", (typeof(Adsi), "Extract credentials or query Active Directory using the ADSI provider.") }
             };
 
         private static readonly Dictionary<string, (Type ActionClass, string Description)> EnumerationMetadata =

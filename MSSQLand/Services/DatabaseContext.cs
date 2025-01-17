@@ -10,7 +10,7 @@ namespace MSSQLand.Services
 {
     public class DatabaseContext
     {
-        private readonly AuthenticationService _authService;
+        public readonly AuthenticationService AuthService;
 
         public readonly Server Server;
         public readonly QueryService QueryService;
@@ -20,9 +20,9 @@ namespace MSSQLand.Services
 
         public DatabaseContext(AuthenticationService authService)
         {
-            _authService = authService;
-            Server = _authService.Server;
-            QueryService = new QueryService(_authService.Connection);
+            AuthService = authService;
+            Server = AuthService.Server;
+            QueryService = new QueryService(AuthService.Connection);
             ConfigService = new ConfigurationService(QueryService, Server);
             UserService = new UserService(QueryService);
 

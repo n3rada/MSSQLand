@@ -52,6 +52,38 @@ namespace MSSQLand.Services
             }
         }
 
+        /// <summary>
+        /// Creates and returns a fresh new connection based on the current connection details.
+        /// </summary>
+        /// <returns>A new SqlConnection object.</returns>
+        public SqlConnection GetNewConnection()
+        {
+            if (Connection == null)
+            {
+                throw new InvalidOperationException("No active connection exists. Authenticate first.");
+            }
+
+            try
+            {
+                // Extract current connection details
+                var builder = new SqlConnectionStringBuilder(Connection.ConnectionString)
+                {
+                    // Optional: Enforce opening a new connection
+                    ApplicationName = $"{Connection.ClientConnectionId}_Temp-{Guid.NewGuid().ToString("N").Substring(0, 6)}"
+                };
+
+                // Create and return a new connection
+                var newConnection = new SqlConnection(builder.ConnectionString);
+                newConnection.Open();
+                return newConnection;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to create a new connection: {ex.Message}");
+                throw;
+            }
+        }
+
         public void Dispose()
         {
             if (Connection != null)
