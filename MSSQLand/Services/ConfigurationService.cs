@@ -200,10 +200,10 @@ namespace MSSQLand.Services
 
                 // Add the new hash to the trusted assemblies
                 _queryService.ExecuteNonProcessing($@"
-            EXEC sp_add_trusted_assembly
-            0x{assemblyHash},
-            N'{assemblyDescription}, version=0.0.0.0, culture=neutral, publickeytoken=null, processorarchitecture=msil';
-        ");
+                    EXEC sp_add_trusted_assembly
+                    0x{assemblyHash},
+                    N'{assemblyDescription}, version=0.0.0.0, culture=neutral, publickeytoken=null, processorarchitecture=msil';
+                ");
 
                 // Verify if the hash was successfully added
                 if (CheckTrustedAssembly(assemblyDescription))
@@ -221,6 +221,112 @@ namespace MSSQLand.Services
                 return false;
             }
         }
+
+        /// <summary>
+        /// Deploys a CLR assembly, creates a stored procedure, executes it, and performs cleanup.
+        /// </summary>
+        public void DeployAndExecuteClrAssembly(
+            string assemblyName,
+            string procedureName,
+            string assemblyHash,
+            string trustedAssemblyDescription,
+            string assemblyHexBytes)
+        {
+            string dropProcedure = $"DROP PROCEDURE IF EXISTS [{procedureName}];";
+            string dropAssembly = $"DROP ASSEMBLY IF EXISTS [{assemblyName}];";
+            string dropClrHash = $"EXEC sp_drop_trusted_assembly 0x{assemblyHash};";
+
+            Logger.Task("Starting CLR assembly deployment process");
+
+            try
+            {
+
+                if (_server.Legacy)
+                {
+                    Logger.Info("Legacy server detected. Enabling TRUSTWORTHY property");
+                    _queryService.ExecuteNonProcessing($"ALTER DATABASE {_server.Database} SET TRUSTWORTHY ON;");
+                }
+                else
+                {
+                    if (RegisterTrustedAssembly(assemblyHash, trustedAssemblyDescription) == false)
+                    {
+                        return;
+                    }
+                }
+
+                // Step 1: Drop existing procedure and assembly if they exist
+                _queryService.ExecuteNonProcessing(dropProcedure);
+                _queryService.ExecuteNonProcessing(dropAssembly);
+
+
+                // Step 3: Create the assembly from the DLL bytes
+                Logger.Task("Creating the assembly from DLL bytes");
+                _queryService.ExecuteNonProcessing(
+                    $"CREATE ASSEMBLY [{assemblyName}] FROM 0x{assemblyHexBytes} WITH PERMISSION_SET = UNSAFE;");
+
+                if (!CheckAssembly(assemblyName))
+                {
+                    Logger.Error("Failed to create a new assembly.");
+                    _queryService.ExecuteNonProcessing(dropAssembly);
+                    _queryService.ExecuteNonProcessing(dropClrHash);
+                    return;
+                }
+
+                Logger.Success($"Assembly '{assemblyName}' successfully created.");
+
+                // Step 4: Create the stored procedure linked to the assembly
+                Logger.Task("Creating the stored procedure linked to the assembly");
+                _queryService.ExecuteNonProcessing(
+                    $"CREATE PROCEDURE [dbo].[{procedureName}] AS EXTERNAL NAME [{assemblyName}].[StoredProcedures].[{procedureName}];");
+
+                if (!CheckProcedures(procedureName))
+                {
+                    Logger.Error("Failed to create the stored procedure");
+                    _queryService.ExecuteNonProcessing(dropProcedure);
+                    _queryService.ExecuteNonProcessing(dropAssembly);
+                    _queryService.ExecuteNonProcessing(dropClrHash);
+                    return;
+                }
+
+                Logger.Success($"Stored procedure '{procedureName}' successfully created");
+
+                // Step 5: Execute the stored procedure
+                Logger.Task($"Executing the stored procedure '{procedureName}'");
+                _queryService.ExecuteNonProcessing($"EXEC {procedureName};");
+                Logger.Success("Stored procedure executed successfully");
+
+                // Step 6: Cleanup - Drop procedure, assembly, and trusted hash
+                Logger.Task("Performing cleanup");
+                _queryService.ExecuteNonProcessing(dropProcedure);
+                _queryService.ExecuteNonProcessing(dropAssembly);
+                _queryService.ExecuteNonProcessing(dropClrHash);
+
+                // Step 7: Reset TRUSTWORTHY property for legacy servers
+                if (_server.Legacy)
+                {
+                    Logger.Info("Resetting TRUSTWORTHY property");
+                    _queryService.ExecuteNonProcessing(
+                        $"ALTER DATABASE {_server.Database} SET TRUSTWORTHY OFF;");
+                }
+
+                Logger.Success("Cleanup completed");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error during CLR assembly deployment: {ex.Message}");
+                // Perform cleanup in case of failure
+                _queryService.ExecuteNonProcessing(dropProcedure);
+                _queryService.ExecuteNonProcessing(dropAssembly);
+                _queryService.ExecuteNonProcessing(dropClrHash);
+
+                if (_server.Legacy)
+                {
+                    _queryService.ExecuteNonProcessing(
+                        $"ALTER DATABASE {_server.Database} SET TRUSTWORTHY OFF;");
+                }
+            }
+        }
+
 
 
         /// <summary>

