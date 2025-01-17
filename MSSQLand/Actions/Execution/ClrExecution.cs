@@ -42,22 +42,25 @@ namespace MSSQLand.Actions.Execution
         public override void Execute(DatabaseContext databaseContext)
         {
             // Step 1: Get the SHA-512 hash for the DLL and its bytes.
-            string[] dllResult = ConvertDLLToSQLBytes(_dllURI);
+            string[] library = ConvertDLLToSQLBytes(_dllURI);
 
-            if (dllResult.Length != 2 || string.IsNullOrEmpty(dllResult[0]) || string.IsNullOrEmpty(dllResult[1]))
+            if (library.Length != 2 || string.IsNullOrEmpty(library[0]) || string.IsNullOrEmpty(library[1]))
             {
                 Logger.Error("Failed to convert DLL to SQL-compatible bytes.");
                 return;
             }
 
-            string dllHash = dllResult[0];
-            string dllHexString = dllResult[1];
-
-            Logger.Info($"SHA-512 Hash: {dllHash}");
-            Logger.Info($"DLL Bytes Length: {dllHexString.Length}");
-
             // Step 2: Enable CLR if not already enabled.
-            databaseContext.ConfigService.SetConfigurationOption("clr enabled", 1);
+            if (databaseContext.ConfigService.SetConfigurationOption("clr enabled", 1) == false)
+            {
+                return;
+            }
+
+            string libraryHash = library[0];
+            string libraryHexString = library[1];
+
+            Logger.Info($"SHA-512 Hash: {libraryHash}");
+            Logger.Info($"DLL Bytes Length: {libraryHexString.Length}");
 
             // Step 3: Generate random names for assembly and trusted hash path.
             string dllPath = Guid.NewGuid().ToString("N").Substring(0, 6);
@@ -72,7 +75,7 @@ namespace MSSQLand.Actions.Execution
             else
             {
                 // Step 5: Check if the DLL hash already exists in sys.trusted_assemblies.
-                string checkHash = databaseContext.QueryService.ExecuteScalar($"SELECT * FROM sys.trusted_assemblies WHERE hash = 0x{dllHash};")?.ToString().ToLower();
+                string checkHash = databaseContext.QueryService.ExecuteScalar($"SELECT * FROM sys.trusted_assemblies WHERE hash = 0x{libraryHash};")?.ToString().ToLower();
 
                 if (checkHash?.Contains("permission was denied") == true)
                 {
@@ -83,7 +86,7 @@ namespace MSSQLand.Actions.Execution
                 if (checkHash?.Contains("system.byte[]") == true)
                 {
                     Logger.Warning("Hash already exists in sys.trusted_assemblies");
-                    string deletionQuery = databaseContext.QueryService.ExecuteScalar($"EXEC sp_drop_trusted_assembly 0x{dllHash};")?.ToString().ToLower();
+                    string deletionQuery = databaseContext.QueryService.ExecuteScalar($"EXEC sp_drop_trusted_assembly 0x{libraryHash};")?.ToString().ToLower();
 
                     if (deletionQuery?.Contains("permission was denied") == true)
                     {
@@ -97,7 +100,7 @@ namespace MSSQLand.Actions.Execution
                 // Step 6: Add the DLL hash into sys.trusted_assemblies.
                 databaseContext.QueryService.ExecuteNonProcessing($@"
                     EXEC sp_add_trusted_assembly
-                    0x{dllHash},
+                    0x{libraryHash},
                     N'{dllPath}, version=0.0.0.0, culture=neutral, publickeytoken=null, processorarchitecture=msil';
                 ");
 
@@ -105,7 +108,7 @@ namespace MSSQLand.Actions.Execution
                 // Verify that the SHA-512 hash has been added.
                 if (databaseContext.ConfigService.CheckTrustedAssembly(dllPath))
                 {
-                    Logger.Success($"Added hash 0x{dllHash} as trusted");
+                    Logger.Success($"Added hash 0x{libraryHash} as trusted");
                 }
                 else
                 {
@@ -117,14 +120,14 @@ namespace MSSQLand.Actions.Execution
             
             string dropProcedure = $"DROP PROCEDURE IF EXISTS [{_function}];";
             string dropAssembly = $"DROP ASSEMBLY IF EXISTS [{assem}];";
-            string dropClrHash = $"EXEC sp_drop_trusted_assembly 0x{dllHash};";
+            string dropClrHash = $"EXEC sp_drop_trusted_assembly 0x{libraryHash};";
 
             // Step 7: Drop existing procedure and assembly if they exist.
             databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
             databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
 
             // Step 8: Create a new assembly from the DLL bytes.
-            databaseContext.QueryService.ExecuteNonProcessing($"CREATE ASSEMBLY [{assem}] FROM 0x{dllHexString} WITH PERMISSION_SET = UNSAFE;");
+            databaseContext.QueryService.ExecuteNonProcessing($"CREATE ASSEMBLY [{assem}] FROM 0x{libraryHexString} WITH PERMISSION_SET = UNSAFE;");
 
             if (!databaseContext.ConfigService.CheckAssembly(assem))
             {

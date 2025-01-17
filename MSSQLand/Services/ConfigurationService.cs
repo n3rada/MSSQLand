@@ -112,7 +112,7 @@ namespace MSSQLand.Services
         /// </summary>
         /// <param name="optionName">The name of the configuration option to modify.</param>
         /// <param name="value">The value to set for the configuration option (e.g., 1 to enable, 0 to disable).</param>
-        public void SetConfigurationOption(string optionName, int value)
+        public bool SetConfigurationOption(string optionName, int value)
         {
 
             EnableAdvancedOptions();
@@ -125,19 +125,19 @@ namespace MSSQLand.Services
                 if (configValue == null)
                 {
                     Logger.Warning($"Configuration '{optionName}' not found or inaccessible");
-                    return;
+                    return false;
                 }
 
                 if (Convert.ToInt32(configValue) == value)
                 {
                     Logger.Info($"Configuration option '{optionName}' is already set to {value}");
-                    return;
+                    return true;
                 }
             }
             catch (Exception ex)
             {
                 Logger.Error($"Error checking module status for '{optionName}': {ex.Message}");
-                return;
+                return false;
             }
 
             try
@@ -145,10 +145,12 @@ namespace MSSQLand.Services
                 // Update the configuration option
                 Logger.Info($"Updating configuration option '{optionName}' to {value}.");
                 _queryService.ExecuteNonProcessing($"EXEC sp_configure '{optionName}', {value}; RECONFIGURE;");
+                return true;
             }
             catch (Exception ex)
             {
                 Logger.Warning($"Failed to set configuration option '{optionName}': {ex.Message}");
+                return false;
             }
         }
 
