@@ -7,7 +7,7 @@
     "help": "Effortlessly navigate and conquer linked Microsoft SQL Server (MS SQL) servers",
     "entrypoint": "Main",
     "allow_args": true,
-    "default_args": "/h",
+    "default_args": "/help",
     "is_reflective": false,
     "is_assembly": true,
     "files": [
