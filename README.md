@@ -9,7 +9,7 @@ MSSQLand is your ultimate tool for interacting with [Microsoft SQL Server (MSSQL
 
 The tool's precise and structured output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for your reports. For example, running this command:
 ```shell
-.\MSSQLand.exe /h:SQL01:Moulinier /u:Jacquard /p:"Fr@nce1940/Gaulle" /c:local /l:SQL02:webapp03,SQL03:webapp04,SQL04:Merlaux /a:tables balard
+.\MSSQLand.exe /h:SQL01:Moulinier /u:Jacquard /p:"Fr@nce1940/Gaulle" /c:local /l:SQL02:webapp03,SQL03:webapp04,SQL04:Merlaux /a:tables agents
 ```
 
 Create the following output:
