@@ -20,16 +20,12 @@ namespace MSSQLand.Actions.Network
             if (string.IsNullOrWhiteSpace(additionalArguments))
             {
                 _port = Misc.GetRandomUnusedPort();
-                Logger.Info($"No port provided. Selected random unused port: {_port}");
             }
             else if (!int.TryParse(additionalArguments.Trim(), out _port) || _port < 1 || _port > 65535)
             {
                 throw new ArgumentException("The port must be a valid integer between 1 and 65535.");
             }
-            else
-            {
-                Logger.Info($"Port validated: {_port}");
-            }
+
         }
 
 
