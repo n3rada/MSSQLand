@@ -40,7 +40,6 @@ namespace MSSQLand.Utilities
                 { "adsi-creds", (typeof(AdsiCredentialExtractor), "Extract credentials by querying your own LDAP server using the ADSI provider.") },
                 { "monitor", (typeof(Monitor), "List running SQL commands.") },
                 { "kill", (typeof(Kill), "Terminate running SQL commands by session ID or all.") },
-
                 { "oledb-providers", (typeof(OleDbProvidersInfo), "Retrieve detailed configuration and properties of OLE DB providers.") }
             };
 

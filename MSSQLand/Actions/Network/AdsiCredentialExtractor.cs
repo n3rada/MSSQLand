@@ -1,10 +1,7 @@
-﻿using MSSQLand.Models;
-using MSSQLand.Services;
+﻿using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
 using System.Data;
-using System.Data.SqlClient;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace MSSQLand.Actions.Network
@@ -22,15 +19,17 @@ namespace MSSQLand.Actions.Network
         {
             if (string.IsNullOrWhiteSpace(additionalArguments))
             {
-                throw new ArgumentException("ADSI action requires a valid port number as an argument.");
+                _port = Misc.GetRandomUnusedPort();
+                Logger.Info($"No port provided. Selected random unused port: {_port}");
             }
-
-            if (!int.TryParse(additionalArguments.Trim(), out _port) || _port < 1 || _port > 65535)
+            else if (!int.TryParse(additionalArguments.Trim(), out _port) || _port < 1 || _port > 65535)
             {
                 throw new ArgumentException("The port must be a valid integer between 1 and 65535.");
             }
-
-            Logger.Info($"Port validated: {_port}");
+            else
+            {
+                Logger.Info($"Port validated: {_port}");
+            }
         }
 
 
@@ -54,8 +53,7 @@ namespace MSSQLand.Actions.Network
                 Port = _port
             };
 
-            // string fakeAdsiServer = Guid.NewGuid().ToString("N").Substring(0, 10);
-            string fakeAdsiServer = "ADSI";
+            string fakeAdsiServer = $"SQL-{Guid.NewGuid().ToString("N").Substring(0, 4)}";
 
             if (!adsiService.CreateAdsiLinkedServer(fakeAdsiServer))
             {
@@ -99,8 +97,8 @@ namespace MSSQLand.Actions.Network
                 if (ldapResult != null && ldapResult.Rows.Count > 0)
                 {
                     DataRow firstRow = ldapResult.Rows[0];
-                    Logger.NewLine();
                     Logger.Success("Credentials retrieved");
+                    Logger.NewLine();
                     Console.WriteLine(firstRow[0].ToString());
                 }
                 else
@@ -110,7 +108,7 @@ namespace MSSQLand.Actions.Network
             }
             catch (Exception ex)
             {
-                Logger.Error($"Error occurred during the ADSI exploit: {ex.Message}");
+                Logger.Error($"Error occurred during the ADSI credentials retrieval exploit: {ex.Message}");
             }
             finally
             {

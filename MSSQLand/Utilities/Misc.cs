@@ -1,23 +1,23 @@
 ﻿using System;
+using System.Net.Sockets;
+using System.Net;
+using System.Text;
 using System.IO.Compression;
 using System.IO;
-using System.Text;
-
 
 namespace MSSQLand.Utilities
 {
-    internal class DataProcessor
+    internal class Misc
     {
+
         public static byte[] DecodeAndDecompress(string encoded)
         {
             byte[] compressedBytes = Convert.FromBase64String(encoded);
-            using (var inputStream = new MemoryStream(compressedBytes))
-            using (var gzipStream = new GZipStream(inputStream, CompressionMode.Decompress))
-            using (var outputStream = new MemoryStream())
-            {
-                gzipStream.CopyTo(outputStream);
-                return outputStream.ToArray();
-            }
+            using var inputStream = new MemoryStream(compressedBytes);
+            using var gzipStream = new GZipStream(inputStream, CompressionMode.Decompress);
+            using var outputStream = new MemoryStream();
+            gzipStream.CopyTo(outputStream);
+            return outputStream.ToArray();
         }
 
         public static byte[] HexStringToBytes(string hex)
@@ -39,6 +39,13 @@ namespace MSSQLand.Utilities
                 hex.AppendFormat("{0:x2}", b);
             }
             return hex.ToString();
+        }
+
+        public static int GetRandomUnusedPort()
+        {
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            return ((IPEndPoint)socket.LocalEndPoint).Port;
         }
     }
 }

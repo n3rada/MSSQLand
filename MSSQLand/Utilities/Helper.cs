@@ -94,7 +94,7 @@ namespace MSSQLand.Utilities
             argumentsTable.Columns.Add("Description", typeof(string));
 
             
-            argumentsTable.Rows.Add("/t or /target", "Specify the target SQL Server (mandatory).");
+            argumentsTable.Rows.Add("/h or /host", "Specify the target SQL Server (mandatory).");
             argumentsTable.Rows.Add("/c or /credentials", "Specify the credential type (mandatory).");
             argumentsTable.Rows.Add("/u or /username", "Provide the username (if required by credential type).");
             argumentsTable.Rows.Add("/p or /password", "Provide the password (if required by credential type).");

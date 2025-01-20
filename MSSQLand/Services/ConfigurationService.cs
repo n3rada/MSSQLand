@@ -344,5 +344,68 @@ namespace MSSQLand.Services
                 return false;
             }
         }
+
+        public void DropDependentObjects(string assemblyName)
+        {
+            try
+            {
+                Logger.Task($"Identifying dependent objects for assembly '{assemblyName}'");
+
+                string query = $@"
+            SELECT o.type_desc, o.name 
+            FROM sys.assembly_modules am
+            JOIN sys.objects o ON am.object_id = o.object_id
+            WHERE am.assembly_id = (
+                SELECT assembly_id 
+                FROM sys.assemblies 
+                WHERE name = '{assemblyName}'
+            );";
+
+                DataTable dependencies = _queryService.ExecuteTable(query);
+
+                foreach (DataRow row in dependencies.Rows)
+                {
+                    string objectType = row["type_desc"].ToString();
+                    string objectName = row["name"].ToString();
+
+                    // Map object types to DROP statements
+                    string dropCommand;
+                    switch (objectType)
+                    {
+                        case "CLR_SCALAR_FUNCTION":
+                        case "SQL_SCALAR_FUNCTION":
+                            dropCommand = $"DROP FUNCTION IF EXISTS [{objectName}];";
+                            break;
+
+                        case "CLR_TABLE_VALUED_FUNCTION":
+                        case "SQL_TABLE_VALUED_FUNCTION":
+                            dropCommand = $"DROP FUNCTION IF EXISTS [{objectName}];";
+                            break;
+
+                        case "CLR_STORED_PROCEDURE":
+                        case "SQL_STORED_PROCEDURE":
+                            dropCommand = $"DROP PROCEDURE IF EXISTS [{objectName}];";
+                            break;
+
+                        case "VIEW":
+                            dropCommand = $"DROP VIEW IF EXISTS [{objectName}];";
+                            break;
+
+                        default:
+                            Logger.Warning($"Unsupported object type '{objectType}' for object '{objectName}'. Skipping.");
+                            continue;
+                    }
+
+                    Logger.Info($"Dropping dependent object '{objectName}' of type '{objectType}'");
+                    _queryService.ExecuteNonProcessing(dropCommand);
+                }
+
+                Logger.Success($"All dependent objects for assembly '{assemblyName}' dropped successfully");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to drop dependent objects for assembly '{assemblyName}': {ex.Message}");
+            }
+        }
     }
 }

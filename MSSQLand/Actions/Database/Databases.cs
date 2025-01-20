@@ -26,22 +26,38 @@ namespace MSSQLand.Actions.Database
                 "SELECT name FROM sys.databases WHERE HAS_DBACCESS(name) = 1;"
             );
 
-            // Add a column to indicate accessibility
-            allDatabases.Columns.Add("Accessible", typeof(bool));
+            // Query for trustworthy databases
+            DataTable trustworthyDatabases = databaseContext.QueryService.ExecuteTable(
+                "SELECT name, is_trustworthy_on FROM sys.databases;"
+            );
 
-            // Mark each database as accessible or not
+            // Add columns for "Accessible" and "Trustworthy"
+            allDatabases.Columns.Add("Accessible", typeof(bool));
+            allDatabases.Columns.Add("Trustworthy", typeof(bool));
+
+            // Populate "Accessible" and "Trustworthy" columns
             foreach (DataRow row in allDatabases.Rows)
             {
                 string dbName = row["name"].ToString();
+
+                // Check accessibility
                 bool isAccessible = accessibleDatabases.AsEnumerable()
                     .Any(r => r.Field<string>("name") == dbName);
                 row["Accessible"] = isAccessible;
+
+                // Check trustworthy status
+                bool isTrustworthy = trustworthyDatabases.AsEnumerable()
+                    .Any(r => r.Field<string>("name") == dbName && r.Field<bool>("is_trustworthy_on"));
+                row["Trustworthy"] = isTrustworthy;
             }
 
             // Reorder columns using SetOrdinal
-            allDatabases.Columns["Accessible"].SetOrdinal(2); // Move "Accessible" after "name"
+            allDatabases.Columns["Accessible"].SetOrdinal(2);
+            allDatabases.Columns["Trustworthy"].SetOrdinal(3);
 
+            // Output the final table
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(allDatabases));
         }
+
     }
 }

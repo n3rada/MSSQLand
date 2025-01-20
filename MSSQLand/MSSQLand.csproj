@@ -85,7 +85,6 @@
     <Compile Include="Actions\Network\AdsiCredentialExtractor.cs" />
     <Compile Include="Services\ActiveDirectoryService.cs" />
     <Compile Include="Services\AdsiService.cs" />
-    <Compile Include="Utilities\DataProcessor.cs" />
     <Compile Include="Utilities\Helper.cs" />
     <Compile Include="Actions\BaseAction.cs" />
     <Compile Include="Actions\Database\Databases.cs" />
@@ -129,6 +128,7 @@
     <Compile Include="Services\Authentication\Credentials\TokenCredentials.cs" />
     <Compile Include="Utilities\Logger.cs" />
     <Compile Include="Utilities\MarkdownFormater.cs" />
+    <Compile Include="Utilities\Misc.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
