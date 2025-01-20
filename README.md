@@ -81,13 +81,13 @@ This is what it looks like to verify if you are `sysadmin` in `SQL03` when you h
 - [OPENQUERY](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql) (If `sys.servers.is_data_access_enabled`):
 
 ```sql
-SELECT * FROM OPENQUERY("SQL02", 'EXECUTE AS LOGIN = ''webapp03''; SELECT * FROM OPENQUERY("SQL03", ''EXECUTE AS LOGIN = ''''webapp04''''; SELECT IS_SRVROLEMEMBER(''''sysadmin''''); REVERT;'') REVERT;')
+SELECT * FROM OPENQUERY([SQL02], 'EXECUTE AS LOGIN = ''webapp03''; SELECT * FROM OPENQUERY([SQL03], ''EXECUTE AS LOGIN = ''''webapp04''''; SELECT IS_SRVROLEMEMBER(''''sysadmin''''); REVERT;'') REVERT;')
 ```
 
 - [RPC Out](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql) (If `sys.servers.is_rpc_out_enabled`):
 
 ```shell
-EXEC ('EXECUTE AS LOGIN = ''webapp03''; EXEC (''EXECUTE AS LOGIN = ''''webapp04''''; SELECT IS_SRVROLEMEMBER(''''sysadmin''''); REVERT;'') AT SQL03; REVERT;') AT SQL02
+EXEC ('EXECUTE AS LOGIN = ''webapp03''; EXEC (''EXECUTE AS LOGIN = ''''webapp04''''; SELECT IS_SRVROLEMEMBER(''''sysadmin''''); REVERT;'') AT [SQL03]; REVERT;') AT [SQL02]
 ```
 
 No thanks 🚫. Let MSSQLand handle the heavy lifting so you can focus on the big picture. You've already impersonated multiple users on each hop, and now you want to enumerate links on `SQL04`:
