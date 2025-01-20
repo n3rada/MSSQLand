@@ -222,7 +222,7 @@ namespace MSSQLand.Services
                 // Verify if the hash was successfully added
                 if (CheckTrustedAssembly(assemblyDescription))
                 {
-                    Logger.Success($"Added assembly hash 0x{assemblyHash} as trusted");
+                    Logger.Success($"Added assembly hash '0x{assemblyHash}' as trusted");
                     return true;
                 }
 
@@ -260,6 +260,88 @@ namespace MSSQLand.Services
             else
             {
                 Logger.Info("Advanced options already enabled");
+            }
+        }
+
+        /// <summary>
+        /// Enables data access for the SQL Server.
+        /// </summary>
+        public bool EnableDataAccess(string serverName)
+        {
+            Logger.Task($"Enabling data access on server '{serverName}'");
+            try
+            {
+                string query = $"EXEC sp_serveroption '{serverName}', 'DATA ACCESS', TRUE;";
+                _queryService.ExecuteNonProcessing(query);
+
+                // Verify if data access is enabled
+                if (IsDataAccessEnabled(serverName))
+                {
+                    Logger.Success($"Data access enabled for server '{serverName}'");
+                    return true;
+                }
+
+                Logger.Error($"Failed to enable data access for server '{serverName}'");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error enabling data access for server '{serverName}': {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Disables data access for the SQL Server.
+        /// </summary>
+        public bool DisableDataAccess(string serverName)
+        {
+            Logger.Task($"Disabling data access on server '{serverName}'");
+            try
+            {
+                string query = $"EXEC sp_serveroption '{serverName}', 'DATA ACCESS', FALSE;";
+                _queryService.ExecuteNonProcessing(query);
+
+                // Verify if data access is disabled
+                if (!IsDataAccessEnabled(serverName))
+                {
+                    Logger.Success($"Data access disabled for server '{serverName}'");
+                    return true;
+                }
+
+                Logger.Error($"Failed to disable data access for server '{serverName}'");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error disabling data access for server '{serverName}': {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Checks if data access is enabled for a specified SQL Server.
+        /// </summary>
+        private bool IsDataAccessEnabled(string serverName)
+        {
+            Logger.Task($"Checking data access status for server '{serverName}'");
+            try
+            {
+                string query = $"SELECT CAST(is_data_access_enabled AS INT) AS IsEnabled FROM sys.servers WHERE name = '{serverName}';";
+                object result = _queryService.ExecuteScalar(query);
+
+                if (result == null)
+                {
+                    Logger.Warning($"Server '{serverName}' not found in sys.servers");
+                    return false;
+                }
+
+                return Convert.ToInt32(result) == 1;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error checking data access status for server '{serverName}': {ex.Message}");
+                return false;
             }
         }
     }

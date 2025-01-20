@@ -2,6 +2,7 @@
 using MSSQLand.Utilities;
 using System;
 using System.Data;
+using System.Linq;
 
 namespace MSSQLand.Actions.Execution
 {
@@ -31,9 +32,47 @@ namespace MSSQLand.Actions.Execution
         public override void Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Executing against {databaseContext.QueryService.ExecutionServer}: {_query}");
-            DataTable resultTable = databaseContext.QueryService.ExecuteTable(_query);
 
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+            try
+            {
+                // Detect the type of SQL command
+                if (IsNonQuery(_query))
+                {
+                    Logger.TaskNested("Executing as a non-query command");
+                    // Use ExecuteNonQuery for commands that don't return a result set
+                    int rowsAffected = databaseContext.QueryService.ExecuteNonProcessing(_query);
+                    if (rowsAffected >= 0)
+                        Logger.Info($"Query executed successfully. Rows affected: {rowsAffected}");
+
+                }
+                else
+                {
+                    // Use ExecuteTable for commands that return a result set
+                    DataTable resultTable = databaseContext.QueryService.ExecuteTable(_query);
+                    Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+                }
+            }
+            catch (Exception)
+            {
+                return;
+            }
         }
+
+        private bool IsNonQuery(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+                return false;
+
+            string[] nonQueryKeywords = { "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "CREATE", "TRUNCATE" };
+
+            // Normalize query to remove extra spaces and handle multi-line cases
+            string normalizedQuery = query.Trim().ToUpperInvariant();
+
+            // Check if any keyword is present as a standalone word
+            return nonQueryKeywords.Any(keyword =>
+                normalizedQuery.Contains(keyword + " ") || normalizedQuery.Contains(keyword + ";"));
+        }
+
+
     }
 }

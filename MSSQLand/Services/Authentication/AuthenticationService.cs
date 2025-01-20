@@ -11,6 +11,14 @@ namespace MSSQLand.Services
         public SqlConnection Connection { get; private set; }
         public readonly Server Server;
 
+        // Store authentication parameters for re-authentication
+        private string _credentialsType;
+        private string _sqlServer;
+        private string _database;
+        private string _username;
+        private string _password;
+        private string _domain;
+
         public AuthenticationService(Server server)
         {
             Server = server;
@@ -35,6 +43,14 @@ namespace MSSQLand.Services
         {
             try
             {
+                // Store authentication parameters
+                _credentialsType = credentialsType;
+                _sqlServer = sqlServer;
+                _database = database;
+                _username = username;
+                _password = password;
+                _domain = domain;
+
                 // Get the appropriate credentials service
                 var credentials = CredentialsFactory.GetCredentials(credentialsType);
 
@@ -53,35 +69,32 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
-        /// Creates and returns a fresh new connection based on the current connection details.
+        /// Generates a new SqlConnection using the stored parameters.
         /// </summary>
         /// <returns>A new SqlConnection object.</returns>
-        public SqlConnection GetNewConnection()
+        public SqlConnection GetNewSqlConnection()
         {
-            if (Connection == null)
+            if (string.IsNullOrEmpty(_credentialsType) || string.IsNullOrEmpty(_sqlServer))
             {
-                throw new InvalidOperationException("No active connection exists. Authenticate first.");
+                throw new InvalidOperationException("Authentication parameters are missing. Authenticate must be called first.");
             }
 
-            try
-            {
-                // Extract current connection details
-                var builder = new SqlConnectionStringBuilder(Connection.ConnectionString)
-                {
-                    // Optional: Enforce opening a new connection
-                    ApplicationName = $"{Connection.ClientConnectionId}_Temp-{Guid.NewGuid().ToString("N").Substring(0, 6)}"
-                };
+            var credentials = CredentialsFactory.GetCredentials(_credentialsType);
+            return credentials.Authenticate(_sqlServer, _database, _username, _password, _domain);
+        }
 
-                // Create and return a new connection
-                var newConnection = new SqlConnection(builder.ConnectionString);
-                newConnection.Open();
-                return newConnection;
-            }
-            catch (Exception ex)
+        /// <summary>
+        /// Duplicates this AuthenticationService with a new connection.
+        /// </summary>
+        /// <returns>A new AuthenticationService object with the same parameters.</returns>
+        public AuthenticationService Duplicate()
+        {
+            var duplicateService = new AuthenticationService(Server);
+            if (!duplicateService.Authenticate(_credentialsType, _sqlServer, _database, _username, _password, _domain))
             {
-                Logger.Error($"Failed to create a new connection: {ex.Message}");
-                throw;
+                throw new InvalidOperationException("Failed to duplicate authentication service.");
             }
+            return duplicateService;
         }
 
         public void Dispose()

@@ -31,10 +31,10 @@ namespace MSSQLand.Models
         public string[] ServerNames { get; private set; }
 
         /// <summary>
-        /// Remote Procedure Call (RPC)
+        /// Remote Procedure Call (RPC) usage
         /// RPC must be enabled for the linked server for EXEC AT queries
         /// </summary>
-        public bool SupportRemoteProcedureCall { get; set; } = true;
+        public bool UseRemoteProcedureCall { get; set; } = true;
 
         /// <summary>
         /// Initializes the linked server chain and server names.
@@ -71,13 +71,50 @@ namespace MSSQLand.Models
         }
 
         /// <summary>
+        /// Initializes the linked server chain using a comma-separated list of server names.
+        /// </summary>
+        /// <param name="serverList">Comma-separated list of server names (e.g., "SQL27,SQL53").</param>
+        public LinkedServers(string serverList)
+        {
+            if (string.IsNullOrWhiteSpace(serverList))
+            {
+                throw new ArgumentException("Server list cannot be null or empty.", nameof(serverList));
+            }
+
+            // Split the server names and trim whitespace
+            string[] serverNames = serverList.Split(',')
+                                             .Select(name => name.Trim())
+                                             .Where(name => !string.IsNullOrEmpty(name))
+                                             .ToArray();
+
+            // Initialize ServerChain with parsed server names
+            ServerChain = serverNames.Select(name => new Server { Hostname = name }).ToArray();
+
+            // Initialize ComputableServerNames starting with "0" as the convention
+            ComputableServerNames = new string[ServerChain.Length + 1];
+            ComputableServerNames[0] = "0";
+
+            ComputableImpersonationNames = new string[ServerChain.Length];
+            ServerNames = new string[ServerChain.Length];
+
+            for (int i = 0; i < ServerChain.Length; i++)
+            {
+                ComputableServerNames[i + 1] = ServerChain[i].Hostname;
+                ServerNames[i] = ServerChain[i].Hostname;
+                ComputableImpersonationNames[i] = ""; // No impersonation user in this constructor
+            }
+        }
+
+        /// <summary>
         /// Constructs a nested `OPENQUERY` statement for querying linked SQL servers in a chain.
+        /// It passes the query string as-is to the linked server without attempting to parse or validate it as T-SQL on the local server.
+        /// https://learn.microsoft.com/en-us/sql/t-sql/functions/openquery-transact-sql
         /// </summary>
         /// <param name="query">The SQL query to execute at the final server.</param>
         /// <returns>A string containing the nested `OPENQUERY` statement.</returns>
-        public string BuildOpenQueryChain(string query)
+        public string BuildSelectOpenQueryChain(string query)
         {
-            return BuildOpenQueryChainRecursive(
+            return BuildSelectOpenQueryChainRecursive(
                 linkedServers: ComputableServerNames,
                 query: query,
                 linkedImpersonation: ComputableImpersonationNames
@@ -91,7 +128,7 @@ namespace MSSQLand.Models
         /// <param name="query">The SQL query to be executed at the final server in the linked server path.</param>
         /// <param name="thicksCounter">A counter used to double the single quotes for each level of nesting.</param>
         /// <returns>A string containing the nested `OPENQUERY` statement.</returns>
-        private string BuildOpenQueryChainRecursive(string[] linkedServers, string query, int thicksCounter = 0, string[] linkedImpersonation = null)
+        private string BuildSelectOpenQueryChainRecursive(string[] linkedServers, string query, int thicksCounter = 0, string[] linkedImpersonation = null)
         {
             if (linkedServers == null || linkedServers.Length == 0)
             {
@@ -133,7 +170,7 @@ namespace MSSQLand.Models
             stringBuilder.Append("SELECT * FROM OPENQUERY(");
 
             // Taking the next server in the path.
-            stringBuilder.Append($"\"{linkedServers[1]}\", ");
+            stringBuilder.Append($"[{linkedServers[1]}], ");
 
             
             stringBuilder.Append(thicksRepr);
@@ -149,7 +186,7 @@ namespace MSSQLand.Models
 
 
             // Recursive call for the remaining servers
-            string recursiveCall = BuildOpenQueryChainRecursive(
+            string recursiveCall = BuildSelectOpenQueryChainRecursive(
                 linkedServers: linkedServers.Skip(1).ToArray(), // Skip the current server
                 linkedImpersonation: linkedImpersonation,
                 query: currentQuery,
@@ -172,7 +209,12 @@ namespace MSSQLand.Models
             return stringBuilder.ToString();
         }
 
-
+        /// <summary>
+        /// The BuildRemoteProcedureCallRecursive method constructs a nested EXEC AT statement for querying linked SQL servers in a chain.
+        /// When you use EXEC to run a query on a linked server, SQL Server expects the query to be valid T-SQL.
+        /// </summary>
+        /// <param name="query"></param>
+        /// <returns></returns>
         public string BuildRemoteProcedureCallChain(string query)
         {
             return BuildRemoteProcedureCallRecursive(
@@ -183,8 +225,7 @@ namespace MSSQLand.Models
         }
 
         /// <summary>
-        /// The BuildRemoteProcedureCallRecursive method constructs a nested EXEC AT statement for querying linked SQL servers in a chain.
-        /// </summary>
+        /// Recursively constructs a nested EXEC AT statement for querying linked SQL servers.
         /// <param name="linkedServers"></param>
         /// <param name="query"></param>
         /// <returns></returns>
@@ -208,7 +249,7 @@ namespace MSSQLand.Models
                 }
                     
                 // Double single quotes to escape them in the SQL string
-                currentQuery = $"EXEC ('{currentQuery.Replace("'", "''")}') AT {server}";
+                currentQuery = $"EXEC ('{currentQuery.Replace("'", "''")} ') AT [{server}]";
             }
 
             return currentQuery;

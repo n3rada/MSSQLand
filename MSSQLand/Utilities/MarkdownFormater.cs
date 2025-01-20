@@ -54,27 +54,35 @@ namespace MSSQLand.Utilities
 
         /// <summary>
         /// Converts a SqlDataReader into a Markdown-friendly table format.
+        /// Ensures the reader is properly closed after use.
         /// </summary>
         internal static string ConvertSqlDataReaderToMarkdownTable(SqlDataReader reader)
         {
-            if (!reader.HasRows)
+            if (reader == null)
             {
-                return "";
+                throw new ArgumentNullException(nameof(reader), "SqlDataReader cannot be null.");
             }
 
-            StringBuilder sqlStringBuilder = new("\n");
-            var columnWidths = new List<int>();
-            var rows = new List<string[]>();
-
-            if (reader.HasRows)
+            using (reader) // Ensure the reader is disposed of properly
             {
+                if (!reader.HasRows)
+                {
+                    return "No data available.";
+                }
+
+                StringBuilder sqlStringBuilder = new("\n");
+                var columnWidths = new List<int>();
+                var rows = new List<string[]>();
+
                 int columnCount = reader.FieldCount;
 
+                // Initialize column widths
                 for (int i = 0; i < columnCount; i++)
                 {
                     columnWidths.Add(reader.GetName(i).Length);
                 }
 
+                // Read rows and calculate column widths
                 while (reader.Read())
                 {
                     var row = new string[columnCount];
@@ -87,19 +95,22 @@ namespace MSSQLand.Utilities
                     rows.Add(row);
                 }
 
+                // Add column headers
                 for (int i = 0; i < columnCount; i++)
                 {
-                    string columnName = reader.GetName(i).Equals("") ? $"column{i}" : reader.GetName(i);
+                    string columnName = string.IsNullOrEmpty(reader.GetName(i)) ? $"column{i}" : reader.GetName(i);
                     sqlStringBuilder.Append("| ").Append(columnName.PadRight(columnWidths[i])).Append(" ");
                 }
                 sqlStringBuilder.AppendLine("|");
 
+                // Add separator row
                 for (int i = 0; i < columnCount; i++)
                 {
                     sqlStringBuilder.Append("| ").Append(new string('-', columnWidths[i])).Append(" ");
                 }
                 sqlStringBuilder.AppendLine("|");
 
+                // Add rows
                 foreach (var row in rows)
                 {
                     for (int i = 0; i < columnCount; i++)
@@ -108,10 +119,11 @@ namespace MSSQLand.Utilities
                     }
                     sqlStringBuilder.AppendLine("|");
                 }
-            }
 
-            return sqlStringBuilder.ToString();
+                return sqlStringBuilder.ToString();
+            }
         }
+
 
         /// <summary>
         /// Converts a DataTable into a Markdown-friendly table format.

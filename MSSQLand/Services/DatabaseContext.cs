@@ -68,5 +68,20 @@ namespace MSSQLand.Services
             return true;
         }
 
+        /// <summary>
+        /// Creates a new instance of DatabaseContext with a fresh QueryService and SqlConnection.
+        /// </summary>
+        /// <returns>A new DatabaseContext instance with a fresh QueryService.</returns>
+        public DatabaseContext Duplicate()
+        {
+            // Create a new AuthenticationService using the same Server instance
+            AuthenticationService freshAuthService = AuthService.Duplicate();
+
+            // Return a new DatabaseContext with the fresh AuthenticationService
+            return new DatabaseContext(freshAuthService);
+        }
+
+
+
     }
 }

@@ -8,7 +8,7 @@ namespace MSSQLand.Services.Credentials
     public abstract class BaseCredentials
     {
 
-        private int _connectTimeout = 5;
+        private readonly int _connectTimeout = 5;
 
         /// <summary>
         /// Indicates whether the current authentication attempt was successful.

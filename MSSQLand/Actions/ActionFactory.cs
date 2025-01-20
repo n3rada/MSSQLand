@@ -29,15 +29,19 @@ namespace MSSQLand.Utilities
                 { "smb", (typeof(Smb), "Send SMB requests.") },
                 { "users", (typeof(Users), "List database users.") },
                 { "permissions", (typeof(Permissions), "Enumerate permissions.") },
+                { "procedures", (typeof(Procedures), "List available procedures.") },
                 { "tables", (typeof(Tables), "List tables in a database.") },
                 { "databases", (typeof(Databases), "List available databases.") },
                 { "config", (typeof(Configure), "Use sp_configure to modify settings.") },
                 { "search", (typeof(Search), "Search for specific keyword in database.") },
                 { "ole", (typeof(ObjectLinkingEmbedding), "Executes the specified command using OLE Automation Procedures.") },
                 { "clr", (typeof(ClrExecution), "Deploy and execute CLR assemblies.") },
-                { "adsi", (typeof(Adsi), "Extract credentials or query Active Directory using the ADSI provider.") },
+                { "agents", (typeof(Agents), "Interact with and manage SQL Server Agent jobs.") },
+                { "adsi-creds", (typeof(AdsiCredentialExtractor), "Extract credentials by querying your own LDAP server using the ADSI provider.") },
+                { "monitor", (typeof(Monitor), "List running SQL commands.") },
+                { "kill", (typeof(Kill), "Terminate running SQL commands by session ID or all.") },
 
-                { "adsi", (typeof(Adsi), "Extract credentials or query Active Directory using the ADSI provider.") }
+                { "oledb-providers", (typeof(OleDbProvidersInfo), "Retrieve detailed configuration and properties of OLE DB providers.") }
             };
 
         private static readonly Dictionary<string, (Type ActionClass, string Description)> EnumerationMetadata =

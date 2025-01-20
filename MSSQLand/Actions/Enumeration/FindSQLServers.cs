@@ -16,13 +16,19 @@ namespace MSSQLand.Actions.Enumeration
 
         public override void ValidateArguments(string additionalArguments)
         {
+            if (string.IsNullOrWhiteSpace(additionalArguments))
+            {
+                throw new ArgumentException("Active Directory domain is required. Please provide a valid domain name (e.g., corp.com).");
+            }
+
             _domain = additionalArguments;
+            
         }
 
 
         public override void Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Lurking for MS SQL Servers");
+            Logger.TaskNested($"Lurking for MS SQL Servers on Active Directory domain: {_domain};");
 
             // Initialize domain service based on the provided domain
             ADirectoryService domainService = string.IsNullOrWhiteSpace(_domain)

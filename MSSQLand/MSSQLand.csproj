@@ -71,6 +71,10 @@
   <ItemGroup>
     <Compile Include="Actions\ActionFactory.cs" />
     <Compile Include="Actions\Administration\Configure.cs" />
+    <Compile Include="Actions\Administration\Kill.cs" />
+    <Compile Include="Actions\Administration\Monitor.cs" />
+    <Compile Include="Actions\Database\OleDbProvidersInfo.cs" />
+    <Compile Include="Actions\Database\Procedures.cs" />
     <Compile Include="Actions\Database\Search.cs" />
     <Compile Include="Actions\Database\Whoami.cs" />
     <Compile Include="Actions\ExcludeFromArgumentsAttribute.cs" />
@@ -78,8 +82,10 @@
     <Compile Include="Actions\Execution\Agents.cs" />
     <Compile Include="Actions\Execution\ObjectLinkingEmbedding.cs" />
     <Compile Include="Actions\Enumeration\FindSQLServers.cs" />
-    <Compile Include="Actions\Network\Adsi.cs" />
+    <Compile Include="Actions\Network\AdsiCredentialExtractor.cs" />
     <Compile Include="Services\ActiveDirectoryService.cs" />
+    <Compile Include="Services\AdsiService.cs" />
+    <Compile Include="Utilities\DataProcessor.cs" />
     <Compile Include="Utilities\Helper.cs" />
     <Compile Include="Actions\BaseAction.cs" />
     <Compile Include="Actions\Database\Databases.cs" />

@@ -56,18 +56,18 @@ namespace MSSQLand.Actions.Execution
                 return;
             }
 
-            string assemblyHash = library[0];
-            string assemblyHexBytes = library[1];
+            string libraryHash = library[0];
+            string libraryHexBytes = library[1];
 
-            Logger.Info($"SHA-512 Hash: {assemblyHash}");
-            Logger.Info($"DLL Bytes Length: {assemblyHexBytes.Length}");
+            Logger.Info($"SHA-512 Hash: {libraryHash}");
+            Logger.Info($"DLL Bytes Length: {libraryHexBytes.Length}");
 
             string assemblyName = Guid.NewGuid().ToString("N").Substring(0, 6);
-            string trustedAssemblyDescription = Guid.NewGuid().ToString("N").Substring(0, 6);
+            string libraryPath = Guid.NewGuid().ToString("N").Substring(0, 6);
 
             string dropProcedure = $"DROP PROCEDURE IF EXISTS [{_function}];";
             string dropAssembly = $"DROP ASSEMBLY IF EXISTS [{assemblyName}];";
-            string dropClrHash = $"EXEC sp_drop_trusted_assembly 0x{assemblyHash};";
+            string dropClrHash = $"EXEC sp_drop_trusted_assembly 0x{libraryHash};";
 
             Logger.Task("Starting CLR assembly deployment process");
             try
@@ -80,7 +80,7 @@ namespace MSSQLand.Actions.Execution
                 }
                 else
                 {
-                    if (databaseContext.ConfigService.RegisterTrustedAssembly(assemblyHash, trustedAssemblyDescription) == false)
+                    if (databaseContext.ConfigService.RegisterTrustedAssembly(libraryHash, libraryPath) == false)
                     {
                         return;
                     }
@@ -94,7 +94,7 @@ namespace MSSQLand.Actions.Execution
                 // Step 3: Create the assembly from the DLL bytes
                 Logger.Task("Creating the assembly from DLL bytes");
                 databaseContext.QueryService.ExecuteNonProcessing(
-                    $"CREATE ASSEMBLY [{assemblyName}] FROM 0x{assemblyHexBytes} WITH PERMISSION_SET = UNSAFE;");
+                    $"CREATE ASSEMBLY [{assemblyName}] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;");
 
                 if (!databaseContext.ConfigService.CheckAssembly(assemblyName))
                 {

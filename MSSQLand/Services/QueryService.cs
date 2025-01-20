@@ -1,6 +1,7 @@
 ﻿using MSSQLand.Models;
 using MSSQLand.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
@@ -11,7 +12,9 @@ namespace MSSQLand.Services
     {
         public readonly SqlConnection Connection;
         public string ExecutionServer { get; set; }
+
         private LinkedServers _linkedServers;
+
 
         /// <summary>
         /// LinkedServers property. When set, updates the ExecutionServer to the last server in the ServerNames array.
@@ -55,7 +58,6 @@ namespace MSSQLand.Services
         }
 
 
-
         /// <summary>
         /// Executes a SQL query against the database and returns a single scalar value.
         /// </summary>
@@ -73,7 +75,12 @@ namespace MSSQLand.Services
         /// <param name="query">The SQL query to execute.</param>
         public int ExecuteNonProcessing(string query)
         {
-            return (int)ExecuteWithHandling(query, executeReader: false);
+            var result = ExecuteWithHandling(query, executeReader: false);
+            if (result == null)
+            {
+                return -1; // Indicate an error
+            }
+            return (int)result;
         }
 
         /// <summary>
@@ -89,6 +96,13 @@ namespace MSSQLand.Services
                 throw new ArgumentException("Query cannot be null or empty.", nameof(query));
             }
 
+            if (Connection == null || Connection.State != ConnectionState.Open)
+            {
+                Logger.Error("Database connection is not initialized or not open.");
+                return null;
+            }
+
+
             string finalQuery = PrepareQuery(query);
 
             try
@@ -96,12 +110,15 @@ namespace MSSQLand.Services
 
                 using var command = new SqlCommand(finalQuery, Connection)
                 {
-                    CommandType = CommandType.Text
+                    CommandType = CommandType.Text,
+                    CommandTimeout = 15
                 };
 
                 if (executeReader)
                 {
-                    return command.ExecuteReader();
+                    SqlDataReader reader = command.ExecuteReader();
+
+                    return reader;
                 }
                 else
                 {
@@ -110,15 +127,16 @@ namespace MSSQLand.Services
             }
             catch (Exception ex)
             {
-                Logger.Warning(ex.Message);
+                Logger.Warning($"Query execution failed: {ex.Message}");
 
                 if (ex.Message.Contains("not configured for RPC"))
                 {
                     Logger.WarningNested("Trying again with OPENQUERY");
-                    _linkedServers.SupportRemoteProcedureCall = false;
+                    _linkedServers.UseRemoteProcedureCall = false;
                     return Execute(query);
                 }
-                return null;
+
+                throw;
             }
         }
 
@@ -176,13 +194,13 @@ namespace MSSQLand.Services
             // If LinkedServers variable exists and has valid server names
             if (_linkedServers?.ServerNames != null && _linkedServers.ServerNames.Length > 0)
             {
-                if (_linkedServers.SupportRemoteProcedureCall)
+                if (_linkedServers.UseRemoteProcedureCall)
                 {
                     finalQuery = _linkedServers.BuildRemoteProcedureCallChain(query);
                 }
                 else
                 {
-                    finalQuery = _linkedServers.BuildOpenQueryChain(query);
+                    finalQuery = _linkedServers.BuildSelectOpenQueryChain(query);
                 }
 
                 Logger.DebugNested($"Linked Query: {finalQuery}");
