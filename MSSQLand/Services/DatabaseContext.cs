@@ -1,8 +1,5 @@
 ﻿using MSSQLand.Utilities;
-using MSSQLand.Services.Credentials;
 using System;
-using System.Data.SqlClient;
-using System.Data;
 using MSSQLand.Models;
 
 
@@ -57,12 +54,9 @@ namespace MSSQLand.Services
                     Logger.Success($"Successfully impersonated user: {impersonateTarget}");
                     return true;
                 }
-                else
-                {
-                    Logger.Error($"Cannot impersonate user: {impersonateTarget}");
-                    return false;
 
-                }
+                Logger.Error($"Cannot impersonate user: {impersonateTarget}");
+                return false;
             }
 
             return true;
