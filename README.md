@@ -5,12 +5,7 @@ Land gracefully in your target MSSQL DBMS, as if arriving on a business-class fl
     <img width="350" src="/media/MSSQLand__icon.webp" alt="MSSQLand Logo">
 </p>
 
-MSSQLand is your ultimate tool for interacting with [Microsoft SQL Server (MSSQL)](https://en.wikipedia.org/wiki/Microsoft_SQL_Server) database management system (DBMS) in your red activities. Primarily designed for constrained environments where operations must be conducted directly through your beacon.
-
-It allows you to pave your way across multiple linked servers and impersonate anyone (authorised) on the road, popping out of the last hop with any desired action.
-
-The tool's precise and structured output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for your reports.
-
+MSSQLand is your ultimate tool for interacting with [Microsoft SQL Server (MSSQL)](https://en.wikipedia.org/wiki/Microsoft_SQL_Server) database management system (DBMS) in your red activities. Primarily designed for constrained environments where operations must be conducted directly through your beacon. It allows you to pave your way across multiple linked servers and impersonate anyone (authorised) on the road, popping out of the last hop with any desired action.
 
 ## Command-Line Arguments
 
@@ -80,7 +75,7 @@ The tool's precise and structured output, enriched with timestamps and valuable 
 
 ## Output
 
-And yes, all the output tables are Markdown-friendly and can be directly copied and pasted into your notes. For example, running this command:
+The tool's precise and structured output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for your reports.  All the output tables are Markdown-friendly and can be directly copied and pasted into your notes. For example, running this command:
 ```shell
 .\MSSQLand.exe /h:SQL01:Moulinier /u:Jacquard /p:"Fr@nce1940/Gaulle" /c:local /l:SQL02:webapp03,SQL03:webapp04,SQL04:Merlaux /a:tables agents
 ```
