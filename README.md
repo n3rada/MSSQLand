@@ -77,7 +77,7 @@ MSSQLand is your ultimate tool for interacting with [Microsoft SQL Server (MSSQL
 
 The tool's precise and structured output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for your reports.  All the output tables are Markdown-friendly and can be directly copied and pasted into your notes. For example, running this command:
 ```shell
-.\MSSQLand.exe /h:SQL01:Moulinier /u:Jacquard /p:"Fr@nce1940/Gaulle" /c:local /l:SQL02:webapp03,SQL03:webapp04,SQL04:Merlaux /a:tables agents
+.\MSSQLand.exe /h:SQL01:Moulinier /c:token /a:search agents pass
 ```
 
 Create the following output:
@@ -103,11 +103,8 @@ Create the following output:
 |-> Mapped to the user dbo
 [i] You can impersonate anyone on SQL01 as a sysadmin
 [+] Successfully impersonated user: Moulinier
-[i] Server chain: SQL02 -> SQL03 -> SQL04
-[i] Logged in on SQL04 as Merlaux
-|-> Mapped to the user guest
 
-[>] Executing action 'Search' against SQL04
+[>] Executing action 'Search' against SQL01
 |-> Searching for 'pass' in database 'agents'
 
 [+] Found 'pass' in column headers:
@@ -116,7 +113,7 @@ Create the following output:
 | ---------------------- | ------ | ---------------- |
 | [agents].[dbo].[users] | pass   | 3                |
 
-[+] Found 'pass' in [music].[dbo].[users] rows:
+[+] Found 'pass' in [agents].[dbo].[users] rows:
 
 | id | name  | pass               |
 | -- | ----- | ------------------ |
