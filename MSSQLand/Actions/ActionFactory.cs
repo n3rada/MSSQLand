@@ -13,35 +13,47 @@ namespace MSSQLand.Utilities
     public static class ActionFactory
     {
         private static readonly Dictionary<string, (Type ActionClass, string Description)> ActionMetadata =
-            new()
-            {
-                { "rows", (typeof(Rows), "Retrieve rows from a table.") },
-                { "query", (typeof(Query), "Execute a custom SQL query.") },
-                { "links", (typeof(Links), "Retrieve linked server information.") },
-                { "exec", (typeof(XpCmd), "Execute commands using xp_cmdshell.") },
-                { "pwsh", (typeof(PowerShell), "Execute PowerShell commands.") },
-                { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a PowerShell script.") },
-                { "read", (typeof(FileRead), "Read file contents.") },
-                { "rpc", (typeof(RemoteProcedureCall), "Call remote procedures on linked servers.") },
-                { "impersonate", (typeof(Impersonation), "Check and perform user impersonation.") },
-                { "info", (typeof(Info), "Retrieve information about the DBMS server.") },
-                { "whoami", (typeof(Whoami), "Retrieve information about the current user.") },
-                { "smb", (typeof(SmbCoerce), "Leverages xp_dirtree to send SMB requests to a specified UNC path, potentially coercing authentication.") },
-                { "users", (typeof(Users), "List database users.") },
-                { "permissions", (typeof(Permissions), "Enumerate permissions.") },
-                { "procedures", (typeof(Procedures), "List available procedures.") },
-                { "tables", (typeof(Tables), "List tables in a database.") },
-                { "databases", (typeof(Databases), "List available databases.") },
-                { "config", (typeof(Configure), "Use sp_configure to modify settings.") },
-                { "search", (typeof(Search), "Search for specific keyword in database.") },
-                { "ole", (typeof(ObjectLinkingEmbedding), "Executes the specified command using OLE Automation Procedures.") },
-                { "clr", (typeof(ClrExecution), "Deploy and execute CLR assemblies.") },
-                { "agents", (typeof(Agents), "Interact with and manage SQL Server Agent jobs.") },
-                { "adsi-creds", (typeof(AdsiCredentialExtractor), "Extract credentials by querying your own LDAP server using the ADSI provider.") },
-                { "monitor", (typeof(Monitor), "List running SQL commands.") },
-                { "kill", (typeof(Kill), "Terminate running SQL commands by session ID or all.") },
-                { "oledb-providers", (typeof(OleDbProvidersInfo), "Retrieve detailed configuration and properties of OLE DB providers.") }
-            };
+        new()
+        {
+            // Information Gathering and Reconnaissance
+            { "info", (typeof(Info), "Retrieve information about the DBMS server.") },
+            { "whoami", (typeof(Whoami), "Retrieve information about the current user.") },
+            { "links", (typeof(Links), "Retrieve linked server information.") },
+            { "monitor", (typeof(Monitor), "List running SQL commands.") },
+            { "oledb-providers", (typeof(OleDbProvidersInfo), "Retrieve detailed configuration and properties of OLE DB providers.") },
+
+            // Database Exploration
+            { "databases", (typeof(Databases), "List available databases.") },
+            { "tables", (typeof(Tables), "List tables in a database.") },
+            { "rows", (typeof(Rows), "Retrieve rows from a table.") },
+            { "procedures", (typeof(Procedures), "List available procedures.") },
+            { "users", (typeof(Users), "List database users.") },
+            { "permissions", (typeof(Permissions), "Enumerate permissions.") },
+            { "search", (typeof(Search), "Search for specific keyword in database.") },
+
+            // User Interaction and Impersonation
+            { "impersonate", (typeof(Impersonation), "Check and perform user impersonation.") },
+
+            // Execution and Command Capabilities
+            { "query", (typeof(Query), "Execute a custom T-SQL query.") },
+            { "exec", (typeof(XpCmd), "Execute commands using xp_cmdshell.") },
+            { "pwsh", (typeof(PowerShell), "Execute PowerShell commands.") },
+            { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a PowerShell script.") },
+            { "ole", (typeof(ObjectLinkingEmbedding), "Executes the specified command using OLE Automation Procedures.") },
+            { "clr", (typeof(ClrExecution), "Deploy and execute CLR assemblies.") },
+            { "rpc", (typeof(RemoteProcedureCall), "Call remote procedures on linked servers.") },
+            { "smb", (typeof(SmbCoerce), "Leverages xp_dirtree to send SMB requests to a specified UNC path, potentially coercing authentication.") },
+            { "adsi-creds", (typeof(AdsiCredentialExtractor), "Extract credentials by querying your own LDAP server using the ADSI provider.") },
+
+            // Configuration and Management
+            { "config", (typeof(Configure), "Use sp_configure to modify settings.") },
+            { "agents", (typeof(Agents), "Interact with and manage SQL Server Agent jobs.") },
+            { "read", (typeof(FileRead), "Read file contents.") },
+
+            // Termination and Cleanup
+            { "kill", (typeof(Kill), "Terminate running SQL commands by session ID or all.") },
+        };
+
 
         private static readonly Dictionary<string, (Type ActionClass, string Description)> EnumerationMetadata =
             new()
