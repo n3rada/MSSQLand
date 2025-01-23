@@ -26,7 +26,7 @@ namespace MSSQLand.Utilities
                 { "impersonate", (typeof(Impersonation), "Check and perform user impersonation.") },
                 { "info", (typeof(Info), "Retrieve information about the DBMS server.") },
                 { "whoami", (typeof(Whoami), "Retrieve information about the current user.") },
-                { "smb", (typeof(Smb), "Send SMB requests.") },
+                { "smb", (typeof(SmbCoerce), "Leverages xp_dirtree to send SMB requests to a specified UNC path, potentially coercing authentication.") },
                 { "users", (typeof(Users), "List database users.") },
                 { "permissions", (typeof(Permissions), "Enumerate permissions.") },
                 { "procedures", (typeof(Procedures), "List available procedures.") },

@@ -100,7 +100,7 @@
     <Compile Include="Actions\Administration\RemoteProcedureCall.cs" />
     <Compile Include="Actions\Database\Rows.cs" />
     <Compile Include="Actions\Execution\XpCmd.cs" />
-    <Compile Include="Actions\Network\Smb.cs" />
+    <Compile Include="Actions\Network\SmbCoerce.cs" />
     <Compile Include="Models\CommandArgs.cs" />
     <Compile Include="Models\LinkedServers.cs" />
     <Compile Include="Models\Server.cs" />

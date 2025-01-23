@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace MSSQLand.Actions.Network
 {
-    internal class Smb : BaseAction
+    internal class SmbCoerce : BaseAction
     {
         private string _uncPath;
 
