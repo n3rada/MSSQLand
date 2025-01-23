@@ -231,7 +231,7 @@ This project follows several key software development principles and practices.
 
 1. **Single Responsability Principle (SRP)**
 
-Each class should have one, and only one, reason to change. Each action class in the [`Actions`](./MSSQLand/Actions) directory, like [`Tables`](./MSSQLand/Actions/Database/Tables.cs), [`Permissions`](./MSSQLand/Actions/Database/Permissions.cs), or [`Smb`](./MSSQLand/Actions/Network/Smb.cs), is responsible for a single operation.
+Each class should have one, and only one, reason to change. Each action class in the [`Actions`](./MSSQLand/Actions) directory, like [`Tables`](./MSSQLand/Actions/Database/Tables.cs) or [`Permissions`](./MSSQLand/Actions/Database/Permissions.cs), is responsible for a single operation.
 The [`Logger`](./MSSQLand/Utilities/Logger.cs) class solely handles logging, decoupling it from other logic.
 
 3. **Open/Close Principle (OCP)**
