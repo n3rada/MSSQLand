@@ -99,7 +99,7 @@ Create the following output:
 |-> Server Version: 15.00.2000
 |-> Client Workstation ID: WS-445c74
 |-> Client Connection ID: b7c172a7-c349-4268-a466-285d2af89fbb
-[i] Logged in on SQL01 as Jacquard
+[i] Logged in on SQL01 as NT AUTHORITY\SYSTEM
 |-> Mapped to the user dbo
 [i] You can impersonate anyone on SQL01 as a sysadmin
 [+] Successfully impersonated user: Moulinier
