@@ -116,7 +116,7 @@ namespace MSSQLand.Actions.Database
                 string schema = tableInfo[0];
                 string table = tableInfo[1];
 
-                // Construct WHERE clause for all text-based columns
+                // Construct WHERE clause
                 string whereClause = string.Join(" OR ", tableEntry.Value.Select(col => $"{col} LIKE '%{_keyword}%'"));
 
                 string searchQuery = $@"
