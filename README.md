@@ -38,34 +38,34 @@ MSSQLand is your ultimate tool for interacting with [Microsoft SQL Server (MSSQL
 
 ### Available Actions
 
-| Action          | Description                                                                                             | Arguments                                                      |
-| --------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| info            | Retrieve information about the DBMS server.                                                             |                                                                |
-| whoami          | Retrieve information about the current user.                                                            |                                                                |
-| links           | Retrieve linked server information.                                                                     |                                                                |
-| monitor         | List running SQL commands.                                                                              |                                                                |
-| oledb-providers | Retrieve detailed configuration and properties of OLE DB providers.                                     |                                                                |
-| databases       | List available databases.                                                                               |                                                                |
-| tables          | List tables in a database.                                                                              | database (string)                                              |
-| rows            | Retrieve rows from a table.                                                                             | database (string),schema (string, default: dbo),table (string) |
-| procedures      | List available procedures.                                                                              |                                                                |
-| users           | List database users.                                                                                    |                                                                |
-| permissions     | Enumerate permissions.                                                                                  | database (string),schema (string, default: dbo),table (string) |
-| search          | Search for specific keyword in database.                                                                | database (string),keyword (string)                             |
-| impersonate     | Check and perform user impersonation.                                                                   |                                                                |
-| query           | Execute a custom T-SQL query.                                                                           | query (string)                                                 |
-| exec            | Execute commands using xp_cmdshell.                                                                     | command (string)                                               |
-| pwsh            | Execute PowerShell commands.                                                                            | script (string)                                                |
-| pwshdl          | Download and execute a PowerShell script.                                                               | url (string)                                                   |
-| ole             | Executes the specified command using OLE Automation Procedures.                                         | command (string)                                               |
-| clr             | Deploy and execute CLR assemblies.                                                                      | dllURI (string),function (string)                              |
-| rpc             | Call remote procedures on linked servers.                                                               | action (string),linkedServerName (string)                      |
-| smb             | Leverages xp_dirtree to send SMB requests to a specified UNC path, potentially coercing authentication. | uncPath (string)                                               |
-| adsi-creds      | Extract credentials by querying your own LDAP server using the ADSI provider.                           | port (int, default: 0)                                         |
-| config          | Use sp_configure to modify settings.                                                                    | state (int, default: 0),optionName (string)                    |
-| agents          | Interact with and manage SQL Server Agent jobs.                                                         |                                                                |
-| read            | Read file contents.                                                                                     | filePath (string)                                              |
-| kill            | Terminate running SQL commands by session ID or all.                                                    | target (string)                                                |
+| Action          | Description                                                                   | Arguments                                                      |
+| --------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| rows            | Retrieve rows from a table.                                                   | database (string),schema (string, default: dbo),table (string) |
+| query           | Execute a custom SQL query.                                                   | query (string)                                                 |
+| links           | Retrieve linked server information.                                           |                                                                |
+| exec            | Execute commands using xp_cmdshell.                                           | command (string)                                               |
+| pwsh            | Execute PowerShell commands.                                                  | script (string)                                                |
+| pwshdl          | Download and execute a PowerShell script.                                     | url (string)                                                   |
+| read            | Read file contents.                                                           | filePath (string)                                              |
+| rpc             | Call remote procedures on linked servers.                                     | action (string),linkedServerName (string)                      |
+| impersonate     | Check and perform user impersonation.                                         |                                                                |
+| info            | Retrieve information about the DBMS server.                                   |                                                                |
+| whoami          | Retrieve information about the current user.                                  |                                                                |
+| smb             | Send SMB requests.                                                            | uncPath (string)                                               |
+| users           | List database users.                                                          |                                                                |
+| permissions     | Enumerate permissions.                                                        | database (string),schema (string, default: dbo),table (string) |
+| procedures      | List available procedures.                                                    |                                                                |
+| tables          | List tables in a database.                                                    | database (string)                                              |
+| databases       | List available databases.                                                     |                                                                |
+| config          | Use sp_configure to modify settings.                                          | state (int, default: 0),optionName (string)                    |
+| search          | Search for specific keyword in database.                                      | database (string),keyword (string)                             |
+| ole             | Executes the specified command using OLE Automation Procedures.               | command (string)                                               |
+| clr             | Deploy and execute CLR assemblies.                                            | dllURI (string),function (string)                              |
+| agents          | Interact with and manage SQL Server Agent jobs.                               |                                                                |
+| adsi-creds      | Extract credentials by querying your own LDAP server using the ADSI provider. | port (int, default: 0)                                         |
+| monitor         | List running SQL commands.                                                    |                                                                |
+| kill            | Terminate running SQL commands by session ID or all.                          | target (string)                                                |
+| oledb-providers | Retrieve detailed configuration and properties of OLE DB providers.           |                                                                |
 
 ### Enumerations
 
@@ -277,12 +277,19 @@ Here, no one will be erased from Git history. No fear to have here—no one will
 
 Please see the [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines on how to get started.
 
+## Acknowledgements 💡
+MSSQLand was initially inspired by [SQLRecon](https://github.com/skahwah/SQLRecon), which provided a solid foundation for MS SQL post-exploitation and reconnaissance. However, during my contributions to SQLRecon — particularly in addressing [chained linked server traversal](https://github.com/skahwah/SQLRecon/issues/16#issuecomment-2048435229) and enhancing user impersonation — I encountered significant roadblocks in how contributions were handled. [My pull request](https://github.com/skahwah/SQLRecon/pull/17), which introduced major improvements in impersonation, chaining, and context management, was ultimately not merged but copy pasted.
+
+Rather than let this work go to waste, I decided to develop MSSQLand, an OOP-driven, modular, and community-friendly alternative. Unlike SQLRecon, which required deep refactoring to make simple modifications, MSSQLand was built with developers in mind. The tool is built with extensibility in mind, allowing integration of new features while maintaining clarity and simplicity. It aims to provide a structured, customizable, and operator-friendly experience for engagements requiring MS SQL exploitation.
+
+While I appreciate the inspiration SQLRecon provided, MSSQLand is designed to be open to contributions, transparent in development, and aligned with the collaborative spirit of open-source software. 
+
 ## Disclaimer ⚠️
 This tool is designed for educational purposes only and is intended to assist security professionals in understanding and testing the security of SQL Server environments in authorized engagements. It is specifically crafted to be used in controlled environments, such as:
 - Penetration testing labs (e.g., HackTheBox, OffSec exam scenarios).
 - Personal lab setups designed for ethical hacking and security research.
 
-## Important Note
+## Legal Notice
 Any unauthorized use of this tool in real-world environments or against systems without explicit permission from the system owner is strictly prohibited and may violate legal and ethical standards. The creators and contributors of this tool are not responsible for any misuse or damage caused.
 
 Use responsibly and ethically. Always respect the law and obtain proper authorization.
