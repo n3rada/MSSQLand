@@ -12,7 +12,7 @@ MSSQLand is your ultimate tool for interacting with [Microsoft SQL Server (MSSQL
 - For an overview of the project structure, refer to [STRUCTURE.md](./STRUCTURE.md).
 
 ## 📖 Example
-The tool's precise and structured output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for your reports.  All the output tables are Markdown-friendly and can be directly copied and pasted into your notes.
+The tool's output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for your reports.  All the output tables are Markdown-friendly and can be directly copied and pasted into your notes.
 
 ![Searching pass](./media/example.png)
 
