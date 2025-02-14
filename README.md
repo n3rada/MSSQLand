@@ -12,57 +12,9 @@ MSSQLand is your ultimate tool for interacting with [Microsoft SQL Server (MSSQL
 - For an overview of the project structure, refer to [STRUCTURE.md](./STRUCTURE.md).
 
 ## 📖 Example
-The tool's precise and structured output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for your reports.  All the output tables are Markdown-friendly and can be directly copied and pasted into your notes. For example, running this command:
-```shell
-.\MSSQLand.exe /h:SQL01:Moulinier /c:token /a:search agents pass
-```
+The tool's precise and structured output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for your reports.  All the output tables are Markdown-friendly and can be directly copied and pasted into your notes.
 
-Create the following output:
-```txt
-===========================================
-         Executing from: SQL01
-    Time Zone ID: Romance Standard Time
-  Local Time: 13:42:48, UTC Offset: 01:00
-===========================================
-
-===========================================
-  Start at 2025-01-17 12:42:48:53388 UTC
-===========================================
-
-[>] Trying to connect with LocalCredentials
-[+] Connection opened successfully
-|-> Server: localhost,1433
-|-> Database: master
-|-> Server Version: 15.00.2000
-|-> Client Workstation ID: WS-445c74
-|-> Client Connection ID: b7c172a7-c349-4268-a466-285d2af89fbb
-[i] Logged in on SQL01 as NT AUTHORITY\SYSTEM
-|-> Mapped to the user dbo
-[i] You can impersonate anyone on SQL01 as a sysadmin
-[+] Successfully impersonated user: Moulinier
-
-[>] Executing action 'Search' against SQL01
-|-> Searching for 'pass' in database 'agents'
-
-[+] Found 'pass' in column headers:
-
-| FQTN                   | Header | Ordinal Position |
-| ---------------------- | ------ | ---------------- |
-| [agents].[dbo].[users] | pass   | 3                |
-
-[+] Found 'pass' in [agents].[dbo].[users] rows:
-
-| id | name  | pass               |
-| -- | ----- | ------------------ |
-| 7  | Calot | password04/06/1958 |
-
-[+] Search completed.
-
-===========================================
-   End at 2025-01-17 12:42:48:66109 UTC
-       Total duration: 0.13 seconds
-===========================================
-```
+![Searching pass](./media/example.png)
 
 ## 👑 Show Time
 You gain access to a database `SQL01` mapped to the user `dbo`. You need to impersonate `webapp02` in order to connect to linked database `SQL02`. In `SQL02`, you need to impersonate `webapp03` in order to go further and so on and so forth. Let's say you’ve landed an agent inside a `sqlservr.exe` process running under the high-privileged `NT AUTHORITY\SYSTEM`. Lucky you!
