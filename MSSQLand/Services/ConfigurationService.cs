@@ -363,6 +363,14 @@ namespace MSSQLand.Services
 
                 DataTable dependencies = _queryService.ExecuteTable(query);
 
+                if (dependencies.Rows.Count == 0)
+                {
+                    Logger.Info($"No dependent objects found for assembly '{assemblyName}'. Nothing to drop.");
+                    return;
+                }
+
+                Logger.Info($"Found {dependencies.Rows.Count} dependent objects for assembly '{assemblyName}'.");
+
                 foreach (DataRow row in dependencies.Rows)
                 {
                     string objectType = row["type_desc"].ToString();

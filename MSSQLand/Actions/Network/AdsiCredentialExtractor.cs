@@ -49,7 +49,7 @@ namespace MSSQLand.Actions.Network
                 Port = _port
             };
 
-            string fakeAdsiServer = $"SQL-{Guid.NewGuid().ToString("N").Substring(0, 4)}";
+            string fakeAdsiServer = $"SQL-{Guid.NewGuid().ToString("N").Substring(0, 2)}";
 
             if (!adsiService.CreateAdsiLinkedServer(fakeAdsiServer))
             {
