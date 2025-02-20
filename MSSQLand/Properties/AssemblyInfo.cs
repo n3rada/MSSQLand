@@ -30,4 +30,4 @@ using System.Runtime.InteropServices;
 //
 
 // The wildcard (*) syntax for AssemblyVersion relies on the local time of the machine during compilation.
-[assembly: AssemblyVersion("1.1.*")]
+[assembly: AssemblyVersion("1.0.1.*")]
