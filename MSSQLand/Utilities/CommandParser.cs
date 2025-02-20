@@ -33,6 +33,11 @@ namespace MSSQLand.Utilities
             try {
                 foreach (var arg in args)
                 {
+                    if (arg.Contains("--"))
+                    {
+                        continue; // Skip any argument containing "--" (sliver thing)
+                    }
+
                     if (arg.Equals("/debug", StringComparison.OrdinalIgnoreCase))
                     {
                         Logger.IsDebugEnabled = true;
