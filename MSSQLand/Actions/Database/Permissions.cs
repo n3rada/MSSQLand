@@ -35,7 +35,7 @@ namespace MSSQLand.Actions.Database
             }
         }
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             
             if (string.IsNullOrEmpty(_table))
@@ -54,28 +54,26 @@ namespace MSSQLand.Actions.Database
                 Logger.Info("Database access");
 
                 Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable("SELECT name AS [Accessible Database] FROM sys.databases WHERE HAS_DBACCESS(name) = 1;")));
-            } else
-            {
-                string targetTable = $"[{_schema}].[{_table}]";
-                Logger.TaskNested($"Listing permissions for {databaseContext.UserService.UserName} on [{_database}].{targetTable}");
 
-                // Query to get permissions
-                string query = $@"
-                USE [{_database}];
-                SELECT DISTINCT
-                    permission_name AS [Permission]
-                FROM 
-                    fn_my_permissions('{targetTable}', 'OBJECT');
-                ";
-
-                var dataTable = databaseContext.QueryService.ExecuteTable(query);
-
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(dataTable));
-
+                return null;
             }
 
+            string targetTable = $"[{_schema}].[{_table}]";
+            Logger.TaskNested($"Listing permissions for {databaseContext.UserService.UserName} on [{_database}].{targetTable}");
 
+            // Query to get permissions
+            string query = $@"
+            USE [{_database}];
+            SELECT DISTINCT
+                permission_name AS [Permission]
+            FROM 
+                fn_my_permissions('{targetTable}', 'OBJECT');
+            ";
 
+            var dataTable = databaseContext.QueryService.ExecuteTable(query);
+
+            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(dataTable));
+            return null;
         }
     }
 }

@@ -29,7 +29,7 @@ namespace MSSQLand.Actions.Execution
         /// Executes the query action using the provided ConnectionManager.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager for executing the query.</param>
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Executing against {databaseContext.QueryService.ExecutionServer}: {_query}");
 
@@ -43,18 +43,17 @@ namespace MSSQLand.Actions.Execution
                     int rowsAffected = databaseContext.QueryService.ExecuteNonProcessing(_query);
                     if (rowsAffected >= 0)
                         Logger.Info($"Query executed successfully. Rows affected: {rowsAffected}");
+                    return null;
+                }
 
-                }
-                else
-                {
-                    // Use ExecuteTable for commands that return a result set
-                    DataTable resultTable = databaseContext.QueryService.ExecuteTable(_query);
-                    Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
-                }
+                // Use ExecuteTable for commands that return a result set
+                DataTable resultTable = databaseContext.QueryService.ExecuteTable(_query);
+                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+                return resultTable;
             }
             catch (Exception)
             {
-                return;
+                return null;
             }
         }
 

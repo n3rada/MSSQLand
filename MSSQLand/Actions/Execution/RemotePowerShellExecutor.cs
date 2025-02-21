@@ -1,10 +1,6 @@
 ﻿using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MSSQLand.Actions.Execution
 {
@@ -30,7 +26,7 @@ namespace MSSQLand.Actions.Execution
         /// Executes the PowerShell command to download and run the script from the provided URL.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Downloading and executing PowerShell script from URL: {_url}");
 
@@ -42,6 +38,7 @@ namespace MSSQLand.Actions.Execution
 
             // Call the parent's Execute method to execute the command
             base.Execute(databaseContext);
+            return null;
         }
     }
 }

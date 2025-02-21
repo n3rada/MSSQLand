@@ -49,7 +49,7 @@ namespace MSSQLand.Actions.Database
             }
         }
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             // Use the current database if no database is specified
             if (string.IsNullOrEmpty(_database))
@@ -59,8 +59,13 @@ namespace MSSQLand.Actions.Database
 
             string targetTable = $"[{_database}].[{_schema}].[{_table}]";
             Logger.TaskNested($"Retrieving rows from {targetTable}");
-            
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable($"SELECT * FROM {targetTable};")));
+
+            DataTable rows = databaseContext.QueryService.ExecuteTable($"SELECT * FROM {targetTable};");
+
+
+            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(rows));
+
+            return rows;
 
         }
     }

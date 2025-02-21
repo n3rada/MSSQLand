@@ -20,7 +20,7 @@ namespace MSSQLand.Actions.Database
         /// Executes the query action using the provided ConnectionManager.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager for executing the query.</param>
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Retrieving Linked SQL Servers");
             string query = @"
@@ -44,6 +44,8 @@ namespace MSSQLand.Actions.Database
 
 
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+
+            return resultTable;
 
         }
     }

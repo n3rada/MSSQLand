@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.Database
             // No additional arguments needed
         }
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             (string userName, string systemUser) = databaseContext.UserService.GetInfo();
 
@@ -81,7 +81,7 @@ namespace MSSQLand.Actions.Database
             Logger.Info("Fixed Server Roles:");
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(fixedServerRolesTable));
 
-            
+            return null;
 
         }
     }

@@ -35,7 +35,7 @@ namespace MSSQLand.Actions.Administration
             }
         }
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             string rpcValue = _action == "add" ? "true" : "false";
 
@@ -48,6 +48,8 @@ namespace MSSQLand.Actions.Administration
 
             DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+
+            return null;
         }
     }
 

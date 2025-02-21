@@ -27,7 +27,7 @@ namespace MSSQLand.Actions.Execution
         /// Executes the provided PowerShell script on the SQL server using xp_cmdshell.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Executing PowerShell script: {_script}");
 
@@ -41,7 +41,7 @@ namespace MSSQLand.Actions.Execution
             base.ValidateArguments(powerShellCommand);
 
             // Call the parent's Execute method to execute the command
-            base.Execute(databaseContext);
+            return base.Execute(databaseContext);
         }
 
         /// <summary>

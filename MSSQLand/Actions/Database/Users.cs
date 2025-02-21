@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.Database
             // No additional arguments needed
         }
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.Info("Database users");
 
@@ -23,6 +23,7 @@ namespace MSSQLand.Actions.Database
 
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable("SELECT name, type_desc, is_disabled, create_date, modify_date FROM sys.server_principals WHERE name NOT LIKE '##%' ORDER BY modify_date DESC;")));
 
+            return null;
 
         }
     }

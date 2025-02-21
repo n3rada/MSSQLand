@@ -29,12 +29,14 @@ namespace MSSQLand.Actions.Administration
             }
         }
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
 
             Logger.TaskNested($"Passing {_optionName} to {_state}");
 
             databaseContext.ConfigService.SetConfigurationOption(_optionName, _state);
+
+            return null;
 
         }
     }

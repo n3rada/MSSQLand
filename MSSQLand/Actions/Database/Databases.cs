@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.Database
         }
 
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             // Query for all databases
             DataTable allDatabases = databaseContext.QueryService.ExecuteTable(
@@ -57,6 +57,8 @@ namespace MSSQLand.Actions.Database
 
             // Output the final table
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(allDatabases));
+
+            return allDatabases;
         }
 
     }

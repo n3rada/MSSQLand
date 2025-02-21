@@ -1,7 +1,7 @@
 ﻿using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
-using System.Data;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 
 namespace MSSQLand.Actions.Execution
@@ -24,11 +24,13 @@ namespace MSSQLand.Actions.Execution
             _command = additionalArguments;
         }
 
+
         /// <summary>
         /// Executes the provided shell command on the SQL server using xp_cmdshell.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
-        public override void Execute(DatabaseContext databaseContext)
+        /// <returns>A list of strings containing the command output, or an empty list if no output.</returns>
+        public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Executing command: {_command}");
 
@@ -37,6 +39,8 @@ namespace MSSQLand.Actions.Execution
             // Enable 'xp_cmdshell'
             databaseContext.ConfigService.SetConfigurationOption("xp_cmdshell", 1);
 
+            List<string> outputLines = new();
+
             using SqlDataReader result = databaseContext.QueryService.Execute(query);
 
             if (result.HasRows)
@@ -44,14 +48,14 @@ namespace MSSQLand.Actions.Execution
                 while (result.Read()) // Read each row in the result
                 {
                     string output = result.IsDBNull(0) ? string.Empty : result.GetString(0); // Handle nulls gracefully
-                    Console.WriteLine(output);
+                    outputLines.Add(output);
                 }
-            }
-            else
-            {
-                Logger.Warning("The command executed but returned no results.");
-            }
-        }
 
+                return outputLines; // Return the collected output
+            }
+
+            Logger.Warning("The command executed but returned no results.");
+            return outputLines; // Return empty list if no output
+        }
     }
 }

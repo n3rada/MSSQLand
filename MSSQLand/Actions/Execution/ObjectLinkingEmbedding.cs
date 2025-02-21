@@ -26,7 +26,7 @@ namespace MSSQLand.Actions.Execution
             _command = additionalArguments;
         }
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Executing OLE command: {_command}");
 
@@ -41,6 +41,8 @@ namespace MSSQLand.Actions.Execution
 
             databaseContext.QueryService.ExecuteNonProcessing(query);
             Logger.Success("Executed command");
+
+            return null;
 
         }
     }

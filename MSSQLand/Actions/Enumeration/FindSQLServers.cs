@@ -26,7 +26,7 @@ namespace MSSQLand.Actions.Enumeration
         }
 
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Lurking for MS SQL Servers on Active Directory domain: {_domain};");
 
@@ -94,6 +94,7 @@ namespace MSSQLand.Actions.Enumeration
             }
 
             Logger.Success($"{sqlServerCount} MS SQL Servers found.");
+            return null;
         }
     }
 }

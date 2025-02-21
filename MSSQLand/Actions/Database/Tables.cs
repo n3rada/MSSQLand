@@ -16,7 +16,7 @@ namespace MSSQLand.Actions.Database
             _database = additionalArguments;
         }
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             // Use the current database if no database is specified
             if (string.IsNullOrEmpty(_database))
@@ -47,12 +47,12 @@ namespace MSSQLand.Actions.Database
                 ORDER BY 
                     SchemaName, TableName;";
 
-            DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
+            DataTable tables = databaseContext.QueryService.ExecuteTable(query);
 
             // Add a column for permissions
-            resultTable.Columns.Add("Permissions", typeof(string));
+            tables.Columns.Add("Permissions", typeof(string));
 
-            foreach (DataRow row in resultTable.Rows)
+            foreach (DataRow row in tables.Rows)
             {
                 string schemaName = row["SchemaName"].ToString();
                 string tableName = row["TableName"].ToString();
@@ -81,7 +81,9 @@ namespace MSSQLand.Actions.Database
             }
 
 
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(tables));
+
+            return tables;
         }
     }
 }

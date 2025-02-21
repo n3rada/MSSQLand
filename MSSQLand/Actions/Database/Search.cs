@@ -3,9 +3,7 @@ using MSSQLand.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace MSSQLand.Actions.Database
 {
@@ -44,7 +42,7 @@ namespace MSSQLand.Actions.Database
 
         }
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             if (string.IsNullOrEmpty(_database))
             {
@@ -63,7 +61,7 @@ namespace MSSQLand.Actions.Database
             if (columnsTable.Rows.Count == 0)
             {
                 Logger.Warning($"No columns found in database '{_database}'.");
-                return;
+                return null;
             }
 
             // Group columns by table to construct queries for the entire table
@@ -137,6 +135,8 @@ namespace MSSQLand.Actions.Database
             }
 
             Logger.Success("Search completed.");
+
+            return null;
         }
 
 

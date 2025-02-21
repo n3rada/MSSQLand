@@ -126,6 +126,41 @@ namespace MSSQLand.Utilities
 
 
         /// <summary>
+        /// Converts a list into a Markdown-friendly table format with a specified column name.
+        /// </summary>
+        /// <param name="list">The list of strings to convert.</param>
+        /// <param name="columnName">The name of the column.</param>
+        /// <returns>A string containing the Markdown-formatted table.</returns>
+        internal static string ConvertListToMarkdownTable(List<string> list, string columnName)
+        {
+            if (list == null || list.Count == 0)
+            {
+                return "";
+            }
+
+            StringBuilder sqlStringBuilder = new("\n");
+
+            // Determine the max width for the column
+            int columnWidth = Math.Max(columnName.Length, list.Max(item => item.Length));
+
+            // Add header row
+            sqlStringBuilder.Append("| ").Append(columnName.PadRight(columnWidth)).Append(" |").AppendLine();
+
+            // Add separator row
+            sqlStringBuilder.Append("| ").Append(new string('-', columnWidth)).Append(" |").AppendLine();
+
+            // Add data rows
+            foreach (string item in list)
+            {
+                sqlStringBuilder.Append("| ").Append(item.PadRight(columnWidth)).Append(" |").AppendLine();
+            }
+
+            return sqlStringBuilder.ToString();
+        }
+
+
+
+        /// <summary>
         /// Converts a DataTable into a Markdown-friendly table format.
         /// </summary>
         /// <param name="table">The DataTable to convert.</param>

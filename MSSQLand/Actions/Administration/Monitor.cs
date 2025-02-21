@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.Administration
             // No additional arguments needed
         }
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
 
             Logger.NewLine();
@@ -40,6 +40,8 @@ namespace MSSQLand.Actions.Administration
             ORDER BY r.start_time DESC;";
 
             Console.WriteLine(MarkdownFormatter.ConvertSqlDataReaderToMarkdownTable(databaseContext.QueryService.Execute(currentCommandsQuery)));
+
+            return null;
         }
     }
 }

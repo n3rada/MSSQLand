@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.Database
             // No additional arguments needed
         }
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested("Starting impersonation check");
 
@@ -27,7 +27,7 @@ namespace MSSQLand.Actions.Database
             if (queryResult.Rows.Count == 0)
             {
                 Logger.Warning("No SQL logins or Windows principals found.");
-                return;
+                return allLogins;
             }
 
             // Check if the current user is a sysadmin
@@ -53,6 +53,8 @@ namespace MSSQLand.Actions.Database
 
 
             Console.WriteLine(MarkdownFormatter.ConvertDictionaryToMarkdownTable(allLogins, "Logins", "Impersonation"));
+
+            return allLogins;
         }
     }
 }

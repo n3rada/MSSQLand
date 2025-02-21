@@ -35,7 +35,7 @@ namespace MSSQLand.Actions.Network
         /// Executes the PowerShell command to download and run the script from the provided URL.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Sending SMB request to: {_uncPath}");
 
@@ -44,6 +44,7 @@ namespace MSSQLand.Actions.Network
             databaseContext.QueryService.ExecuteNonProcessing(query);
 
             Logger.Success("SMB request sent");
+            return null;
 
         }
 

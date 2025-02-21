@@ -1,6 +1,7 @@
 ﻿using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
+using System.Data;
 
 namespace MSSQLand.Actions.Database
 {
@@ -11,7 +12,7 @@ namespace MSSQLand.Actions.Database
             // No additional arguments needed
         }
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
 
             Logger.NewLine();
@@ -24,9 +25,12 @@ namespace MSSQLand.Actions.Database
                 modify_date
             FROM sys.procedures
             ORDER BY modify_date DESC;";
-            Console.WriteLine(MarkdownFormatter.ConvertSqlDataReaderToMarkdownTable(databaseContext.QueryService.Execute(query)));
 
+            DataTable procedures = databaseContext.QueryService.ExecuteTable(query);
 
+            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(procedures));
+
+            return procedures;
         }
     }
 }

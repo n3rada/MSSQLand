@@ -26,7 +26,7 @@ namespace MSSQLand.Actions.Administration
             }
         }
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.NewLine();
             Logger.Info($"Preparing to kill session(s) for target: {_target}");
@@ -61,7 +61,7 @@ namespace MSSQLand.Actions.Administration
                 if (sessionsTable == null || sessionsTable.Rows.Count == 0)
                 {
                     Logger.Warning("No running sessions found.");
-                    return;
+                    return true;
                 }
 
                 // If specific session ID is provided, validate and kill
@@ -74,14 +74,14 @@ namespace MSSQLand.Actions.Administration
                     if (foundSession == null)
                     {
                         Logger.Warning($"Session {_target} not found or not valid.");
-                        return;
+                        return false;
                     }
 
                     // Kill the specific session
                     Logger.Task($"Killing session {_target}...");
                     databaseContext.QueryService.ExecuteNonProcessing($"KILL {targetSessionId};");
                     Logger.Success($"Session {_target} killed successfully.");
-                    return;
+                    return true;
                 }
 
                 // If "all" is specified, loop through all sessions and kill them
@@ -94,10 +94,12 @@ namespace MSSQLand.Actions.Administration
                 }
 
                 Logger.Success("All sessions killed successfully.");
+                return true;
             }
             catch (Exception ex)
             {
                 Logger.Error($"An error occurred while processing: {ex.Message}");
+                return false;
             }
         }
     }

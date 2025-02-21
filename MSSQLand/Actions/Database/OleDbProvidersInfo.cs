@@ -20,7 +20,7 @@ namespace MSSQLand.Actions.Database
         /// https://github.com/NetSPI/PowerUpSQL/blob/7d73373b0751b8648a800fbeef4c00ced66eba58/PowerUpSQL.ps1#L6987
         /// </summary>
         /// <param name="databaseContext"></param>
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             string query = @"
 			CREATE TABLE #Providers ([ProviderName] varchar(8000), 
@@ -138,6 +138,8 @@ namespace MSSQLand.Actions.Database
 
 
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable(query)));
+
+            return null;
 
         }
     }

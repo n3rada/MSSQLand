@@ -42,7 +42,7 @@ namespace MSSQLand.Utilities
                     {
                         Logger.IsDebugEnabled = true;
                     }
-                    else if (arg.Equals("/silent", StringComparison.OrdinalIgnoreCase))
+                    else if (arg.StartsWith("/s", StringComparison.OrdinalIgnoreCase) || arg.Equals("/silent", StringComparison.OrdinalIgnoreCase))
                     {
                         Logger.IsSilentModeEnabled = true;
                     }

@@ -40,7 +40,7 @@ namespace MSSQLand.Actions.Database
             // No additional arguments needed
         }
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             var results = new Dictionary<string, string>();
 
@@ -62,6 +62,8 @@ namespace MSSQLand.Actions.Database
 
 
             Console.WriteLine(MarkdownFormatter.ConvertDictionaryToMarkdownTable(results, "Information", "Value"));
+
+            return results;
 
         }
     }

@@ -50,24 +50,26 @@ namespace MSSQLand.Actions.Execution
         }
 
 
-        public override void Execute(DatabaseContext databaseContext)
+        public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested(_action);
 
 
             if (_action == "status")
             {
-                if (AgentStatus(databaseContext) == true)
+                if (AgentStatus(databaseContext))
                 {
                     string agentJobsQuery = "SELECT job_id, name, enabled, date_created, date_modified FROM msdb.dbo.sysjobs ORDER BY date_created;";
 
-                    string queryResultMardkownTable = MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable(agentJobsQuery));
+                    DataTable jobsTable = databaseContext.QueryService.ExecuteTable(agentJobsQuery);
+                    string queryResultMarkdownTable = MarkdownFormatter.ConvertDataTableToMarkdownTable(jobsTable);
 
-                    if (queryResultMardkownTable.ToLower().Contains("job_id"))
+                    if (queryResultMarkdownTable.ToLower().Contains("job_id"))
                     {
-                        Logger.Info($"Agent Jobs:\n{queryResultMardkownTable}");
+                        Logger.Info($"Agent Jobs:\n{queryResultMarkdownTable}");
+                        return jobsTable;
                     }
-                    else if (queryResultMardkownTable.ToLower().Contains("permission"))
+                    else if (queryResultMarkdownTable.ToLower().Contains("permission"))
                     {
                         Logger.Warning($"The current user does not have permissions to view agent information");
                     }
@@ -76,7 +78,7 @@ namespace MSSQLand.Actions.Execution
                         Logger.Info($"There are no jobs");
                     }
                 }
-                return;
+                return null;
             }
 
             if (_action == "exec")
@@ -84,13 +86,15 @@ namespace MSSQLand.Actions.Execution
                 if (string.IsNullOrEmpty(_command))
                 {
                     Logger.Warning("No command provided to execute");
-                    return;
+                    return false;
                 }
 
                 Logger.TaskNested($"Executing: {_command}");
                 Logger.TaskNested($"Using subsystem: {_subSystem}");
 
-                if (AgentStatus(databaseContext) == false) { return; }
+                if (!AgentStatus(databaseContext)) {
+                    return false; 
+                }
 
                 string jobName = Guid.NewGuid().ToString("N").Substring(0, 6);
                 string stepName = Guid.NewGuid().ToString("N").Substring(0, 6);
@@ -99,47 +103,49 @@ namespace MSSQLand.Actions.Execution
                 Logger.Info($"Step name: {stepName}");
 
 
-                string createJobQuery = $"use msdb;EXEC dbo.sp_add_job @job_name = '{jobName}';EXEC sp_add_jobstep @job_name = '{jobName}', @step_name = '{stepName}', @subsystem = '{_subSystem}', @command = '{_command}', @retry_attempts = 1, @retry_interval = 5;EXEC dbo.sp_add_jobserver @job_name = '{jobName}';";
+                string createJobQuery = $@"
+                    USE msdb;
+                    EXEC dbo.sp_add_job @job_name = '{jobName}';
+                    EXEC sp_add_jobstep @job_name = '{jobName}', @step_name = '{stepName}', @subsystem = '{_subSystem}', 
+                                        @command = '{_command}', @retry_attempts = 1, @retry_interval = 5;
+                    EXEC dbo.sp_add_jobserver @job_name = '{jobName}';
+                ";
 
                 databaseContext.QueryService.ExecuteNonProcessing(createJobQuery);
 
                 string agentJobsQuery = "SELECT job_id, name, enabled, date_created, date_modified FROM msdb.dbo.sysjobs ORDER BY date_created;";
+                DataTable jobsTable = databaseContext.QueryService.ExecuteTable(agentJobsQuery);
+                string queryResultMarkdownTable = MarkdownFormatter.ConvertDataTableToMarkdownTable(jobsTable);
 
-                string queryResultMardkownTable = MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable(agentJobsQuery));
+                Logger.Info($"Agent Jobs:\n{queryResultMarkdownTable}");
 
-                Logger.Info($"Agent Jobs");
-                Console.WriteLine(queryResultMardkownTable);
-
-                if (queryResultMardkownTable.ToLower().Contains("job_id"))
+                if (queryResultMarkdownTable.ToLower().Contains("job_id") && queryResultMarkdownTable.ToLower().Contains(jobName.ToLower()))
                 {
+                    Logger.Task($"Executing {jobName} and waiting for 3 seconds");
 
-                    if (queryResultMardkownTable.ToLower().Contains(jobName.ToLower()))
-                    {
-                        Logger.Task($"Executing {jobName} and waiting for 3 seconds");
+                    string executeJobQuery = $"USE msdb; EXEC dbo.sp_start_job '{jobName}'; WAITFOR DELAY '00:00:03';";
+                    databaseContext.QueryService.ExecuteNonProcessing(executeJobQuery);
 
-                        string executeJobQuery = $"use msdb; EXEC dbo.sp_start_job '{jobName}'; WAITFOR DELAY '00:00:03';";
+                    Logger.Task("Deleting job");
 
-                        databaseContext.QueryService.ExecuteNonProcessing(executeJobQuery);
+                    string deleteJobQuery = $"USE msdb; EXEC dbo.sp_delete_job @job_name = '{jobName}';";
+                    databaseContext.QueryService.ExecuteNonProcessing(deleteJobQuery);
 
-                        Logger.Task("Deleting job");
-
-                        string deleteJobQuery = $"use msdb; EXEC dbo.sp_delete_job  @job_name = '{jobName}';";
-                        databaseContext.QueryService.ExecuteNonProcessing(deleteJobQuery);
-
-                        Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable(agentJobsQuery)));
-                    }
+                    return true;
                 }
-                else if (queryResultMardkownTable.ToLower().Contains("permission"))
+                else if (queryResultMarkdownTable.ToLower().Contains("permission"))
                 {
                     Logger.Warning($"The current user does not have permissions to create new jobs");
+                    return false;
                 }
                 else
                 {
                     Logger.Info($"Unable to create new job '{jobName}'");
+                    return false;
                 }
-
-                return;
             }
+
+            return null;
 
         }
 
