@@ -43,11 +43,14 @@ namespace MSSQLand.Actions.Execution
 
             using SqlDataReader result = databaseContext.QueryService.Execute(query);
 
+
             if (result.HasRows)
             {
+                Logger.NewLine();
                 while (result.Read()) // Read each row in the result
                 {
-                    string output = result.IsDBNull(0) ? string.Empty : result.GetString(0); // Handle nulls gracefully
+                    string output = result.IsDBNull(0) ? string.Empty : result.GetString(0);
+                    Console.WriteLine(output);
                     outputLines.Add(output);
                 }
 
