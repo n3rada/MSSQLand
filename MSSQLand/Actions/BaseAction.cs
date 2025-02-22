@@ -37,7 +37,7 @@ namespace MSSQLand.Actions
             }
 
             string[] splitted = Regex.Split(additionalArguments, $"({Regex.Escape(separator)})")
-                              .Where(arg => arg != separator) // Remove standalone separators
+                              .Where(arg => arg != separator)
                               .ToArray();
 
             Logger.Debug("Splitted arguments: {" + string.Join(",", splitted) + "}");
@@ -74,7 +74,7 @@ namespace MSSQLand.Actions
                     return $"{fieldName} ({fieldType}{defaultValueStr})".Trim();
                 });
 
-            return string.Join(",", fields);
+            return string.Join(", ", fields);
         }
 
 

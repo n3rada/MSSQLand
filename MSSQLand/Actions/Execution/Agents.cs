@@ -13,9 +13,9 @@ namespace MSSQLand.Actions.Execution
     /// </summary>
     internal class Agents : BaseAction
     {
-        public string _action = "status";
-        public string _command = null;
-        public string _subSystem = "PowerShell";
+        private string _action = "status";
+        private string _command = null;
+        private string _subSystem = "PowerShell";
 
         public override void ValidateArguments(string additionalArguments)
         {

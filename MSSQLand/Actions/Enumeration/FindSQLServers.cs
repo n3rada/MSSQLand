@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.Enumeration
     internal class FindSQLServers : BaseAction
     {
 
-        public string _domain;
+        private string _domain;
 
         public override void ValidateArguments(string additionalArguments)
         {

@@ -14,8 +14,7 @@ namespace MSSQLand.Actions.Network
     /// </summary>
     internal class AdsiCredentialExtractor : BaseAction
     {
-        private enum Mode { List, Self, Link }
-        private Mode _mode;
+        private string _mode = "list";
         private string? _targetServer;
 
 
@@ -25,18 +24,18 @@ namespace MSSQLand.Actions.Network
 
             if (parts.Length == 0)
             {
-                throw new ArgumentException("Invalid arguments. Use 'list', 'self', or 'link <SQLServer>'");
+                return;
             }
 
             string command = parts[0].ToLower();
             switch (command)
             {
                 case "list":
-                    _mode = Mode.List;
+                    _mode = "list";
                     break;
 
                 case "self":
-                    _mode = Mode.Self;
+                    _mode = "self";
                     break;
 
                 case "link":
@@ -44,12 +43,10 @@ namespace MSSQLand.Actions.Network
                     {
                         throw new ArgumentException("Missing target SQL Server name. Example: /a:adsi link SQL53");
                     }
-                    _mode = Mode.Link;
+                    _mode = "link";
                     _targetServer = parts[1];
                     break;
 
-                default:
-                    throw new ArgumentException("Invalid mode. Use 'list', 'self', or 'link <SQLServer>'");
             }
         }
 
@@ -59,12 +56,12 @@ namespace MSSQLand.Actions.Network
         /// </summary>
         public override object? Execute(DatabaseContext databaseContext)
         {
-            if (_mode == Mode.List)
+            if (_mode == "list")
             {
                 return ListAdsiServers(databaseContext);
             }
 
-            if (_mode == Mode.Self)
+            if (_mode == "self")
             {
                 _targetServer = $"SQL-{Guid.NewGuid().ToString("N").Substring(0, 6)}";
                 AdsiService adsiService = new(databaseContext);
@@ -85,7 +82,7 @@ namespace MSSQLand.Actions.Network
                 return credentials;
             }
 
-            if (_mode == Mode.Link)
+            if (_mode == "link")
             {
                 return ExtractCredentials(databaseContext, _targetServer);
             }

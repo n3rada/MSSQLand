@@ -13,7 +13,6 @@ namespace MSSQLand.Actions.Database
             // No additional arguments needed
         }
 
-
         public override object? Execute(DatabaseContext databaseContext)
         {
             // Query for all databases
