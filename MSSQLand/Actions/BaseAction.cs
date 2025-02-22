@@ -67,9 +67,16 @@ namespace MSSQLand.Actions
                 .Select(field =>
                 {
                     string fieldName = field.Name.TrimStart('_'); // Remove leading underscore
-                    string fieldType = SimplifyType(field.FieldType); // Get the simplified type name
-                    var defaultValue = field.GetValue(this); // Get the default value, if any
+                    string fieldType = SimplifyType(field.FieldType); // Get simplified type name
+                    var defaultValue = field.GetValue(this); // Get the default value
                     string defaultValueStr = defaultValue != null ? $", default: {defaultValue}" : string.Empty;
+
+                    // Handle Enum types and convert to lowercase
+                    if (field.FieldType.IsEnum)
+                    {
+                        string enumValues = string.Join(", ", Enum.GetNames(field.FieldType).Select(v => v.ToLower()));
+                        return $"{fieldName} (enum: {fieldType} [{enumValues}], default: {defaultValue.ToString().ToLower()})";
+                    }
 
                     return $"{fieldName} ({fieldType}{defaultValueStr})".Trim();
                 });

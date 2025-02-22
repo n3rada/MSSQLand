@@ -43,7 +43,7 @@ namespace MSSQLand.Utilities
             { "clr", (typeof(ClrExecution), "Deploy and execute CLR assemblies.") },
             { "rpc", (typeof(RemoteProcedureCall), "Call remote procedures on linked servers.") },
             { "smb", (typeof(SmbCoerce), "Leverages xp_dirtree to send SMB requests to a specified UNC path, potentially coercing authentication.") },
-            { "adsi", (typeof(AdsiCredentialExtractor), "Extract credentials by querying an ADSI provider and deploying your own LDAP light server.") },
+            { "adsi", (typeof(AdsiCredentialExtractor), "Enumerate ADSI linked servers, extract credentials, or impersonate users via ADSI exploitation.") },
 
             // Configuration and Management
             { "config", (typeof(Configure), "Use sp_configure to modify settings.") },

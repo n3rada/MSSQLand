@@ -1,5 +1,4 @@
-﻿using MSSQLand.Models;
-using MSSQLand.Services;
+﻿using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
 using System.Collections.Generic;
@@ -14,7 +13,8 @@ namespace MSSQLand.Actions.Network
     /// </summary>
     internal class AdsiCredentialExtractor : BaseAction
     {
-        private string _mode = "list";
+        private enum Mode { List, Self, Link }
+        private Mode _mode = Mode.List;
         private string? _targetServer;
 
 
@@ -31,11 +31,11 @@ namespace MSSQLand.Actions.Network
             switch (command)
             {
                 case "list":
-                    _mode = "list";
+                    _mode = Mode.List;
                     break;
 
                 case "self":
-                    _mode = "self";
+                    _mode = Mode.Self;
                     break;
 
                 case "link":
@@ -43,10 +43,12 @@ namespace MSSQLand.Actions.Network
                     {
                         throw new ArgumentException("Missing target SQL Server name. Example: /a:adsi link SQL53");
                     }
-                    _mode = "link";
+                    _mode = Mode.Link;
                     _targetServer = parts[1];
                     break;
 
+                default:
+                    throw new ArgumentException("Invalid mode. Use 'list', 'self', or 'link <SQLServer>'");
             }
         }
 
@@ -56,12 +58,12 @@ namespace MSSQLand.Actions.Network
         /// </summary>
         public override object? Execute(DatabaseContext databaseContext)
         {
-            if (_mode == "list")
+            if (_mode == Mode.List)
             {
                 return ListAdsiServers(databaseContext);
             }
 
-            if (_mode == "self")
+            if (_mode == Mode.Self)
             {
                 _targetServer = $"SQL-{Guid.NewGuid().ToString("N").Substring(0, 6)}";
                 AdsiService adsiService = new(databaseContext);
@@ -82,7 +84,7 @@ namespace MSSQLand.Actions.Network
                 return credentials;
             }
 
-            if (_mode == "link")
+            if (_mode == Mode.Link)
             {
                 return ExtractCredentials(databaseContext, _targetServer);
             }

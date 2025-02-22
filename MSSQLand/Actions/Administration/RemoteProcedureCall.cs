@@ -2,55 +2,66 @@
 using MSSQLand.Utilities;
 using System;
 using System.Data;
-
+using System.Linq;
 
 namespace MSSQLand.Actions.Administration
 {
     internal class RemoteProcedureCall : BaseAction
     {
-        private string _action;
+        private enum RpcActionMode { Add, Del }
+        private RpcActionMode _action;
         private string _linkedServerName;
 
         public override void ValidateArguments(string additionalArguments)
         {
-            if (string.IsNullOrEmpty(additionalArguments))
+            if (string.IsNullOrWhiteSpace(additionalArguments))
             {
-                throw new ArgumentException("Remote Procedure Call (RPC) action requires exactly two arguments: action ('add' or 'del') and linked server name.");
+                throw new ArgumentException("Remote Procedure Call (RPC) action requires two arguments: action ('add' or 'del') and linked server name.");
             }
 
             string[] args = SplitArguments(additionalArguments);
-
 
             if (args.Length != 2)
             {
                 throw new ArgumentException("RPC action requires exactly two arguments: action ('add' or 'del') and linked server name.");
             }
 
-            _action = args[0].ToLower();
-            _linkedServerName = args[1];
-
-            if (_action != "add" && _action != "del")
+            // Parse action mode
+            if (!Enum.TryParse(args[0].Trim(), true, out _action))
             {
-                throw new ArgumentException($"Unsupported action: {_action}. Supported actions are 'add' or 'del'.");
+                string validActions = string.Join(", ", Enum.GetNames(typeof(RpcActionMode)).Select(a => a.ToLower()));
+                throw new ArgumentException($"Invalid action: {args[0]}. Valid actions are: {validActions}.");
             }
+
+            _linkedServerName = args[1].Trim();
         }
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            string rpcValue = _action == "add" ? "true" : "false";
+            string rpcValue = _action == RpcActionMode.Add ? "true" : "false";
 
+            Logger.TaskNested($"Executing RPC {_action.ToString().ToLower()} on linked server '{_linkedServerName}'");
 
-            Logger.TaskNested($"Remote Procedure Call (RPC) action: {_action}");
-            Logger.TaskNested($"On {_linkedServerName}");
+            string query = $@"
+                EXEC sp_serveroption 
+                     @server = '{_linkedServerName}', 
+                     @optname = 'rpc out', 
+                     @optvalue = '{rpcValue}';
+            ";
 
+            try
+            {
+                DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
+                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
 
-            string query = $"EXEC sp_serveroption @server = '{_linkedServerName}', @optname = 'rpc out', @optvalue = '{rpcValue}';";
-
-            DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
-
-            return null;
+                Logger.Success($"RPC {_action.ToString().ToLower()} action executed successfully on '{_linkedServerName}'");
+                return resultTable;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to execute RPC {_action.ToString().ToLower()} on '{_linkedServerName}': {ex.Message}");
+                return null;
+            }
         }
     }
-
 }
