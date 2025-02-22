@@ -30,8 +30,12 @@ namespace MSSQLand.Actions.Execution
         {
             Logger.TaskNested($"Executing OLE command: {_command}");
 
-            // Enable 'Ole Automation Procedures'
-            databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1);
+            // Ensure 'Ole Automation Procedures' are enabled
+            if (!databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1))
+            {
+                Logger.Error("[!] Unable to enable Ole Automation Procedures. Ensure you have the necessary permissions.");
+                return null;
+            }
 
             // Generate two random string of 3 to 12 chars
             string output = Guid.NewGuid().ToString("N").Substring(0, 6);
