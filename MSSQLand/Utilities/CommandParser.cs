@@ -49,7 +49,12 @@ namespace MSSQLand.Utilities
                     else if (arg.StartsWith("/help", StringComparison.OrdinalIgnoreCase))
                     {
                         Helper.Show();
-                        Environment.Exit(0); // Exit the program gracefully with exit code 0
+                        Environment.Exit(0);
+                    }
+                    else if (arg.StartsWith("/printHelp", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Helper.SaveCommandsToFile();
+                        Environment.Exit(0);
                     }
                     else if (arg.StartsWith("/c:", StringComparison.OrdinalIgnoreCase) ||
                              arg.StartsWith("/credentials:", StringComparison.OrdinalIgnoreCase))

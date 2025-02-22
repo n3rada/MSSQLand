@@ -1,33 +1,69 @@
 ﻿using System;
 using System.Data;
 using System.Linq;
+using System.IO;
+using System.Text;
+using MSSQLand.Utilities;
 
 namespace MSSQLand.Utilities
 {
     internal class Helper
     {
         /// <summary>
+        /// Saves the command-line help details to a Markdown file.
+        /// </summary>
+        public static void SaveCommandsToFile(string filePath = "COMMANDS.md")
+        {
+            StringBuilder markdownContent = new();
+
+            markdownContent.AppendLine("# MSSQLand Command Reference");
+            markdownContent.AppendLine();
+            markdownContent.AppendLine("## 📌 Command-Line Arguments");
+            markdownContent.AppendLine();
+            markdownContent.AppendLine(getArguments());
+
+            markdownContent.AppendLine();
+            markdownContent.AppendLine("## 🔑 Credential Types");
+            markdownContent.AppendLine();
+            markdownContent.AppendLine(getCredentialTypes());
+
+            markdownContent.AppendLine();
+            markdownContent.AppendLine("## 🛠 Available Actions");
+            markdownContent.AppendLine();
+            markdownContent.AppendLine(getActions());
+
+            markdownContent.AppendLine();
+            markdownContent.AppendLine("## 🔎 Available Enumerations");
+            markdownContent.AppendLine();
+            markdownContent.AppendLine(getEnumerations());
+
+            // Write to file
+            File.WriteAllText(filePath, markdownContent.ToString());
+            Logger.Success($"Command documentation saved to {filePath}");
+        }
+
+        /// <summary>
         /// Displays the help message with available actions, credentials, and argument usage.
         /// </summary>
         public static void Show()
         {
             Logger.Banner("Command-Line Arguments");
-            ShowArguments();
+            Console.WriteLine(getArguments());
 
             Logger.Banner("Credential Types");
-            ShowCredentialTypes();
+            Console.WriteLine(getCredentialTypes());
 
             Logger.Banner("Available Actions");
-            ShowActions();
+            Console.WriteLine(getActions());
 
             Logger.Banner("Available Enumerations");
-            ShowEnumerations();
+            Console.WriteLine(getEnumerations());
         }
 
         /// <summary>
         /// Displays available actions in a table format.
         /// </summary>
-        private static void ShowActions()
+        private static string getActions()
         {
             var actions = ActionFactory.GetAvailableActions();
 
@@ -41,10 +77,11 @@ namespace MSSQLand.Utilities
                 actionsTable.Rows.Add(ActionName, Description, Arguments);
             }
 
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(actionsTable));
+            return MarkdownFormatter.ConvertDataTableToMarkdownTable(actionsTable);
+
         }
 
-        private static void ShowEnumerations()
+        private static string getEnumerations()
         {
             var enumerations = ActionFactory.GetAvailableEnumerations();
 
@@ -57,14 +94,14 @@ namespace MSSQLand.Utilities
                 enumerationTable.Rows.Add(name, description);
             }
 
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(enumerationTable));
+            return MarkdownFormatter.ConvertDataTableToMarkdownTable(enumerationTable);
         }
 
 
         /// <summary>
         /// Displays credential types and their required arguments in a table format.
         /// </summary>
-        private static void ShowCredentialTypes()
+        private static string getCredentialTypes()
         {
             // Build a DataTable for credentials
             DataTable credentialsTable = new();
@@ -80,13 +117,13 @@ namespace MSSQLand.Utilities
             }
 
             // Use MarkdownFormatter to display the table
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(credentialsTable));
+            return MarkdownFormatter.ConvertDataTableToMarkdownTable(credentialsTable);
         }
 
         /// <summary>
         /// Displays command-line argument usage in a table format.
         /// </summary>
-        private static void ShowArguments()
+        private static string getArguments()
         {
             // Build a DataTable for arguments
             DataTable argumentsTable = new();
@@ -103,12 +140,13 @@ namespace MSSQLand.Utilities
             argumentsTable.Rows.Add("/l or /links", "Specify linked server chain for multi-hop connections.");
             argumentsTable.Rows.Add("/db", "Specify the target database (optional).");
             argumentsTable.Rows.Add("/e or /enum", "Execute tasks related to enumeration.");
-            argumentsTable.Rows.Add("/silent", "Enable silent mode (minimal output).");
+            argumentsTable.Rows.Add("/silent or /s", "Enable silent mode (minimal output).");
             argumentsTable.Rows.Add("/debug", "Enable debug mode for detailed logs.");
             argumentsTable.Rows.Add("/help", "Display this help message and exit.");
+            argumentsTable.Rows.Add("/printHelp", "Save commands to COMMANDS.md file.");
 
             // Use MarkdownFormatter to display the table
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(argumentsTable));
+            return MarkdownFormatter.ConvertDataTableToMarkdownTable(argumentsTable);
         }
     }
 }
