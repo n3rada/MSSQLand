@@ -21,13 +21,13 @@ using System.Runtime.InteropServices;
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("88130dde-5481-413f-8149-069734c885d2")]
 
-// Version information for an assembly consists of the following four values:
-//
+// Assembly versioning follows the format:
+// 
 //      Major Version
 //      Minor Version
-//      Build Number
-//      Revision
+//      Build Number (auto-generated)
+//      Revision (auto-generated)
 //
-
-// The wildcard (*) syntax for AssemblyVersion relies on the local time of the machine during compilation.
-[assembly: AssemblyVersion("1.0.2.*")]
+// Using the wildcard (*) in AssemblyVersion allows the Build and Revision numbers 
+// to be automatically determined based on the machine's local time during compilation.
+[assembly: AssemblyVersion("1.2.*")]
