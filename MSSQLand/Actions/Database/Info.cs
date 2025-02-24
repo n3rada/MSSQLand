@@ -18,19 +18,26 @@ namespace MSSQLand.Actions.Database
             { "Server Name", "SELECT @@SERVERNAME;" },
             { "Default Domain", "SELECT DEFAULT_DOMAIN();" },
             { "SQL Service Process ID", "SELECT SERVERPROPERTY('ProcessId');" },
-            { "Machine Type", "EXEC xp_regread 'HKEY_LOCAL_MACHINE', 'SYSTEM\\CurrentControlSet\\Control\\ProductOptions', 'ProductType';" },
-            { "Operating System Version", "EXEC xp_regread 'HKEY_LOCAL_MACHINE', 'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion', 'ProductName';" },
+            { "Machine Type", @"DECLARE @MachineType NVARCHAR(255);  
+            EXEC master.dbo.xp_instance_regread  
+                N'HKEY_LOCAL_MACHINE', 
+                N'SYSTEM\CurrentControlSet\Control\ProductOptions', 
+                N'ProductType', 
+                @MachineType OUTPUT;  
+            SELECT @MachineType;
+            " },
+            { "Operating System Version", "DECLARE @ProductName  SYSNAME EXECUTE master.dbo.xp_regread @rootkey = N'HKEY_LOCAL_MACHINE', @key = N'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion', @value_name = N'ProductName', @value = @ProductName output SELECT @ProductName;" },
             { "SQL Service Name", "SELECT SERVERPROPERTY('InstanceName') AS InstanceName;" },
-            { "SQL Service Account Name", "EXEC xp_instance_regread N'HKEY_LOCAL_MACHINE', 'SYSTEM\\CurrentControlSet\\Services\\MSSQLSERVER', 'ObjectName';" },
+            { "SQL Service Account Name", "EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', 'SYSTEM\\CurrentControlSet\\Services\\MSSQLSERVER', 'ObjectName';" },
             { "Authentication Mode", "SELECT CASE SERVERPROPERTY('IsIntegratedSecurityOnly') WHEN 1 THEN 'Windows Authentication' ELSE 'Mixed Authentication' END;" },
-            { "Encryption Enforced", "EXEC xp_instance_regread N'HKEY_LOCAL_MACHINE', 'SOFTWARE\\Microsoft\\Microsoft SQL Server\\MSSQLServer\\SuperSocketNetLib', 'ForceEncryption';" },
+            { "Encryption Enforced", "BEGIN TRY DECLARE @ForcedEncryption INT EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', N'SOFTWARE\\MICROSOFT\\Microsoft SQL Server\\MSSQLServer\\SuperSocketNetLib', N'ForceEncryption', @ForcedEncryption OUTPUT END TRY BEGIN CATCH END CATCH SELECT @ForcedEncryption;" },
             { "Clustered Server", "SELECT CASE SERVERPROPERTY('IsClustered') WHEN 0 THEN 'No' ELSE 'Yes' END;" },
             { "SQL Version", "SELECT SERVERPROPERTY('ProductVersion');" },
             { "SQL Major Version", "SELECT SUBSTRING(@@VERSION, CHARINDEX('2', @@VERSION), 4);" },
             { "SQL Edition", "SELECT SERVERPROPERTY('Edition');" },
             { "SQL Service Pack", "SELECT SERVERPROPERTY('ProductLevel');" },
             { "OS Architecture", "SELECT SUBSTRING(@@VERSION, CHARINDEX('x', @@VERSION), 3);" },
-            { "OS VersionNumber", "SELECT RIGHT(SUBSTRING(@@VERSION, CHARINDEX('Windows Server', @@VERSION), 19), 4);" },
+            { "OS Version Number", "SELECT RIGHT(SUBSTRING(@@VERSION, CHARINDEX('Windows Server', @@VERSION), 19), 4);" },
             { "Logged-in User", "SELECT SYSTEM_USER;" },
             { "Active SQL Sessions", "SELECT COUNT(*) FROM sys.dm_exec_sessions WHERE status = 'running';" }
         };
@@ -49,15 +56,22 @@ namespace MSSQLand.Actions.Database
                 string key = entry.Key;
                 string query = entry.Value;
 
-                DataTable queryResult = databaseContext.QueryService.ExecuteTable(query);
+                try
+                {
+                    DataTable queryResult = databaseContext.QueryService.ExecuteTable(query);
 
-                // Extract the first row and first column value if present
-                string result = queryResult.Rows.Count > 0
-                    ? queryResult.Rows[0][0]?.ToString() ?? "NULL"
-                    : " ";
+                    // Extract the first row and first column value if present
+                    string result = queryResult.Rows.Count > 0
+                        ? queryResult.Rows[0][0]?.ToString() ?? "NULL"
+                        : "NULL";
 
-                // Add the result to the dictionary
-                results.Add(key, result);
+                    results[key] = result;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warning($"Failed to execute '{key}': {ex.Message}");
+                    results[key] = $"ERROR: {ex.Message}";
+                }
             }
 
 
