@@ -43,7 +43,7 @@ namespace MSSQLand.Actions.Network
                 Guid chainId = Guid.NewGuid(); // Create a unique chain identifier.
                 _serverMapping[chainId] = new List<Dictionary<string, string>>();
 
-                ExploreServer(databaseContext.Clone(), remoteServer, localLogin, chainId);
+                ExploreServer(databaseContext.Duplicate(), remoteServer, localLogin, chainId);
             }
 
 

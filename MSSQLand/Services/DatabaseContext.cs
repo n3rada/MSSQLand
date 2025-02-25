@@ -1,6 +1,7 @@
 ﻿using MSSQLand.Utilities;
 using System;
 using MSSQLand.Models;
+using System.Data.SqlClient;
 
 
 namespace MSSQLand.Services
@@ -72,24 +73,5 @@ namespace MSSQLand.Services
 
             return newDatabaseContext;
         }
-
-
-        /// <summary>
-        /// Creates a shallow copy of the current DatabaseContext, reusing the same connection.
-        /// This allows modifications without affecting the original context's authentication state.
-        /// </summary>
-        /// <returns>A cloned DatabaseContext instance with the same connection.</returns>
-        public DatabaseContext Clone()
-        {
-            Logger.Debug("Cloning DatabaseContext, reusing existing SQL connection.");
-
-            DatabaseContext cloneDatabaseContext = new(this.AuthService);
-
-            // Deep Copy LinkedServers to avoid shared modifications
-            cloneDatabaseContext.QueryService.LinkedServers = new LinkedServers(this.QueryService.LinkedServers);
-
-            return cloneDatabaseContext;
-        }
-
     }
 }
