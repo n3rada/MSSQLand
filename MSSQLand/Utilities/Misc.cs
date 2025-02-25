@@ -4,6 +4,7 @@ using System.Net;
 using System.Text;
 using System.IO.Compression;
 using System.IO;
+using System.Security.Cryptography;
 
 namespace MSSQLand.Utilities
 {
@@ -46,6 +47,18 @@ namespace MSSQLand.Utilities
             using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
             return ((IPEndPoint)socket.LocalEndPoint).Port;
+        }
+
+        /// <summary>
+        /// Computes a SHA-256 hash from an input string.
+        /// </summary>
+        public static string ComputeSHA256(string input)
+        {
+            using SHA256 sha256 = SHA256.Create();
+            byte[] inputBytes = Encoding.UTF8.GetBytes(input);
+            byte[] hashBytes = sha256.ComputeHash(inputBytes);
+
+            return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
         }
     }
 }

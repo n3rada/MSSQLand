@@ -1,6 +1,7 @@
 ﻿using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Data;
 
 
@@ -23,6 +24,21 @@ namespace MSSQLand.Actions.Database
         public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Retrieving Linked SQL Servers");
+
+            DataTable resultTable = Links.GetLinkedServers(databaseContext);
+
+            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+
+            return resultTable;
+
+        }
+
+
+        /// <summary>
+        /// Retrieves linked servers and login mappings.
+        /// </summary>
+        public static DataTable GetLinkedServers(DatabaseContext databaseContext)
+        {
             string query = @"
                 SELECT
                     srv.modify_date AS [Last Modified],
@@ -40,13 +56,8 @@ namespace MSSQLand.Actions.Database
                 LEFT JOIN sys.server_principals prin ON ll.local_principal_id = prin.principal_id
                 WHERE srv.is_linked = 1
                 ORDER BY srv.modify_date DESC;";
-            DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
 
-
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
-
-            return resultTable;
-
+            return databaseContext.QueryService.ExecuteTable(query);
         }
     }
 }

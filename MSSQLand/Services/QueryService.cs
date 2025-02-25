@@ -1,7 +1,6 @@
 ﻿using MSSQLand.Models;
 using MSSQLand.Utilities;
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
@@ -13,7 +12,7 @@ namespace MSSQLand.Services
         public readonly SqlConnection Connection;
         public string ExecutionServer { get; set; }
 
-        private LinkedServers _linkedServers;
+        private LinkedServers _linkedServers = new();
 
 
         /// <summary>
@@ -24,14 +23,15 @@ namespace MSSQLand.Services
             get => _linkedServers;
             set
             {
-                _linkedServers = value;
-                if (_linkedServers?.ServerNames != null && _linkedServers.ServerNames.Length > 0)
+                _linkedServers = value ?? new LinkedServers();
+                if (_linkedServers.ServerNames.Length > 0)
                 {
                     ExecutionServer = _linkedServers.ServerNames.Last();
+                    Logger.Debug($"Execution server set to: {ExecutionServer}");
                 }
                 else
                 {
-                    ExecutionServer = null;
+                    ExecutionServer = GetServerName();
                 }
             }
         }
@@ -188,22 +188,19 @@ namespace MSSQLand.Services
         /// <returns>The modified query, accounting for linked servers if applicable.</returns>
         private string PrepareQuery(string query)
         {
-            Logger.Debug($"Executing: {query}");
+            Logger.Debug($"Query to execute: {query}");
             string finalQuery = query;
 
-            // If LinkedServers variable exists and has valid server names
-            if (_linkedServers?.ServerNames != null && _linkedServers.ServerNames.Length > 0)
+            if (!_linkedServers.IsEmpty)
             {
-                if (_linkedServers.UseRemoteProcedureCall)
-                {
-                    finalQuery = _linkedServers.BuildRemoteProcedureCallChain(query);
-                }
-                else
-                {
-                    finalQuery = _linkedServers.BuildSelectOpenQueryChain(query);
-                }
+                Logger.DebugNested("Linked server detected");
 
-                Logger.DebugNested($"Linked Query: {finalQuery}");
+                finalQuery = _linkedServers.UseRemoteProcedureCall
+                    ? _linkedServers.BuildRemoteProcedureCallChain(query)
+                    : _linkedServers.BuildSelectOpenQueryChain(query);
+
+
+                Logger.DebugNested($"Linked query: {finalQuery}");
             }
 
             return finalQuery;

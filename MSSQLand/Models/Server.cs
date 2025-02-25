@@ -2,6 +2,7 @@
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
+using System;
 
 namespace MSSQLand.Models
 {
@@ -52,6 +53,8 @@ namespace MSSQLand.Models
         /// </summary>
         public string ImpersonationUser { get; set; }
 
+        public string MappedUser { get; set; }
+        public string SystemUser { get; set; }
 
         /// <summary>
         /// Parses the major version from the full version string.
@@ -65,6 +68,22 @@ namespace MSSQLand.Models
             var versionParts = versionString.Split('.');
 
             return int.TryParse(versionParts[0], out int majorVersion) ? majorVersion : 0;
+        }
+
+        public static Server ParseServer(string serverInput)
+        {
+            var parts = serverInput.Split(':');
+
+            if (parts.Length < 1 || parts.Length > 2)
+                throw new ArgumentException($"Invalid target format: {serverInput}");
+
+            Server server = new()
+            {
+                Hostname = parts[0],
+                ImpersonationUser = parts.Length > 1 ? parts[1] : null
+            };
+
+            return server;
         }
 
     }

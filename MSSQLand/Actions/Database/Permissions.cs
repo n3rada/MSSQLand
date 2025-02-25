@@ -59,7 +59,7 @@ namespace MSSQLand.Actions.Database
             }
 
             string targetTable = $"[{_schema}].[{_table}]";
-            Logger.TaskNested($"Listing permissions for {databaseContext.UserService.UserName} on [{_database}].{targetTable}");
+            Logger.TaskNested($"Listing permissions for {databaseContext.UserService.MappedUser} on [{_database}].{targetTable}");
 
             // Query to get permissions
             string query = $@"

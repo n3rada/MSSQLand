@@ -67,6 +67,14 @@ namespace MSSQLand
 
                 DatabaseContext databaseContext = new(authService);
 
+                (string userName, string systemUser) = databaseContext.UserService.GetInfo();
+
+                databaseContext.Server.MappedUser = userName;
+                databaseContext.Server.SystemUser = systemUser;
+
+                Logger.Info($"Logged in on {databaseContext.Server.Hostname} as {systemUser}");
+                Logger.InfoNested($"Mapped to the user {userName} ");
+
                 // If LinkedServers variable exists and has valid server names
                 if (arguments.LinkedServers?.ServerNames != null && arguments.LinkedServers.ServerNames.Length > 0)
                 {
@@ -74,7 +82,7 @@ namespace MSSQLand
 
                     Logger.Info($"Server chain: {arguments.Host.Hostname} -> " + string.Join(" -> ", arguments.LinkedServers.ServerNames));
                     
-                    (string userName, string systemUser) = databaseContext.UserService.GetInfo();
+                    (userName, systemUser) = databaseContext.UserService.GetInfo();
 
                     Logger.Info($"Logged in on {databaseContext.QueryService.ExecutionServer} as {systemUser}");
                     Logger.InfoNested($"Mapped to the user {userName} ");

@@ -30,6 +30,7 @@ namespace MSSQLand.Utilities
             { "users", (typeof(Users), "List database users.") },
             { "permissions", (typeof(Permissions), "Enumerate permissions.") },
             { "search", (typeof(Search), "Search for specific keyword in database.") },
+            { "linkmap", (typeof(LinkedServerExplorer), "Enumerate all possible linked server chains and access paths.") },  // New Action
 
             // User Interaction and Impersonation
             { "impersonate", (typeof(Impersonation), "Check and perform user impersonation.") },

@@ -1,6 +1,8 @@
-﻿using MSSQLand.Services;
+﻿using MSSQLand.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 
 namespace MSSQLand.Models
@@ -31,66 +33,32 @@ namespace MSSQLand.Models
         public string[] ServerNames { get; private set; }
 
         /// <summary>
+        /// Determines if the linked server chain is empty.
+        /// </summary>
+        public bool IsEmpty => ServerChain.Length == 0;
+
+        /// <summary>
         /// Remote Procedure Call (RPC) usage
         /// RPC must be enabled for the linked server for EXEC AT queries
         /// </summary>
         public bool UseRemoteProcedureCall { get; set; } = true;
 
         /// <summary>
-        /// Initializes the linked server chain and server names.
+        /// Initializes an empty linked server chain.
+        /// This allows a default empty state where no linked servers exist.
         /// </summary>
-        /// <param name="serverChain">The server chain to initialize.</param>
-        public LinkedServers(Server[] serverChain)
-        {
-            ServerChain = serverChain ?? throw new ArgumentNullException(nameof(serverChain));
+        public LinkedServers() : this(Array.Empty<Server>()) { }
 
-            // Initialize ComputableServerNames starting with "0" as the convention.
-            ComputableServerNames = new string[serverChain.Length + 1];
-            ComputableServerNames[0] = "0";
-
-            ComputableImpersonationNames = new string[serverChain.Length];
-
-            ServerNames = new string[serverChain.Length];
-
-            for (int i = 0; i < serverChain.Length; i++)
-            {
-                if (!string.IsNullOrEmpty(serverChain[i].Hostname))
-                {
-                    ComputableServerNames[i + 1] = serverChain[i].Hostname;
-                    ServerNames[i] = serverChain[i].Hostname;
-                }
-
-                if (!string.IsNullOrEmpty(serverChain[i].ImpersonationUser))
-                {
-                    ComputableImpersonationNames[i] = serverChain[i].ImpersonationUser;
-                } else
-                {
-                    ComputableImpersonationNames[i] = "";
-                }
-            }
-        }
 
         /// <summary>
-        /// Initializes the linked server chain using a comma-separated list of server names.
+        /// Initializes the linked server chain and computes necessary structures.
         /// </summary>
-        /// <param name="serverList">Comma-separated list of server names (e.g., "SQL27,SQL53").</param>
-        public LinkedServers(string serverList)
+        /// <param name="serverChain">The array of servers forming the linked chain.</param>
+        public LinkedServers(Server[] serverChain)
         {
-            if (string.IsNullOrWhiteSpace(serverList))
-            {
-                throw new ArgumentException("Server list cannot be null or empty.", nameof(serverList));
-            }
+            ServerChain = serverChain ?? Array.Empty<Server>(); // Ensure it's never null
 
-            // Split the server names and trim whitespace
-            string[] serverNames = serverList.Split(',')
-                                             .Select(name => name.Trim())
-                                             .Where(name => !string.IsNullOrEmpty(name))
-                                             .ToArray();
-
-            // Initialize ServerChain with parsed server names
-            ServerChain = serverNames.Select(name => new Server { Hostname = name }).ToArray();
-
-            // Initialize ComputableServerNames starting with "0" as the convention
+            // Initialize ComputableServerNames starting with "0" as the convention.
             ComputableServerNames = new string[ServerChain.Length + 1];
             ComputableServerNames[0] = "0";
 
@@ -101,8 +69,109 @@ namespace MSSQLand.Models
             {
                 ComputableServerNames[i + 1] = ServerChain[i].Hostname;
                 ServerNames[i] = ServerChain[i].Hostname;
-                ComputableImpersonationNames[i] = ""; // No impersonation user in this constructor
+                ComputableImpersonationNames[i] = ServerChain[i].ImpersonationUser ?? "";
             }
+        }
+
+        /// <summary>
+        /// Initializes the linked server chain from a comma-separated list.
+        /// </summary>
+        /// <param name="chainInput">Comma-separated list of server names with optional impersonation users.</param>
+        public LinkedServers(string chainInput)
+            : this(string.IsNullOrWhiteSpace(chainInput) ? Array.Empty<Server>() : ParseServerChain(chainInput))
+        { }
+
+        public LinkedServers(LinkedServers original)
+        {
+            if (original == null || original.ServerChain == null)
+            {
+                ServerChain = Array.Empty<Server>();
+            }
+            else
+            {
+                ServerChain = original.ServerChain.Select(server => new Server
+                {
+                    Hostname = server.Hostname,
+                    ImpersonationUser = server.ImpersonationUser
+                }).ToArray();
+            }
+
+            RecomputeChain();
+        }
+
+
+
+        public string GetChainArguments()
+        {
+            return string.Join(",", GetChainParts());
+        }
+
+        /// <summary>
+        /// Returns a properly formatted linked server chain string.
+        /// </summary>
+        public List<string> GetChainParts()
+        {
+            List<string> chainParts = new();
+
+            for (int i = 0; i < ServerChain.Length; i++)
+            {
+                string serverName = ServerChain[i].Hostname;
+                string impersonationUser = ServerChain[i].ImpersonationUser;
+
+                if (!string.IsNullOrEmpty(impersonationUser))
+                {
+                    chainParts.Add($"{serverName}:{impersonationUser}");
+                }
+                else
+                {
+                    chainParts.Add(serverName);
+                }
+            }
+
+            return chainParts;
+        }
+
+
+        /// <summary>
+        /// Adds a new server to the linked server chain.
+        /// If the chain is empty, it creates a new LinkedServers instance.
+        /// </summary>
+        /// <param name="newServer">The hostname of the new linked server.</param>
+        /// <param name="impersonationUser">Optional impersonation user.</param>
+        public void AddToChain(string newServer, string? impersonationUser = null)
+        {
+            Logger.Debug($"Adding server {newServer} to the linked server chain.");
+
+            if (string.IsNullOrWhiteSpace(newServer))
+            {
+                throw new ArgumentException("Server name cannot be null or empty.", nameof(newServer));
+            }
+
+            List<Server> updatedChain = ServerChain.ToList();
+            updatedChain.Add(new Server { Hostname = newServer, ImpersonationUser = impersonationUser });
+
+            ServerChain = updatedChain.ToArray();
+
+            // Recompute arrays
+            RecomputeChain();
+        }
+
+        /// <summary>
+        /// Parses a comma-separated list of servers into an array of Server objects.
+        /// Accepts the format "SQL27:user01,SQL53:user02".
+        /// </summary>
+        /// <param name="chainInput">Comma-separated list of servers.</param>
+        /// <returns>An array of Server objects.</returns>
+        private static Server[] ParseServerChain(string chainInput)
+        {
+            if (string.IsNullOrWhiteSpace(chainInput))
+            {
+                throw new ArgumentException("Server list cannot be null or empty.", nameof(chainInput));
+            }
+
+            return chainInput.Split(',')
+                             .Select(serverString => Server.ParseServer(serverString.Trim()))
+                             .ToArray();
         }
 
         /// <summary>
@@ -253,6 +322,26 @@ namespace MSSQLand.Models
             }
 
             return currentQuery;
+        }
+
+
+        /// <summary>
+        /// Recomputes the internal arrays (server names, impersonation users).
+        /// </summary>
+        private void RecomputeChain()
+        {
+            ComputableServerNames = new string[ServerChain.Length + 1];
+            ComputableServerNames[0] = "0";
+
+            ComputableImpersonationNames = new string[ServerChain.Length];
+            ServerNames = new string[ServerChain.Length];
+
+            for (int i = 0; i < ServerChain.Length; i++)
+            {
+                ComputableServerNames[i + 1] = ServerChain[i].Hostname;
+                ServerNames[i] = ServerChain[i].Hostname;
+                ComputableImpersonationNames[i] = ServerChain[i].ImpersonationUser ?? "";
+            }
         }
 
     }

@@ -9,13 +9,13 @@ namespace MSSQLand.Services
     {
         private readonly QueryService _queryService;
 
-        // Backing field to cache the admin status for each endpoints
         /// <summary>
         /// Dictionary to cache admin status for each execution server.
         /// </summary>
         private readonly ConcurrentDictionary<string, bool> _adminStatusCache = new();
 
-        public string UserName { get; private set; }
+        public string MappedUser { get; private set; }
+        public string SystemUser { get; private set; }
 
 
         public UserService(QueryService queryService)
@@ -79,7 +79,8 @@ namespace MSSQLand.Services
                 loggedInUserName = reader["S"]?.ToString() ?? "Unknown";
             }
 
-            UserName = name;
+            MappedUser = name;
+            SystemUser = loggedInUserName;
 
             return (name, loggedInUserName);
         }

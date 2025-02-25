@@ -79,12 +79,12 @@ namespace MSSQLand.Utilities
                     else if (arg.StartsWith("/h:", StringComparison.OrdinalIgnoreCase) ||
                              arg.StartsWith("/host:", StringComparison.OrdinalIgnoreCase))
                     {
-                        parsedArgs.Host = ParseServer(ExtractValue(arg, "/h:", "/host:"));
+                        parsedArgs.Host = Server.ParseServer(ExtractValue(arg, "/h:", "/host:"));
                     }
                     else if (arg.StartsWith("/l:", StringComparison.OrdinalIgnoreCase) ||
                              arg.StartsWith("/links:", StringComparison.OrdinalIgnoreCase))
                     {
-                        parsedArgs.LinkedServers = new LinkedServers(ParseServerChain(ExtractValue(arg, "/l:", "/links:")));
+                        parsedArgs.LinkedServers = new LinkedServers(ExtractValue(arg, "/l:", "/links:"));
                     }
                     else if (arg.StartsWith("/a:", StringComparison.OrdinalIgnoreCase) ||
                              arg.StartsWith("/action:", StringComparison.OrdinalIgnoreCase))
@@ -233,39 +233,6 @@ namespace MSSQLand.Utilities
             
             throw new ArgumentException($"Invalid argument format: {arg}");
         }
-
-        private Server ParseServer(string serverInput)
-        {
-            var parts = serverInput.Split(':');
-
-            if (parts.Length < 1 || parts.Length > 2)
-                throw new ArgumentException($"Invalid target format: {serverInput}");
-
-            Server server = new()
-            {
-                Hostname = parts[0],
-                ImpersonationUser = parts.Length > 1 ? parts[1] : null
-            };
-
-            return server;
-        }
-
-
-        private Server[] ParseServerChain(string chainInput)
-        {
-            // Split the input string by commas and parse each server
-            var serverList = chainInput.Split(',');
-
-            var servers = new List<Server>();
-
-            foreach (var link in serverList)
-            {
-                servers.Add(ParseServer(link.Trim()));
-            }
-
-            return servers.ToArray();
-        }
-
 
     }
 }

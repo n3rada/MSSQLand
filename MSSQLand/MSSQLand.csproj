@@ -73,6 +73,7 @@
     <Compile Include="Actions\Administration\Configure.cs" />
     <Compile Include="Actions\Administration\Kill.cs" />
     <Compile Include="Actions\Administration\Monitor.cs" />
+    <Compile Include="Actions\Database\LinkedServerExplorer.cs" />
     <Compile Include="Actions\Database\OleDbProvidersInfo.cs" />
     <Compile Include="Actions\Database\Procedures.cs" />
     <Compile Include="Actions\Database\Search.cs" />
