@@ -132,7 +132,12 @@ namespace MSSQLand.Services
         public bool SetConfigurationOption(string optionName, int value)
         {
 
-            EnableAdvancedOptions();
+            if (!EnableAdvancedOptions())
+            {
+                Logger.Error("Cannot proceed without 'show advanced options' enabled.");
+                return false;
+            }
+
 
             Logger.Task($"Checking status of '{optionName}'");
             try
@@ -239,29 +244,44 @@ namespace MSSQLand.Services
 
         /// <summary>
         /// Ensures that 'show advanced options' is enabled.
+        /// Returns true if successfully enabled or already enabled, otherwise false.
         /// </summary>
-        private void EnableAdvancedOptions()
+        private bool EnableAdvancedOptions()
         {
             Logger.Task("Ensuring advanced options are enabled");
-            var advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM sys.configurations WHERE name = 'show advanced options';");
 
-            if (advancedOptionsEnabled == null || Convert.ToInt32(advancedOptionsEnabled) != 1)
+            try
             {
-                try
+                var advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM sys.configurations WHERE name = 'show advanced options';");
+
+                if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
                 {
-                    Logger.Info("Enabling advanced options");
-                    _queryService.ExecuteNonProcessing("EXEC sp_configure 'show advanced options', 1; RECONFIGURE;");
+                    Logger.Info("Advanced options already enabled");
+                    return true;
                 }
-                catch (Exception ex)
+
+                Logger.Info("Enabling advanced options...");
+                _queryService.ExecuteNonProcessing("EXEC sp_configure 'show advanced options', 1; RECONFIGURE;");
+
+                // Verify the change
+                advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM sys.configurations WHERE name = 'show advanced options';");
+
+                if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
                 {
-                    Logger.Warning($"Failed to enable 'show advanced options': {ex.Message}");
+                    Logger.Success("Advanced options successfully enabled");
+                    return true;
                 }
+
+                Logger.Warning("Failed to verify 'show advanced options' was enabled");
+                return false;
             }
-            else
+            catch (Exception ex)
             {
-                Logger.Info("Advanced options already enabled");
+                Logger.Warning($"Error enabling 'show advanced options': {ex.Message}");
+                return false;
             }
         }
+
 
         /// <summary>
         /// Enables data access for the SQL Server.

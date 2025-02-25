@@ -34,31 +34,44 @@ namespace MSSQLand.Actions.Execution
         {
             Logger.TaskNested($"Executing command: {_command}");
 
-            string query = $"EXEC master..xp_cmdshell '{_command.Replace("'", "''")}'"; // Sanitize single quotes in the command
+            // Ensure 'xp_cmdshell' is enabled
+            if (!databaseContext.ConfigService.SetConfigurationOption("xp_cmdshell", 1))
+            {
+                Logger.Error("Failed to enable 'xp_cmdshell'. Cannot proceed with command execution.");
+                return null;
+            }
 
-            // Enable 'xp_cmdshell'
-            databaseContext.ConfigService.SetConfigurationOption("xp_cmdshell", 1);
+            // Sanitize command to prevent SQL injection issues
+            string query = $"EXEC master..xp_cmdshell '{_command.Replace("'", "''")}'";
+
 
             List<string> outputLines = new();
 
-            using SqlDataReader result = databaseContext.QueryService.Execute(query);
-
-
-            if (result.HasRows)
+            try
             {
-                Logger.NewLine();
-                while (result.Read()) // Read each row in the result
+                using SqlDataReader result = databaseContext.QueryService.Execute(query);
+
+                if (result.HasRows)
                 {
-                    string output = result.IsDBNull(0) ? string.Empty : result.GetString(0);
-                    Console.WriteLine(output);
-                    outputLines.Add(output);
+                    Logger.NewLine();
+                    while (result.Read())
+                    {
+                        string output = result.IsDBNull(0) ? string.Empty : result.GetString(0);
+                        Console.WriteLine(output);
+                        outputLines.Add(output);
+                    }
+
+                    return outputLines;
                 }
 
-                return outputLines; // Return the collected output
+                Logger.Warning("The command executed but returned no results.");
+                return outputLines;
             }
-
-            Logger.Warning("The command executed but returned no results.");
-            return outputLines; // Return empty list if no output
+            catch (Exception ex)
+            {
+                Logger.Error($"Error executing xp_cmdshell: {ex.Message}");
+                return null;
+            }
         }
     }
 }
