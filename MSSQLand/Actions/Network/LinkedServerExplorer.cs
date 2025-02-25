@@ -1,5 +1,4 @@
-﻿using MSSQLand.Actions.Database;
-using MSSQLand.Services;
+﻿using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
 using System.Collections.Generic;
@@ -19,10 +18,9 @@ namespace MSSQLand.Actions.Network
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            
             Logger.Task("Enumerating linked servers");
 
-            DataTable linkedServersTable = Links.GetLinkedServers(databaseContext);
+            DataTable linkedServersTable = GetLinkedServers(databaseContext);
 
             if (linkedServersTable.Rows.Count == 0)
             {
@@ -39,50 +37,43 @@ namespace MSSQLand.Actions.Network
                 string remoteServer = row["Link"].ToString();
                 string localLogin = row["Local Login"].ToString();
 
-
-                Guid chainId = Guid.NewGuid(); // Create a unique chain identifier.
+                Guid chainId = Guid.NewGuid();
                 _serverMapping[chainId] = new List<Dictionary<string, string>>();
 
-                ExploreServer(databaseContext.Duplicate(), remoteServer, localLogin, chainId);
+                DatabaseContext tempDatabaseContext = databaseContext.Copy();
+
+                ExploreServer(tempDatabaseContext, remoteServer, localLogin, chainId);
+
+                tempDatabaseContext.UserService.RevertImpersonation();
             }
-
-
 
             // Step 3: Output final structured mapping
             Logger.NewLine();
-
-            // Construct the initial server entry
             string initialServerEntry = $"{databaseContext.Server.Hostname} ({databaseContext.Server.SystemUser} [{databaseContext.Server.MappedUser}])";
 
             Logger.Debug($"Initial server entry: {initialServerEntry}");
 
-            // If LinkedServers is not empty, include its chain representation
             if (!databaseContext.QueryService.LinkedServers.IsEmpty)
             {
                 initialServerEntry += " -> " + string.Join(" -> ", databaseContext.QueryService.LinkedServers.GetChainParts()) + $" ({databaseContext.UserService.SystemUser} [{databaseContext.UserService.MappedUser}])";
                 Logger.DebugNested($"Chain added: {initialServerEntry}");
-
             }
 
             Logger.Success("Accessible linked servers chain");
 
-
             foreach (var chainEntry in _serverMapping)
             {
                 List<Dictionary<string, string>> chainMapping = chainEntry.Value;
-
                 List<string> formattedLines = new() { initialServerEntry };
 
-                for (int i = 0; i < chainMapping.Count; i++)
+                foreach (var entry in chainMapping)
                 {
-                    string serverName = chainMapping[i]["ServerName"];
-                    string loggedIn = chainMapping[i]["LoggedIn"];
-                    string mapped = chainMapping[i]["Mapped"];
-                    string impersonatedUser = chainMapping[i]["ImpersonatedUser"];
+                    string serverName = entry["ServerName"];
+                    string loggedIn = entry["LoggedIn"];
+                    string mapped = entry["Mapped"];
+                    string impersonatedUser = entry["ImpersonatedUser"];
 
-                    // Show impersonation transition
                     formattedLines.Add($"-{impersonatedUser}-> {serverName} ({loggedIn} [{mapped}])");
-
                 }
 
                 Console.WriteLine();
@@ -103,7 +94,7 @@ namespace MSSQLand.Actions.Network
             var (currentUser, systemUser) = databaseContext.UserService.GetInfo();
             Logger.TaskNested($"[{databaseContext.QueryService.ExecutionServer}] LoggedIn: {systemUser}, Mapped: {currentUser}");
 
-            string impersonatedUser = null; // Track if we needed to impersonate
+            string impersonatedUser = null;
 
             if (systemUser != expectedLocalLogin)
             {
@@ -123,7 +114,7 @@ namespace MSSQLand.Actions.Network
                 }
             }
 
-            // Grow the linked server chain
+            // Update the linked server chain
             databaseContext.QueryService.LinkedServers.AddToChain(targetServer);
             databaseContext.QueryService.ExecutionServer = targetServer;
 
@@ -158,13 +149,12 @@ namespace MSSQLand.Actions.Network
                 { "Hash", entryHash }
             });
 
-
             Logger.TaskNested($"[{databaseContext.QueryService.ExecutionServer}] LoggedIn: {remoteLoggedInUser}, Mapped: {mappedUser}");
 
             // Step 4: Retrieve linked servers from remote server and continue recursion
-            DataTable remoteLinkedServers = Links.GetLinkedServers(databaseContext);
+            DataTable remoteLinkedServers = GetLinkedServers(databaseContext);
 
-            // Step 5: Build new chain and explore each linked server
+            // Step 5: Explore each linked server with a new unique chainId per path
             foreach (DataRow row in remoteLinkedServers.Rows)
             {
                 string nextServer = row["Link"].ToString();
@@ -173,6 +163,25 @@ namespace MSSQLand.Actions.Network
                 ExploreServer(databaseContext, nextServer, nextLocalLogin, chainId);
             }
         }
+        private static DataTable GetLinkedServers(DatabaseContext databaseContext)
+        {
+            string query = @"
+        SELECT 
+            srv.name AS [Link], 
+            COALESCE(prin.name, 'N/A') AS [Local Login],
+            ll.remote_name AS [Remote Login]
+        FROM sys.servers srv
+        LEFT JOIN sys.linked_logins ll 
+            ON srv.server_id = ll.server_id
+        LEFT JOIN sys.server_principals prin 
+            ON ll.local_principal_id = prin.principal_id
+        WHERE srv.is_linked = 1
+        ORDER BY srv.name;";
+
+            DataTable results = databaseContext.QueryService.ExecuteTable(query);
+            Logger.Debug(MarkdownFormatter.ConvertDataTableToMarkdownTable(results));
+            return results;
+        }
 
     }
-}   
+}

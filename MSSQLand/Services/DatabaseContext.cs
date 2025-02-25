@@ -73,5 +73,26 @@ namespace MSSQLand.Services
 
             return newDatabaseContext;
         }
+
+        /// <summary>
+        /// Creates a deep copy of the current DatabaseContext while keeping the same connection.
+        /// This means that any **impersonation** or **persistent session modifications** 
+        /// (e.g., `EXECUTE AS`, temp table changes, transaction states) 
+        /// will also be reflected in the copied context.
+        /// Use cautiously when dealing with impersonation-sensitive operations.
+        /// </summary>
+        /// <returns>A copied DatabaseContext instance with the same connection.</returns>
+        public DatabaseContext Copy()
+        {
+            Logger.Debug("Creating a deep copy of DatabaseContext while keeping the same connection.");
+
+            // Create a new DatabaseContext instance but keep the same connection
+            DatabaseContext copiedContext = new(this.AuthService);
+
+            // Deep Copy LinkedServers to avoid shared state
+            copiedContext.QueryService.LinkedServers = new LinkedServers(this.QueryService.LinkedServers);
+
+            return copiedContext;
+        }
     }
 }

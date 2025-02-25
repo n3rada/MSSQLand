@@ -122,8 +122,22 @@ namespace MSSQLand.Services
             using var command = new SqlCommand(query, _queryService.Connection);
             command.Parameters.AddWithValue("@User", user);
 
-
+            
             command.ExecuteNonQuery();
+            Logger.Info($"Impersonated user {user} for current connection");
+
+        }
+
+        /// <summary>
+        /// Reverts any active impersonation and restores the original login.
+        /// </summary>
+        public void RevertImpersonation()
+        {
+            const string query = "REVERT;";
+            using var command = new SqlCommand(query, _queryService.Connection);
+            command.ExecuteNonQuery();
+
+            Logger.Info("Reverted impersonation, restored original login.");
         }
     }
 }
