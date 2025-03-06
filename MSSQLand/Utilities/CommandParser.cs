@@ -49,12 +49,12 @@ namespace MSSQLand.Utilities
                     else if (arg.StartsWith("/help", StringComparison.OrdinalIgnoreCase))
                     {
                         Helper.Show();
-                        Environment.Exit(0);
+                        return null;
                     }
                     else if (arg.StartsWith("/printHelp", StringComparison.OrdinalIgnoreCase))
                     {
                         Helper.SaveCommandsToFile();
-                        Environment.Exit(0);
+                        return null;
                     }
                     else if (arg.StartsWith("/c:", StringComparison.OrdinalIgnoreCase) ||
                              arg.StartsWith("/credentials:", StringComparison.OrdinalIgnoreCase))
@@ -126,7 +126,7 @@ namespace MSSQLand.Utilities
                     BaseAction action = ActionFactory.GetEnumeration(enumType, parsedArgs.AdditionalArguments);
                     Logger.Task($"Executing action: {action.GetName()}");
                     action.Execute();
-                    Environment.Exit(0);
+                    return null;
                 }
 
 
@@ -175,7 +175,7 @@ namespace MSSQLand.Utilities
                 }
             } catch (Exception ex) {
                 Logger.Error($"Parsing error occured: {ex.Message}");
-                Environment.Exit(0);
+                return null;
             }
 
             return parsedArgs;

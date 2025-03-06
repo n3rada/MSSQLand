@@ -18,7 +18,7 @@ namespace MSSQLand
 
 
         [STAThread]
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
 
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -37,6 +37,13 @@ namespace MSSQLand
                 CommandParser parser = new();
 
                 CommandArgs arguments = parser.Parse(args);
+
+                // if no arguments are returned the parser could already finish the user's request
+                // exit here. 
+                if (arguments == null)
+                {
+                    return 0;
+                }
 
                 Logger.Banner($"Version: {currentVersion}\nCompile date: {compileDate:yyyy-MM-dd}", borderChar: '*');
 
@@ -62,7 +69,7 @@ namespace MSSQLand
                  ))
                 {
                     Logger.Error("Failed to authenticate with the provided credentials.");
-                    return;
+                    return 1;
                 }
 
                 DatabaseContext databaseContext = new(authService);
@@ -98,6 +105,8 @@ namespace MSSQLand
                 Logger.NewLine();
                 Logger.Banner($"End at {endTime:yyyy-MM-dd HH:mm:ss:fffff} UTC\nTotal duration: {stopwatch.Elapsed.TotalSeconds:F2} seconds", totalWidth: bannerWidth);
 
+                return 0;
+
             }
             catch (Exception ex)
             {
@@ -112,7 +121,7 @@ namespace MSSQLand
                     Logger.Error($"Stack Trace: {ex.InnerException.StackTrace}");
                 }
 
-                Environment.Exit(1);
+                return 1;
             }
 
         }

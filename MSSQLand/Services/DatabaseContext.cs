@@ -29,7 +29,7 @@ namespace MSSQLand.Services
 
             if (HandleImpersonation() == false)
             {
-                Environment.Exit(1);
+                throw new Exception("Failed to handle impersonation. Exiting.");
             };
         }
 
