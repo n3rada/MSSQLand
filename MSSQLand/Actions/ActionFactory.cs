@@ -30,7 +30,7 @@ namespace MSSQLand.Utilities
             { "users", (typeof(Users), "List database users.") },
             { "permissions", (typeof(Permissions), "Enumerate permissions.") },
             { "search", (typeof(Search), "Search for specific keyword in database.") },
-            { "linkmap", (typeof(LinkedServerExplorer), "Enumerate all possible linked server chains and access paths.") },  // New Action
+            { "linkmap", (typeof(LinkedServerExplorer), "Enumerate all possible linked server chains and access paths.") },
 
             // User Interaction and Impersonation
             { "impersonate", (typeof(Impersonation), "Check and perform user impersonation.") },
@@ -42,7 +42,7 @@ namespace MSSQLand.Utilities
             { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a PowerShell script.") },
             { "ole", (typeof(ObjectLinkingEmbedding), "Executes the specified command using OLE Automation Procedures.") },
             { "clr", (typeof(ClrExecution), "Deploy and execute CLR assemblies.") },
-            { "rpc", (typeof(RemoteProcedureCall), "Call remote procedures on linked servers.") },
+            { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC on a server.") },
             { "smb", (typeof(SmbCoerce), "Leverages xp_dirtree to send SMB requests to a specified UNC path, potentially coercing authentication.") },
             { "adsi", (typeof(AdsiCredentialExtractor), "Enumerate ADSI linked servers, extract credentials, or impersonate users via ADSI exploitation.") },
 

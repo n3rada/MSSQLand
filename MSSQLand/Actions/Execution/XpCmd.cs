@@ -37,13 +37,11 @@ namespace MSSQLand.Actions.Execution
             // Ensure 'xp_cmdshell' is enabled
             if (!databaseContext.ConfigService.SetConfigurationOption("xp_cmdshell", 1))
             {
-                Logger.Error("Failed to enable 'xp_cmdshell'. Cannot proceed with command execution.");
+                Logger.Error("Failed to enable 'xp_cmdshell'.");
                 return null;
             }
 
-            // Sanitize command to prevent SQL injection issues
             string query = $"EXEC master..xp_cmdshell '{_command.Replace("'", "''")}'";
-
 
             List<string> outputLines = new();
 

@@ -2,9 +2,6 @@
 using MSSQLand.Utilities;
 using System;
 using System.Data;
-using System.Data.SqlClient;
-using System.Linq;
-
 
 namespace MSSQLand.Services
 {
@@ -166,7 +163,7 @@ namespace MSSQLand.Services
             {
                 // Update the configuration option
                 Logger.Info($"Updating configuration option '{optionName}' to {value}.");
-                _queryService.ExecuteNonProcessing($"EXEC sp_configure '{optionName}', {value}; RECONFIGURE;");
+                _queryService.ExecuteNonProcessing($"EXEC master..sp_configure '{optionName}', {value}; RECONFIGURE;");
                 return true;
             }
             catch (Exception ex)
@@ -206,7 +203,7 @@ namespace MSSQLand.Services
                     Logger.Warning("Hash already exists in sys.trusted_assemblies");
 
                     // Attempt to remove the existing hash
-                    string deletionQuery = _queryService.ExecuteScalar($"EXEC sp_drop_trusted_assembly 0x{assemblyHash};")?.ToString()?.ToLower();
+                    string deletionQuery = _queryService.ExecuteScalar($"EXEC master..sp_drop_trusted_assembly 0x{assemblyHash};")?.ToString()?.ToLower();
 
                     if (deletionQuery?.Contains("permission was denied") == true)
                     {
@@ -219,7 +216,7 @@ namespace MSSQLand.Services
 
                 // Add the new hash to the trusted assemblies
                 _queryService.ExecuteNonProcessing($@"
-                    EXEC sp_add_trusted_assembly
+                    EXEC master..sp_add_trusted_assembly
                     0x{assemblyHash},
                     N'{assemblyDescription}, version=0.0.0.0, culture=neutral, publickeytoken=null, processorarchitecture=msil';
                 ");
@@ -250,36 +247,41 @@ namespace MSSQLand.Services
         {
             Logger.Task("Ensuring advanced options are enabled");
 
+
+            var advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM sys.configurations WHERE name = 'show advanced options';");
+
+            if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
+            {
+                Logger.Info("Advanced options already enabled");
+                return true;
+            }
+
+            Logger.Info("Enabling advanced options...");
+
+            string query = "EXEC master..sp_configure 'show advanced options', 1; RECONFIGURE;";
+
             try
             {
-                var advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM sys.configurations WHERE name = 'show advanced options';");
-
-                if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
-                {
-                    Logger.Info("Advanced options already enabled");
-                    return true;
-                }
-
-                Logger.Info("Enabling advanced options...");
-                _queryService.ExecuteNonProcessing("EXEC sp_configure 'show advanced options', 1; RECONFIGURE;");
-
-                // Verify the change
-                advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM sys.configurations WHERE name = 'show advanced options';");
-
-                if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
-                {
-                    Logger.Success("Advanced options successfully enabled");
-                    return true;
-                }
-
-                Logger.Warning("Failed to verify 'show advanced options' was enabled");
-                return false;
+                _queryService.ExecuteNonProcessing(query);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Logger.Warning($"Error enabling 'show advanced options': {ex.Message}");
                 return false;
             }
+                    
+
+            // Verify the change
+            advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM sys.configurations WHERE name = 'show advanced options';");
+
+            if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
+            {
+                Logger.Success("Advanced options successfully enabled");
+                return true;
+            }
+
+            Logger.Warning("Failed to verify 'show advanced options' was enabled");
+            return false;
+
         }
 
 
@@ -291,7 +293,7 @@ namespace MSSQLand.Services
             Logger.Task($"Enabling data access on server '{serverName}'");
             try
             {
-                string query = $"EXEC sp_serveroption '{serverName}', 'DATA ACCESS', TRUE;";
+                string query = $"EXEC master..sp_serveroption '{serverName}', 'DATA ACCESS', TRUE;";
                 _queryService.ExecuteNonProcessing(query);
 
                 // Verify if data access is enabled
@@ -319,7 +321,7 @@ namespace MSSQLand.Services
             Logger.Task($"Disabling data access on server '{serverName}'");
             try
             {
-                string query = $"EXEC sp_serveroption '{serverName}', 'DATA ACCESS', FALSE;";
+                string query = $"EXEC master..sp_serveroption '{serverName}', 'DATA ACCESS', FALSE;";
                 _queryService.ExecuteNonProcessing(query);
 
                 // Verify if data access is disabled

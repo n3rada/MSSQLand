@@ -131,9 +131,18 @@ namespace MSSQLand.Services
 
                 if (ex.Message.Contains("not configured for RPC"))
                 {
+                    Logger.Warning("The targeted server is not configured for Remote Procedure Call (RPC)");
                     Logger.WarningNested("Trying again with OPENQUERY");
                     _linkedServers.UseRemoteProcedureCall = false;
                     return Execute(query);
+                }
+
+                if (ex.Message.Contains("The metadata could not be determined"))
+                {
+                    Logger.Error("When you wrap a remote procedure in OPENQUERY, SQL Server wants a single, consistent set of columns.");
+                    Logger.ErrorNested("Since sp_configure does not provide that, the metadata parser chokes.");
+                    Logger.Info("Enable RPC OUT option to allow the use of sp_configure.");
+                    Logger.InfoNested($"/a:rpc add {ExecutionServer}");
                 }
 
                 throw;
