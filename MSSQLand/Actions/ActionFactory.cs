@@ -26,7 +26,7 @@ namespace MSSQLand.Utilities
             { "databases", (typeof(Databases), "List available databases.") },
             { "tables", (typeof(Tables), "List tables in a database.") },
             { "rows", (typeof(Rows), "Retrieve rows from a table.") },
-            { "procedures", (typeof(Procedures), "List available procedures.") },
+            { "procedures", (typeof(Procedures), "List stored procedures, read their definitions, or execute them with arguments.") },
             { "users", (typeof(Users), "List database users.") },
             { "permissions", (typeof(Permissions), "Enumerate permissions.") },
             { "search", (typeof(Search), "Search for specific keyword in database.") },
