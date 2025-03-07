@@ -34,9 +34,6 @@ namespace MSSQLand
             Logger.Banner($"Version: {currentVersion}\nCompile date: {compileDate:yyyy-MM-dd}", borderChar: '*');
             Logger.NewLine();
             int bannerWidth = Logger.Banner($"Executing from: {Environment.MachineName}\nTime Zone ID: {timeZoneId}\nLocal Time: {localTime:HH:mm:ss}, UTC Offset: {formattedOffset}");
-            Logger.NewLine();
-            Logger.Banner($"Start at {startTime:yyyy-MM-dd HH:mm:ss:fffff} UTC", totalWidth: bannerWidth);
-            Logger.NewLine();
 
             try
             {
@@ -61,6 +58,10 @@ namespace MSSQLand
                     Logger.Error("Invalid command arguments.");
                     return 1;
                 }
+
+                Logger.NewLine();
+                Logger.Banner($"Start at {startTime:yyyy-MM-dd HH:mm:ss:fffff} UTC", totalWidth: bannerWidth);
+                Logger.NewLine();
 
                 using AuthenticationService authService = new(arguments.Host);
 
