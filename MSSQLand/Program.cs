@@ -127,13 +127,13 @@ namespace MSSQLand
             {
                 Logger.Error("An unhandled exception occurred.");
                 Logger.Error($"Message: {ex.Message}");
-                Logger.Error($"Stack Trace: {ex.StackTrace}");
+                Logger.Debug($"Stack Trace: {ex.StackTrace}");
 
                 if (ex.InnerException != null)
                 {
                     Logger.Error("Inner Exception:");
                     Logger.Error($"Message: {ex.InnerException.Message}");
-                    Logger.Error($"Stack Trace: {ex.InnerException.StackTrace}");
+                    Logger.Debug($"Stack Trace: {ex.InnerException.StackTrace}");
                 }
 
                 return 1;
