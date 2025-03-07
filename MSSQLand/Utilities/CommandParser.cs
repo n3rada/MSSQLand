@@ -27,7 +27,7 @@ namespace MSSQLand.Utilities
 
         public const string AdditionalArgumentsSeparator = "/|/";
 
-        public CommandArgs Parse(string[] args)
+        public (ParseResultType, CommandArgs?) Parse(string[] args)
         {
             CommandArgs parsedArgs = new();
 
