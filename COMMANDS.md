@@ -17,7 +17,7 @@
 | /silent or /s      | Enable silent mode (minimal output).                   |
 | /debug             | Enable debug mode for detailed logs.                   |
 | /help              | Display this help message and exit.                    |
-| /printhelp         | Save commands to COMMANDS.md file.                     |
+| /printHelp         | Save commands to COMMANDS.md file.                     |
 
 
 ## 🔑 Credential Types
