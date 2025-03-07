@@ -49,7 +49,7 @@ namespace MSSQLand.Utilities
             // Configuration and Management
             { "config", (typeof(Configure), "Use sp_configure to modify settings.") },
             { "agents", (typeof(Agents), "Interact with and manage SQL Server Agent jobs.") },
-            { "read", (typeof(FileRead), "Read file contents.") },
+            { "read", (typeof(FileRead), "Read system file contents (e.g., C:\Windows\System32\drivers\etc\hosts).") },
 
             // Termination and Cleanup
             { "kill", (typeof(Kill), "Terminate running SQL commands by session ID or all.") },
