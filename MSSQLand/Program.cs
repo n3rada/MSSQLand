@@ -78,7 +78,15 @@ namespace MSSQLand
                     return 1;
                 }
 
-                DatabaseContext databaseContext = new(authService);
+                try
+                {
+                    using DatabaseContext databaseContext = new(authService);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"DatabaseContext initialization failed: {ex.Message}");
+                    return 1;
+                }
 
                 (string userName, string systemUser) = databaseContext.UserService.GetInfo();
 
