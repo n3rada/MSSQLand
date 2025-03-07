@@ -39,14 +39,14 @@ namespace MSSQLand.Utilities
             string additionalArguments = "";
 
             try {
-                foreach (var arg in args)
+                foreach (var originalArg in args)
                 {
+                    string arg = originalArg.ToLower();
+                    
                     if (arg.Contains("--"))
                     {
                         continue; // Skip any argument containing "--" (sliver thing)
                     }
-
-                    arg = arg.ToLower();
 
                     switch (arg)
                     {
