@@ -17,7 +17,7 @@
 | /silent or /s      | Enable silent mode (minimal output).                   |
 | /debug             | Enable debug mode for detailed logs.                   |
 | /help              | Display this help message and exit.                    |
-| /printHelp         | Save commands to COMMANDS.md file.                     |
+| /printhelp         | Save commands to COMMANDS.md file.                     |
 
 
 ## 🔑 Credential Types
@@ -58,9 +58,9 @@
 | ole             | Executes the specified command using OLE Automation Procedures.                                         | command (string)                                                                                                                                                    |
 | clr             | Deploy and execute CLR assemblies.                                                                      | dllURI (string), function (string)                                                                                                                                  |
 | rpc             | Enable or disable RPC on a server.                                                                      | action (enum: RpcActionMode [add, del], default: add), linkedServerName (string)                                                                                    |
-| smb             | Leverages xp_dirtree to send SMB requests to a specified UNC path, potentially coercing authentication. | uncPath (string)                                                                                                                                                    |
+| smb             | Leverages xp_dirtree to send SMB requests to a specified UNC path, potentially coercing authentication. | unc15:43 07/03/2025Path (string)                                                                                                                                                    |
 | adsi            | Enumerate ADSI linked servers, extract credentials, or impersonate users via ADSI exploitation.         | mode (enum: Mode [list, self, link], default: list), targetServer (string)                                                                                          |
-| config          | Use sp_configure to modify settings.                                                                    | state (int, default: 0), optionName (string)                                                                                                                        |
+| config          | Use sp_configure to modify settings.                                                                    | optionName (string), state (int, default: 0)                                                                                                                        |
 | agents          | Interact with and manage SQL Server Agent jobs.                                                         | action (enum: ActionMode [status, exec], default: status), command (string), subSystem (enum: SubSystemMode [cmd, powershell, tsql, vbscript], default: powershell) |
 | read            | Read file contents.                                                                                     | filePath (string)                                                                                                                                                   |
 | kill            | Terminate running SQL commands by session ID or all.                                                    | target (string)                                                                                                                                                     |
