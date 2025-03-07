@@ -41,7 +41,7 @@ namespace MSSQLand
             try
             {
                 CommandParser parser = new();
-                var (result, arguments) = parser.Parse(args);
+                (CommandParser.ParseResultType result, CommandArgs? arguments) = parser.Parse(args);
 
                 switch (result)
                 {
