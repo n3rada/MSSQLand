@@ -181,7 +181,7 @@ namespace MSSQLand.Utilities
             argumentsTable.Rows.Add("/silent or /s", "Enable silent mode (minimal output).");
             argumentsTable.Rows.Add("/debug", "Enable debug mode for detailed logs.");
             argumentsTable.Rows.Add("/help", "Display this help message and exit.");
-            argumentsTable.Rows.Add("/printHelp", "Save commands to COMMANDS.md file.");
+            argumentsTable.Rows.Add("/printhelp", "Save commands to COMMANDS.md file.");
 
             return argumentsTable;
         }
