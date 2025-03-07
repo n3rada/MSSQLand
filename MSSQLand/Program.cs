@@ -18,7 +18,7 @@ namespace MSSQLand
 
 
         [STAThread]
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
 
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -31,23 +31,36 @@ namespace MSSQLand
             TimeSpan offset = localTimeZone.BaseUtcOffset;
             string formattedOffset = $"{(offset.Hours >= 0 ? "+" : "-")}{Math.Abs(offset.Hours)}:{Math.Abs(offset.Minutes):D2}";
 
-
+            Logger.Banner($"Version: {currentVersion}\nCompile date: {compileDate:yyyy-MM-dd}", borderChar: '*');
+            Logger.NewLine();
+            int bannerWidth = Logger.Banner($"Executing from: {Environment.MachineName}\nTime Zone ID: {timeZoneId}\nLocal Time: {localTime:HH:mm:ss}, UTC Offset: {formattedOffset}");
+            Logger.NewLine();
+            
             try
             {
                 CommandParser parser = new();
+                (CommandParser.ParseResultType result, CommandArgs? arguments) = parser.Parse(args);
 
-                CommandArgs arguments = parser.Parse(args);
+                switch (result)
+                {
+                    case CommandParser.ParseResultType.ShowHelp:
+                        return 0;
+                    case CommandParser.ParseResultType.InvalidInput:
+                        return 1;
+                    case CommandParser.ParseResultType.EnumerationMode:
+                        return 0;
+                    case CommandParser.ParseResultType.Success:
+                        break; // Proceed with execution
+                }
 
-                Logger.Banner($"Version: {currentVersion}\nCompile date: {compileDate:yyyy-MM-dd}", borderChar: '*');
-
-                Logger.NewLine();
-
-                int bannerWidth = Logger.Banner($"Executing from: {Environment.MachineName}\nTime Zone ID: {timeZoneId}\nLocal Time: {localTime:HH:mm:ss}, UTC Offset: {formattedOffset}");
-
-                Logger.NewLine();
+                // Ensure arguments are valid (just in case)
+                if (arguments == null || arguments.Host == null)
+                {
+                    Logger.Error("Invalid command arguments.");
+                    return 1;
+                }
 
                 Logger.Banner($"Start at {startTime:yyyy-MM-dd HH:mm:ss:fffff} UTC", totalWidth: bannerWidth);
-                
                 Logger.NewLine();
 
                 using AuthenticationService authService = new(arguments.Host);
@@ -62,10 +75,19 @@ namespace MSSQLand
                  ))
                 {
                     Logger.Error("Failed to authenticate with the provided credentials.");
-                    return;
+                    return 1;
                 }
 
-                DatabaseContext databaseContext = new(authService);
+                DatabaseContext databaseContext;
+                try
+                {
+                    databaseContext = new DatabaseContext(authService);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"DatabaseContext initialization failed: {ex.Message}");
+                    return 1;
+                }
 
                 (string userName, string systemUser) = databaseContext.UserService.GetInfo();
 
@@ -98,6 +120,8 @@ namespace MSSQLand
                 Logger.NewLine();
                 Logger.Banner($"End at {endTime:yyyy-MM-dd HH:mm:ss:fffff} UTC\nTotal duration: {stopwatch.Elapsed.TotalSeconds:F2} seconds", totalWidth: bannerWidth);
 
+                return 0;
+
             }
             catch (Exception ex)
             {
@@ -112,7 +136,7 @@ namespace MSSQLand
                     Logger.Error($"Stack Trace: {ex.InnerException.StackTrace}");
                 }
 
-                Environment.Exit(1);
+                return 1;
             }
 
         }

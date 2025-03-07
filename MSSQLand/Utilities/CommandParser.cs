@@ -8,6 +8,14 @@ namespace MSSQLand.Utilities
 {
     public class CommandParser
     {
+        public enum ParseResultType
+        {
+            Success,        // Parsing succeeded, return valid arguments.
+            ShowHelp,       // The user requested help (/help or /printHelp).
+            InvalidInput,   // User input is incorrect or missing required fields.
+            EnumerationMode // Enumeration mode detected, executed separately.
+        }
+        
         public static readonly Dictionary<string, List<string>> CredentialArgumentGroups = new()
         {
             { "token", new List<string>() },
@@ -19,7 +27,7 @@ namespace MSSQLand.Utilities
 
         public const string AdditionalArgumentsSeparator = "/|/";
 
-        public CommandArgs Parse(string[] args)
+        public (ParseResultType, CommandArgs?) Parse(string[] args)
         {
             CommandArgs parsedArgs = new();
 
@@ -31,32 +39,34 @@ namespace MSSQLand.Utilities
             string additionalArguments = "";
 
             try {
-                foreach (var arg in args)
+                foreach (var originalArg in args)
                 {
+                    string arg = originalArg.ToLower();
+                    
                     if (arg.Contains("--"))
                     {
                         continue; // Skip any argument containing "--" (sliver thing)
                     }
 
-                    if (arg.Equals("/debug", StringComparison.OrdinalIgnoreCase))
+                    switch (arg)
                     {
-                        Logger.IsDebugEnabled = true;
+                        case "/debug":
+                            Logger.IsDebugEnabled = true;
+                            continue;
+                        case "/s":
+                        case "/silent":
+                            Logger.IsSilentModeEnabled = true;
+                            continue;
+                        case "/help":
+                            Helper.Show();
+                            return (ParseResultType.ShowHelp, null);
+                        case "/printhelp":
+                            Helper.SaveCommandsToFile();
+                            return (ParseResultType.ShowHelp, null);
                     }
-                    else if (arg.StartsWith("/s", StringComparison.OrdinalIgnoreCase) || arg.Equals("/silent", StringComparison.OrdinalIgnoreCase))
-                    {
-                        Logger.IsSilentModeEnabled = true;
-                    }
-                    else if (arg.StartsWith("/help", StringComparison.OrdinalIgnoreCase))
-                    {
-                        Helper.Show();
-                        Environment.Exit(0);
-                    }
-                    else if (arg.StartsWith("/printHelp", StringComparison.OrdinalIgnoreCase))
-                    {
-                        Helper.SaveCommandsToFile();
-                        Environment.Exit(0);
-                    }
-                    else if (arg.StartsWith("/c:", StringComparison.OrdinalIgnoreCase) ||
+
+                    
+                    if (arg.StartsWith("/c:", StringComparison.OrdinalIgnoreCase) ||
                              arg.StartsWith("/credentials:", StringComparison.OrdinalIgnoreCase))
                     {
                         parsedArgs.CredentialType = ExtractValue(arg, "/c:", "/credentials:");
@@ -126,20 +136,20 @@ namespace MSSQLand.Utilities
                     BaseAction action = ActionFactory.GetEnumeration(enumType, parsedArgs.AdditionalArguments);
                     Logger.Task($"Executing action: {action.GetName()}");
                     action.Execute();
-                    Environment.Exit(0);
+                    return (ParseResultType.EnumerationMode, null);
                 }
 
 
                 if (parsedArgs.Host == null)
                 {
-                    throw new ArgumentException("Targeted server (/h or /host) is mandatory. Use /help for more information");
+                    Logger.Error("Missing required argument: /h or /host.");
+                    return (ParseResultType.InvalidInput, null);
                 }
-                else
+
+
+                if (port.HasValue)
                 {
-                    if (port.HasValue)
-                    {
-                        parsedArgs.Host.Port = port.Value;
-                    }
+                    parsedArgs.Host.Port = port.Value;
                 }
 
 
@@ -173,12 +183,12 @@ namespace MSSQLand.Utilities
                     Logger.DebugNested($"Action: {parsedArgs.Action}");
                     Logger.DebugNested($"Additional Arguments: {parsedArgs.AdditionalArguments}");
                 }
-            } catch (Exception ex) {
-                Logger.Error($"Parsing error occured: {ex.Message}");
-                Environment.Exit(0);
-            }
 
-            return parsedArgs;
+                return (ParseResultType.Success, parsedArgs);
+            } catch (Exception ex) {
+                Logger.Error($"Parsing error: {ex.Message}");
+                return (ParseResultType.InvalidInput, null);
+            }
         }
 
         private void ValidateCredentialArguments(string credentialType, string username, string password, string domain)
