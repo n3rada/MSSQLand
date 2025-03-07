@@ -78,9 +78,10 @@ namespace MSSQLand
                     return 1;
                 }
 
+                DatabaseContext databaseContext;
                 try
                 {
-                    using DatabaseContext databaseContext = new(authService);
+                    databaseContext = new DatabaseContext(authService);
                 }
                 catch (Exception ex)
                 {
