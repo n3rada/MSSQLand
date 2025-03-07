@@ -186,11 +186,9 @@ namespace MSSQLand.Utilities
 
                 return (ParseResultType.Success, parsedArgs);
             } catch (Exception ex) {
-                Logger.Error($"Parsing error occured: {ex.Message}");
-                return null;
+                Logger.Error($"Parsing error: {ex.Message}");
+                return (ParseResultType.InvalidInput, null);
             }
-
-            return parsedArgs;
         }
 
         private void ValidateCredentialArguments(string credentialType, string username, string password, string domain)
