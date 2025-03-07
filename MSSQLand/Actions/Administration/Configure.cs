@@ -6,8 +6,8 @@ namespace MSSQLand.Actions.Administration
 {
     internal class Configure : BaseAction
     {
-        private int _state;
         private string _optionName;
+        private int _state;
 
         public override void ValidateArguments(string additionalArguments)
         {
