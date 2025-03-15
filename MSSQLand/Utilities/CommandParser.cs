@@ -39,9 +39,8 @@ namespace MSSQLand.Utilities
             string additionalArguments = "";
 
             try {
-                foreach (var originalArg in args)
+                foreach (var arg in args)
                 {
-                    string arg = originalArg.ToLower();
                     
                     if (arg.Contains("--"))
                     {

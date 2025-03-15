@@ -56,19 +56,19 @@ namespace MSSQLand.Services.Credentials
             {
                 Logger.Error($"SQL error while opening connection: {ex.Message}");
                 connection.Dispose();
-                throw new InvalidOperationException("Failed to open SQL connection. See inner exception for details.", ex);
+                return null;
             }
             catch (InvalidOperationException ex)
             {
                 Logger.Error($"Invalid operation while opening connection: {ex.Message}");
                 connection.Dispose();
-                throw new InvalidOperationException("Invalid operation occurred while opening SQL connection.", ex);
+                return null;
             }
             catch (Exception ex)
             {
                 Logger.Error($"Unexpected error while opening connection: {ex.Message}");
                 connection.Dispose();
-                throw new InvalidOperationException("An unexpected error occurred while opening SQL connection.", ex);
+                return null;
             }
         }
 

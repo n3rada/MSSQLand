@@ -60,5 +60,17 @@ namespace MSSQLand.Utilities
 
             return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
         }
+
+        public static string GetFullExceptionMessage(Exception ex)
+        {
+            var message = ex.Message;
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message += " --> " + inner.Message;
+                inner = inner.InnerException;
+            }
+            return message;
+        }
     }
 }

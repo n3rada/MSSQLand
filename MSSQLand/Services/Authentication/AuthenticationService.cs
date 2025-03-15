@@ -41,31 +41,28 @@ namespace MSSQLand.Services
             string password = null,
             string domain = null)
         {
-            try
+            // Store authentication parameters
+            _credentialsType = credentialsType;
+            _sqlServer = sqlServer;
+            _database = database;
+            _username = username;
+            _password = password;
+            _domain = domain;
+
+            // Get the appropriate credentials service
+            var credentials = CredentialsFactory.GetCredentials(credentialsType);
+
+            // Use the credentials service to authenticate and establish the connection
+            Connection = credentials.Authenticate(sqlServer, database, username, password, domain);
+
+            if (Connection == null)
             {
-                // Store authentication parameters
-                _credentialsType = credentialsType;
-                _sqlServer = sqlServer;
-                _database = database;
-                _username = username;
-                _password = password;
-                _domain = domain;
-
-                // Get the appropriate credentials service
-                var credentials = CredentialsFactory.GetCredentials(credentialsType);
-
-                // Use the credentials service to authenticate and establish the connection
-                Connection = credentials.Authenticate(sqlServer, database, username, password, domain);
-
-                Server.Version = Connection.ServerVersion;
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Failed to authenticate: {ex.Message}");
                 return false;
             }
+
+            Server.Version = Connection.ServerVersion;
+
+            return true;
         }
 
         /// <summary>
