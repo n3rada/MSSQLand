@@ -11,6 +11,23 @@ namespace MSSQLand.Utilities
     internal class Misc
     {
 
+        /// <summary>
+        /// Converts a nibble (4-bit value from 0 to 15) into its corresponding hexadecimal character.
+        /// This method avoids allocations and conditionally returns either uppercase or lowercase letters.
+        ///
+        /// Example:
+        /// <c>GetHexChar(10, true) => 'A'</c>
+        /// <c>GetHexChar(10, false) => 'a'</c>
+        /// </summary>
+        /// <param name="value">An integer from 0 to 15 representing the nibble.</param>
+        /// <param name="upper">If true, returns uppercase ('A'-'F'); otherwise, lowercase ('a'-'f').</param>
+        /// <returns>A hexadecimal character corresponding to the input nibble.</returns>
+        public static char GetHexChar(int value, bool upper)
+        {
+            return (char)(value < 10 ? '0' + value : (upper ? 'A' : 'a') + (value - 10));
+        }
+
+
         public static byte[] DecodeAndDecompress(string encoded)
         {
             byte[] compressedBytes = Convert.FromBase64String(encoded);

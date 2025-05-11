@@ -144,49 +144,85 @@ namespace MSSQLand.Actions.Execution
 
 
         /// <summary>
-        /// Take a .NET assembly on disk and cnovert it
-        /// to SQL compatible byte format for storage in a stored procedure.
+        /// Reads a .NET assembly (.dll) from the local filesystem, computes its SHA-512 hash,
+        /// and converts its binary content into a SQL-compatible hexadecimal string format.
+        ///
+        /// This method returns:
+        /// <list type="number">
+        ///   <item>
+        ///     <description>
+        ///     <b>SHA-512 hash (lowercase hex)</b>: Used with <c>sp_add_trusted_assembly</c>.
+        ///     Format: 128-character lowercase hexadecimal string.
+        ///     </description>
+        ///   </item>
+        ///   <item>
+        ///     <description>
+        ///     <b>DLL bytes (uppercase hex)</b>: Used with <c>CREATE ASSEMBLY FROM 0x...</c>.
+        ///     Format: 2 characters per byte, uppercase hexadecimal string.
+        ///     </description>
+        ///   </item>
+        /// </list>
+        ///
         /// </summary>
-        /// <param name="dll"></param>
-        /// <returns></returns>
+        /// <param name="dll">Full path to the DLL on disk.</param>
+        /// <returns>
+        /// A string array with:
+        /// <c>[0]</c> = SHA-512 hash (lowercase hex), <c>[1]</c> = DLL content (uppercase hex).
+        /// </returns>
         private static string[] ConvertDLLToSQLBytesFile(string dll)
         {
             string[] dllArr = new string[2];
-            string dllHash = "";
-            string dllBytes = "";
 
-            // Read the DLL, create an SHA-512 hash for it and convert the DLL to SQL compatible bytes.
             try
             {
                 FileInfo fileInfo = new(dll);
                 Logger.Info($"{dll} is {fileInfo.Length} bytes.");
 
-                // Get the SHA-512 hash of the DLL, so we can use sp_add_trusted_assembly to add it as a trusted DLL on the SQL server.
+                // Read all DLL bytes first
+                byte[] dllBytes = File.ReadAllBytes(dll);
+
+                // Compute SHA-512 hash of the file
+                byte[] hashBytes;
                 using (SHA512 sha512 = SHA512.Create())
+                using (FileStream fileStream = File.OpenRead(dll))
                 {
-                    using FileStream fileStream = File.OpenRead(dll);
-                    foreach (byte hash in sha512.ComputeHash(fileStream))
-                    {
-                        dllHash += hash.ToString("x2");
-                    }
+                    hashBytes = sha512.ComputeHash(fileStream);
                 }
 
-                // Read the local dll as bytes and store into the dllBytes variable, otherwise, the DLL will need to be on the SQL server.
-                foreach (Byte b in File.ReadAllBytes(dll))
+                // Allocate character arrays for hex strings
+                char[] hashChars = new char[hashBytes.Length * 2];       // Lowercase hex
+                char[] dllHexChars = new char[dllBytes.Length * 2];      // Uppercase hex
+
+                // Fill hash hex chars
+                for (int i = 0; i < hashBytes.Length; i++)
                 {
-                    dllBytes += b.ToString("X2");
+                    byte b = hashBytes[i];
+                    hashChars[i * 2] = Misc.GetHexChar((b >> 4) & 0xF, false);
+                    hashChars[i * 2 + 1] = Misc.GetHexChar(b & 0xF, false);
                 }
 
+                // Fill DLL hex chars
+                for (int i = 0; i < dllBytes.Length; i++)
+                {
+                    byte b = dllBytes[i];
+                    dllHexChars[i * 2] = Misc.GetHexChar((b >> 4) & 0xF, true);
+                    dllHexChars[i * 2 + 1] = Misc.GetHexChar(b & 0xF, true);
+                }
+
+                // Assign results
+                dllArr[0] = new string(hashChars);     // lowercase hash
+                dllArr[1] = new string(dllHexChars);   // uppercase bytes
             }
             catch (FileNotFoundException)
             {
                 Logger.Error($"Unable to load {dll}");
+                dllArr[0] = string.Empty;
+                dllArr[1] = string.Empty;
             }
 
-            dllArr[0] = dllHash;
-            dllArr[1] = dllBytes;
             return dllArr;
         }
+
 
         /// <summary>
         /// Downloads a .NET assembly from a remote HTTP/S location and converts it
