@@ -30,6 +30,7 @@ namespace MSSQLand.Actions.Database
             { "SQL Service Name", "SELECT SERVERPROPERTY('InstanceName') AS InstanceName;" },
             { "SQL Service Account Name", "EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', 'SYSTEM\\CurrentControlSet\\Services\\MSSQLSERVER', 'ObjectName';" },
             { "Authentication Mode", "SELECT CASE SERVERPROPERTY('IsIntegratedSecurityOnly') WHEN 1 THEN 'Windows Authentication' ELSE 'Mixed Authentication' END;" },
+            { "Audit Enabled", "SELECT value_in_use FROM sys.configurations WHERE name = 'audit enabled';" },
             { "Encryption Enforced", "BEGIN TRY DECLARE @ForcedEncryption INT EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', N'SOFTWARE\\MICROSOFT\\Microsoft SQL Server\\MSSQLServer\\SuperSocketNetLib', N'ForceEncryption', @ForcedEncryption OUTPUT END TRY BEGIN CATCH END CATCH SELECT @ForcedEncryption;" },
             { "Clustered Server", "SELECT CASE SERVERPROPERTY('IsClustered') WHEN 0 THEN 'No' ELSE 'Yes' END;" },
             { "SQL Version", "SELECT SERVERPROPERTY('ProductVersion');" },
