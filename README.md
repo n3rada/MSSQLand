@@ -6,7 +6,7 @@ Land gracefully in your target MSSQL DBMS, as if arriving on a business-class fl
     <img width="350" src="/media/MSSQLand__icon-nobg.png" alt="MSSQLand Logo">
 </p>
 
-MSSQLand is the go-to tool for interacting with [Microsoft SQL Server](https://en.wikipedia.org/wiki/Microsoft_SQL_Server) database management system (DBMS) in your red activities. Designed for constrained environments where operations must be executed directly through your beacon (For Linux-based usage, consider using [MSSqlPwner](https://github.com/ScorpionesLabs/MSSqlPwner)). It allows you to pave your way across multiple linked servers and impersonate anyone (authorised) on the road, popping out of the last hop with any desired action.
+MSSQLand is the go-to tool for interacting with [Microsoft SQL Server](https://en.wikipedia.org/wiki/Microsoft_SQL_Server) database management system (DBMS) in your red activities. Designed for constrained environments where operations must be executed directly through your beacons. It allows you to pave your way across multiple linked servers and impersonate anyone (authorised) on the road, popping out of the last hop with any desired action.
 
 ## 📌 Documentation
 
