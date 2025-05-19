@@ -13,9 +13,11 @@ MSSQLand is the go-to tool for interacting with [Microsoft SQL Server](https://e
 - For a full list of commands, arguments, and actions, check out [COMMANDS.md](./COMMANDS.md).
 - For an overview of the project structure, refer to [STRUCTURE.md](./STRUCTURE.md).
 
-## 📖 Example
+## 📸 Clean Output for Clean Reports
 
-The tool's output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for your reports.  All the output tables are Markdown-friendly and can be directly copied and pasted into your notes.
+The tool's output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for any of your reports (e.g., customer deliverable, internal report, red team assessments).
+
+All output tables are Markdown-friendly and can be copied and pasted directly into your notes without any formatting hassle.
 
 ![Searching pass](./media/example.png)
 
