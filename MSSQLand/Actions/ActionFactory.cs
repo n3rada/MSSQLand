@@ -21,6 +21,7 @@ namespace MSSQLand.Utilities
             { "links", (typeof(Links), "Retrieve linked server information.") },
             { "monitor", (typeof(Monitor), "List running SQL commands.") },
             { "oledb-providers", (typeof(OleDbProvidersInfo), "Retrieve detailed configuration and properties of OLE DB providers.") },
+            { "xprocs", (typeof(ExtendedProcs), "Enumerate extended stored procedures available on the server.") },
 
             // Database Exploration
             { "databases", (typeof(Databases), "List available databases.") },
@@ -29,7 +30,7 @@ namespace MSSQLand.Utilities
             { "procedures", (typeof(Procedures), "List stored procedures, read their definitions, or execute them with arguments.") },
             { "users", (typeof(Users), "List database users.") },
             { "permissions", (typeof(Permissions), "Enumerate permissions.") },
-            { "search", (typeof(Search), "Search for specific keyword in database.") },
+            { "search", (typeof(Search), "Search for specific keyword in database columns and data (supports * for all databases).") },
             { "linkmap", (typeof(LinkedServerExplorer), "Enumerate all possible linked server chains and access paths.") },
 
             // User Interaction and Impersonation
