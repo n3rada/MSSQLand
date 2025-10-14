@@ -2,6 +2,7 @@
 using MSSQLand.Utilities;
 using System;
 using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 
 namespace MSSQLand.Actions.Execution
@@ -48,11 +49,37 @@ namespace MSSQLand.Actions.Execution
 
                 // Use ExecuteTable for commands that return a result set
                 DataTable resultTable = databaseContext.QueryService.ExecuteTable(_query);
+
+                Logger.Success($"Query executed successfully.");
+
+
+                if (resultTable == null || resultTable.Rows.Count == 0)
+                {
+                    Logger.Info("No rows returned.");
+                    return resultTable;
+                }
+
+                // Show the number of rows returned
+                Logger.Info($"Rows returned: {resultTable.Rows.Count}");
+
                 Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
                 return resultTable;
             }
-            catch (Exception)
+            catch (SqlException sqlEx)
             {
+                Logger.Error($"SQL Error: {sqlEx.Message}");
+                if (Logger.IsDebugEnabled)
+                {
+                    Logger.DebugNested($"Error Number: {sqlEx.Number}");
+                    Logger.DebugNested($"Line Number: {sqlEx.LineNumber}");
+                    Logger.DebugNested($"Procedure: {sqlEx.Procedure}");
+                    Logger.DebugNested($"Server: {sqlEx.Server}");
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"An error occurred while executing the query: {ex.Message}");
                 return null;
             }
         }
