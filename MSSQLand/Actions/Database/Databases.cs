@@ -25,16 +25,21 @@ namespace MSSQLand.Actions.Database
                 "SELECT name FROM sys.databases WHERE HAS_DBACCESS(name) = 1;"
             );
 
-            // Query for trustworthy databases
-            DataTable trustworthyDatabases = databaseContext.QueryService.ExecuteTable(
-                "SELECT name, is_trustworthy_on FROM sys.databases;"
+            // Query for trustworthy databases and owner information
+            DataTable databaseInfo = databaseContext.QueryService.ExecuteTable(
+                @"SELECT 
+                    d.name, 
+                    d.is_trustworthy_on,
+                    SUSER_SNAME(d.owner_sid) AS owner_name
+                FROM sys.databases d;"
             );
 
-            // Add columns for "Accessible" and "Trustworthy"
+            // Add columns for "Accessible", "Trustworthy", and "Owner"
             allDatabases.Columns.Add("Accessible", typeof(bool));
             allDatabases.Columns.Add("Trustworthy", typeof(bool));
+            allDatabases.Columns.Add("Owner", typeof(string));
 
-            // Populate "Accessible" and "Trustworthy" columns
+            // Populate "Accessible", "Trustworthy", and "Owner" columns
             foreach (DataRow row in allDatabases.Rows)
             {
                 string dbName = row["name"].ToString();
@@ -44,15 +49,26 @@ namespace MSSQLand.Actions.Database
                     .Any(r => r.Field<string>("name") == dbName);
                 row["Accessible"] = isAccessible;
 
-                // Check trustworthy status
-                bool isTrustworthy = trustworthyDatabases.AsEnumerable()
-                    .Any(r => r.Field<string>("name") == dbName && r.Field<bool>("is_trustworthy_on"));
-                row["Trustworthy"] = isTrustworthy;
+                // Get trustworthy status and owner
+                var dbInfoRow = databaseInfo.AsEnumerable()
+                    .FirstOrDefault(r => r.Field<string>("name") == dbName);
+                
+                if (dbInfoRow != null)
+                {
+                    row["Trustworthy"] = dbInfoRow.Field<bool>("is_trustworthy_on");
+                    row["Owner"] = dbInfoRow.Field<string>("owner_name") ?? "N/A";
+                }
+                else
+                {
+                    row["Trustworthy"] = false;
+                    row["Owner"] = "N/A";
+                }
             }
 
             // Reorder columns using SetOrdinal
             allDatabases.Columns["Accessible"].SetOrdinal(2);
             allDatabases.Columns["Trustworthy"].SetOrdinal(3);
+            allDatabases.Columns["Owner"].SetOrdinal(4);
 
             // Output the final table
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(allDatabases));
