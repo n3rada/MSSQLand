@@ -34,7 +34,7 @@ namespace MSSQLand.Utilities
 
             string username = null, password = null, domain = null;
             int? port = null;
-            string actionType = "info";
+            string actionType = null;
             string enumType = null;
             string additionalArguments = "";
 
@@ -151,6 +151,14 @@ namespace MSSQLand.Utilities
                     parsedArgs.Host.Port = port.Value;
                 }
 
+                // Check if action was provided or is empty
+                if (string.IsNullOrWhiteSpace(actionType))
+                {
+                    Logger.Error("Missing required argument: /a or /action.");
+                    Logger.NewLine();
+                    Helper.Show();
+                    return (ParseResultType.InvalidInput, null);
+                }
 
                 // Get the action from the factory
                 parsedArgs.Action = ActionFactory.GetAction(actionType, parsedArgs.AdditionalArguments);

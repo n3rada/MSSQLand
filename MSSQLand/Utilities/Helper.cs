@@ -3,8 +3,8 @@ using System.Data;
 using System.Linq;
 using System.IO;
 using System.Text;
-using MSSQLand.Utilities;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace MSSQLand.Utilities
 {
@@ -80,15 +80,10 @@ namespace MSSQLand.Utilities
                 // Print the main line: "actionName - description"
                 Console.WriteLine($"{actionName} - {description}");
 
-                // If we have arguments, split them by comma to print each on its own line with "  >" prefix
+                // If we have arguments, parse them properly
                 if (!string.IsNullOrWhiteSpace(arguments))
                 {
-                    // Example approach: split by commas
-                    // Make sure to trim spaces after splitting
-                    var argumentList = arguments
-                        .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                        .Select(arg => arg.Trim())
-                        .Where(arg => !string.IsNullOrEmpty(arg));
+                    var argumentList = ParseArguments(arguments);
 
                     foreach (var arg in argumentList)
                     {
@@ -102,6 +97,32 @@ namespace MSSQLand.Utilities
 
             Console.WriteLine("Available Enumerations:");
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(getEnumerations()));
+        }
+
+        /// <summary>
+        /// Parses the arguments string, properly handling commas within brackets and parentheses.
+        /// </summary>
+        /// <param name="arguments">The arguments string to parse.</param>
+        /// <returns>A list of parsed argument strings.</returns>
+        private static List<string> ParseArguments(string arguments)
+        {
+            var argumentList = new List<string>();
+
+            // Match argument patterns: "name (type [options], options)"
+            // This regex handles nested brackets and parentheses properly
+            var matches = Regex.Matches(arguments, @"(\w+)\s*\(([^)]+)\)");
+
+            foreach (Match match in matches)
+            {
+                if (match.Success && match.Groups.Count >= 3)
+                {
+                    string argName = match.Groups[1].Value;
+                    string argDetails = match.Groups[2].Value;
+                    argumentList.Add($"{argName} ({argDetails})");
+                }
+            }
+
+            return argumentList;
         }
 
 
@@ -168,13 +189,13 @@ namespace MSSQLand.Utilities
             argumentsTable.Columns.Add("Argument", typeof(string));
             argumentsTable.Columns.Add("Description", typeof(string));
 
-            
+
             argumentsTable.Rows.Add("/h or /host", "Specify the target SQL Server (mandatory).");
             argumentsTable.Rows.Add("/c or /credentials", "Specify the credential type (mandatory).");
             argumentsTable.Rows.Add("/u or /username", "Provide the username (if required by credential type).");
             argumentsTable.Rows.Add("/p or /password", "Provide the password (if required by credential type).");
             argumentsTable.Rows.Add("/d or /domain", "Provide the domain (if required by credential type).");
-            argumentsTable.Rows.Add("/a or /action", "Specify the action to execute (default: 'info').");
+            argumentsTable.Rows.Add("/a or /action", "Specify the action to execute (mandatory).");
             argumentsTable.Rows.Add("/l or /links", "Specify linked server chain for multi-hop connections.");
             argumentsTable.Rows.Add("/db", "Specify the target database (optional).");
             argumentsTable.Rows.Add("/e or /enum", "Execute tasks related to enumeration.");
