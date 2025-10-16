@@ -2,13 +2,14 @@
 using System;
 using System.Data.SqlClient;
 using System.Reflection;
+using System.Text;
 
 namespace MSSQLand.Services.Credentials
 {
     public abstract class BaseCredentials
     {
 
-        private readonly int _connectTimeout = 5;
+        private readonly int _connectTimeout = 15;
 
         /// <summary>
         /// Indicates whether the current authentication attempt was successful.
@@ -30,11 +31,12 @@ namespace MSSQLand.Services.Credentials
         protected SqlConnection CreateSqlConnection(string connectionString)
         {
             string appName = $"SQL-Prod-V{Assembly.GetExecutingAssembly().GetName().Version}"; 
-            string workstationId = $"WS-{Guid.NewGuid().ToString("N").Substring(0, 6)}";
+            string workstationId = GenerateRealisticWorkstationId();
 
             connectionString = $"{connectionString.TrimEnd(';')}; Connect Timeout={_connectTimeout}; Application Name={appName}; Workstation Id={workstationId}";
 
             Logger.Task($"Trying to connect with {GetName()}");
+            Logger.TaskNested($"Connection timeout: {_connectTimeout} seconds");
             Logger.DebugNested(connectionString);
 
             SqlConnection connection = new(connectionString);
@@ -70,6 +72,25 @@ namespace MSSQLand.Services.Credentials
                 connection.Dispose();
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Generates a realistic Windows desktop workstation ID (e.g., DESKTOP-4MU2FO9).
+        /// </summary>
+        /// <returns>A randomly generated workstation ID in Windows format.</returns>
+        private string GenerateRealisticWorkstationId()
+        {
+            const string chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            Random random = new();
+            StringBuilder result = new("DESKTOP-", 15);
+            
+            // Generate 7 random alphanumeric characters (mix of numbers and letters)
+            for (int i = 0; i < 7; i++)
+            {
+                result.Append(chars[random.Next(chars.Length)]);
+            }
+            
+            return result.ToString();
         }
 
         /// <summary>
