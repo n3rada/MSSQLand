@@ -38,13 +38,14 @@ namespace MSSQLand.Utilities
 
             // Execution and Command Capabilities
             { "query", (typeof(Query), "Execute a custom T-SQL query.") },
+            { "queryall", (typeof(QueryAll), "Execute a custom T-SQL query across all databases using sp_MSforeachdb.") },
             { "exec", (typeof(XpCmd), "Execute commands using xp_cmdshell.") },
             { "pwsh", (typeof(PowerShell), "Execute PowerShell commands.") },
             { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a PowerShell script.") },
             { "ole", (typeof(ObjectLinkingEmbedding), "Executes the specified command using OLE Automation Procedures.") },
             { "clr", (typeof(ClrExecution), "Deploy and execute CLR assemblies.") },
             { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC on a server.") },
-            { "smb", (typeof(SmbCoerce), "Leverages xp_dirtree to send SMB requests to a specified UNC path, potentially coercing authentication.") },
+            { "smbcoerce", (typeof(SmbCoerce), "Coerce SMB authentication via xp_dirtree to capture NTLM hashes or relay attacks.") },
             { "adsi", (typeof(AdsiCredentialExtractor), "Enumerate ADSI linked servers, extract credentials, or impersonate users via ADSI exploitation.") },
 
             // Configuration and Management

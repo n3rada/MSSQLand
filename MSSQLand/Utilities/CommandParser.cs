@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Text.RegularExpressions;
 using MSSQLand.Actions;
 using MSSQLand.Models;
@@ -154,14 +155,58 @@ namespace MSSQLand.Utilities
                 // Check if action was provided or is empty
                 if (string.IsNullOrWhiteSpace(actionType))
                 {
-                    Logger.Error("Missing required argument: /a or /action.");
-                    Logger.NewLine();
-                    Helper.Show();
+                    // Check if credentials are provided (user is trying to connect)
+                    if (!string.IsNullOrEmpty(parsedArgs.CredentialType))
+                    {
+                        // User has credentials but no action - show available actions
+                        Logger.Error("Missing required argument: /a or /action.");
+                        Logger.NewLine();
+                        Logger.Info("Available actions you can perform:");
+                        
+                        var actions = ActionFactory.GetAvailableActions();
+                        foreach (var (ActionName, Description, Arguments) in actions)
+                        {
+                            Logger.TaskNested($"{ActionName} - {Description}");
+                        }
+                        
+                        Logger.NewLine();
+                        Logger.Info("Example: /a:whoami");
+                    }
+                    else
+                    {
+                        // No credentials and no action - show full help
+                        Logger.Error("Missing required argument: /a or /action.");
+                        Logger.NewLine();
+                        Helper.Show();
+                    }
                     return (ParseResultType.InvalidInput, null);
                 }
 
                 // Get the action from the factory
                 parsedArgs.Action = ActionFactory.GetAction(actionType, parsedArgs.AdditionalArguments);
+
+                // Check if credential type is empty or null
+                if (string.IsNullOrWhiteSpace(parsedArgs.CredentialType))
+                {
+                    Logger.Error("Missing required argument: /c or /credentials.");
+                    Logger.NewLine();
+                    Logger.Info("Available credential types:");
+                    
+                    DataTable credentialsTable = new();
+                    credentialsTable.Columns.Add("Type", typeof(string));
+                    credentialsTable.Columns.Add("Required Arguments", typeof(string));
+
+                    foreach (var credential in CommandParser.CredentialArgumentGroups)
+                    {
+                        string requiredArgs = credential.Value.Count > 0
+                            ? string.Join(", ", credential.Value)
+                            : "None";
+                        credentialsTable.Rows.Add(credential.Key, requiredArgs);
+                    }
+                    
+                    Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(credentialsTable));
+                    return (ParseResultType.InvalidInput, null);
+                }
 
                 // Validate the provided arguments against the selected credential type
                 ValidateCredentialArguments(parsedArgs.CredentialType, username, password, domain);
