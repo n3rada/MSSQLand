@@ -111,7 +111,7 @@ namespace MSSQLand.Services
                 using var command = new SqlCommand(finalQuery, Connection)
                 {
                     CommandType = CommandType.Text,
-                    CommandTimeout = 15
+                    CommandTimeout = 20
                 };
 
                 if (executeReader)
