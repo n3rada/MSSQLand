@@ -9,7 +9,7 @@ namespace MSSQLand.Actions.Execution
 {
     public class Query : BaseAction
     {
-        private string _query;
+        protected string _query;
 
         /// <summary>
         /// Validates the additional argument provided for the query action.
@@ -51,16 +51,12 @@ namespace MSSQLand.Actions.Execution
                 DataTable resultTable = databaseContext.QueryService.ExecuteTable(_query);
 
                 Logger.Success($"Query executed successfully.");
-
+                Logger.SuccessNested($"Rows returned: {resultTable.Rows.Count}");
 
                 if (resultTable == null || resultTable.Rows.Count == 0)
                 {
-                    Logger.Info("No rows returned.");
                     return resultTable;
                 }
-
-                // Show the number of rows returned
-                Logger.Info($"Rows returned: {resultTable.Rows.Count}");
 
                 Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
                 return resultTable;
