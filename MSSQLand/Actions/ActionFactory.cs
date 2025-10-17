@@ -29,6 +29,7 @@ namespace MSSQLand.Utilities
             { "procedures", (typeof(Procedures), "List stored procedures, read their definitions, or execute them with arguments.") },
             { "users", (typeof(Users), "List database users.") },
             { "permissions", (typeof(Permissions), "Enumerate permissions.") },
+            { "ridbrute", (typeof(RidBrute), "Enumerate domain users via RID bruteforce using SUSER_SNAME.") },
             { "search", (typeof(Search), "Search for specific keyword in database columns and data (supports * for all databases).") },
             { "linkmap", (typeof(LinkedServerExplorer), "Enumerate all possible linked server chains and access paths.") }
 

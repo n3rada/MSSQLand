@@ -75,6 +75,7 @@
     <Compile Include="Actions\Administration\Kill.cs" />
     <Compile Include="Actions\Administration\Monitor.cs" />
     <Compile Include="Actions\Database\ExtendedProcs.cs" />
+    <Compile Include="Actions\Database\RidBrute.cs" />
     <Compile Include="Actions\Execution\QueryAll.cs" />
     <Compile Include="Actions\Network\LinkedServerExplorer.cs" />
     <Compile Include="Actions\Database\OleDbProvidersInfo.cs" />
@@ -149,8 +150,6 @@
       <Install>true</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Actions\Enumeration\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
