@@ -33,11 +33,6 @@ namespace MSSQLand.Utilities
             markdownContent.AppendLine();
             markdownContent.AppendLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(getActions()));
 
-            markdownContent.AppendLine();
-            markdownContent.AppendLine("## 🔎 Available Enumerations");
-            markdownContent.AppendLine();
-            markdownContent.AppendLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(getEnumerations()));
-
             // Write to file
             File.WriteAllText(filePath, markdownContent.ToString());
             Logger.Success($"Command documentation saved to {filePath}");
@@ -95,8 +90,14 @@ namespace MSSQLand.Utilities
                 Console.WriteLine();
             }
 
-            Console.WriteLine("Available Enumerations:");
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(getEnumerations()));
+
+            // Add Utilities Section
+            Console.WriteLine();
+            Console.WriteLine("Standalones (no database connection needed):");
+            Console.WriteLine();
+            Console.WriteLine("  findsql <domain>     - Search for MS SQL Servers in Active Directory.");
+            Console.WriteLine();
+            Console.WriteLine("Example: MSSQLand.exe /findsql corp.com");
         }
 
         /// <summary>
@@ -145,22 +146,6 @@ namespace MSSQLand.Utilities
 
         }
 
-        private static DataTable getEnumerations()
-        {
-            var enumerations = ActionFactory.GetAvailableEnumerations();
-
-            DataTable enumerationTable = new();
-            enumerationTable.Columns.Add("Enumeration", typeof(string));
-            enumerationTable.Columns.Add("Description", typeof(string));
-
-            foreach (var (name, description) in enumerations)
-            {
-                enumerationTable.Rows.Add(name, description);
-            }
-
-            return enumerationTable;
-        }
-
 
 
         private static DataTable getCredentialTypes()
@@ -189,16 +174,15 @@ namespace MSSQLand.Utilities
             argumentsTable.Columns.Add("Argument", typeof(string));
             argumentsTable.Columns.Add("Description", typeof(string));
 
-
-            argumentsTable.Rows.Add("/h or /host", "Specify the target SQL Server (mandatory).");
-            argumentsTable.Rows.Add("/c or /credentials", "Specify the credential type (mandatory).");
+            argumentsTable.Rows.Add("/findsql <domain>", "Find SQL Servers in Active Directory (no database connection needed).");
+            argumentsTable.Rows.Add("/h or /host", "Specify the target SQL Server (mandatory for actions).");
+            argumentsTable.Rows.Add("/c or /credentials", "Specify the credential type (mandatory for actions).");
             argumentsTable.Rows.Add("/u or /username", "Provide the username (if required by credential type).");
             argumentsTable.Rows.Add("/p or /password", "Provide the password (if required by credential type).");
             argumentsTable.Rows.Add("/d or /domain", "Provide the domain (if required by credential type).");
-            argumentsTable.Rows.Add("/a or /action", "Specify the action to execute (mandatory).");
+            argumentsTable.Rows.Add("/a or /action", "Specify the action to execute (mandatory for actions).");
             argumentsTable.Rows.Add("/l or /links", "Specify linked server chain for multi-hop connections.");
             argumentsTable.Rows.Add("/db", "Specify the target database (optional).");
-            argumentsTable.Rows.Add("/e or /enum", "Execute tasks related to enumeration.");
             argumentsTable.Rows.Add("/silent or /s", "Enable silent mode (minimal output).");
             argumentsTable.Rows.Add("/debug", "Enable debug mode for detailed logs.");
             argumentsTable.Rows.Add("/help", "Display this help message and exit.");

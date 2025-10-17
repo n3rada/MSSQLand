@@ -85,7 +85,7 @@
     <Compile Include="Actions\Execution\ClrExecution.cs" />
     <Compile Include="Actions\Execution\Agents.cs" />
     <Compile Include="Actions\Execution\ObjectLinkingEmbedding.cs" />
-    <Compile Include="Actions\Enumeration\FindSQLServers.cs" />
+    <Compile Include="Utilities\FindSQLServers.cs" />
     <Compile Include="Actions\Network\AdsiCredentialExtractor.cs" />
     <Compile Include="Services\ActiveDirectoryService.cs" />
     <Compile Include="Services\AdsiService.cs" />
@@ -148,6 +148,9 @@
       <ProductName>Microsoft .NET Framework 4.8.1 %28x86 and x64%29</ProductName>
       <Install>true</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Actions\Enumeration\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

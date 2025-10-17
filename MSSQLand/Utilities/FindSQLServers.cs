@@ -1,40 +1,34 @@
 ﻿using MSSQLand.Services;
-using MSSQLand.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Security.Principal;
 
-
-namespace MSSQLand.Actions.Enumeration
+namespace MSSQLand.Utilities
 {
-    internal class FindSQLServers : BaseAction
+    /// <summary>
+    /// Standalone utility for enumerating SQL Servers in an Active Directory domain via LDAP queries.
+    /// Does not require database authentication or connection.
+    /// </summary>
+    public static class FindSQLServers
     {
-
-        private string _domain;
-
-        public override void ValidateArguments(string additionalArguments)
+        /// <summary>
+        /// Enumerates SQL Servers in the specified Active Directory domain.
+        /// </summary>
+        /// <param name="domain">The Active Directory domain to query (e.g., corp.com)</param>
+        /// <returns>Number of SQL Servers found</returns>
+        public static int Execute(string domain)
         {
-            if (string.IsNullOrWhiteSpace(additionalArguments))
+            if (string.IsNullOrWhiteSpace(domain))
             {
                 throw new ArgumentException("Active Directory domain is required. Please provide a valid domain name (e.g., corp.com).");
             }
 
-            _domain = additionalArguments;
-            
-        }
-
-
-        public override object? Execute(DatabaseContext databaseContext)
-        {
-            Logger.TaskNested($"Lurking for MS SQL Servers on Active Directory domain: {_domain};");
+            Logger.TaskNested($"Lurking for MS SQL Servers on Active Directory domain: {domain}");
 
             // Initialize domain service based on the provided domain
-            ADirectoryService domainService = string.IsNullOrWhiteSpace(_domain)
-                ? new ADirectoryService()
-                : new ADirectoryService($"LDAP://{_domain}");
-
+            ADirectoryService domainService = new($"LDAP://{domain}");
             LdapQueryService ldapService = new(domainService);
 
             // LDAP filter and properties for MS SQL SPNs
@@ -61,8 +55,16 @@ namespace MSSQLand.Actions.Enumeration
                         : serviceInstance.Substring(0, portDelimiterIndex);
 
                     // Resolve the server's IP address
-                    IPAddress[] ipAddresses = Dns.GetHostAddresses(serverName);
-                    string serverIpAddress = ipAddresses.Length > 0 ? ipAddresses[0].ToString() : "No IP found";
+                    string serverIpAddress;
+                    try
+                    {
+                        IPAddress[] ipAddresses = Dns.GetHostAddresses(serverName);
+                        serverIpAddress = ipAddresses.Length > 0 ? ipAddresses[0].ToString() : "No IP found";
+                    }
+                    catch (Exception)
+                    {
+                        serverIpAddress = "Unable to resolve";
+                    }
 
                     // Extract LDAP properties
                     string accountName = ldapEntry["samaccountname"][0].ToString();
@@ -93,8 +95,8 @@ namespace MSSQLand.Actions.Enumeration
                 }
             }
 
-            Logger.Success($"{sqlServerCount} MS SQL Servers found.");
-            return null;
+            Logger.Success($"{sqlServerCount} MS SQL Server(s) found.");
+            return sqlServerCount;
         }
     }
 }

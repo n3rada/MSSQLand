@@ -14,7 +14,7 @@ namespace MSSQLand.Utilities
             Success,        // Parsing succeeded, return valid arguments.
             ShowHelp,       // The user requested help (/help or /printHelp).
             InvalidInput,   // User input is incorrect or missing required fields.
-            EnumerationMode // Enumeration mode detected, executed separately.
+            UtilityMode     // Utility mode detected, executed separately (no database connection needed).
         }
         
         public static readonly Dictionary<string, List<string>> CredentialArgumentGroups = new()
@@ -36,7 +36,6 @@ namespace MSSQLand.Utilities
             string username = null, password = null, domain = null;
             int? port = null;
             string actionType = null;
-            string enumType = null;
             string additionalArguments = "";
 
             try {
@@ -63,6 +62,18 @@ namespace MSSQLand.Utilities
                         case "/printhelp":
                             Helper.SaveCommandsToFile();
                             return (ParseResultType.ShowHelp, null);
+                        case "/findsql":
+                            // Standalone utility - find SQL Servers in Active Directory
+                            Logger.Info("FindSQLServers utility mode - no database connection required");
+                            
+                            // Get the domain argument (next argument after /findsql)
+                            string adDomain = args.Length > Array.IndexOf(args, arg) + 1 
+                                ? args[Array.IndexOf(args, arg) + 1] 
+                                : throw new ArgumentException("FindSQLServers requires a domain argument. Example: /findsql corp.com");
+                            
+
+                            FindSQLServers.Execute(adDomain);
+                            return (ParseResultType.UtilityMode, null);
                     }
 
                     
@@ -101,11 +112,6 @@ namespace MSSQLand.Utilities
                     {
                         actionType = ExtractValue(arg, "/a:", "/action:");
                     }
-                    else if (arg.StartsWith("/e:", StringComparison.OrdinalIgnoreCase) ||
-                             arg.StartsWith("/enum:", StringComparison.OrdinalIgnoreCase))
-                    {
-                        enumType = ExtractValue(arg, "/e:", "/enum:");
-                    }
                     else if (arg.StartsWith("/port:", StringComparison.OrdinalIgnoreCase))
                     {
                         port = int.Parse(ExtractValue(arg, "/port:"));
@@ -127,17 +133,6 @@ namespace MSSQLand.Utilities
 
                 // Remove trailing pipe
                 parsedArgs.AdditionalArguments = Regex.Replace(additionalArguments, $"{Regex.Escape(CommandParser.AdditionalArgumentsSeparator)}$", "");
-
-
-                // Verify if in enumeration mode
-                if (!string.IsNullOrEmpty(enumType))
-                {
-                    Logger.Info("Enumeration mode");
-                    BaseAction action = ActionFactory.GetEnumeration(enumType, parsedArgs.AdditionalArguments);
-                    Logger.Task($"Executing action: {action.GetName()}");
-                    action.Execute();
-                    return (ParseResultType.EnumerationMode, null);
-                }
 
 
                 if (parsedArgs.Host == null)

@@ -47,7 +47,7 @@ namespace MSSQLand
                         return 0;
                     case CommandParser.ParseResultType.InvalidInput:
                         return 1;
-                    case CommandParser.ParseResultType.EnumerationMode:
+                    case CommandParser.ParseResultType.UtilityMode:
                         return 0;
                     case CommandParser.ParseResultType.Success:
                         break; // Proceed with execution
