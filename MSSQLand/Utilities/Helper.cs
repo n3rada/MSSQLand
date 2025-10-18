@@ -153,14 +153,17 @@ namespace MSSQLand.Utilities
             // Build a DataTable for credentials
             DataTable credentialsTable = new();
             credentialsTable.Columns.Add("Type", typeof(string));
+            credentialsTable.Columns.Add("Description", typeof(string));
             credentialsTable.Columns.Add("Required Arguments", typeof(string));
 
-            foreach (var credential in CommandParser.CredentialArgumentGroups)
+            // Use CredentialsFactory to get all available credentials
+            var credentials = Services.Credentials.CredentialsFactory.GetAvailableCredentials();
+            foreach (var credential in credentials.Values)
             {
-                string requiredArgs = credential.Value.Any()
-                    ? string.Join(", ", credential.Value)
+                string requiredArgs = credential.RequiredArguments.Any()
+                    ? string.Join(", ", credential.RequiredArguments)
                     : "None";
-                credentialsTable.Rows.Add(credential.Key, requiredArgs);
+                credentialsTable.Rows.Add(credential.Name, credential.Description, requiredArgs);
             }
 
             return credentialsTable;

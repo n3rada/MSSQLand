@@ -4,6 +4,7 @@ using System.Data;
 using System.Text.RegularExpressions;
 using MSSQLand.Actions;
 using MSSQLand.Models;
+using MSSQLand.Services.Credentials;
 
 namespace MSSQLand.Utilities
 {
@@ -16,22 +17,12 @@ namespace MSSQLand.Utilities
             InvalidInput,   // User input is incorrect or missing required fields.
             UtilityMode     // Utility mode detected, executed separately (no database connection needed).
         }
-        
-        public static readonly Dictionary<string, List<string>> CredentialArgumentGroups = new()
-        {
-            { "token", new List<string>() },
-            { "domain", new List<string> { "username", "password", "domain" } },
-            { "local", new List<string> { "username", "password" } },
-            { "entraid", new List<string> { "username", "password" } },
-            { "azure", new List<string> { "username", "password" } }
-        };
 
         public const string AdditionalArgumentsSeparator = "/|/";
 
         public (ParseResultType, CommandArgs?) Parse(string[] args)
         {
             CommandArgs parsedArgs = new();
-
 
             string username = null, password = null, domain = null;
             int? port = null;
@@ -189,14 +180,17 @@ namespace MSSQLand.Utilities
                     
                     DataTable credentialsTable = new();
                     credentialsTable.Columns.Add("Type", typeof(string));
+                    credentialsTable.Columns.Add("Description", typeof(string));
                     credentialsTable.Columns.Add("Required Arguments", typeof(string));
 
-                    foreach (var credential in CommandParser.CredentialArgumentGroups)
+                    // Use CredentialsFactory to get all available credentials
+                    var credentials = CredentialsFactory.GetAvailableCredentials();
+                    foreach (var credential in credentials.Values)
                     {
-                        string requiredArgs = credential.Value.Count > 0
-                            ? string.Join(", ", credential.Value)
+                        string requiredArgs = credential.RequiredArguments.Count > 0
+                            ? string.Join(", ", credential.RequiredArguments)
                             : "None";
-                        credentialsTable.Rows.Add(credential.Key, requiredArgs);
+                        credentialsTable.Rows.Add(credential.Name, credential.Description, requiredArgs);
                     }
                     
                     Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(credentialsTable));
@@ -211,24 +205,35 @@ namespace MSSQLand.Utilities
                 parsedArgs.Password = password;
                 parsedArgs.Domain = domain;
 
-
+                // Show parsed arguments only in debug mode
                 if (Logger.IsDebugEnabled)
                 {
                     Logger.Debug("Parsed arguments");
                     Logger.DebugNested($"Credential Type: {parsedArgs.CredentialType}");
-                    Logger.DebugNested($"Target: {parsedArgs.Host}");
+                    Logger.DebugNested($"Target: {parsedArgs.Host.Hostname}:{parsedArgs.Host.Port}");
+                    
+                    if (!string.IsNullOrEmpty(parsedArgs.Host.Database))
+                    {
+                        Logger.DebugNested($"Database: {parsedArgs.Host.Database}");
+                    }
 
                     if (parsedArgs.LinkedServers?.ServerNames != null && parsedArgs.LinkedServers.ServerNames.Length > 0)
                     {
-                        Logger.DebugNested("Server Chain");
+                        Logger.DebugNested("Server Chain:");
                         foreach (var server in parsedArgs.LinkedServers.ServerNames)
                         {
                             Logger.DebugNested($"{server}", 1, "-");
                         }
                     }
 
-                    Logger.DebugNested($"Action: {parsedArgs.Action}");
-                    Logger.DebugNested($"Additional Arguments: {parsedArgs.AdditionalArguments}");
+                    Logger.DebugNested($"Action: {parsedArgs.Action.GetName()}");
+                    
+                    if (!string.IsNullOrEmpty(parsedArgs.AdditionalArguments))
+                    {
+                        Logger.DebugNested($"Additional Arguments: {parsedArgs.AdditionalArguments}");
+                    }
+
+                    Logger.NewLine();
                 }
 
                 return (ParseResultType.Success, parsedArgs);
@@ -240,19 +245,21 @@ namespace MSSQLand.Utilities
 
         private void ValidateCredentialArguments(string credentialType, string username, string password, string domain)
         {
-
             if (string.IsNullOrEmpty(credentialType))
             {
                 throw new ArgumentException("Credential type (/c or /credentials) is required.");
             }
 
-            if (!CredentialArgumentGroups.ContainsKey(credentialType.ToLower()))
+            // Check if credential type exists using CredentialsFactory
+            if (!CredentialsFactory.IsValidCredentialType(credentialType))
             {
-                throw new ArgumentException($"Unknown credential type: {credentialType}");
+                var availableTypes = string.Join(", ", CredentialsFactory.GetCredentialTypeNames());
+                throw new ArgumentException($"Unknown credential type: {credentialType}. Available types: {availableTypes}");
             }
 
-            // Get the required arguments for this credential type
-            var requiredArgs = CredentialArgumentGroups[credentialType.ToLower()];
+            // Get the required arguments for this credential type from CredentialsFactory
+            var metadata = CredentialsFactory.GetCredentialMetadata(credentialType);
+            var requiredArgs = metadata.RequiredArguments;
 
             // Validate arguments
             if (requiredArgs.Contains("username") && string.IsNullOrEmpty(username))
