@@ -40,7 +40,7 @@ namespace MSSQLand.Actions.Database
             
             if (string.IsNullOrEmpty(_table))
             {
-                Logger.TaskNested("Listing global permissions");
+                Logger.TaskNested("Listing permissions of the current user on server and accessible databases");
                 Logger.NewLine();
                 Logger.Info("Server permissions");
 
