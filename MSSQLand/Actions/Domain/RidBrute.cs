@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Security.Principal;
 
-namespace MSSQLand.Actions.Database
+namespace MSSQLand.Actions.Domain
 {
     /// <summary>
     /// RID enumeration via SUSER_SNAME(SID_BINARY('S-...-RID')) using DMV / SERVERPROPERTY-derived domain SID.
@@ -41,70 +41,22 @@ namespace MSSQLand.Actions.Database
 
             try
             {
-                // 1) Get the default domain
-                var dtDomain = databaseContext.QueryService.ExecuteTable("SELECT DEFAULT_DOMAIN();");
-                if (dtDomain.Rows.Count == 0 || dtDomain.Rows[0][0] == DBNull.Value)
+                // Use DomainSid action to get domain SID information
+                var domainSidAction = new DomainSid();
+                domainSidAction.ValidateArguments(null);
+                
+                var domainInfo = domainSidAction.Execute(databaseContext) as Dictionary<string, string>;
+                
+                if (domainInfo == null)
                 {
-                    Logger.Error("Could not determine DEFAULT_DOMAIN()");
+                    Logger.Error("Failed to retrieve domain SID. Cannot proceed with RID bruteforce.");
                     return results;
                 }
-                string domain = dtDomain.Rows[0][0].ToString();
+
+                string domain = domainInfo["Domain"];
+                string domainSidPrefix = domainInfo["Domain SID"];
+                
                 Logger.Info($"Target domain: {domain}");
-
-                // 2) Obtain a domain SID by querying a known group (Domain Admins)
-                var dtSid = databaseContext.QueryService.ExecuteTable($"SELECT SUSER_SID('{domain}\\Domain Admins');");
-                if (dtSid.Rows.Count == 0 || dtSid.Rows[0][0] == DBNull.Value)
-                {
-                    Logger.Error("Could not obtain domain SID via SUSER_SID().");
-                    return results;
-                }
-
-                // Expect a varbinary (byte[]) from the DB
-                string domainSidString;
-                object rawSidObj = dtSid.Rows[0][0];
-
-                if (rawSidObj is byte[] sidBytes)
-                {
-                    // Convert binary SID to S-1-... format and strip last RID component
-                    var sid = new SecurityIdentifier(sidBytes, 0);
-                    domainSidString = sid.Value;
-                }
-                else
-                {
-                    // Sometimes driver returns hex-like string
-                    string maybeHex = rawSidObj.ToString();
-                    if (maybeHex.StartsWith("S-"))
-                    {
-                        domainSidString = maybeHex;
-                    }
-                    else
-                    {
-                        // Try remove 0x and parse hex -> bytes
-                        string hex = maybeHex.StartsWith("0x", StringComparison.OrdinalIgnoreCase) 
-                            ? maybeHex.Substring(2) 
-                            : maybeHex;
-                        try
-                        {
-                            var bytes = Misc.HexStringToBytes(hex);
-                            var sid = new SecurityIdentifier(bytes, 0);
-                            domainSidString = sid.Value;
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.Error($"Unable to parse domain SID: {ex.Message}");
-                            return results;
-                        }
-                    }
-                }
-
-                // Strip trailing RID from domain SID (keep 'S-1-5-21-....' only)
-                int lastDash = domainSidString.LastIndexOf('-');
-                if (lastDash <= 0)
-                {
-                    Logger.Error($"Unexpected domain SID format: {domainSidString}");
-                    return results;
-                }
-                string domainSidPrefix = domainSidString.Substring(0, lastDash);
                 Logger.Info($"Domain SID prefix: {domainSidPrefix}");
                 Logger.NewLine();
 
