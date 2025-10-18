@@ -30,7 +30,7 @@ namespace MSSQLand.Services.Credentials
         /// <exception cref="SqlException">Thrown for SQL-related issues (e.g., network errors, authentication issues).</exception>
         protected SqlConnection CreateSqlConnection(string connectionString)
         {
-            string appName = $"SQL-Prod-V{Assembly.GetExecutingAssembly().GetName().Version}"; 
+            string appName = GenerateRealisticAppName();
             string workstationId = GenerateRealisticWorkstationId();
 
             connectionString = $"{connectionString.TrimEnd(';')}; Connect Timeout={_connectTimeout}; Application Name={appName}; Workstation Id={workstationId}";
@@ -75,22 +75,110 @@ namespace MSSQLand.Services.Credentials
         }
 
         /// <summary>
-        /// Generates a realistic Windows desktop workstation ID (e.g., DESKTOP-4MU2FO9).
+        /// Generates a realistic application name with version.
         /// </summary>
-        /// <returns>A randomly generated workstation ID in Windows format.</returns>
-        private string GenerateRealisticWorkstationId()
+        /// <returns>A realistic application name string.</returns>
+        protected string GenerateRealisticAppName()
+        {
+            // Common patterns for SQL client applications
+            string[] appPrefixes = new[]
+            {
+                "Microsoft SQL Server Management Studio",
+                "SQLCMD",
+                "SQL Server Data Tools",
+                "Azure Data Studio",
+                "SQL Server Integration Services",
+                "Entity Framework Core",
+                "ADO.NET",
+                "Dapper",
+                "SQL Server PowerShell Extensions"
+            };
+
+            // Version patterns that look realistic
+            string[] versionPatterns = new[]
+            {
+                "15.0",    // SQL Server 2019
+                "16.0",    // SQL Server 2022
+                "18.0",    // SSMS 18.x
+                "19.0",    // SSMS 19.x
+                "1.45",    // Azure Data Studio style
+                "6.0",     // .NET 6
+                "7.0",     // .NET 7
+                "8.0"      // .NET 8
+            };
+
+            Random random = new();
+            string prefix = appPrefixes[random.Next(appPrefixes.Length)];
+            string version = versionPatterns[random.Next(versionPatterns.Length)];
+            
+            // Add minor version and build number for extra realism
+            int minor = random.Next(0, 10);
+            int build = random.Next(1000, 9999);
+
+            return $"{prefix} - {version}.{minor}.{build}";
+        }
+
+        /// <summary>
+        /// Generates a realistic Windows workstation ID.
+        /// Supports various patterns: DESKTOP-*, laptop/workstation names, domain-joined patterns.
+        /// </summary>
+        /// <returns>A randomly generated realistic workstation ID.</returns>
+        protected string GenerateRealisticWorkstationId()
+        {
+            Random random = new();
+            
+            // Different workstation naming patterns used in corporate environments
+            string[] patterns = new[]
+            {
+                GenerateDesktopPattern(random),      // DESKTOP-XXXXXXX (Windows default)
+                GenerateLaptopPattern(random),       // LAPTOP-XXXXXXX or specific models
+                GenerateWorkstationPattern(random),  // WKS-XXX-XXXX (corporate pattern)
+            };
+
+            return patterns[random.Next(patterns.Length)];
+        }
+
+        private string GenerateDesktopPattern(Random random)
         {
             const string chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            Random random = new();
             StringBuilder result = new("DESKTOP-", 15);
             
-            // Generate 7 random alphanumeric characters (mix of numbers and letters)
+            // Generate 7 random alphanumeric characters
             for (int i = 0; i < 7; i++)
             {
                 result.Append(chars[random.Next(chars.Length)]);
             }
             
             return result.ToString();
+        }
+
+        private string GenerateLaptopPattern(Random random)
+        {
+            string[] laptopPrefixes = new[] { "LAPTOP", "NB", "NOTEBOOK" };
+            const string chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            
+            string prefix = laptopPrefixes[random.Next(laptopPrefixes.Length)];
+            StringBuilder result = new($"{prefix}-", 15);
+            
+            // Generate 7 random alphanumeric characters
+            for (int i = 0; i < 7; i++)
+            {
+                result.Append(chars[random.Next(chars.Length)]);
+            }
+            
+            return result.ToString();
+        }
+
+        private string GenerateWorkstationPattern(Random random)
+        {
+            string[] prefixes = new[] { "WKS", "WKSTN", "PC", "COMP" };
+            string prefix = prefixes[random.Next(prefixes.Length)];
+            
+            // Pattern: WKS-XXX-XXXX or similar
+            int deptNumber = random.Next(100, 999);
+            int compNumber = random.Next(1000, 9999);
+            
+            return $"{prefix}-{deptNumber}-{compNumber}";
         }
 
         /// <summary>
