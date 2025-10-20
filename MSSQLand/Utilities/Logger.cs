@@ -100,7 +100,7 @@ namespace MSSQLand.Utilities
         public static void Warning(string message)
         {
             if (IsSilentModeEnabled) return;
-            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.WriteLine($"[!] {message}");
             Console.ResetColor();
         }
@@ -162,7 +162,7 @@ namespace MSSQLand.Utilities
         {
             if (IsSilentModeEnabled) return;
             string indent = new(' ', indentLevel * 4);
-            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.WriteLine($"{indent}{symbol} {message}");
             Console.ResetColor();
         }
