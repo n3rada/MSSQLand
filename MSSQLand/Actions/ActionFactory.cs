@@ -58,7 +58,8 @@ namespace MSSQLand.Utilities
             // DOMAIN ACTIONS (MSSQLand.Actions.Domain)
             // ═══════════════════════════════════════════════════════════════════════════════
             { "domsid", (typeof(DomainSid), "Retrieve the domain SID using DEFAULT_DOMAIN and SUSER_SID.") },
-            { "ridbrute", (typeof(RidBrute), "Enumerate domain users via RID bruteforce using SUSER_SNAME.") },
+            { "ridcycle", (typeof(RidCycle), "Enumerate domain users by cycling through RIDs using SUSER_SNAME.") },
+            { "groupmembers", (typeof(GroupMembers), "Retrieve members of a specific Active Directory group (e.g., DOMAIN\\IT).") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // ADMINISTRATION ACTIONS (MSSQLand.Actions.Administration)
