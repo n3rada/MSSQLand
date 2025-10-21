@@ -10,6 +10,8 @@ MSSQLand is the go-to tool for interacting with [Microsoft SQL Server](https://e
 
 ## 📌 Documentation
 
+Built using `.NET Framework 4.8`, with assembly execution in mind.
+
 - For a full list of commands, arguments, and actions, check out [COMMANDS.md](./COMMANDS.md).
 - For an overview of the project structure, refer to [STRUCTURE.md](./STRUCTURE.md).
 
