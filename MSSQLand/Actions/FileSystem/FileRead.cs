@@ -30,12 +30,7 @@ namespace MSSQLand.Actions.FileSystem
         {
             Logger.TaskNested($"Reading file: {_filePath}");
 
-            string query = $@"
-                SELECT A 
-                FROM OPENROWSET(
-                    BULK '{_filePath.Replace("'", "''")}', 
-                    SINGLE_CLOB
-                ) AS R(A);";
+            string query = $@"SELECT A FROM OPENROWSET(BULK '{_filePath.Replace("'", "''")}', SINGLE_CLOB) AS R(A);";
 
             string fileContent = databaseContext.QueryService.ExecuteScalar(query).ToString();
 
