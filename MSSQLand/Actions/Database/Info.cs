@@ -21,10 +21,9 @@ namespace MSSQLand.Actions.Database
             { "Host Name", "SELECT SERVERPROPERTY('MachineName');" },
             { "Operating System Version", "SELECT TOP(1) windows_release + ISNULL(' ' + windows_service_pack_level, '') FROM sys.dm_os_windows_info;" },
             { "SQL Service Process ID", "SELECT SERVERPROPERTY('ProcessId');" },
-            { "SQL Service Name", "SELECT SERVERPROPERTY('InstanceName');" },
+            { "SQL Service Account", "SELECT SERVERPROPERTY('ServiceAccountName');" }, // Who runs SQL Server?
+            { "Instance Name", "SELECT ISNULL(SERVERPROPERTY('InstanceName'), 'DEFAULT');" }, // Show "DEFAULT" instead of NULL
             { "Authentication Mode", "SELECT CASE SERVERPROPERTY('IsIntegratedSecurityOnly') WHEN 1 THEN 'Windows Authentication' ELSE 'Mixed Authentication' END;" },
-            { "Audit Enabled", "SELECT value_in_use FROM sys.configurations WHERE name = 'audit enabled';" },
-            { "Encryption Enforced", "BEGIN TRY DECLARE @ForcedEncryption INT EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', N'SOFTWARE\\MICROSOFT\\Microsoft SQL Server\\MSSQLServer\\SuperSocketNetLib', N'ForceEncryption', @ForcedEncryption OUTPUT END TRY BEGIN CATCH END CATCH SELECT @ForcedEncryption;" },
             { "Clustered Server", "SELECT CASE SERVERPROPERTY('IsClustered') WHEN 0 THEN 'No' ELSE 'Yes' END;" },
             { "SQL Version", "SELECT SERVERPROPERTY('ProductVersion');" },
             { "SQL Major Version", "SELECT SUBSTRING(@@VERSION, CHARINDEX('2', @@VERSION), 4);" },
