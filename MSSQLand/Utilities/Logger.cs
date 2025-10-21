@@ -84,7 +84,7 @@ namespace MSSQLand.Utilities
         public static void Success(string message)
         {
             if (IsSilentModeEnabled) return;
-            Console.ForegroundColor = ConsoleColor.Green;
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine($"[+] {message}");
             Console.ResetColor();
         }
@@ -125,7 +125,7 @@ namespace MSSQLand.Utilities
         public static void SuccessNested(string message, int indentLevel = 0, string symbol = "|->")
         {
             if (IsSilentModeEnabled) return;
-            Console.ForegroundColor = ConsoleColor.Green;
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
             string indent = new(' ', indentLevel * 4);
             Console.WriteLine($"{indent}{symbol} {message}");
             Console.ResetColor();
