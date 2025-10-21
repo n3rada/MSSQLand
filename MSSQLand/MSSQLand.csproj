@@ -72,6 +72,7 @@
   <ItemGroup>
     <Compile Include="Actions\ActionFactory.cs" />
     <Compile Include="Actions\Administration\Configure.cs" />
+    <Compile Include="Actions\Administration\CreateSysadmin.cs" />
     <Compile Include="Actions\Administration\Kill.cs" />
     <Compile Include="Actions\Administration\Monitor.cs" />
     <Compile Include="Actions\Database\ExtendedProcs.cs" />

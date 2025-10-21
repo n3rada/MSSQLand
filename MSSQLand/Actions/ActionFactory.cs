@@ -16,6 +16,13 @@ namespace MSSQLand.Utilities
         new()
         {
             // ═══════════════════════════════════════════════════════════════════════════════
+            // ADMINISTRATION ACTIONS (MSSQLand.Actions.Administration)
+            // ═══════════════════════════════════════════════════════════════════════════════
+            { "config", (typeof(Configure), "Use sp_configure to modify settings.") },
+            { "kill", (typeof(Kill), "Terminate running SQL commands by session ID or all.") },
+            { "createsysadmin", (typeof(CreateSysadmin), "Create a SQL login with sysadmin privileges (default: backup_adm).") },
+
+            // ═══════════════════════════════════════════════════════════════════════════════
             // DATABASE ACTIONS (MSSQLand.Actions.Database)
             // ═══════════════════════════════════════════════════════════════════════════════
             { "info", (typeof(Info), "Retrieve information about the DBMS server.") },
@@ -34,14 +41,12 @@ namespace MSSQLand.Utilities
             { "queryall", (typeof(QueryAll), "Execute a custom T-SQL query across all databases using sp_MSforeachdb.") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
-            // NETWORK ACTIONS (MSSQLand.Actions.Network)
+            // DOMAIN ACTIONS (MSSQLand.Actions.Domain)
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "links", (typeof(Links), "Retrieve linked server information.") },
-            { "linkmap", (typeof(LinkedServerExplorer), "Enumerate all possible linked server chains and access paths.") },
-            { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC on a server.") },
-            { "adsi", (typeof(AdsiCredentialExtractor), "Enumerate ADSI linked servers, extract credentials, or impersonate users via ADSI exploitation.") },
-            { "smbcoerce", (typeof(SmbCoerce), "Coerce SMB authentication via xp_dirtree to capture NTLM hashes or relay attacks.") },
-
+            { "domsid", (typeof(DomainSid), "Retrieve the domain SID using DEFAULT_DOMAIN and SUSER_SID.") },
+            { "ridcycle", (typeof(RidCycle), "Enumerate domain users by cycling through RIDs using SUSER_SNAME.") },
+            { "groupmembers", (typeof(GroupMembers), "Retrieve members of a specific Active Directory group (e.g., DOMAIN\\IT).") },
+            
             // ═══════════════════════════════════════════════════════════════════════════════
             // EXECUTION ACTIONS (MSSQLand.Actions.Execution)
             // ═══════════════════════════════════════════════════════════════════════════════
@@ -55,22 +60,21 @@ namespace MSSQLand.Utilities
             { "xprocs", (typeof(ExtendedProcs), "Enumerate extended stored procedures available on the server.") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
-            // DOMAIN ACTIONS (MSSQLand.Actions.Domain)
-            // ═══════════════════════════════════════════════════════════════════════════════
-            { "domsid", (typeof(DomainSid), "Retrieve the domain SID using DEFAULT_DOMAIN and SUSER_SID.") },
-            { "ridcycle", (typeof(RidCycle), "Enumerate domain users by cycling through RIDs using SUSER_SNAME.") },
-            { "groupmembers", (typeof(GroupMembers), "Retrieve members of a specific Active Directory group (e.g., DOMAIN\\IT).") },
-
-            // ═══════════════════════════════════════════════════════════════════════════════
-            // ADMINISTRATION ACTIONS (MSSQLand.Actions.Administration)
-            // ═══════════════════════════════════════════════════════════════════════════════
-            { "config", (typeof(Configure), "Use sp_configure to modify settings.") },
-            { "kill", (typeof(Kill), "Terminate running SQL commands by session ID or all.") },
-
-            // ═══════════════════════════════════════════════════════════════════════════════
             // FILESYSTEM ACTIONS (MSSQLand.Actions.FileSystem)
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "read", (typeof(FileRead), "Read system file contents (e.g., C:\\Windows\\System32\\drivers\\etc\\hosts).") }
+            { "read", (typeof(FileRead), "Read system file contents (e.g., C:\\Windows\\System32\\drivers\\etc\\hosts).") },
+
+            
+            // ═══════════════════════════════════════════════════════════════════════════════
+            // NETWORK ACTIONS (MSSQLand.Actions.Network)
+            // ═══════════════════════════════════════════════════════════════════════════════
+            { "links", (typeof(Links), "Retrieve linked server information.") },
+            { "linkmap", (typeof(LinkedServerExplorer), "Enumerate all possible linked server chains and access paths.") },
+            { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC on a server.") },
+            { "adsi", (typeof(AdsiCredentialExtractor), "Enumerate ADSI linked servers, extract credentials, or impersonate users via ADSI exploitation.") },
+            { "smbcoerce", (typeof(SmbCoerce), "Coerce SMB authentication via xp_dirtree to capture NTLM hashes or relay attacks.") }
+
+
         };
 
 
