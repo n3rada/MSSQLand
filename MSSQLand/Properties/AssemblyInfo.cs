@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("MSSQLand")]
-[assembly: AssemblyDescription("MS SQL Tool")]
+[assembly: AssemblyDescription("Interract with Microsoft SQL Server (MS SQL | MSSQL) servers and their linked instances in restricted environments, without the need for complex T-SQL queries.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("MSSQLand")]
@@ -30,4 +30,4 @@ using System.Runtime.InteropServices;
 //
 // Using the wildcard (*) in AssemblyVersion allows the Build and Revision numbers 
 // to be automatically determined based on the machine's local time during compilation.
-[assembly: AssemblyVersion("1.4.*")]
+[assembly: AssemblyVersion("1.5.*")]
