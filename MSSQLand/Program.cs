@@ -31,11 +31,6 @@ namespace MSSQLand
             TimeSpan offset = localTimeZone.BaseUtcOffset;
             string formattedOffset = $"{(offset.Hours >= 0 ? "+" : "-")}{Math.Abs(offset.Hours)}:{Math.Abs(offset.Minutes):D2}";
 
-            Logger.Banner($"Version: {currentVersion}\nCompile date: {compileDate:yyyy-MM-dd}", borderChar: '*');
-            Logger.NewLine();
-            int bannerWidth = Logger.Banner($"Executing from: {Environment.MachineName}\nTime Zone ID: {timeZoneId}\nLocal Time: {localTime:HH:mm:ss}, UTC Offset: {formattedOffset}");
-            Logger.NewLine();
-            
             try
             {
                 CommandParser parser = new();
@@ -59,6 +54,13 @@ namespace MSSQLand
                     Logger.Error("Invalid command arguments.");
                     return 1;
                 }
+
+
+                // Show banner only when executing an action
+                Logger.Banner($"Version: {currentVersion}\nCompile date: {compileDate:yyyy-MM-dd}", borderChar: '*');
+                Logger.NewLine();
+                int bannerWidth = Logger.Banner($"Executing from: {Environment.MachineName}\nTime Zone ID: {timeZoneId}\nLocal Time: {localTime:HH:mm:ss}, UTC Offset: {formattedOffset}");
+                Logger.NewLine();
 
                 Logger.Banner($"Start at {startTime:yyyy-MM-dd HH:mm:ss:fffff} UTC", totalWidth: bannerWidth);
                 Logger.NewLine();

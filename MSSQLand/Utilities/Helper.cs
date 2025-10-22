@@ -101,6 +101,53 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
+        /// Displays help for a specific action.
+        /// </summary>
+        /// <param name="actionName">The name of the action to display help for.</param>
+        public static void ShowActionHelp(string actionName)
+        {
+            var actions = ActionFactory.GetAvailableActions();
+            var action = actions.FirstOrDefault(a => a.ActionName.Equals(actionName, StringComparison.OrdinalIgnoreCase));
+
+            if (action == default)
+            {
+                Logger.Error($"Action '{actionName}' not found.");
+                Console.WriteLine();
+                Console.WriteLine("Use /help to see all available actions.");
+                return;
+            }
+
+            Console.WriteLine($"\nAction: {action.ActionName}");
+            Console.WriteLine($"Description: {action.Description}");
+            Console.WriteLine();
+
+            if (!string.IsNullOrWhiteSpace(action.Arguments))
+            {
+                Console.WriteLine("Arguments:");
+                var argumentList = ParseArguments(action.Arguments);
+
+                if (argumentList.Any())
+                {
+                    foreach (var arg in argumentList)
+                    {
+                        Console.WriteLine($"  > {arg}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("  No additional arguments required.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("No additional arguments required.");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine($"Example: MSSQLand.exe /h:localhost /c:token /a:{action.ActionName}");
+        }
+
+        /// <summary>
         /// Parses the arguments string, properly handling commas within brackets and parentheses.
         /// </summary>
         /// <param name="arguments">The arguments string to parse.</param>

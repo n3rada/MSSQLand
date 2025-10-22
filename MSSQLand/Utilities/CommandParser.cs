@@ -48,6 +48,13 @@ namespace MSSQLand.Utilities
                             Logger.IsSilentModeEnabled = true;
                             continue;
                         case "/help":
+                            // Check if this is action-specific help (action was already specified)
+                            if (!string.IsNullOrWhiteSpace(actionType))
+                            {
+                                Helper.ShowActionHelp(actionType);
+                                return (ParseResultType.ShowHelp, null);
+                            }
+                            // Otherwise show general help
                             Helper.Show();
                             return (ParseResultType.ShowHelp, null);
                         case "/printhelp":
