@@ -64,10 +64,6 @@ namespace MSSQLand.Actions.Domain
             }
 
             Logger.Error("All enumeration methods failed.");
-            Logger.Info("Alternative approaches:");
-            Logger.Info("  1. Use 'groupmembers DOMAIN\\GroupName openquery' for ADSI method");
-            Logger.Info("  2. Ensure the SQL Server service account has AD read permissions");
-            Logger.Info("  3. Check if xp_logininfo is enabled: EXEC sp_configure 'xp_logininfo'");
 
             return null;
         }
