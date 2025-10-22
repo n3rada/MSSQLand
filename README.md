@@ -8,12 +8,13 @@ Land gracefully in your target MSSQL DBMS, as if arriving on a business-class fl
 
 MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikipedia.org/wiki/Microsoft_SQL_Server) database management system (DBMS) during your red team activities. Designed for constrained environments where operations must be executed directly through your beacons, it allows you to pave your way across multiple linked servers and impersonate anyone (authorized) along the way, emerging from the last hop with any desired action.
 
-## 📌 Documentation
+## 📃 Documentation
 
-Built using `.NET Framework 4.8`, with assembly execution in mind.
+MSSQLand is built using `.NET Framework 4.8`, with assembly execution in mind.
 
 - For a full list of commands, arguments, and actions, check out [COMMANDS.md](./COMMANDS.md).
 - For an overview of the project structure, refer to [STRUCTURE.md](./STRUCTURE.md).
+- Learn how to add new actions in [DEVELOPERS.md](./DEVELOPERS.md).
 
 ## 📸 Clean Output for Clean Reports
 
