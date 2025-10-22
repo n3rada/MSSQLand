@@ -53,27 +53,26 @@ namespace MSSQLand.Actions.Database
 
 
             // Define fixed server roles and their descriptions
-            var fixedServerRoles = new List<(string Role, string KeyResponsibility, string Usefulness)>
+            var fixedServerRoles = new List<(string Role, string KeyResponsibility)>
             {
-                ("sysadmin", "Full control over the SQL Server instance", "Target for escalation"),
-                ("serveradmin", "Manage server-wide configurations", "Configure security settings, logs"),
-                ("setupadmin", "Manage linked servers and setup tasks", "Linked servers can be abused"),
-                ("processadmin", "Terminate and monitor processes", "Can kill admin sessions"),
-                ("diskadmin", "Manage disk files for databases", "Limited impact unless combined with other roles"),
-                ("dbcreator", "Create and alter databases", "Can create objects for escalation"),
-                ("bulkadmin", "Perform bulk data imports", "Potential for data injection")
+                ("sysadmin", "Full control over the SQL Server instance"),
+                ("serveradmin", "Manage server-wide configurations"),
+                ("setupadmin", "Manage linked servers and setup tasks"),
+                ("processadmin", "Terminate and monitor processes"),
+                ("diskadmin", "Manage disk files for databases"),
+                ("dbcreator", "Create and alter databases"),
+                ("bulkadmin", "Perform bulk data imports")
             };
 
             // Create a DataTable to display fixed server roles
             DataTable fixedServerRolesTable = new();
             fixedServerRolesTable.Columns.Add("Role", typeof(string));
             fixedServerRolesTable.Columns.Add("Key Responsibility", typeof(string));
-            fixedServerRolesTable.Columns.Add("Usefulness", typeof(string));
             fixedServerRolesTable.Columns.Add("Has", typeof(bool));
 
-            foreach (var (role, responsibility, usefulness) in fixedServerRoles)
+            foreach (var (role, responsibility) in fixedServerRoles)
             {
-                fixedServerRolesTable.Rows.Add(role, responsibility, usefulness, userRoles.Contains(role));
+                fixedServerRolesTable.Rows.Add(role, responsibility, userRoles.Contains(role));
             }
 
 
