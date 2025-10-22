@@ -74,15 +74,6 @@ namespace MSSQLand.Services.Credentials
                     requiredArguments: new List<string> { "username", "password" },
                     factory: () => new AzureCredentials()
                 )
-            },
-            {
-                "windows",
-                new CredentialMetadata(
-                    name: "windows",
-                    description: "Windows Authentication via TDS protocol (NTLM)",
-                    requiredArguments: new List<string> { "username", "password", "domain" },
-                    factory: () => new WindowsAuthCredentials()
-                )
             }
         };
 

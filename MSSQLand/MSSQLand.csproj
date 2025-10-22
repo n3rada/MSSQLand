@@ -133,15 +133,11 @@
     <Compile Include="Services\Authentication\Credentials\EntraIDCredentials.cs" />
     <Compile Include="Services\Authentication\Credentials\LocalCredentials.cs" />
     <Compile Include="Services\Authentication\Credentials\DomainCredentials.cs" />
-    <Compile Include="Services\Authentication\Credentials\WindowsAuthCredentials.cs" />
     <Compile Include="Services\Authentication\Credentials\WindowsIdentityImpersonation.cs" />
     <Compile Include="Services\Authentication\Credentials\TokenCredentials.cs" />
     <Compile Include="Utilities\Logger.cs" />
     <Compile Include="Utilities\MarkdownFormater.cs" />
     <Compile Include="Utilities\Misc.cs" />
-    <Compile Include="Utilities\NTLM.cs" />
-    <Compile Include="Utilities\Tds.cs" />
-    <Compile Include="Utilities\TlsContext.cs" />
     <!-- TDS Library Files -->
   </ItemGroup>
   <ItemGroup>
