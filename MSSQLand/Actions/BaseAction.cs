@@ -1,6 +1,7 @@
 ﻿using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -28,6 +29,9 @@ namespace MSSQLand.Actions
         /// <param name="databaseContext">The ConnectionManager for database operations.</param>
         public abstract object? Execute(DatabaseContext databaseContext = null);
 
+        /// <summary>
+        /// Splits arguments using the default separator.
+        /// </summary>
         protected string[] SplitArguments(string additionalArguments, string separator = CommandParser.AdditionalArgumentsSeparator)
         {
             if (string.IsNullOrWhiteSpace(additionalArguments))
@@ -45,6 +49,81 @@ namespace MSSQLand.Actions
             return splitted;
         }
 
+        /// <summary>
+        /// Parses both positional and named arguments from the input string.
+        /// Named arguments can be in formats: /name:value or /name=value
+        /// Positional arguments are those without a name prefix.
+        /// </summary>
+        /// <param name="additionalArguments">The raw argument string.</param>
+        /// <returns>A dictionary of named arguments and a list of positional arguments.</returns>
+        protected (Dictionary<string, string> Named, List<string> Positional) ParseArguments(string additionalArguments)
+        {
+            var named = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var positional = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(additionalArguments))
+            {
+                return (named, positional);
+            }
+
+            string[] parts = SplitArguments(additionalArguments);
+
+            foreach (string part in parts)
+            {
+                string trimmed = part.Trim();
+                
+                // Check if it's a named argument (starts with / and contains : or =)
+                if (trimmed.StartsWith("/"))
+                {
+                    // Try to parse as /name:value or /name=value
+                    int separatorIndex = trimmed.IndexOfAny(new[] { ':', '=' });
+                    
+                    if (separatorIndex > 1)
+                    {
+                        string name = trimmed.Substring(1, separatorIndex - 1).Trim();
+                        string value = trimmed.Substring(separatorIndex + 1).Trim();
+                        
+                        if (!string.IsNullOrEmpty(name))
+                        {
+                            named[name] = value;
+                            Logger.Debug($"Parsed named argument: {name} = {value}");
+                            continue;
+                        }
+                    }
+                }
+
+                // It's a positional argument
+                positional.Add(trimmed);
+                Logger.Debug($"Parsed positional argument: {trimmed}");
+            }
+
+            return (named, positional);
+        }
+
+        /// <summary>
+        /// Gets a named argument value or returns the default if not found.
+        /// </summary>
+        protected string GetNamedArgument(Dictionary<string, string> namedArgs, string name, string defaultValue = null)
+        {
+            if (namedArgs.TryGetValue(name, out string value))
+            {
+                return value;
+            }
+            return defaultValue;
+        }
+
+        /// <summary>
+        /// Gets a positional argument by index or returns the default if not found.
+        /// </summary>
+        protected string GetPositionalArgument(List<string> positionalArgs, int index, string defaultValue = null)
+        {
+            if (index >= 0 && index < positionalArgs.Count)
+            {
+                return positionalArgs[index];
+            }
+            return defaultValue;
+        }
+
 
         /// <summary>
         /// Returns the name of the class as a string.
@@ -58,32 +137,73 @@ namespace MSSQLand.Actions
         /// <summary>
         /// Retrieves argument names, types, and default values of private fields in the derived class.
         /// </summary>
-        /// <returns>A formatted string of argument details.</returns>
-        public virtual string GetArguments()
+        /// <returns>A list of formatted argument strings.</returns>
+        public virtual List<string> GetArguments()
         {
             var fields = this.GetType()
                 .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
-                .Where(field => !Attribute.IsDefined(field, typeof(ExcludeFromArgumentsAttribute))) // Exclude marked fields
+                .Where(field => !Attribute.IsDefined(field, typeof(ExcludeFromArgumentsAttribute)))
+                .OrderBy(field =>
+                {
+                    // Order by position if ArgumentMetadata exists
+                    var metadata = field.GetCustomAttribute<ArgumentMetadataAttribute>();
+                    return metadata?.Position ?? int.MaxValue;
+                })
                 .Select(field =>
                 {
-                    string fieldName = field.Name.TrimStart('_'); // Remove leading underscore
-                    string fieldType = SimplifyType(field.FieldType); // Get simplified type name
-                    var defaultValue = field.GetValue(this); // Get the default value
+                    string fieldName = field.Name.TrimStart('_');
+                    string fieldType = SimplifyType(field.FieldType);
+                    var defaultValue = field.GetValue(this);
                     string defaultValueStr = defaultValue != null ? $", default: {defaultValue}" : string.Empty;
 
-                    // Handle Enum types and convert to lowercase
+                    // Get metadata if present
+                    var metadata = field.GetCustomAttribute<ArgumentMetadataAttribute>();
+                    string aliases = "";
+                    string position = "";
+
+                    if (metadata != null)
+                    {
+                        // Build position indicator
+                        if (metadata.Position >= 0)
+                        {
+                            position = $"[pos:{metadata.Position}] ";
+                        }
+
+                        // Build aliases
+                        var aliasList = new List<string>();
+                        if (!string.IsNullOrEmpty(metadata.ShortName))
+                        {
+                            aliasList.Add($"/{metadata.ShortName}:");
+                        }
+                        if (!string.IsNullOrEmpty(metadata.LongName))
+                        {
+                            aliasList.Add($"/{metadata.LongName}:");
+                        }
+                        if (aliasList.Any())
+                        {
+                            aliases = $" [{string.Join(", ", aliasList)}]";
+                        }
+
+                        // Mark as required if specified
+                        if (metadata.Required)
+                        {
+                            defaultValueStr = ", required";
+                        }
+                    }
+
+                    // Handle Enum types
                     if (field.FieldType.IsEnum)
                     {
                         string enumValues = string.Join(", ", Enum.GetNames(field.FieldType).Select(v => v.ToLower()));
-                        return $"{fieldName} (enum: {fieldType} [{enumValues}], default: {defaultValue.ToString().ToLower()})";
+                        return $"{position}{fieldName} (enum: {fieldType} [{enumValues}]{defaultValueStr}){aliases}";
                     }
 
-                    return $"{fieldName} ({fieldType}{defaultValueStr})".Trim();
-                });
+                    return $"{position}{fieldName} ({fieldType}{defaultValueStr}){aliases}".Trim();
+                })
+                .ToList();
 
-            return string.Join(", ", fields);
+            return fields;
         }
-
 
         /// <summary>
         /// Simplifies the type name for better readability.

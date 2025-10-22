@@ -80,21 +80,6 @@ namespace MSSQLand.Utilities
                     {
                         parsedArgs.CredentialType = ExtractValue(arg, "/c:", "/credentials:");
                     }
-                    else if (arg.StartsWith("/u:", StringComparison.OrdinalIgnoreCase) ||
-                             arg.StartsWith("/username:", StringComparison.OrdinalIgnoreCase))
-                    {
-                        username = ExtractValue(arg, "/u:", "/username:");
-                    }
-                    else if (arg.StartsWith("/p:", StringComparison.OrdinalIgnoreCase) ||
-                             arg.StartsWith("/password:", StringComparison.OrdinalIgnoreCase))
-                    {
-                        password = ExtractValue(arg, "/p:", "/password:");
-                    }
-                    else if (arg.StartsWith("/d:", StringComparison.OrdinalIgnoreCase) ||
-                             arg.StartsWith("/domain:", StringComparison.OrdinalIgnoreCase))
-                    {
-                        domain = ExtractValue(arg, "/d:", "/domain:");
-                    }
                     else if (arg.StartsWith("/h:", StringComparison.OrdinalIgnoreCase) ||
                              arg.StartsWith("/host:", StringComparison.OrdinalIgnoreCase))
                     {
@@ -118,13 +103,34 @@ namespace MSSQLand.Utilities
                     {
                         parsedArgs.Host.Database = ExtractValue(arg, "/db:");
                     }
+                    else if ((arg.StartsWith("/u:", StringComparison.OrdinalIgnoreCase) ||
+                             arg.StartsWith("/username:", StringComparison.OrdinalIgnoreCase)) && username == null)
+                    {
+                        // Only set global username if not already set (first occurrence)
+                        username = ExtractValue(arg, "/u:", "/username:");
+                    }
+                    else if ((arg.StartsWith("/p:", StringComparison.OrdinalIgnoreCase) ||
+                             arg.StartsWith("/password:", StringComparison.OrdinalIgnoreCase)) && password == null)
+                    {
+                        // Only set global password if not already set (first occurrence)
+                        password = ExtractValue(arg, "/p:", "/password:");
+                    }
+                    else if ((arg.StartsWith("/d:", StringComparison.OrdinalIgnoreCase) ||
+                             arg.StartsWith("/domain:", StringComparison.OrdinalIgnoreCase)) && domain == null)
+                    {
+                        // Only set global domain if not already set (first occurrence)
+                        domain = ExtractValue(arg, "/d:", "/domain:");
+                    }
                     else if (!arg.StartsWith("/"))
                     {
+                        // Positional argument (doesn't start with /)
                         additionalArguments += $"{arg}{CommandParser.AdditionalArgumentsSeparator}";
                     }
                     else
                     {
-                        throw new ArgumentException($"Unrecognized argument: {arg}");
+                        // Unknown argument starting with / - could be an action-specific named argument
+                        // Pass it through to the action for validation
+                        additionalArguments += $"{arg}{CommandParser.AdditionalArgumentsSeparator}";
                     }
 
                 }

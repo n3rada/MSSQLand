@@ -61,26 +61,17 @@ namespace MSSQLand.Utilities
             Console.WriteLine("Available Actions:");
             Console.WriteLine();
 
-            DataTable actions = getActions();
+            var actions = ActionFactory.GetAvailableActions();
 
-            foreach (DataRow row in actions.Rows)
+            foreach (var (ActionName, Description, Arguments) in actions)
             {
-                // "Action" column
-                string actionName = row["Action"]?.ToString() ?? "";
-                // "Description" column
-                string description = row["Description"]?.ToString() ?? "";
-                // "Arguments" column (comma-separated, typically)
-                string arguments = row["Arguments"]?.ToString() ?? "";
-
                 // Print the main line: "actionName - description"
-                Console.WriteLine($"{actionName} - {description}");
+                Console.WriteLine($"{ActionName} - {Description}");
 
-                // If we have arguments, parse them properly
-                if (!string.IsNullOrWhiteSpace(arguments))
+                // Display arguments directly from the list
+                if (Arguments != null && Arguments.Any())
                 {
-                    var argumentList = ParseArguments(arguments);
-
-                    foreach (var arg in argumentList)
+                    foreach (var arg in Arguments)
                     {
                         Console.WriteLine($"  > {arg}");
                     }
@@ -97,8 +88,7 @@ namespace MSSQLand.Utilities
             Console.WriteLine();
             Console.WriteLine("  findsql <domain>     - Search for MS SQL Servers in Active Directory.");
             Console.WriteLine();
-            Console.WriteLine("Example: MSSQLand.exe /findsql corp.com");
-        }
+        } 
 
         /// <summary>
         /// Displays help for a specific action.
@@ -121,21 +111,12 @@ namespace MSSQLand.Utilities
             Console.WriteLine($"Description: {action.Description}");
             Console.WriteLine();
 
-            if (!string.IsNullOrWhiteSpace(action.Arguments))
+            if (action.Arguments != null && action.Arguments.Any())
             {
                 Console.WriteLine("Arguments:");
-                var argumentList = ParseArguments(action.Arguments);
-
-                if (argumentList.Any())
+                foreach (var arg in action.Arguments)
                 {
-                    foreach (var arg in argumentList)
-                    {
-                        Console.WriteLine($"  > {arg}");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("  No additional arguments required.");
+                    Console.WriteLine($"  > {arg}");
                 }
             }
             else
@@ -144,33 +125,6 @@ namespace MSSQLand.Utilities
             }
 
             Console.WriteLine();
-            Console.WriteLine($"Example: MSSQLand.exe /h:localhost /c:token /a:{action.ActionName}");
-        }
-
-        /// <summary>
-        /// Parses the arguments string, properly handling commas within brackets and parentheses.
-        /// </summary>
-        /// <param name="arguments">The arguments string to parse.</param>
-        /// <returns>A list of parsed argument strings.</returns>
-        private static List<string> ParseArguments(string arguments)
-        {
-            var argumentList = new List<string>();
-
-            // Match argument patterns: "name (type [options], options)"
-            // This regex handles nested brackets and parentheses properly
-            var matches = Regex.Matches(arguments, @"(\w+)\s*\(([^)]+)\)");
-
-            foreach (Match match in matches)
-            {
-                if (match.Success && match.Groups.Count >= 3)
-                {
-                    string argName = match.Groups[1].Value;
-                    string argDetails = match.Groups[2].Value;
-                    argumentList.Add($"{argName} ({argDetails})");
-                }
-            }
-
-            return argumentList;
         }
 
 
@@ -186,7 +140,12 @@ namespace MSSQLand.Utilities
 
             foreach (var (ActionName, Description, Arguments) in actions)
             {
-                actionsTable.Rows.Add(ActionName, Description, Arguments);
+                // Convert argument list to a readable string
+                string argumentsStr = Arguments != null && Arguments.Any()
+                    ? string.Join("; ", Arguments)
+                    : "None";
+                
+                actionsTable.Rows.Add(ActionName, Description, argumentsStr);
             }
 
             return actionsTable;
