@@ -139,7 +139,6 @@
     <Compile Include="Utilities\Logger.cs" />
     <Compile Include="Utilities\MarkdownFormater.cs" />
     <Compile Include="Utilities\Misc.cs" />
-    <!-- TDS Library Files -->
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
