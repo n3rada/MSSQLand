@@ -112,5 +112,19 @@ namespace MSSQLand.Utilities
 
             return result;
         }
+
+        /// <summary>
+        /// Gets the Type of an action by its name.
+        /// </summary>
+        /// <param name="actionName">The name of the action.</param>
+        /// <returns>The Type of the action class, or null if not found.</returns>
+        public static Type GetActionType(string actionName)
+        {
+            if (ActionMetadata.TryGetValue(actionName.ToLower(), out var metadata))
+            {
+                return metadata.ActionClass;
+            }
+            return null;
+        }
     }
 }
