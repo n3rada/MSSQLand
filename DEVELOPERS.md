@@ -60,3 +60,14 @@ namespace MSSQLand.Actions.Domain
     }
 }
 ```
+
+Then, do not forget to add the newly created action to the [factory](MSSQLand\Actions\ActionFactory.cs):
+
+```csharp
+{ "new", (typeof(NewAction), "Lorem ipsum dolor sit amet consectetur adipiscing elit quisque faucibus ex sapien vitae pellentesque sem.") },
+```
+
+And voilà, now you can use-it directly with:
+```shell
+/a:new
+```
