@@ -140,9 +140,16 @@ Rather than let this work go to waste, I decided to develop MSSQLand, an OOP-dri
 
 ## ⚠️ Disclaimer
 
-This tool is designed for educational purposes only and is intended to assist security professionals in understanding and testing the security of SQL Server environments in authorized engagements. It is specifically crafted to be used in controlled environments, such as:
-- Penetration testing labs (e.g., HackTheBox, OffSec exam scenarios).
-- Personal lab setups designed for ethical hacking and security research.
+**MSSQLand is provided strictly for defensive security research, education, and authorized penetration testing.** You must have **explicit written authorization** before running this software against any system you do not own.
+
+This tool is designed for educational purposes only and is intended to assist security professionals in understanding and testing the security of SQL Server environments in authorized engagements.
+
+Acceptable environments include:
+- Private lab environments you control (local VMs, isolated networks).  
+- Sanctioned learning platforms (CTFs, Hack The Box, OffSec exam scenarios).  
+- Formal penetration-test or red-team engagements with documented customer consent.
+
+Misuse of this project may result in legal action.
 
 ## Legal Notice
 Any unauthorized use of this tool in real-world environments or against systems without explicit permission from the system owner is strictly prohibited and may violate legal and ethical standards. The creators and contributors of this tool are not responsible for any misuse or damage caused.
