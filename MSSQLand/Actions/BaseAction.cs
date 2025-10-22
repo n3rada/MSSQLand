@@ -160,6 +160,7 @@ namespace MSSQLand.Actions
                     var metadata = field.GetCustomAttribute<ArgumentMetadataAttribute>();
                     string aliases = "";
                     string position = "";
+                    string description = "";
 
                     if (metadata != null)
                     {
@@ -184,6 +185,12 @@ namespace MSSQLand.Actions
                             aliases = $" [{string.Join(", ", aliasList)}]";
                         }
 
+                        // Add description if available
+                        if (!string.IsNullOrEmpty(metadata.Description))
+                        {
+                            description = $" - {metadata.Description}";
+                        }
+
                         // Mark as required if specified
                         if (metadata.Required)
                         {
@@ -195,10 +202,10 @@ namespace MSSQLand.Actions
                     if (field.FieldType.IsEnum)
                     {
                         string enumValues = string.Join(", ", Enum.GetNames(field.FieldType).Select(v => v.ToLower()));
-                        return $"{position}{fieldName} (enum: {fieldType} [{enumValues}]{defaultValueStr}){aliases}";
+                        return $"{position}{fieldName} (enum: {fieldType} [{enumValues}]{defaultValueStr}){aliases}{description}";
                     }
 
-                    return $"{position}{fieldName} ({fieldType}{defaultValueStr}){aliases}".Trim();
+                    return $"{position}{fieldName} ({fieldType}{defaultValueStr}){aliases}{description}".Trim();
                 })
                 .ToList();
 
