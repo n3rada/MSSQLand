@@ -1,7 +1,6 @@
 ﻿using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
-using System.Collections.Generic;
 using System.Data;
 
 
@@ -25,7 +24,7 @@ namespace MSSQLand.Actions.Database
         {
             Logger.TaskNested($"Retrieving Linked SQL Servers");
 
-            DataTable resultTable = Links.GetLinkedServers(databaseContext);
+            DataTable resultTable = GetLinkedServers(databaseContext);
 
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
 

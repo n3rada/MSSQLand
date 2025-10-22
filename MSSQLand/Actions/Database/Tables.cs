@@ -8,6 +8,7 @@ namespace MSSQLand.Actions.Database
 {
     internal class Tables : BaseAction
     {
+        [ArgumentMetadata(Position = 0, ShortName = "db", LongName = "database", Description = "Database name (uses current database if not specified)")]
         private string _database;
 
         public override void ValidateArguments(string additionalArguments)

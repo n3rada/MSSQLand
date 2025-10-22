@@ -8,8 +8,14 @@ namespace MSSQLand.Actions.Database
     internal class Procedures : BaseAction
     {
         private enum Mode { List, Exec, Read }
+        
+        [ArgumentMetadata(Position = 0, Description = "Mode: list, exec, or read (default: list)")]
         private Mode _mode = Mode.List;
+        
+        [ArgumentMetadata(Position = 1, Description = "Stored procedure name (required for exec/read)")]
         private string? _procedureName;
+        
+        [ArgumentMetadata(Position = 2, Description = "Procedure arguments (optional for exec)")]
         private string? _procedureArgs;
 
         public override void ValidateArguments(string additionalArguments)

@@ -8,6 +8,7 @@ namespace MSSQLand.Actions.Administration
 {
     internal class Kill : BaseAction
     {
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Session ID to kill or 'all' for all sessions")]
         private string _target;
 
         public override void ValidateArguments(string additionalArguments)

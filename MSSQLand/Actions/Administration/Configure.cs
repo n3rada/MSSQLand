@@ -6,7 +6,10 @@ namespace MSSQLand.Actions.Administration
 {
     internal class Configure : BaseAction
     {
+        [ArgumentMetadata(Position = 0, ShortName = "o", LongName = "option", Required = true, Description = "Configuration option name")]
         private string _optionName;
+
+        [ArgumentMetadata(Position = 1, ShortName = "s", LongName = "state", Required = true, Description = "State value (0=disable, 1=enable)")]
         private int _state;
 
         public override void ValidateArguments(string additionalArguments)

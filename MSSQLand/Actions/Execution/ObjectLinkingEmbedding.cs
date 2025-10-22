@@ -10,6 +10,7 @@ namespace MSSQLand.Actions.Execution
     /// </summary>
     internal class ObjectLinkingEmbedding : BaseAction
     {
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Operating system command to execute via OLE Automation")]
         private string _command;
 
         /// <summary>

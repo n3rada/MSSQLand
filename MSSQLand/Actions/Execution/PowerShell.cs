@@ -7,6 +7,7 @@ namespace MSSQLand.Actions.Execution
 {
     internal class PowerShell : XpCmd
     {
+        [ArgumentMetadata(Position = 0, Required = true, Description = "PowerShell script or command to execute")]
         private string _script;
 
         /// <summary>

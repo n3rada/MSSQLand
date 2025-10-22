@@ -14,8 +14,13 @@ namespace MSSQLand.Actions.Domain
         private const int DefaultMaxRid = 10000;
         private const int BatchSize = 1000;
 
+        [ArgumentMetadata(Position = 0, Description = "Maximum RID to enumerate (default: 10000)")]
         private int _maxRid = DefaultMaxRid;
+
+        [ExcludeFromArguments]
         private bool _bashOutput = false;
+        
+        [ExcludeFromArguments]
         private bool _pythonOutput = false;
 
         public override void ValidateArguments(string additionalArguments)

@@ -7,8 +7,16 @@ namespace MSSQLand.Actions.Database
 {
     public class Rows : BaseAction
     {
+        [ArgumentMetadata(Position = 0, ShortName = "t", LongName = "table", Required = true, Description = "Table name or FQTN (database.schema.table)")]
+        private string _fqtn; // Store the full qualified table name argument
+
+        [ExcludeFromArguments]
         private string _database;
+        
+        [ExcludeFromArguments]
         private string _schema = "dbo"; // Default schema
+        
+        [ExcludeFromArguments]
         private string _table;
 
         public override void ValidateArguments(string additionalArguments)
@@ -18,6 +26,7 @@ namespace MSSQLand.Actions.Database
                 throw new ArgumentException("Rows action requires at least a Table Name as an argument or a Fully Qualified Table Name (FQTN) in the format 'database.schema.table'.");
             }
 
+            _fqtn = additionalArguments;
             string[] parts = SplitArguments(additionalArguments, ".");
 
             if (parts.Length == 3) // Format: database.schema.table

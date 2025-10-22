@@ -7,6 +7,7 @@ namespace MSSQLand.Actions.Network
 {
     internal class SmbCoerce : BaseAction
     {
+        [ArgumentMetadata(Position = 0, Required = true, Description = "UNC path for SMB coercion (e.g., \\\\192.168.1.10\\share)")]
         private string _uncPath;
 
         /// <summary>

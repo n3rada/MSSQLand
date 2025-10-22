@@ -9,6 +9,7 @@ namespace MSSQLand.Actions.Execution
 {
     public class Query : BaseAction
     {
+        [ArgumentMetadata(Position = 0, Required = true, Description = "T-SQL query to execute")]
         protected string _query;
 
         /// <summary>

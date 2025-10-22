@@ -6,6 +6,7 @@ namespace MSSQLand.Actions.Database
 {
     internal class RoleMembers : BaseAction
     {
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Server role name (e.g., sysadmin, serveradmin)")]
         private string _roleName;
 
         public override void ValidateArguments(string additionalArguments)

@@ -9,7 +9,11 @@ namespace MSSQLand.Actions.Administration
     internal class RemoteProcedureCall : BaseAction
     {
         private enum RpcActionMode { Add, Del }
+        
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Action: add or del")]
         private RpcActionMode _action;
+        
+        [ArgumentMetadata(Position = 1, Required = true, Description = "Linked server name")]
         private string _linkedServerName;
 
         public override void ValidateArguments(string additionalArguments)

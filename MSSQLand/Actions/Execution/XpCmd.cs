@@ -8,6 +8,7 @@ namespace MSSQLand.Actions.Execution
 {
     internal class XpCmd : BaseAction
     {
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Operating system command to execute via xp_cmdshell")]
         private string _command;
 
         /// <summary>

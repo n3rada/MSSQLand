@@ -9,8 +9,13 @@ namespace MSSQLand.Actions.Database
 {
     internal class Search : BaseAction
     {
+        [ArgumentMetadata(Position = 0, ShortName = "db", LongName = "database", Description = "Database name or * for all databases")]
         private string _database;
+
+        [ArgumentMetadata(Position = 1, ShortName = "k", LongName = "keyword", Required = true, Description = "Keyword to search for")]
         private string _keyword;
+
+        [ExcludeFromArguments]
         private bool _allDatabases = false;
 
         public override void ValidateArguments(string additionalArguments)
@@ -52,7 +57,7 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            List<string> databasesToSearch = new List<string>();
+            List<string> databasesToSearch = new();
 
             if (_allDatabases)
             {

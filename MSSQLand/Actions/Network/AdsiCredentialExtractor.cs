@@ -14,7 +14,11 @@ namespace MSSQLand.Actions.Network
     internal class AdsiCredentialExtractor : BaseAction
     {
         private enum Mode { List, Self, Link }
+        
+        [ArgumentMetadata(Position = 0, Description = "Mode: list, self, or link (default: list)")]
         private Mode _mode = Mode.List;
+        
+        [ArgumentMetadata(Position = 1, Description = "Target SQL Server name (required for link mode)")]
         private string? _targetServer;
 
 

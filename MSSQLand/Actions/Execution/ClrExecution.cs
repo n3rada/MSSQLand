@@ -9,7 +9,10 @@ namespace MSSQLand.Actions.Execution
 {
     internal class ClrExecution : BaseAction
     {
+        [ArgumentMetadata(Position = 0, Required = true, Description = "DLL URI (local path or HTTP/S URL)")]
         private string _dllURI;
+        
+        [ArgumentMetadata(Position = 1, Description = "Function name to execute (default: Main)")]
         private string _function;
 
         public override void ValidateArguments(string additionalArguments)

@@ -14,8 +14,13 @@ namespace MSSQLand.Actions.Execution
         private enum ActionMode { Status, Exec }
         private enum SubSystemMode { Cmd, PowerShell, TSQL, VBScript }
 
+        [ArgumentMetadata(Position = 0, Description = "Action mode: status or exec (default: status)")]
         private ActionMode _action = ActionMode.Status;
+        
+        [ArgumentMetadata(Position = 1, Description = "Command to execute (required for exec mode)")]
         private string? _command = null;
+        
+        [ArgumentMetadata(Position = 2, Description = "Subsystem: cmd, powershell, tsql, vbscript (default: powershell)")]
         private SubSystemMode _subSystem = SubSystemMode.PowerShell;
 
         public override void ValidateArguments(string additionalArguments)
@@ -90,106 +95,124 @@ namespace MSSQLand.Actions.Execution
                 return null;
             }
 
+            Logger.Success($"Found {jobsTable.Rows.Count} SQL Agent job(s)");
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(jobsTable));
+
             return jobsTable;
         }
 
         /// <summary>
-        /// Executes a job via SQL Server Agent.
+        /// Executes a command using SQL Server Agent.
         /// </summary>
-        private bool ExecuteAgentJob(DatabaseContext databaseContext)
+        private object? ExecuteAgentJob(DatabaseContext databaseContext)
         {
-            if (string.IsNullOrEmpty(_command))
-            {
-                Logger.Warning("No command provided to execute.");
-                return false;
-            }
-
-            Logger.TaskNested($"Executing command: {_command}");
-            Logger.TaskNested($"Using subsystem: {_subSystem}");
-
             if (!AgentStatus(databaseContext))
             {
-                return false;
+                return null;
             }
 
-            string jobName = Guid.NewGuid().ToString("N").Substring(0, 6);
-            string stepName = Guid.NewGuid().ToString("N").Substring(0, 6);
+            Logger.Info($"Creating and executing agent job with {_subSystem} subsystem...");
 
-            Logger.Info($"Job name: {jobName}");
-            Logger.Info($"Step name: {stepName}");
+            string jobName = $"MSSQLand_Job_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+            string stepName = $"MSSQLand_Step_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
 
-            string createJobQuery = $@"
-                USE msdb;
-                EXEC dbo.sp_add_job @job_name = '{jobName}';
-                EXEC sp_add_jobstep @job_name = '{jobName}', @step_name = '{stepName}', 
-                                    @subsystem = '{_subSystem}', @command = '{_command}', 
-                                    @retry_attempts = 1, @retry_interval = 5;
-                EXEC dbo.sp_add_jobserver @job_name = '{jobName}';
-            ";
-
-            databaseContext.QueryService.ExecuteNonProcessing(createJobQuery);
-
-            Logger.Task($"Executing job {jobName}");
-            string executeJobQuery = $"USE msdb; EXEC dbo.sp_start_job '{jobName}';";
-            databaseContext.QueryService.ExecuteNonProcessing(executeJobQuery);
-
-            Logger.Task("Deleting job...");
-            string deleteJobQuery = $"USE msdb; EXEC dbo.sp_delete_job @job_name = '{jobName}';";
-            databaseContext.QueryService.ExecuteNonProcessing(deleteJobQuery);
-
-            return true;
-        }
-
-        /// <summary>
-        /// Checks if the SQL Server Agent is running.
-        /// </summary>
-        private static bool AgentStatus(DatabaseContext databaseContext)
-        {
             try
             {
-                Logger.TaskNested("Checking SQL Server Agent status");
+                // Create job
+                string createJobQuery = $@"
+                    EXEC msdb.dbo.sp_add_job 
+                        @job_name = '{jobName}', 
+                        @enabled = 1, 
+                        @description = 'MSSQLand temporary job';";
 
-                string query = @"
-                SELECT dss.[status], dss.[status_desc] 
-                FROM sys.dm_server_services dss 
-                WHERE dss.[servicename] LIKE 'SQL Server Agent (%';";
+                databaseContext.QueryService.ExecuteNonProcessing(createJobQuery);
+                Logger.Success($"Job '{jobName}' created");
 
-                DataTable result = databaseContext.QueryService.ExecuteTable(query);
+                // Add job step
+                string addStepQuery = $@"
+                    EXEC msdb.dbo.sp_add_jobstep 
+                        @job_name = '{jobName}',
+                        @step_name = '{stepName}',
+                        @subsystem = '{_subSystem}',
+                        @command = '{_command.Replace("'", "''")}', // Escape single quotes in command
+                        @retry_attempts = 0,
+                        @retry_interval = 0;";
 
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(result));
+                databaseContext.QueryService.ExecuteNonProcessing(addStepQuery);
+                Logger.Success($"Job step '{stepName}' added with {_subSystem} subsystem");
 
-                if (result.Rows.Count == 0)
-                {
-                    Logger.Warning("No SQL Server Agent information found.");
-                    return false;
-                }
+                // Add job server
+                string addServerQuery = $"EXEC msdb.dbo.sp_add_jobserver @job_name = '{jobName}', @server_name = '(local)';";
+                databaseContext.QueryService.ExecuteNonProcessing(addServerQuery);
 
-                foreach (DataRow row in result.Rows)
-                {
-                    int status = Convert.ToInt32(row["status"]);
-                    string statusDesc = row["status_desc"]?.ToString()?.ToLower();
+                // Start job
+                Logger.Info($"Starting job '{jobName}'...");
+                string startJobQuery = $"EXEC msdb.dbo.sp_start_job @job_name = '{jobName}';";
+                databaseContext.QueryService.ExecuteNonProcessing(startJobQuery);
 
-                    if (status == 4 && statusDesc == "running")
-                    {
-                        Logger.Success("SQL Server Agent is running.");
-                        return true;
-                    }
-                }
+                Logger.Success($"Job '{jobName}' started successfully");
+                Logger.Warning("Note: This is an asynchronous execution. Check job history for output.");
 
-                Logger.Warning("SQL Server Agent is not running.");
-                return false;
+                // Clean up
+                System.Threading.Thread.Sleep(2000); // Wait 2 seconds for job to execute
+                
+                Logger.Info($"Cleaning up job '{jobName}'...");
+                string deleteJobQuery = $"EXEC msdb.dbo.sp_delete_job @job_name = '{jobName}';";
+                databaseContext.QueryService.ExecuteNonProcessing(deleteJobQuery);
+                Logger.Success("Job cleaned up");
+
+                return true;
             }
             catch (Exception ex)
             {
-                if (ex.Message.ToLower().Contains("permission"))
+                Logger.Error($"Failed to execute agent job: {ex.Message}");
+                
+                // Try to clean up
+                try
                 {
-                    Logger.Error("The current user does not have permission to view Agent status.");
+                    string deleteJobQuery = $"EXEC msdb.dbo.sp_delete_job @job_name = '{jobName}';";
+                    databaseContext.QueryService.ExecuteNonProcessing(deleteJobQuery);
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Checks if SQL Server Agent is running.
+        /// </summary>
+        private bool AgentStatus(DatabaseContext databaseContext)
+        {
+            try
+            {
+                string query = @"
+                    IF EXISTS (SELECT 1 FROM master.dbo.sysprocesses WHERE program_name LIKE 'SQLAgent%')
+                        SELECT 'Running' AS AgentStatus
+                    ELSE
+                        SELECT 'Stopped' AS AgentStatus;";
+
+                DataTable result = databaseContext.QueryService.ExecuteTable(query);
+                string status = result.Rows[0]["AgentStatus"].ToString();
+
+                if (status == "Running")
+                {
+                    Logger.Success("SQL Server Agent is running");
+                    return true;
                 }
                 else
                 {
-                    Logger.Error($"Error checking SQL Server Agent status: {ex.Message}");
+                    Logger.Error("SQL Server Agent is not running");
+                    Logger.Info("Agent jobs require the SQL Server Agent service to be active.");
+                    return false;
                 }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to check Agent status: {ex.Message}");
                 return false;
             }
         }

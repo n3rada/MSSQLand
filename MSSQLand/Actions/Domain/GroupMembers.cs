@@ -10,7 +10,10 @@ namespace MSSQLand.Actions.Domain
     /// </summary>
     internal class GroupMembers : BaseAction
     {
+        [ArgumentMetadata(Position = 0, Required = true, Description = "AD group name (e.g., DOMAIN\\Domain Admins)")]
         private string _groupName;
+
+        [ExcludeFromArguments]
         private bool _useOpenQuery = false;
 
         public override void ValidateArguments(string additionalArguments)

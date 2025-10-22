@@ -13,7 +13,8 @@ namespace MSSQLand.Actions.Database
     internal class ExtendedProcs : BaseAction
     {
         // Descriptions for common extended procedures
-        private static readonly Dictionary<string, string> ProcedureDescriptions = new Dictionary<string, string>
+        [ExcludeFromArguments]
+        private static readonly Dictionary<string, string> ProcedureDescriptions = new()
         {
             { "xp_cmdshell", "Executes command shell commands" },
             { "xp_dirtree", "Displays directory tree structure" },

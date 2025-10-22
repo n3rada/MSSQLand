@@ -18,63 +18,61 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             // ADMINISTRATION ACTIONS (MSSQLand.Actions.Administration)
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "config", (typeof(Configure), "Use sp_configure to modify settings.") },
-            { "kill", (typeof(Kill), "Terminate running SQL commands by session ID or all.") },
-            { "createsysadmin", (typeof(CreateSysadmin), "Create a SQL login with sysadmin privileges (default: backup_adm).") },
+            { "config", (typeof(Configure), "Enable or disable SQL Server configuration options using sp_configure.") },
+            { "kill", (typeof(Kill), "Terminate SQL Server sessions by session ID or kill all running sessions.") },
+            { "createuser", (typeof(CreateUser), "Create a SQL login with specified server role privileges (default: sysadmin).") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // DATABASE ACTIONS (MSSQLand.Actions.Database)
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "info", (typeof(Info), "Retrieve information about the DBMS server.") },
-            { "whoami", (typeof(Whoami), "Retrieve information about the current user.") },
-            { "databases", (typeof(Databases), "List available databases.") },
-            { "tables", (typeof(Tables), "List tables in a database.") },
-            { "rows", (typeof(Rows), "Retrieve rows from a table.") },
-            { "procedures", (typeof(Procedures), "List stored procedures, read their definitions, or execute them with arguments.") },
-            { "users", (typeof(Users), "List database users.") },
+            { "info", (typeof(Info), "Retrieve detailed information about the SQL Server instance.") },
+            { "whoami", (typeof(Whoami), "Display current user context, roles, and accessible databases.") },
+            { "databases", (typeof(Databases), "List all available databases.") },
+            { "tables", (typeof(Tables), "List all tables in a specified database.") },
+            { "rows", (typeof(Rows), "Retrieve and display rows from a specified table.") },
+            { "procedures", (typeof(Procedures), "List, read, or execute stored procedures.") },
+            { "users", (typeof(Users), "List all database users.") },
             { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).") },
-            { "permissions", (typeof(Permissions), "Enumerate permissions.") },
-            { "search", (typeof(Search), "Search for specific keyword in database columns and data (supports * for all databases).") },
-            { "impersonate", (typeof(Impersonation), "Check and perform user impersonation.") },
-            { "monitor", (typeof(Monitor), "List running SQL commands.") },
+            { "permissions", (typeof(Permissions), "Enumerate user and role permissions.") },
+            { "search", (typeof(Search), "Search for keywords in column names and data across databases.") },
+            { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.") },
+            { "monitor", (typeof(Monitor), "Display currently running SQL commands and active sessions.") },
             { "query", (typeof(Query), "Execute a custom T-SQL query.") },
             { "queryall", (typeof(QueryAll), "Execute a custom T-SQL query across all databases using sp_MSforeachdb.") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // DOMAIN ACTIONS (MSSQLand.Actions.Domain)
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "domsid", (typeof(DomainSid), "Retrieve the domain SID using DEFAULT_DOMAIN and SUSER_SID.") },
-            { "ridcycle", (typeof(RidCycle), "Enumerate domain users by cycling through RIDs using SUSER_SNAME.") },
-            { "groupmembers", (typeof(GroupMembers), "Retrieve members of a specific Active Directory group (e.g., DOMAIN\\IT).") },
+            { "domsid", (typeof(DomainSid), "Retrieve the domain SID using DEFAULT_DOMAIN() and SUSER_SID().") },
+            { "ridcycle", (typeof(RidCycle), "Enumerate domain users by RID cycling using SUSER_SNAME().") },
+            { "groupmembers", (typeof(GroupMembers), "Retrieve members of an Active Directory group (e.g., DOMAIN\\Domain Admins).") },
             
             // ═══════════════════════════════════════════════════════════════════════════════
             // EXECUTION ACTIONS (MSSQLand.Actions.Execution)
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "exec", (typeof(XpCmd), "Execute commands using xp_cmdshell.") },
-            { "pwsh", (typeof(PowerShell), "Execute PowerShell commands.") },
-            { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a PowerShell script.") },
-            { "ole", (typeof(ObjectLinkingEmbedding), "Executes the specified command using OLE Automation Procedures.") },
-            { "clr", (typeof(ClrExecution), "Deploy and execute CLR assemblies.") },
-            { "agents", (typeof(Agents), "Interact with and manage SQL Server Agent jobs.") },
-            { "oledb-providers", (typeof(OleDbProvidersInfo), "Retrieve detailed configuration and properties of OLE DB providers.") },
-            { "xprocs", (typeof(ExtendedProcs), "Enumerate extended stored procedures available on the server.") },
+            { "exec", (typeof(XpCmd), "Execute operating system commands using xp_cmdshell.") },
+            { "pwsh", (typeof(PowerShell), "Execute PowerShell commands or scripts.") },
+            { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a remote PowerShell script from a URL.") },
+            { "ole", (typeof(ObjectLinkingEmbedding), "Execute operating system commands using OLE Automation Procedures.") },
+            { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.") },
+            { "agents", (typeof(Agents), "Manage and interact with SQL Server Agent jobs.") },
+            { "oledb-providers", (typeof(OleDbProvidersInfo), "Retrieve information about installed OLE DB providers and their configurations.") },
+            { "xprocs", (typeof(ExtendedProcs), "Enumerate available extended stored procedures on the server.") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // FILESYSTEM ACTIONS (MSSQLand.Actions.FileSystem)
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "read", (typeof(FileRead), "Read system file contents (e.g., C:\\Windows\\System32\\drivers\\etc\\hosts).") },
+            { "read", (typeof(FileRead), "Read file contents from the server's file system.") },
 
             
             // ═══════════════════════════════════════════════════════════════════════════════
             // NETWORK ACTIONS (MSSQLand.Actions.Network)
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "links", (typeof(Links), "Retrieve linked server information.") },
-            { "linkmap", (typeof(LinkedServerExplorer), "Enumerate all possible linked server chains and access paths.") },
-            { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC on a server.") },
-            { "adsi", (typeof(AdsiCredentialExtractor), "Enumerate ADSI linked servers, extract credentials, or impersonate users via ADSI exploitation.") },
-            { "smbcoerce", (typeof(SmbCoerce), "Coerce SMB authentication via xp_dirtree to capture NTLM hashes or relay attacks.") }
-
-
+            { "links", (typeof(Links), "Enumerate linked servers and their configuration.") },
+            { "linkmap", (typeof(LinkedServerExplorer), "Map all possible linked server chains and execution paths.") },
+            { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.") },
+            { "adsi", (typeof(AdsiCredentialExtractor), "Enumerate ADSI linked servers and extract stored credentials.") },
+            { "smbcoerce", (typeof(SmbCoerce), "Force SMB authentication to a specified UNC path to capture time limited Net-NTLMv2 challenge/response.") }
         };
 
 
@@ -101,14 +99,14 @@ namespace MSSQLand.Utilities
             }
         }
 
-        public static List<(string ActionName, string Description, string Arguments)> GetAvailableActions()
+        public static List<(string ActionName, string Description, List<string> Arguments)> GetAvailableActions()
         {
-            var result = new List<(string ActionName, string Description, string Arguments)>();
+            var result = new List<(string ActionName, string Description, List<string> Arguments)>();
 
             foreach (var action in ActionMetadata)
             {
                 BaseAction actionInstance = (BaseAction)Activator.CreateInstance(action.Value.ActionClass);
-                string arguments = actionInstance.GetArguments();
+                List<string> arguments = actionInstance.GetArguments();
                 result.Add((action.Key, action.Value.Description, arguments));
             }
 
