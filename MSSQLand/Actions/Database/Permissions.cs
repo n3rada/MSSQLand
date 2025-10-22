@@ -6,20 +6,30 @@ namespace MSSQLand.Actions.Database
 {
     internal class Permissions : BaseAction
     {
+        [ArgumentMetadata(Position = 0, Description = "Fully qualified table name (database.schema.table) or empty for server/database permissions")]
+        private string _fqtn;
+
+        [ExcludeFromArguments]
         private string _database;
+        
+        [ExcludeFromArguments]
         private string _schema = "dbo"; // Default schema
+        
+        [ExcludeFromArguments]
         private string _table;
 
         public override void ValidateArguments(string additionalArguments)
         {
             if (string.IsNullOrEmpty(additionalArguments))
             {
+                // No arguments - will show server and database permissions
                 return;
             }
 
+            _fqtn = additionalArguments;
             string[] parts = SplitArguments(additionalArguments, ".");
 
-            if (parts.Length == 3) // If schema is provided
+            if (parts.Length == 3) // Format: database.schema.table
             {
                 _database = parts[0];
 
@@ -27,12 +37,18 @@ namespace MSSQLand.Actions.Database
                 {
                     _schema = parts[1];
                 }
+                else
+                {
+                    _schema = "dbo"; // Default if empty (e.g., database..table)
+                }
+                
                 _table = parts[2];
             }
             else
             {
                 throw new ArgumentException("Invalid format for the argument. Expected 'database.schema.table' or 'database..table' or nothing to return current server permissions.");
             }
+
         }
 
         public override object? Execute(DatabaseContext databaseContext)
