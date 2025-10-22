@@ -71,3 +71,13 @@ And voilà, now you can use-it directly with:
 ```shell
 /a:new
 ```
+
+## 🌉 Port Forwarding with Linux
+
+If you're running MSSQLand on your Windows host but need to access a SQL Server target through a Linux environment (Hyper-V VM, VMware, or WSL), you can easily forward the connection using `socat`:
+
+```bash
+sudo socat TCP4-LISTEN:1433,fork,reuseaddr TCP:10.10.11.90:1433
+```
+
+This command listens on port 1433 on your Linux machine and forwards all traffic to the target SQL Server at `10.10.11.90:1433`. You can then connect MSSQLand to your Linux VM's IP from your Windows host.
