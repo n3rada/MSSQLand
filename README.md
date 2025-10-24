@@ -1,6 +1,6 @@
 # ✈️ MSSQLand
 
-Land gracefully in your target MSSQL DBMS, as if arriving on a business-class flight with a champagne glass in hand. 🥂
+Land gracefully in your target Microsoft SQL Server (MS SQL) DBMS, as if arriving on a business-class flight with a champagne glass in hand. 🥂
 
 <p align="center">
     <img width="350" src="/media/MSSQLand__icon-nobg.png" alt="MSSQLand Logo">
