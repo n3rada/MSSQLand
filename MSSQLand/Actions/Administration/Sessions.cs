@@ -14,8 +14,6 @@ namespace MSSQLand.Actions.Administration
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-
-            Logger.NewLine();
             Logger.Info("Active SQL Server sessions");
 
             string sessionsQuery = @"
