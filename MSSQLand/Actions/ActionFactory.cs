@@ -52,7 +52,7 @@ namespace MSSQLand.Utilities
             // EXECUTION ACTIONS (MSSQLand.Actions.Execution)
             // ═══════════════════════════════════════════════════════════════════════════════
             { "exec", (typeof(XpCmd), "Execute operating system commands using xp_cmdshell.") },
-            { "pwsh", (typeof(PowerShell), "Execute PowerShell commands or scripts.") },
+            { "pwsh", (typeof(PowerShell), "Execute PowerShell scripts via xp_cmdshell.") },
             { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a remote PowerShell script from a URL.") },
             { "ole", (typeof(ObjectLinkingEmbedding), "Execute operating system commands using OLE Automation Procedures.") },
             { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.") },
