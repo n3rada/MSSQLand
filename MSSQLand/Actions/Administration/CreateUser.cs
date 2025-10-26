@@ -87,62 +87,8 @@ namespace MSSQLand.Actions.Administration
 
             try
             {
-                // Combined query: check if login exists AND if role exists in one go
-                string validationQuery = $@"
-                    SELECT 
-                        (SELECT COUNT(*) FROM sys.server_principals WHERE name = '{_username.Replace("'", "''")}') AS LoginExists,
-                        (SELECT COUNT(*) FROM sys.server_principals WHERE type_desc = 'SERVER_ROLE' AND name = '{_role.Replace("'", "''")}') AS RoleExists;";
-                
-                var validationTable = databaseContext.QueryService.ExecuteTable(validationQuery);
-                
-                if (validationTable.Rows.Count == 0)
-                {
-                    Logger.Error("Failed to validate login and role existence.");
-                    return false;
-                }
-
-                int loginExists = Convert.ToInt32(validationTable.Rows[0]["LoginExists"]);
-                int roleExists = Convert.ToInt32(validationTable.Rows[0]["RoleExists"]);
-
-                // Check if role exists
-                if (roleExists == 0)
-                {
-                    Logger.Error($"Server role '{_role}' does not exist on this SQL Server instance.");
-                    Logger.Info("To see available server roles, use: SELECT name FROM sys.server_principals WHERE type_desc = 'SERVER_ROLE';");
-                    return false;
-                }
-
-                // Check if login already exists
-                if (loginExists > 0)
-                {
-                    Logger.Warning($"Login '{_username}' already exists.");
-                    Logger.Info($"Attempting to add {_role} role if not already assigned...");
-
-                    // Try to add specified role even if login exists
-                    string addRoleQuery = $"ALTER SERVER ROLE [{_role}] ADD MEMBER [{_username}];";
-                    
-                    try
-                    {
-                        databaseContext.QueryService.ExecuteNonProcessing(addRoleQuery);
-                        Logger.Success($"Added '{_username}' to {_role} role.");
-                    }
-                    catch (Exception ex)
-                    {
-                        if (ex.Message.Contains("already a member"))
-                        {
-                            Logger.Info($"'{_username}' is already a member of {_role} role.");
-                        }
-                        else
-                        {
-                            Logger.Error($"Failed to add {_role} role: {ex.Message}");
-                        }
-                    }
-
-                    return true;
-                }
-
                 // Create the SQL login
-                Logger.Info($"Creating SQL login '{_username}'...");
+                Logger.TaskNested($"Creating SQL login '{_username}'");
                 
                 // Escape single quotes in password
                 string escapedPassword = _password.Replace("'", "''");
@@ -157,15 +103,12 @@ namespace MSSQLand.Actions.Administration
                 Logger.Success($"SQL login '{_username}' created successfully.");
 
                 // Add the login to the specified server role
-                Logger.Info($"Adding '{_username}' to {_role} server role...");
+                Logger.TaskNested($"Adding '{_username}' to {_role} server role.");
                 
                 string addRoleToNewUserQuery = $"ALTER SERVER ROLE [{_role}] ADD MEMBER [{_username}];";
                 databaseContext.QueryService.ExecuteNonProcessing(addRoleToNewUserQuery);
                 
                 Logger.Success($"'{_username}' added to {_role} role successfully.");
-
-                Logger.NewLine();
-                Logger.Success($"SQL login created and configured:");
                 Console.WriteLine(MarkdownFormatter.ConvertDictionaryToMarkdownTable(
                     new System.Collections.Generic.Dictionary<string, string>
                     {
