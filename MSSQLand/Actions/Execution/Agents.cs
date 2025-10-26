@@ -113,8 +113,8 @@ namespace MSSQLand.Actions.Execution
 
             Logger.Info($"Creating and executing agent job with {_subSystem} subsystem...");
 
-            string jobName = $"MSSQLand_Job_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
-            string stepName = $"MSSQLand_Step_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+            string jobName = $"AZ_Job_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+            string stepName = $"AZ_Step_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
 
             try
             {
