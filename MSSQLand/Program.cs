@@ -127,8 +127,7 @@ namespace MSSQLand
             }
             catch (Exception ex)
             {
-                Logger.Error("An unhandled exception occurred.");
-                Logger.Error($"Message: {ex.Message}");
+                Logger.Error(ex.Message);
                 Logger.Debug($"Stack Trace: {ex.StackTrace}");
 
                 if (ex.InnerException != null)
