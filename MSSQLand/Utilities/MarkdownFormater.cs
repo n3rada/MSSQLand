@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Runtime.Remoting.Messaging;
 using System.Text;
 
 namespace MSSQLand.Utilities
@@ -13,6 +12,25 @@ namespace MSSQLand.Utilities
     /// </summary>
     internal static class MarkdownFormatter
     {
+        /// <summary>
+        /// Converts a byte array to a hexadecimal string representation.
+        /// </summary>
+        private static string ByteArrayToHexString(byte[] bytes)
+        {
+            if (bytes == null || bytes.Length == 0)
+            {
+                return "";
+            }
+
+            StringBuilder hex = new (bytes.Length * 2);
+            hex.Append("0x");
+            foreach (byte b in bytes)
+            {
+                hex.AppendFormat("{0:X2}", b);
+            }
+            return hex.ToString();
+        }
+
         /// <summary>
         /// Converts a dictionary into a Markdown-friendly table format.
         /// </summary>
@@ -88,7 +106,19 @@ namespace MSSQLand.Utilities
                     var row = new string[columnCount];
                     for (int i = 0; i < columnCount; i++)
                     {
-                        string cellValue = reader.GetValue(i)?.ToString() ?? "";
+                        object value = reader.GetValue(i);
+                        string cellValue;
+                        
+                        // Handle byte arrays specially
+                        if (value is byte[] byteArray)
+                        {
+                            cellValue = ByteArrayToHexString(byteArray);
+                        }
+                        else
+                        {
+                            cellValue = value?.ToString() ?? "";
+                        }
+                        
                         row[i] = cellValue;
                         columnWidths[i] = Math.Max(columnWidths[i], cellValue.Length);
                     }
@@ -183,7 +213,20 @@ namespace MSSQLand.Utilities
 
                 foreach (DataRow row in table.Rows)
                 {
-                    columnWidths[i] = Math.Max(columnWidths[i], row[i]?.ToString()?.Length ?? 0);
+                    object value = row[i];
+                    string cellValue;
+                    
+                    // Handle byte arrays specially
+                    if (value is byte[] byteArray)
+                    {
+                        cellValue = ByteArrayToHexString(byteArray);
+                    }
+                    else
+                    {
+                        cellValue = value?.ToString() ?? "";
+                    }
+                    
+                    columnWidths[i] = Math.Max(columnWidths[i], cellValue.Length);
                 }
             }
 
@@ -206,7 +249,20 @@ namespace MSSQLand.Utilities
             {
                 for (int i = 0; i < table.Columns.Count; i++)
                 {
-                    sqlStringBuilder.Append("| ").Append(row[i]?.ToString()?.PadRight(columnWidths[i]) ?? "").Append(" ");
+                    object value = row[i];
+                    string cellValue;
+                    
+                    // Handle byte arrays specially
+                    if (value is byte[] byteArray)
+                    {
+                        cellValue = ByteArrayToHexString(byteArray);
+                    }
+                    else
+                    {
+                        cellValue = value?.ToString() ?? "";
+                    }
+                    
+                    sqlStringBuilder.Append("| ").Append(cellValue.PadRight(columnWidths[i])).Append(" ");
                 }
                 sqlStringBuilder.AppendLine("|");
             }

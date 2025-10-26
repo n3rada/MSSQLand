@@ -1,8 +1,6 @@
 ﻿using MSSQLand.Utilities;
 using System;
 using MSSQLand.Models;
-using System.Data.SqlClient;
-
 
 namespace MSSQLand.Services
 {

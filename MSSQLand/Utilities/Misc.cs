@@ -10,6 +10,18 @@ namespace MSSQLand.Utilities
 {
     internal class Misc
     {
+        private static readonly Random _random = new Random();
+
+        /// <summary>
+        /// Generates a random number within the specified range (inclusive of min, exclusive of max).
+        /// </summary>
+        /// <param name="min">The inclusive lower bound of the random number.</param>
+        /// <param name="max">The exclusive upper bound of the random number.</param>
+        /// <returns>A random integer between min (inclusive) and max (exclusive).</returns>
+        public static int GetRandomNumber(int min, int max)
+        {
+            return _random.Next(min, max);
+        }
 
         /// <summary>
         /// Converts a nibble (4-bit value from 0 to 15) into its corresponding hexadecimal character.
