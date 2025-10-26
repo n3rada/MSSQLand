@@ -109,18 +109,6 @@ namespace MSSQLand.Actions.Administration
                 databaseContext.QueryService.ExecuteNonProcessing(addRoleToNewUserQuery);
                 
                 Logger.Success($"'{_username}' added to {_role} role successfully.");
-                Console.WriteLine(MarkdownFormatter.ConvertDictionaryToMarkdownTable(
-                    new System.Collections.Generic.Dictionary<string, string>
-                    {
-                        { "Username", _username },
-                        { "Password", _password },
-                        { "Server Role", _role },
-                        { "Check Policy", "OFF" },
-                        { "Check Expiration", "OFF" }
-                    },
-                    "Property",
-                    "Value"
-                ));
 
                 return true;
             }
