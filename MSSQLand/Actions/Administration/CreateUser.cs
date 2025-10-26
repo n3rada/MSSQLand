@@ -22,7 +22,6 @@ namespace MSSQLand.Actions.Administration
         {
             if (string.IsNullOrWhiteSpace(additionalArguments))
             {
-                Logger.Info($"Using default credentials: {_username} with role: {_role}");
                 return;
             }
 
@@ -84,7 +83,7 @@ namespace MSSQLand.Actions.Administration
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Creating SQL login: {_username} with {_role} role");
+            Logger.TaskNested($"Creating SQL login '{_username}' with '{_role}' role");
 
             try
             {
