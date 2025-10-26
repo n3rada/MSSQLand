@@ -113,7 +113,6 @@ namespace MSSQLand
                     Logger.InfoNested($"Mapped to the user {userName} ");
                 }
 
-                Logger.NewLine();
                 Logger.Task($"Executing action '{arguments.Action.GetName()}' against {databaseContext.QueryService.ExecutionServer}");
 
                 arguments.Action.Execute(databaseContext);
