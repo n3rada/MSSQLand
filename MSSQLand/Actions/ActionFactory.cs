@@ -73,7 +73,7 @@ namespace MSSQLand.Utilities
             { "linkmap", (typeof(LinkedServerExplorer), "Map all possible linked server chains and execution paths.") },
             { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.") },
             { "adsi", (typeof(AdsiCredentialExtractor), "Enumerate ADSI linked servers and extract stored credentials.") },
-            { "smbcoerce", (typeof(SmbCoerce), "Force SMB authentication to a specified UNC path to capture time limited Net-NTLMv2 challenge/response.") }
+            { "smbcoerce", (typeof(SmbCoerce), "Force SMB authentication to a specified UNC path to capture time-limited Net-NTLMv2 challenge/response.") }
         };
 
 
