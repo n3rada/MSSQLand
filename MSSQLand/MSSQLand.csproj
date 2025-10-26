@@ -75,6 +75,7 @@
     <Compile Include="Actions\Administration\CreateUser.cs" />
     <Compile Include="Actions\Administration\Kill.cs" />
     <Compile Include="Actions\Administration\Monitor.cs" />
+    <Compile Include="Actions\Administration\Sessions.cs" />
     <Compile Include="Actions\ArgumentMetadataAttribute.cs" />
     <Compile Include="Actions\Database\ExtendedProcs.cs" />
     <Compile Include="Actions\Database\RoleMembers.cs" />

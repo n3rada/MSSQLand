@@ -21,6 +21,7 @@ namespace MSSQLand.Utilities
             { "config", (typeof(Configure), "Enable or disable SQL Server configuration options using sp_configure.") },
             { "kill", (typeof(Kill), "Terminate SQL Server sessions by session ID or kill all running sessions.") },
             { "createuser", (typeof(CreateUser), "Create a SQL login with specified server role privileges (default: sysadmin).") },
+            { "sessions", (typeof(Sessions), "Display active SQL Server sessions with login and connection information.") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // DATABASE ACTIONS (MSSQLand.Actions.Database)
