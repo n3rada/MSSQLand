@@ -101,7 +101,7 @@
     <Compile Include="Actions\Database\Databases.cs" />
     <Compile Include="Actions\Database\Impersonation.cs" />
     <Compile Include="Actions\Database\Info.cs" />
-    <Compile Include="Actions\Database\Links.cs" />
+    <Compile Include="Actions\Network\Links.cs" />
     <Compile Include="Actions\Database\Permissions.cs" />
     <Compile Include="Actions\Database\Tables.cs" />
     <Compile Include="Actions\Database\Users.cs" />
