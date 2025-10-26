@@ -32,6 +32,7 @@ namespace MSSQLand.Utilities
             { "tables", (typeof(Tables), "List all tables in a specified database.") },
             { "rows", (typeof(Rows), "Retrieve and display rows from a specified table.") },
             { "procedures", (typeof(Procedures), "List, read, or execute stored procedures.") },
+            { "xprocs", (typeof(ExtendedProcs), "Enumerate available extended stored procedures on the server.") },
             { "users", (typeof(Users), "List all database users.") },
             { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).") },
             { "permissions", (typeof(Permissions), "Enumerate user and role permissions.") },
@@ -58,7 +59,6 @@ namespace MSSQLand.Utilities
             { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.") },
             { "agents", (typeof(Agents), "Manage and interact with SQL Server Agent jobs.") },
             { "oledb-providers", (typeof(OleDbProvidersInfo), "Retrieve information about installed OLE DB providers and their configurations.") },
-            { "xprocs", (typeof(ExtendedProcs), "Enumerate available extended stored procedures on the server.") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // FILESYSTEM ACTIONS (MSSQLand.Actions.FileSystem)
