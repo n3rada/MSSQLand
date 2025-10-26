@@ -40,6 +40,7 @@ namespace MSSQLand.Utilities
             { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.") },
             { "monitor", (typeof(Monitor), "Display currently running SQL commands and active sessions.") },
             { "query", (typeof(Query), "Execute a custom T-SQL query.") },
+            { "oledb-providers", (typeof(OleDbProvidersInfo), "Retrieve information about installed OLE DB providers and their configurations.") },
             { "queryall", (typeof(QueryAll), "Execute a custom T-SQL query across all databases using sp_MSforeachdb.") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
@@ -58,7 +59,6 @@ namespace MSSQLand.Utilities
             { "ole", (typeof(ObjectLinkingEmbedding), "Execute operating system commands using OLE Automation Procedures.") },
             { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.") },
             { "agents", (typeof(Agents), "Manage and interact with SQL Server Agent jobs.") },
-            { "oledb-providers", (typeof(OleDbProvidersInfo), "Retrieve information about installed OLE DB providers and their configurations.") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // FILESYSTEM ACTIONS (MSSQLand.Actions.FileSystem)
