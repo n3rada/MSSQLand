@@ -29,7 +29,7 @@ namespace MSSQLand.Utilities
             if (IsSilentModeEnabled) return 0;
 
             Console.ForegroundColor = ConsoleColor.DarkGray;
-
+            
             if (string.IsNullOrWhiteSpace(message))
             {
                 Console.WriteLine(new string(borderChar, 30)); // Default width for empty or null messages

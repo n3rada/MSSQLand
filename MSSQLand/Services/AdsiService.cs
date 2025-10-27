@@ -239,7 +239,6 @@ namespace MSSQLand.Services
         /// <summary>
         /// This function contains the .NET assembly for an LDAP server
         /// in SQL byte format, as well as the SHA-512 hash for the assembly.
-        /// The code can be found here: https://github.com/blackarrowsec/redteam-research/blob/master/MSSQL%20linked%20servers%20-%20ADSI/ldapServer.cs
         /// </summary>
         /// <returns></returns>
         private string[] GetLdapServerAssembly()

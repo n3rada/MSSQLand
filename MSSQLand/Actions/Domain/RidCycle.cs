@@ -218,7 +218,7 @@ namespace MSSQLand.Actions.Domain
                     else
                     {
                         // Standard markdown table output
-                        DataTable resultTable = new DataTable();
+                        DataTable resultTable = new();
                         resultTable.Columns.Add("RID", typeof(int));
                         resultTable.Columns.Add("Domain", typeof(string));
                         resultTable.Columns.Add("Username", typeof(string));
