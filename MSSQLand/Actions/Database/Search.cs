@@ -59,9 +59,11 @@ namespace MSSQLand.Actions.Database
         {
             List<string> databasesToSearch = new();
 
+            Logger.Task($"Lurking for '{_keyword}' accross accessible user tables only (excluding Microsoft system tables)");
+
             if (_allDatabases)
             {
-                Logger.Info("Searching across ALL accessible databases...");
+                Logger.TaskNested("Searching across ALL accessible databases");
                 // Get all accessible databases
                 DataTable accessibleDatabases = databaseContext.QueryService.ExecuteTable(
                     "SELECT name FROM sys.databases WHERE HAS_DBACCESS(name) = 1 AND state = 0 ORDER BY name;"
@@ -72,7 +74,7 @@ namespace MSSQLand.Actions.Database
                     databasesToSearch.Add(row["name"].ToString());
                 }
 
-                Logger.Info($"Found {databasesToSearch.Count} accessible databases to search.");
+                Logger.TaskNested($"Found {databasesToSearch.Count} accessible databases to search.");
             }
             else
             {
@@ -90,7 +92,6 @@ namespace MSSQLand.Actions.Database
 
             foreach (string dbName in databasesToSearch)
             {
-                Logger.NewLine();
                 Logger.TaskNested($"Searching database: {dbName}");
                 var (headerMatches, rowMatches, tablesSearched) = SearchDatabase(databaseContext, dbName);
                 totalHeaderMatches += headerMatches;
