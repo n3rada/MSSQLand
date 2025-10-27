@@ -55,7 +55,7 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             { "exec", (typeof(XpCmd), "Execute operating system commands using xp_cmdshell.") },
             { "pwsh", (typeof(PowerShell), "Execute PowerShell scripts via xp_cmdshell.") },
-            { "al", (typeof(RemotePowerShellExecutor), "Download and execute a remote PowerShell script from a URL.") },
+            { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a remote PowerShell script from a URL.") },
             { "ole", (typeof(ObjectLinkingEmbedding), "Execute operating system commands using OLE Automation Procedures.") },
             { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.") },
             { "agents", (typeof(Agents), "Manage and interact with SQL Server Agent jobs.") },
