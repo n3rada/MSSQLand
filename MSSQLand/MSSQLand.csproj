@@ -108,7 +108,7 @@
     <Compile Include="Actions\FileSystem\FileRead.cs" />
     <Compile Include="Actions\Execution\PowerShell.cs" />
     <Compile Include="Actions\Execution\RemotePowerShellExecutor.cs" />
-    <Compile Include="Actions\Administration\RemoteProcedureCall.cs" />
+    <Compile Include="Actions\Network\RemoteProcedureCall.cs" />
     <Compile Include="Actions\Database\Rows.cs" />
     <Compile Include="Actions\Execution\XpCmd.cs" />
     <Compile Include="Actions\Network\SmbCoerce.cs" />
