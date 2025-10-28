@@ -57,17 +57,23 @@
 - [pos:1] password (string, default: $ap3rlip0pe//e) [/p:, /password:] - SQL login password
 - [pos:2] role (string, default: sysadmin) [/r:, /role:] - Server role to assign
 
+#### `sessions`
+**Description:** Display active SQL Server sessions with login and connection information.
+
+**Arguments:** None
+
+#### `adsi`
+**Description:** Manage ADSI linked servers: list, create, or delete ADSI providers.
+
+**Arguments:**
+- [pos:0] operation (enum: Operation [list, create, delete], default: List) - Operation: list, create, or delete (default: list)
+- [pos:1] serverName (string) - Server name for create/delete operations (optional for create - generates random name if omitted)
+- [pos:2] dataSource (string, default: localhost) - Data source for the ADSI linked server (default: localhost)
+
 #### `monitor`
 **Description:** Display currently running SQL commands and active sessions.
 
 **Arguments:** None
-
-#### `rpc`
-**Description:** Enable or disable RPC (Remote Procedure Calls) on linked servers.
-
-**Arguments:**
-- [pos:0] action (enum: RpcActionMode [add, del], required) - Action: add or del
-- [pos:1] linkedServerName (string, required) - Linked server name
 
 ### Database Actions
 
@@ -106,6 +112,11 @@
 - [pos:1] procedureName (string) - Stored procedure name (required for exec/read)
 - [pos:2] procedureArgs (string) - Procedure arguments (optional for exec)
 
+#### `xprocs`
+**Description:** Enumerate available extended stored procedures on the server.
+
+**Arguments:** None
+
 #### `users`
 **Description:** List all database users.
 
@@ -137,16 +148,6 @@
 
 #### `oledb-providers`
 **Description:** Retrieve information about installed OLE DB providers and their configurations.
-
-**Arguments:** None
-
-#### `xprocs`
-**Description:** Enumerate available extended stored procedures on the server.
-
-**Arguments:** None
-
-#### `links`
-**Description:** Enumerate linked servers and their configuration.
 
 **Arguments:** None
 
@@ -190,7 +191,7 @@
 - [pos:0] command (string, required) - Operating system command to execute via xp_cmdshell
 
 #### `pwsh`
-**Description:** Execute PowerShell commands or scripts.
+**Description:** Execute PowerShell scripts via xp_cmdshell.
 
 **Arguments:**
 - [pos:0] script (string, required) - PowerShell script or command to execute
@@ -230,22 +231,53 @@
 **Arguments:**
 - [pos:0] filePath (string, required) - Full path to the file to read
 
+#### `tree`
+**Description:** Display directory tree structure in Linux tree-style format.
+
+**Arguments:**
+- [pos:0] path (string, required) - Directory path to display
+- [pos:1] depth (int, default: 3) [/d:, /depth:] - Directory depth to traverse (1-255)
+- [pos:2] showFiles (bool, default: True) [/f:, /files:] - Show files (1|0 or true|false)
+- [pos:3] useUnicode (bool, default: False) [/u:, /unicode:] - Use Unicode box-drawing characters instead of ASCII
+
 ### Network Actions
+
+#### `links`
+**Description:** Enumerate linked servers and their configuration.
+
+**Arguments:** None
 
 #### `linkmap`
 **Description:** Map all possible linked server chains and execution paths.
 
 **Arguments:** None
 
-#### `adsi`
-**Description:** Enumerate ADSI linked servers and extract stored credentials.
+#### `rpc`
+**Description:** Enable or disable RPC (Remote Procedure Calls) on linked servers.
 
 **Arguments:**
-- [pos:0] mode (enum: Mode [list, self, link], default: List) - Mode: list, self, or link (default: list)
-- [pos:1] targetServer (string) - Target SQL Server name (required for link mode)
+- [pos:0] action (enum: RpcActionMode [add, del], required) - Action: add or del
+- [pos:1] linkedServerName (string, required) - Linked server name
+
+#### `adsiquery`
+**Description:** Query Active Directory via ADSI using fully qualified domain name (auto-creates temp server if needed).
+
+**Arguments:**
+- [pos:0] adsiServerName (string) - ADSI server name (optional - creates temporary server if omitted)
+- [pos:1] ldapQuery (string) - LDAP query string or preset (users, computers, groups, admins, ou, all)
+- [pos:2] preset (string, default: users) - Quick query preset: users, computers, groups, admins, ou, or custom (default: users)
+- [pos:3] domainFqdn (string) - Fully qualified domain name (e.g., contoso.local) - required for presets
+- usingTempServer (bool, default: False)
+
+#### `adsicreds`
+**Description:** Extract credentials from ADSI linked servers by intercepting LDAP authentication.
+
+**Arguments:**
+- [pos:0] mode (enum: Mode [self, link], default: Self) - Mode: self (create temporary ADSI server) or link <server> (use existing ADSI server)
+- [pos:1] targetServer (string) - Target ADSI server name (required for link mode)
 
 #### `smbcoerce`
-**Description:** Force SMB authentication to a specified UNC path to capture time limited Net-NTLMv2 challenge/response.
+**Description:** Force SMB authentication to a specified UNC path to capture time-limited Net-NTLMv2 challenge/response.
 
 **Arguments:**
 - [pos:0] uncPath (string, required) - UNC path for SMB coercion (e.g., \\192.168.1.10\share)
