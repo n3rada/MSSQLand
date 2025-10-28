@@ -143,7 +143,6 @@ namespace MSSQLand.Actions.Administration
 
             if (success)
             {
-                Logger.NewLine();
                 Logger.Success($"ADSI linked server '{_serverName}' created successfully");
                 Logger.InfoNested($"Server name: {_serverName}");
                 Logger.InfoNested($"Data source: {_dataSource}");

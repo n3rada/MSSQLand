@@ -107,7 +107,6 @@ namespace MSSQLand.Services
             try
             {
                 _databaseContext.QueryService.ExecuteNonProcessing(query);
-                Logger.Success($"Linked ADSI server '{serverName}' created successfully");
                 return true;
             }
             catch (Exception ex)
