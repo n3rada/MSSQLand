@@ -66,6 +66,7 @@ namespace MSSQLand.Utilities
             // FILESYSTEM ACTIONS (MSSQLand.Actions.FileSystem)
             // ═══════════════════════════════════════════════════════════════════════════════
             { "read", (typeof(FileRead), "Read file contents from the server's file system.") },
+            { "tree", (typeof(Tree), "Display directory tree structure in Linux tree-style format.") },
 
             
             // ═══════════════════════════════════════════════════════════════════════════════
