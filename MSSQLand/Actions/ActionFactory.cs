@@ -74,6 +74,7 @@ namespace MSSQLand.Utilities
             { "links", (typeof(Links), "Enumerate linked servers and their configuration.") },
             { "linkmap", (typeof(LinkedServerExplorer), "Map all possible linked server chains and execution paths.") },
             { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.") },
+            { "adsiquery", (typeof(AdsiQuery), "Query Active Directory via ADSI using fully qualified domain name (auto-creates temp server if needed).") },
             { "adsicreds", (typeof(AdsiCredentialExtractor), "Extract credentials from ADSI linked servers by intercepting LDAP authentication.") },
             { "smbcoerce", (typeof(SmbCoerce), "Force SMB authentication to a specified UNC path to capture time-limited Net-NTLMv2 challenge/response.") }
         };
