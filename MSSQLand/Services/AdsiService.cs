@@ -1,7 +1,9 @@
 ﻿using MSSQLand.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace MSSQLand.Services
@@ -21,6 +23,36 @@ namespace MSSQLand.Services
         public AdsiService(DatabaseContext databaseContext)
         {
             _databaseContext = databaseContext;
+        }
+
+        /// <summary>
+        /// Lists all ADSI linked servers.
+        /// </summary>
+        /// <returns>A list of ADSI server names, or null if none found.</returns>
+        public List<string> ListAdsiServers()
+        {
+            string query = "SELECT srvname FROM master..sysservers WHERE srvproduct = 'ADSI'";
+            DataTable result = _databaseContext.QueryService.ExecuteTable(query);
+
+            if (result.Rows.Count == 0)
+            {
+                return null;
+            }
+
+            return result.AsEnumerable()
+                         .Select(row => row.Field<string>("srvname"))
+                         .ToList();
+        }
+
+        /// <summary>
+        /// Checks if an ADSI linked server exists.
+        /// </summary>
+        /// <param name="serverName">The name of the ADSI server to check.</param>
+        /// <returns>True if the server exists and is an ADSI provider; otherwise, false.</returns>
+        public bool AdsiServerExists(string serverName)
+        {
+            List<string> adsiServers = ListAdsiServers();
+            return adsiServers != null && adsiServers.Contains(serverName, StringComparer.OrdinalIgnoreCase);
         }
 
         public bool CheckLinkedServer(string linkedServerName)

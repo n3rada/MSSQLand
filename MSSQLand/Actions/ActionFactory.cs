@@ -22,6 +22,8 @@ namespace MSSQLand.Utilities
             { "kill", (typeof(Kill), "Terminate SQL Server sessions by session ID or kill all running sessions.") },
             { "createuser", (typeof(CreateUser), "Create a SQL login with specified server role privileges (default: sysadmin).") },
             { "sessions", (typeof(Sessions), "Display active SQL Server sessions with login and connection information.") },
+            { "adsi", (typeof(AdsiManager), "Manage ADSI linked servers: list, create, or delete ADSI providers.") },
+
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // DATABASE ACTIONS (MSSQLand.Actions.Database)
@@ -72,7 +74,7 @@ namespace MSSQLand.Utilities
             { "links", (typeof(Links), "Enumerate linked servers and their configuration.") },
             { "linkmap", (typeof(LinkedServerExplorer), "Map all possible linked server chains and execution paths.") },
             { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.") },
-            { "adsi", (typeof(AdsiCredentialExtractor), "Enumerate ADSI linked servers and extract stored credentials.") },
+            { "adsicreds", (typeof(AdsiCredentialExtractor), "Extract credentials from ADSI linked servers by intercepting LDAP authentication.") },
             { "smbcoerce", (typeof(SmbCoerce), "Force SMB authentication to a specified UNC path to capture time-limited Net-NTLMv2 challenge/response.") }
         };
 

