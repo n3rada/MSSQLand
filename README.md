@@ -140,7 +140,7 @@ Rather than let this work go to waste, I decided to develop MSSQLand, an OOP-dri
 
 ## ⚠️ Disclaimer
 
-**MSSQLand is provided strictly for defensive security research, education, and authorized penetration testing.** You must have **explicit written authorization** before running this software against any system you do not own.
+**This tool is provided strictly for defensive security research, education, and authorized penetration testing.** You must have **explicit written authorization** before running this software against any system you do not own.
 
 This tool is designed for educational purposes only and is intended to assist security professionals in understanding and testing the security of SQL Server environments in authorized engagements.
 
