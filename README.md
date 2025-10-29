@@ -8,6 +8,9 @@ Land gracefully in your target Microsoft SQL Server (MS SQL) DBMS, as if arrivin
 
 MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikipedia.org/wiki/Microsoft_SQL_Server) database management system (DBMS) during your red team activities. Designed **for constrained environments** where operations must be executed directly through your beacons, **using assembly execution** it allows you to pave your way across multiple linked servers and impersonate whoever you can along the way, emerging from the last hop with any desired action.
 
+> [!TIP]
+> If you need to connect using Kerberos ticket or NT/LM hashes, go with [mssqlclient-ng]([https://github.com/n3rada/MSSQLand](https://github.com/n3rada/mssqlclient-ng) the `Python3` version built with external access in mind. 
+
 ## 📃 Documentation
 
 MSSQLand is built using `.NET Framework 4.8`, with assembly execution in mind.
