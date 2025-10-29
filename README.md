@@ -6,7 +6,7 @@ Land gracefully in your target Microsoft SQL Server (MS SQL) DBMS, as if arrivin
     <img width="350" src="/media/MSSQLand__icon-nobg.png" alt="MSSQLand Logo">
 </p>
 
-MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikipedia.org/wiki/Microsoft_SQL_Server) database management system (DBMS) during your red team activities. Designed for constrained environments where operations must be executed directly through your beacons, it allows you to pave your way across multiple linked servers and impersonate whoever you can along the way, emerging from the last hop with any desired action.
+MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikipedia.org/wiki/Microsoft_SQL_Server) database management system (DBMS) during your red team activities. Designed **for constrained environments** where operations must be executed directly through your beacons, **using assembly execution** it allows you to pave your way across multiple linked servers and impersonate whoever you can along the way, emerging from the last hop with any desired action.
 
 ## 📃 Documentation
 
