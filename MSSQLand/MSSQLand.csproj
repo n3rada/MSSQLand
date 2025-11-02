@@ -71,6 +71,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Actions\ActionFactory.cs" />
+    <Compile Include="Actions\Administration\AdsiManager.cs" />
     <Compile Include="Actions\Administration\Configure.cs" />
     <Compile Include="Actions\Administration\CreateUser.cs" />
     <Compile Include="Actions\Administration\Kill.cs" />
@@ -93,7 +94,7 @@
     <Compile Include="Actions\Execution\Agents.cs" />
     <Compile Include="Actions\Execution\ObjectLinkingEmbedding.cs" />
     <Compile Include="Utilities\FindSQLServers.cs" />
-    <Compile Include="Actions\Network\AdsiCredentialExtractor.cs" />
+    <Compile Include="Actions\Network\AdsiQuery.cs" />
     <Compile Include="Services\ActiveDirectoryService.cs" />
     <Compile Include="Services\AdsiService.cs" />
     <Compile Include="Utilities\Helper.cs" />
@@ -106,6 +107,7 @@
     <Compile Include="Actions\Database\Tables.cs" />
     <Compile Include="Actions\Database\Users.cs" />
     <Compile Include="Actions\FileSystem\FileRead.cs" />
+    <Compile Include="Actions\FileSystem\Tree.cs" />
     <Compile Include="Actions\Execution\PowerShell.cs" />
     <Compile Include="Actions\Execution\RemotePowerShellExecutor.cs" />
     <Compile Include="Actions\Network\RemoteProcedureCall.cs" />
