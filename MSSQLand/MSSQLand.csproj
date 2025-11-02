@@ -94,6 +94,7 @@
     <Compile Include="Actions\Execution\Agents.cs" />
     <Compile Include="Actions\Execution\ObjectLinkingEmbedding.cs" />
     <Compile Include="Utilities\FindSQLServers.cs" />
+    <Compile Include="Actions\Network\AdsiCredentialExtractor.cs" />
     <Compile Include="Actions\Network\AdsiQuery.cs" />
     <Compile Include="Services\ActiveDirectoryService.cs" />
     <Compile Include="Services\AdsiService.cs" />
