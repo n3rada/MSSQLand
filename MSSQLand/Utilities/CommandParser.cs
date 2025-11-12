@@ -30,10 +30,17 @@ namespace MSSQLand.Utilities
             string actionType = null;
             string additionalArguments = "";
             bool actionFound = false; // Track if we've encountered the action argument
+            HashSet<int> processedIndices = new HashSet<int>(); // Track which args were already processed
 
             try {
-                foreach (var arg in args)
+                for (int i = 0; i < args.Length; i++)
                 {
+                    if (processedIndices.Contains(i))
+                    {
+                        continue; // Skip already processed arguments
+                    }
+
+                    var arg = args[i];
                     
                     if (arg.Contains("--"))
                     {
@@ -50,21 +57,22 @@ namespace MSSQLand.Utilities
                             Logger.IsSilentModeEnabled = true;
                             continue;
                         case "/help":
-                            // Check if next argument is a search term
-                            int helpIndex = Array.IndexOf(args, arg);
-                            if (helpIndex + 1 < args.Length && !args[helpIndex + 1].StartsWith("/"))
+                            // Check if next argument is a search term (not starting with /)
+                            if (i + 1 < args.Length && !args[i + 1].StartsWith("/"))
                             {
-                                string searchTerm = args[helpIndex + 1];
+                                string searchTerm = args[i + 1];
+                                processedIndices.Add(i + 1); // Mark search term as processed
                                 Helper.ShowFilteredHelp(searchTerm);
                                 return (ParseResultType.ShowHelp, null);
                             }
                             
                             // Check if next argument is an action specification
-                            if (helpIndex + 1 < args.Length && 
-                                (args[helpIndex + 1].StartsWith("/a:", StringComparison.OrdinalIgnoreCase) ||
-                                 args[helpIndex + 1].StartsWith("/action:", StringComparison.OrdinalIgnoreCase)))
+                            if (i + 1 < args.Length && 
+                                (args[i + 1].StartsWith("/a:", StringComparison.OrdinalIgnoreCase) ||
+                                 args[i + 1].StartsWith("/action:", StringComparison.OrdinalIgnoreCase)))
                             {
-                                string action = ExtractValue(args[helpIndex + 1], "/a:", "/action:");
+                                string action = ExtractValue(args[i + 1], "/a:", "/action:");
+                                processedIndices.Add(i + 1); // Mark action arg as processed
                                 Helper.ShowActionHelp(action);
                                 return (ParseResultType.ShowHelp, null);
                             }
@@ -80,11 +88,11 @@ namespace MSSQLand.Utilities
                             Logger.Info("FindSQLServers utility mode - no database connection required");
                             
                             // Get the domain argument (next argument after /findsql)
-                            string adDomain = args.Length > Array.IndexOf(args, arg) + 1 
-                                ? args[Array.IndexOf(args, arg) + 1] 
+                            string adDomain = i + 1 < args.Length
+                                ? args[i + 1] 
                                 : throw new ArgumentException("FindSQLServers requires a domain argument. Example: /findsql corp.com");
                             
-
+                            processedIndices.Add(i + 1); // Mark domain as processed
                             FindSQLServers.Execute(adDomain);
                             return (ParseResultType.UtilityMode, null);
                     }
@@ -112,24 +120,40 @@ namespace MSSQLand.Utilities
                         actionFound = true; // Mark that action has been found
                         
                         // Check if next argument is /help for action-specific help
-                        int actionIndex = Array.IndexOf(args, arg);
-                        if (actionIndex + 1 < args.Length && args[actionIndex + 1] == "/help")
+                        if (i + 1 < args.Length && args[i + 1] == "/help")
                         {
+                            processedIndices.Add(i + 1); // Mark /help as processed
                             Helper.ShowActionHelp(actionType);
                             return (ParseResultType.ShowHelp, null);
                         }
                     }
                     else if (arg.StartsWith("/port:", StringComparison.OrdinalIgnoreCase))
                     {
+                        if (port.HasValue)
+                        {
+                            Logger.Warning($"/port: specified multiple times. Using last value.");
+                        }
                         port = int.Parse(ExtractValue(arg, "/port:"));
                     }
                     else if (arg.StartsWith("/timeout:", StringComparison.OrdinalIgnoreCase))
                     {
+                        if (connectionTimeout.HasValue)
+                        {
+                            Logger.Warning($"/timeout: specified multiple times. Using last value.");
+                        }
                         connectionTimeout = int.Parse(ExtractValue(arg, "/timeout:"));
                     }
                     else if (arg.StartsWith("/db:", StringComparison.OrdinalIgnoreCase))
                     {
-                        parsedArgs.Host.Database = ExtractValue(arg, "/db:");
+                        if (parsedArgs.Host != null)
+                        {
+                            parsedArgs.Host.Database = ExtractValue(arg, "/db:");
+                        }
+                        else
+                        {
+                            // Store for later application when host is parsed
+                            additionalArguments += $"{arg}{CommandParser.AdditionalArgumentsSeparator}";
+                        }
                     }
                     else if (!actionFound && (arg.StartsWith("/u:", StringComparison.OrdinalIgnoreCase) ||
                              arg.StartsWith("/username:", StringComparison.OrdinalIgnoreCase)) && username == null)
@@ -165,6 +189,21 @@ namespace MSSQLand.Utilities
                 // Remove trailing pipe
                 parsedArgs.AdditionalArguments = Regex.Replace(additionalArguments, $"{Regex.Escape(CommandParser.AdditionalArgumentsSeparator)}$", "");
 
+                // Handle deferred /db: if it was in additionalArguments
+                if (parsedArgs.Host != null && parsedArgs.AdditionalArguments.Contains("/db:"))
+                {
+                    var dbMatch = Regex.Match(parsedArgs.AdditionalArguments, @"/db:([^/]+?)(?:/\|/|$)");
+                    if (dbMatch.Success)
+                    {
+                        parsedArgs.Host.Database = dbMatch.Groups[1].Value;
+                        // Remove /db: from additional arguments
+                        parsedArgs.AdditionalArguments = Regex.Replace(
+                            parsedArgs.AdditionalArguments, 
+                            @"/db:[^/]+?(?:/\|/)?", 
+                            ""
+                        ).Trim();
+                    }
+                }
 
                 if (parsedArgs.Host == null)
                 {
