@@ -142,15 +142,18 @@ namespace MSSQLand.Services
                     Logger.Warning("The targeted server is not configured for Remote Procedure Call (RPC)");
                     Logger.WarningNested("Trying again with OPENQUERY");
                     _linkedServers.UseRemoteProcedureCall = false;
-                    return Execute(query);
+                    return ExecuteWithHandling(query, executeReader, timeout, retryCount);
                 }
 
                 if (ex.Message.Contains("The metadata could not be determined"))
                 {
-                    Logger.Error("When you wrap a remote procedure in OPENQUERY, SQL Server wants a single, consistent set of columns.");
-                    Logger.ErrorNested("Since sp_configure does not provide that, the metadata parser chokes.");
-                    Logger.Info("Enable RPC OUT option to allow the use of sp_configure.");
-                    Logger.InfoNested($"/a:rpc add {ExecutionServer}");
+                    Logger.Warning("DDL statement detected - wrapping query to make it OPENQUERY-compatible");
+                    
+                    // Wrap the query to return a result set
+                    string wrappedQuery = $"BEGIN TRY {query.TrimEnd(';')} SELECT 'Success' AS Result END TRY BEGIN CATCH SELECT ERROR_MESSAGE() AS Result END CATCH";
+                    
+                    Logger.WarningNested("Retrying with wrapped query");
+                    return ExecuteWithHandling(wrappedQuery, executeReader, timeout, retryCount);
                 }
 
                 throw;
