@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Text;
 using System.Text.RegularExpressions;
 using MSSQLand.Actions;
 using MSSQLand.Models;
@@ -19,6 +20,11 @@ namespace MSSQLand.Utilities
         }
 
         public const string AdditionalArgumentsSeparator = "/|/";
+        
+        // Compiled regex patterns for better performance
+        private static readonly Regex TrailingSeparatorRegex = new Regex($"{Regex.Escape(AdditionalArgumentsSeparator)}$", RegexOptions.Compiled);
+        private static readonly Regex DbArgumentRegex = new Regex(@"/db:([^/]+?)(?:/\|/|$)", RegexOptions.Compiled);
+        private static readonly Regex DbRemovalRegex = new Regex(@"/db:[^/]+?(?:/\|/)?", RegexOptions.Compiled);
 
         public (ParseResultType, CommandArgs?) Parse(string[] args)
         {
@@ -28,7 +34,7 @@ namespace MSSQLand.Utilities
             int? port = null;
             int? connectionTimeout = null;
             string actionType = null;
-            string additionalArguments = "";
+            StringBuilder additionalArgumentsBuilder = new StringBuilder();
             bool actionFound = false; // Track if we've encountered the action argument
             HashSet<int> processedIndices = new HashSet<int>(); // Track which args were already processed
 
@@ -133,7 +139,12 @@ namespace MSSQLand.Utilities
                         {
                             Logger.Warning($"/port: specified multiple times. Using last value.");
                         }
-                        port = int.Parse(ExtractValue(arg, "/port:"));
+                        string portValue = ExtractValue(arg, "/port:");
+                        if (!int.TryParse(portValue, out int parsedPort) || parsedPort <= 0 || parsedPort > 65535)
+                        {
+                            throw new ArgumentException($"Invalid port number: {portValue}. Port must be between 1 and 65535.");
+                        }
+                        port = parsedPort;
                     }
                     else if (arg.StartsWith("/timeout:", StringComparison.OrdinalIgnoreCase))
                     {
@@ -141,7 +152,12 @@ namespace MSSQLand.Utilities
                         {
                             Logger.Warning($"/timeout: specified multiple times. Using last value.");
                         }
-                        connectionTimeout = int.Parse(ExtractValue(arg, "/timeout:"));
+                        string timeoutValue = ExtractValue(arg, "/timeout:");
+                        if (!int.TryParse(timeoutValue, out int parsedTimeout) || parsedTimeout <= 0)
+                        {
+                            throw new ArgumentException($"Invalid timeout value: {timeoutValue}. Timeout must be a positive integer (seconds).");
+                        }
+                        connectionTimeout = parsedTimeout;
                     }
                     else if (arg.StartsWith("/db:", StringComparison.OrdinalIgnoreCase))
                     {
@@ -152,7 +168,7 @@ namespace MSSQLand.Utilities
                         else
                         {
                             // Store for later application when host is parsed
-                            additionalArguments += $"{arg}{CommandParser.AdditionalArgumentsSeparator}";
+                            additionalArgumentsBuilder.Append(arg).Append(CommandParser.AdditionalArgumentsSeparator);
                         }
                     }
                     else if (!actionFound && (arg.StartsWith("/u:", StringComparison.OrdinalIgnoreCase) ||
@@ -176,32 +192,29 @@ namespace MSSQLand.Utilities
                     else if (!arg.StartsWith("/"))
                     {
                         // Positional argument (doesn't start with /)
-                        additionalArguments += $"{arg}{CommandParser.AdditionalArgumentsSeparator}";
+                        additionalArgumentsBuilder.Append(arg).Append(CommandParser.AdditionalArgumentsSeparator);
                     }
                     else
                     {
                         // Unknown argument starting with / OR arguments after action - pass to action
-                        additionalArguments += $"{arg}{CommandParser.AdditionalArgumentsSeparator}";
+                        additionalArgumentsBuilder.Append(arg).Append(CommandParser.AdditionalArgumentsSeparator);
                     }
 
                 }
 
-                // Remove trailing pipe
-                parsedArgs.AdditionalArguments = Regex.Replace(additionalArguments, $"{Regex.Escape(CommandParser.AdditionalArgumentsSeparator)}$", "");
+                // Remove trailing separator and convert to string
+                string additionalArguments = additionalArgumentsBuilder.ToString();
+                parsedArgs.AdditionalArguments = TrailingSeparatorRegex.Replace(additionalArguments, "");
 
                 // Handle deferred /db: if it was in additionalArguments
                 if (parsedArgs.Host != null && parsedArgs.AdditionalArguments.Contains("/db:"))
                 {
-                    var dbMatch = Regex.Match(parsedArgs.AdditionalArguments, @"/db:([^/]+?)(?:/\|/|$)");
+                    var dbMatch = DbArgumentRegex.Match(parsedArgs.AdditionalArguments);
                     if (dbMatch.Success)
                     {
                         parsedArgs.Host.Database = dbMatch.Groups[1].Value;
                         // Remove /db: from additional arguments
-                        parsedArgs.AdditionalArguments = Regex.Replace(
-                            parsedArgs.AdditionalArguments, 
-                            @"/db:[^/]+?(?:/\|/)?", 
-                            ""
-                        ).Trim();
+                        parsedArgs.AdditionalArguments = DbRemovalRegex.Replace(parsedArgs.AdditionalArguments, "").Trim();
                     }
                 }
 
