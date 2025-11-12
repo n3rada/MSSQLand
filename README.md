@@ -11,6 +11,28 @@ MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikiped
 > [!TIP]
 > If you need to connect using Kerberos ticket or NT/LM hashes, go with [mssqlclient-ng](https://github.com/n3rada/mssqlclient-ng) the `Python3` version built with external access in mind. 
 
+## 🚀 Quick Start
+
+```shell
+MSSQLand.exe /h:localhost /c:token /a:info
+```
+
+**Common options:**
+- `/port:1433` - Specify custom port (default: 1433, also common: 1434, 14333, 2433)
+- `/db:master` - Target database (default: master)
+- `/timeout:30` - Connection timeout in seconds (default: 15)
+- `/l:SERVER1:user1,SERVER2:user2` - Chain through linked servers
+
+**Example with options:**
+```shell
+MSSQLand.exe /h:192.168.1.10 /port:14333 /c:local /u:sa /p:password /a:info
+```
+
+**Getting help:**
+- `/help` - Show all available actions
+- `/help search_term` - Filter actions (e.g., `/help adsi` shows all ADSI-related actions)
+- `/help /a:createuser` - Show detailed help for a specific action
+
 ## 📃 Documentation
 
 MSSQLand is built using `.NET Framework 4.8`, with assembly execution in mind.
@@ -21,6 +43,7 @@ MSSQLand is built using `.NET Framework 4.8`, with assembly execution in mind.
 
 > [!IMPORTANT]
 > The action argument `/a:` must be the **last global argument**. Everything after `/a:` is treated as action-specific arguments. For example: `/h:localhost /c:token /a:createuser /p:p@ssword!` - here `/p:` belongs to the action, not the global arguments.
+
 
 ## 📸 Clean Output for Clean Reports
 
