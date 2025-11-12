@@ -69,7 +69,7 @@ namespace MSSQLand.Actions.Database
 
                 Logger.Info("Database access");
 
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable("SELECT name AS [Accessible Database] FROM sys.databases WHERE HAS_DBACCESS(name) = 1;")));
+                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable("SELECT name AS [Accessible Database] FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1;")));
 
                 return null;
             }

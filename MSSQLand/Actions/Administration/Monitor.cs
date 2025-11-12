@@ -32,9 +32,9 @@ namespace MSSQLand.Actions.Administration
                 t.text AS SQLText,
                 c.client_net_address AS ClientAddress,
                 c.connect_time AS ConnectionStart
-            FROM sys.dm_exec_requests r
-            CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t
-            LEFT JOIN sys.dm_exec_connections c
+            FROM master.sys.dm_exec_requests r
+            CROSS APPLY master.sys.dm_exec_sql_text(r.sql_handle) t
+            LEFT JOIN master.sys.dm_exec_connections c
                 ON r.session_id = c.session_id
             WHERE r.session_id != @@SPID
             ORDER BY r.start_time DESC;";

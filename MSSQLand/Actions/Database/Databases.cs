@@ -22,7 +22,7 @@ namespace MSSQLand.Actions.Database
 
             // Query for accessible databases
             DataTable accessibleDatabases = databaseContext.QueryService.ExecuteTable(
-                "SELECT name FROM sys.databases WHERE HAS_DBACCESS(name) = 1;"
+                "SELECT name FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1;"
             );
 
             // Query for trustworthy databases and owner information
@@ -31,7 +31,7 @@ namespace MSSQLand.Actions.Database
                     d.name, 
                     d.is_trustworthy_on,
                     SUSER_SNAME(d.owner_sid) AS owner_name
-                FROM sys.databases d;"
+                FROM master.sys.databases d;"
             );
 
             // Add columns for "Accessible", "Trustworthy", and "Owner"

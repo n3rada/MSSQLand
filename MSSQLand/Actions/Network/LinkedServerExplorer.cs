@@ -170,10 +170,10 @@ namespace MSSQLand.Actions.Network
             srv.name AS [Link], 
             COALESCE(prin.name, 'N/A') AS [Local Login],
             ll.remote_name AS [Remote Login]
-        FROM sys.servers srv
-        LEFT JOIN sys.linked_logins ll 
+        FROM master.sys.servers srv
+        LEFT JOIN master.sys.linked_logins ll 
             ON srv.server_id = ll.server_id
-        LEFT JOIN sys.server_principals prin 
+        LEFT JOIN master.sys.server_principals prin 
             ON ll.local_principal_id = prin.principal_id
         WHERE srv.is_linked = 1
         ORDER BY srv.name;";

@@ -18,7 +18,7 @@ namespace MSSQLand.Actions.Database
 
             // Query to obtain all SQL logins and Windows principals
             string query = @"SELECT name, type_desc, create_date, modify_date
-FROM sys.server_principals
+FROM master.sys.server_principals
 WHERE type_desc IN ('SQL_LOGIN', 'WINDOWS_LOGIN') AND name NOT LIKE '##%'
 ORDER BY create_date DESC;";
             

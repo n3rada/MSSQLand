@@ -21,8 +21,8 @@ namespace MSSQLand.Actions.Database
             // Fetch roles assigned to the current user
             var rolesTable = databaseContext.QueryService.ExecuteTable(
                 "SELECT sp.name AS RoleName " +
-                "FROM sys.server_principals sp " +
-                "INNER JOIN sys.server_role_members srm ON sp.principal_id = srm.role_principal_id " +
+                "FROM master.sys.server_principals sp " +
+                "INNER JOIN master.sys.server_role_members srm ON sp.principal_id = srm.role_principal_id " +
                 "WHERE srm.member_principal_id = SUSER_ID();"
             );
 
@@ -33,7 +33,7 @@ namespace MSSQLand.Actions.Database
 
             // Query for accessible databases
             DataTable accessibleDatabases = databaseContext.QueryService.ExecuteTable(
-                "SELECT name FROM sys.databases WHERE HAS_DBACCESS(name) = 1;"
+                "SELECT name FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1;"
             );
 
             var databaseNames = accessibleDatabases.AsEnumerable()

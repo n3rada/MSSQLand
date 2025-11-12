@@ -66,7 +66,7 @@ namespace MSSQLand.Actions.Database
                 Logger.TaskNested("Searching across ALL accessible databases");
                 // Get all accessible databases
                 DataTable accessibleDatabases = databaseContext.QueryService.ExecuteTable(
-                    "SELECT name FROM sys.databases WHERE HAS_DBACCESS(name) = 1 AND state = 0 ORDER BY name;"
+                    "SELECT name FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1 AND state = 0 ORDER BY name;"
                 );
 
                 foreach (DataRow row in accessibleDatabases.Rows)

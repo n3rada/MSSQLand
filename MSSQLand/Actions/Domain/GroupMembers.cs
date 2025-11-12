@@ -79,7 +79,7 @@ namespace MSSQLand.Actions.Domain
 
                 // Check if xp_logininfo is available
                 var xprocCheck = databaseContext.QueryService.ExecuteTable(
-                    "SELECT * FROM sys.all_objects WHERE name = 'xp_logininfo' AND type = 'X';"
+                    "SELECT * FROM master.sys.all_objects WHERE name = 'xp_logininfo' AND type = 'X';"
                 );
 
                 if (xprocCheck.Rows.Count == 0)

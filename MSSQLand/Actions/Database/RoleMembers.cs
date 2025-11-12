@@ -31,9 +31,9 @@ SELECT
     l.create_date AS CreateDate,
     l.modify_date AS ModifyDate,
     l.tenant_id AS TenantId
-FROM sys.server_role_members rm
-JOIN sys.server_principals r ON rm.role_principal_id = r.principal_id
-JOIN sys.server_principals l ON rm.member_principal_id = l.principal_id
+FROM master.sys.server_role_members rm
+JOIN master.sys.server_principals r ON rm.role_principal_id = r.principal_id
+JOIN master.sys.server_principals l ON rm.member_principal_id = l.principal_id
 WHERE r.name = '{_roleName}'
 ORDER BY l.create_date DESC;";
 

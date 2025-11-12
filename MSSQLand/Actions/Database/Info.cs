@@ -19,7 +19,7 @@ namespace MSSQLand.Actions.Database
             { "Server Name", "SELECT @@SERVERNAME;" },
             { "Default Domain", "SELECT DEFAULT_DOMAIN();" },
             { "Host Name", "SELECT CAST(SERVERPROPERTY('MachineName') AS NVARCHAR(256));" },
-            { "Operating System Version", "SELECT TOP(1) windows_release + ISNULL(' ' + windows_service_pack_level, '') FROM sys.dm_os_windows_info;" },
+            { "Operating System Version", "SELECT TOP(1) windows_release + ISNULL(' ' + windows_service_pack_level, '') FROM master.sys.dm_os_windows_info;" },
             { "SQL Service Process ID", "SELECT CAST(SERVERPROPERTY('ProcessId') AS INT);" },
             { "SQL Service Account", "SELECT CAST(SERVERPROPERTY('ServiceAccountName') AS NVARCHAR(256));" },
             { "Instance Name", "SELECT ISNULL(CAST(SERVERPROPERTY('InstanceName') AS NVARCHAR(256)), 'DEFAULT');" },

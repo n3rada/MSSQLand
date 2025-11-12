@@ -24,7 +24,7 @@ namespace MSSQLand.Actions.Administration
                 program_name,
                 client_interface_name,
                 login_name
-            FROM sys.dm_exec_sessions
+            FROM master.sys.dm_exec_sessions
             ORDER BY login_time DESC;";
 
             Console.WriteLine(MarkdownFormatter.ConvertSqlDataReaderToMarkdownTable(databaseContext.QueryService.Execute(sessionsQuery)));
