@@ -29,6 +29,7 @@ namespace MSSQLand.Utilities
             int? connectionTimeout = null;
             string actionType = null;
             string additionalArguments = "";
+            bool actionFound = false; // Track if we've encountered the action argument
 
             try {
                 foreach (var arg in args)
@@ -95,6 +96,7 @@ namespace MSSQLand.Utilities
                              arg.StartsWith("/action:", StringComparison.OrdinalIgnoreCase))
                     {
                         actionType = ExtractValue(arg, "/a:", "/action:");
+                        actionFound = true; // Mark that action has been found
                     }
                     else if (arg.StartsWith("/port:", StringComparison.OrdinalIgnoreCase))
                     {
@@ -108,22 +110,22 @@ namespace MSSQLand.Utilities
                     {
                         parsedArgs.Host.Database = ExtractValue(arg, "/db:");
                     }
-                    else if ((arg.StartsWith("/u:", StringComparison.OrdinalIgnoreCase) ||
+                    else if (!actionFound && (arg.StartsWith("/u:", StringComparison.OrdinalIgnoreCase) ||
                              arg.StartsWith("/username:", StringComparison.OrdinalIgnoreCase)) && username == null)
                     {
-                        // Only set global username if not already set (first occurrence)
+                        // Only set global username if action hasn't been found yet and not already set
                         username = ExtractValue(arg, "/u:", "/username:");
                     }
-                    else if ((arg.StartsWith("/p:", StringComparison.OrdinalIgnoreCase) ||
+                    else if (!actionFound && (arg.StartsWith("/p:", StringComparison.OrdinalIgnoreCase) ||
                              arg.StartsWith("/password:", StringComparison.OrdinalIgnoreCase)) && password == null)
                     {
-                        // Only set global password if not already set (first occurrence)
+                        // Only set global password if action hasn't been found yet and not already set
                         password = ExtractValue(arg, "/p:", "/password:");
                     }
-                    else if ((arg.StartsWith("/d:", StringComparison.OrdinalIgnoreCase) ||
+                    else if (!actionFound && (arg.StartsWith("/d:", StringComparison.OrdinalIgnoreCase) ||
                              arg.StartsWith("/domain:", StringComparison.OrdinalIgnoreCase)) && domain == null)
                     {
-                        // Only set global domain if not already set (first occurrence)
+                        // Only set global domain if action hasn't been found yet and not already set
                         domain = ExtractValue(arg, "/d:", "/domain:");
                     }
                     else if (!arg.StartsWith("/"))
@@ -133,8 +135,7 @@ namespace MSSQLand.Utilities
                     }
                     else
                     {
-                        // Unknown argument starting with / - could be an action-specific named argument
-                        // Pass it through to the action for validation
+                        // Unknown argument starting with / OR arguments after action - pass to action
                         additionalArguments += $"{arg}{CommandParser.AdditionalArgumentsSeparator}";
                     }
 
