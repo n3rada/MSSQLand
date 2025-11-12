@@ -225,14 +225,15 @@ namespace MSSQLand.Utilities
             argumentsTable.Columns.Add("Description", typeof(string));
 
             argumentsTable.Rows.Add("/findsql <domain>", "Find SQL Servers in Active Directory (no database connection needed).");
-            argumentsTable.Rows.Add("/h or /host", "Specify the target SQL Server (mandatory for actions).");
+            argumentsTable.Rows.Add("/h or /host", "Specify the target SQL Server hostname. Format: hostname:impersonationUser");
+            argumentsTable.Rows.Add("/port", "Specify the SQL Server port (default: 1433).");
             argumentsTable.Rows.Add("/c or /credentials", "Specify the credential type (mandatory for actions).");
             argumentsTable.Rows.Add("/u or /username", "Provide the username (if required by credential type).");
             argumentsTable.Rows.Add("/p or /password", "Provide the password (if required by credential type).");
             argumentsTable.Rows.Add("/d or /domain", "Provide the domain (if required by credential type).");
             argumentsTable.Rows.Add("/a or /action", "Specify the action to execute (mandatory for actions).");
-            argumentsTable.Rows.Add("/l or /links", "Specify linked server chain for multi-hop connections.");
-            argumentsTable.Rows.Add("/db", "Specify the target database (optional).");
+            argumentsTable.Rows.Add("/l or /links", "Specify linked server chain. Format: server1:user1,server2:user2,...");
+            argumentsTable.Rows.Add("/db", "Specify the target database (default: master).");
             argumentsTable.Rows.Add("/silent or /s", "Enable silent mode (minimal output).");
             argumentsTable.Rows.Add("/debug", "Enable debug mode for detailed logs.");
             argumentsTable.Rows.Add("/help", "Display this help message and exit.");
