@@ -107,6 +107,46 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
+        /// Displays help message filtered by a search term.
+        /// </summary>
+        /// <param name="searchTerm">The term to search for in actions, descriptions, and arguments.</param>
+        public static void ShowFilteredHelp(string searchTerm)
+        {
+            Console.WriteLine($"Searching for: '{searchTerm}'\n");
+
+            var actions = ActionFactory.GetAvailableActions();
+            var matchedActions = actions.Where(a =>
+                a.ActionName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                a.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (a.Arguments != null && a.Arguments.Any(arg => arg.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)))
+            ).ToList();
+
+            if (matchedActions.Count == 0)
+            {
+                Logger.Warning($"No actions found matching '{searchTerm}'");
+                Console.WriteLine("\nUse /help to see all available actions.");
+                return;
+            }
+
+            Console.WriteLine($"Found {matchedActions.Count} matching action(s):\n");
+
+            foreach (var (ActionName, Description, Arguments) in matchedActions)
+            {
+                Console.WriteLine($"{ActionName} - {Description}");
+
+                if (Arguments != null && Arguments.Any())
+                {
+                    foreach (var arg in Arguments)
+                    {
+                        Console.WriteLine($"  > {arg}");
+                    }
+                }
+
+                Console.WriteLine();
+            }
+        }
+
+        /// <summary>
         /// Displays the help message with available actions, credentials, and argument usage.
         /// </summary>
         public static void Show()
@@ -114,6 +154,7 @@ namespace MSSQLand.Utilities
 
             // Usage instruction
             Console.WriteLine("Usage: MSSQLand.exe /h:localhost /c:token /a:whoami\n");
+            Console.WriteLine("       MSSQLand.exe /help <searchterm>  - Filter actions by keyword\n");
 
             // Provide a quick reference of top-level arguments or usage
             Console.WriteLine("CLI arguments:");

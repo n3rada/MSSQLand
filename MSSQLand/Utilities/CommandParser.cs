@@ -56,6 +56,16 @@ namespace MSSQLand.Utilities
                                 Helper.ShowActionHelp(actionType);
                                 return (ParseResultType.ShowHelp, null);
                             }
+                            
+                            // Check if next argument is a search term
+                            int helpIndex = Array.IndexOf(args, arg);
+                            if (helpIndex + 1 < args.Length && !args[helpIndex + 1].StartsWith("/"))
+                            {
+                                string searchTerm = args[helpIndex + 1];
+                                Helper.ShowFilteredHelp(searchTerm);
+                                return (ParseResultType.ShowHelp, null);
+                            }
+                            
                             // Otherwise show general help
                             Helper.Show();
                             return (ParseResultType.ShowHelp, null);
