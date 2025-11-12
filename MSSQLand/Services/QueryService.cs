@@ -156,6 +156,17 @@ namespace MSSQLand.Services
                     return ExecuteWithHandling(wrappedQuery, executeReader, timeout, retryCount);
                 }
 
+                if (ex.Message.Contains("is not supported") && ex.Message.Contains("master.") && query.Contains("master."))
+                {
+                    Logger.Warning("Database prefix 'master.' not supported on remote server");
+                    Logger.WarningNested("Retrying without database prefix");
+                    
+                    // Remove all master. prefixes from the query
+                    string queryWithoutPrefix = query.Replace("master.", "");
+                    
+                    return ExecuteWithHandling(queryWithoutPrefix, executeReader, timeout, retryCount);
+                }
+
                 throw;
             }
         }
