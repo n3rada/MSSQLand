@@ -7,12 +7,20 @@ namespace MSSQLand.Services.Credentials
     public abstract class BaseCredentials
     {
 
-        private readonly int _connectTimeout = 15;
+        private int _connectTimeout = 15;
 
         /// <summary>
         /// Indicates whether the current authentication attempt was successful.
         /// </summary>
         public bool IsAuthenticated { get; protected set; } = false;
+
+        /// <summary>
+        /// Sets the connection timeout in seconds.
+        /// </summary>
+        public void SetConnectionTimeout(int timeout)
+        {
+            _connectTimeout = timeout;
+        }
 
         /// <summary>
         /// Abstract method to be implemented by derived classes for unique authentication logic.

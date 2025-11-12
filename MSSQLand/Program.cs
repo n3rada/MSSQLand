@@ -74,7 +74,8 @@ namespace MSSQLand
                     database: arguments.Host.Database,
                     username: arguments.Username,
                     password: arguments.Password,
-                    domain: arguments.Domain
+                    domain: arguments.Domain,
+                    connectionTimeout: arguments.ConnectionTimeout
                  ))
                 {
                     Logger.Error("Failed to authenticate with the provided credentials.");

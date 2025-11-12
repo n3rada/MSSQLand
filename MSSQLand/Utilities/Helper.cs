@@ -227,6 +227,7 @@ namespace MSSQLand.Utilities
             argumentsTable.Rows.Add("/findsql <domain>", "Find SQL Servers in Active Directory (no database connection needed).");
             argumentsTable.Rows.Add("/h or /host", "Specify the target SQL Server hostname. Format: hostname:impersonationUser");
             argumentsTable.Rows.Add("/port", "Specify the SQL Server port (default: 1433).");
+            argumentsTable.Rows.Add("/timeout", "Specify the connection timeout in seconds (default: 15).");
             argumentsTable.Rows.Add("/c or /credentials", "Specify the credential type (mandatory for actions).");
             argumentsTable.Rows.Add("/u or /username", "Provide the username (if required by credential type).");
             argumentsTable.Rows.Add("/p or /password", "Provide the password (if required by credential type).");

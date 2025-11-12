@@ -26,6 +26,7 @@ namespace MSSQLand.Utilities
 
             string username = null, password = null, domain = null;
             int? port = null;
+            int? connectionTimeout = null;
             string actionType = null;
             string additionalArguments = "";
 
@@ -99,6 +100,10 @@ namespace MSSQLand.Utilities
                     {
                         port = int.Parse(ExtractValue(arg, "/port:"));
                     }
+                    else if (arg.StartsWith("/timeout:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        connectionTimeout = int.Parse(ExtractValue(arg, "/timeout:"));
+                    }
                     else if (arg.StartsWith("/db:", StringComparison.OrdinalIgnoreCase))
                     {
                         parsedArgs.Host.Database = ExtractValue(arg, "/db:");
@@ -149,6 +154,11 @@ namespace MSSQLand.Utilities
                 if (port.HasValue)
                 {
                     parsedArgs.Host.Port = port.Value;
+                }
+
+                if (connectionTimeout.HasValue)
+                {
+                    parsedArgs.ConnectionTimeout = connectionTimeout.Value;
                 }
 
                 // Check if action was provided or is empty
@@ -224,6 +234,7 @@ namespace MSSQLand.Utilities
                     Logger.Debug("Parsed arguments");
                     Logger.DebugNested($"Credential Type: {parsedArgs.CredentialType}");
                     Logger.DebugNested($"Target: {parsedArgs.Host.Hostname}:{parsedArgs.Host.Port}");
+                    Logger.DebugNested($"Connection Timeout: {parsedArgs.ConnectionTimeout} seconds");
                     
                     if (!string.IsNullOrEmpty(parsedArgs.Host.Database))
                     {

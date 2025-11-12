@@ -47,5 +47,10 @@ namespace MSSQLand.Models
         /// </summary>
         public string Query { get; set; }
 
+        /// <summary>
+        /// The connection timeout in seconds (default: 15).
+        /// </summary>
+        public int ConnectionTimeout { get; set; } = 15;
+
     }
 }

@@ -17,6 +17,7 @@ namespace MSSQLand.Services
         private string _username;
         private string _password;
         private string _domain;
+        private int _connectionTimeout = 15;
 
         public AuthenticationService(Server server)
         {
@@ -32,13 +33,15 @@ namespace MSSQLand.Services
         /// <param name="username">The username (optional).</param>
         /// <param name="password">The password (optional).</param>
         /// <param name="domain">The domain for Windows authentication (optional).</param>
+        /// <param name="connectionTimeout">The connection timeout in seconds (default: 15).</param>
         public bool Authenticate(
             string credentialsType,
             string sqlServer,
             string database = "master",
             string username = null,
             string password = null,
-            string domain = null)
+            string domain = null,
+            int connectionTimeout = 15)
         {
             // Store authentication parameters
             _credentialsType = credentialsType;
@@ -47,9 +50,11 @@ namespace MSSQLand.Services
             _username = username;
             _password = password;
             _domain = domain;
+            _connectionTimeout = connectionTimeout;
 
             // Get the appropriate credentials service
             var credentials = CredentialsFactory.GetCredentials(credentialsType);
+            credentials.SetConnectionTimeout(connectionTimeout);
 
             // Use the credentials service to authenticate and establish the connection
             Connection = credentials.Authenticate(sqlServer, database, username, password, domain);
@@ -76,6 +81,7 @@ namespace MSSQLand.Services
             }
 
             var credentials = CredentialsFactory.GetCredentials(_credentialsType);
+            credentials.SetConnectionTimeout(_connectionTimeout);
             return credentials.Authenticate(_sqlServer, _database, _username, _password, _domain);
         }
 
@@ -86,7 +92,7 @@ namespace MSSQLand.Services
         public AuthenticationService Duplicate()
         {
             var duplicateService = new AuthenticationService(Server);
-            if (!duplicateService.Authenticate(_credentialsType, _sqlServer, _database, _username, _password, _domain))
+            if (!duplicateService.Authenticate(_credentialsType, _sqlServer, _database, _username, _password, _domain, _connectionTimeout))
             {
                 throw new InvalidOperationException("Failed to duplicate authentication service.");
             }
