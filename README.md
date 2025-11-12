@@ -19,6 +19,9 @@ MSSQLand is built using `.NET Framework 4.8`, with assembly execution in mind.
 - For an overview of the project structure, refer to [STRUCTURE.md](./STRUCTURE.md).
 - Learn how to add new actions in [DEVELOPERS.md](./DEVELOPERS.md).
 
+> [!IMPORTANT]
+> The action argument `/a:` must be the **last global argument**. Everything after `/a:` is treated as action-specific arguments. For example: `/h:localhost /c:token /a:createuser /p:p@ssword!` - here `/p:` belongs to the action, not the global arguments.
+
 ## 📸 Clean Output for Clean Reports
 
 The tool's output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for any of your reports (e.g., customer deliverable, internal report, red team assessments).
