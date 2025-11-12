@@ -88,8 +88,10 @@ namespace MSSQLand.Services
         /// </summary>
         /// <param name="query">The SQL query to execute.</param>
         /// <param name="executeReader">True to use ExecuteReader, false to use ExecuteNonQuery.</param>
+        /// <param name="timeout">Initial timeout in seconds.</param>
+        /// <param name="retryCount">Current retry attempt (for exponential backoff).</param>
         /// <returns>Result of ExecuteReader if executeReader is true; otherwise null.</returns>
-        private object ExecuteWithHandling(string query, bool executeReader)
+        private object ExecuteWithHandling(string query, bool executeReader, int timeout = 120, int retryCount = 0)
         {
             if (string.IsNullOrEmpty(query))
             {
@@ -102,7 +104,7 @@ namespace MSSQLand.Services
                 return null;
             }
 
-
+            const int maxRetries = 3;
             string finalQuery = PrepareQuery(query);
 
             try
@@ -111,7 +113,7 @@ namespace MSSQLand.Services
                 using var command = new SqlCommand(finalQuery, Connection)
                 {
                     CommandType = CommandType.Text,
-                    CommandTimeout = 20
+                    CommandTimeout = timeout
                 };
 
                 if (executeReader)
@@ -124,6 +126,12 @@ namespace MSSQLand.Services
                 {
                     return command.ExecuteNonQuery();
                 }
+            }
+            catch (SqlException ex) when (ex.Message.Contains("Timeout") && retryCount < maxRetries)
+            {
+                int newTimeout = timeout * 2; // Exponential backoff
+                Logger.Warning($"Query timed out after {timeout} seconds. Retrying with {newTimeout} seconds (attempt {retryCount + 1}/{maxRetries})");
+                return ExecuteWithHandling(query, executeReader, newTimeout, retryCount + 1);
             }
             catch (Exception ex)
             {
