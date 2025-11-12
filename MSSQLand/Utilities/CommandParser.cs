@@ -50,19 +50,22 @@ namespace MSSQLand.Utilities
                             Logger.IsSilentModeEnabled = true;
                             continue;
                         case "/help":
-                            // Check if this is action-specific help (action was already specified)
-                            if (!string.IsNullOrWhiteSpace(actionType))
-                            {
-                                Helper.ShowActionHelp(actionType);
-                                return (ParseResultType.ShowHelp, null);
-                            }
-                            
                             // Check if next argument is a search term
                             int helpIndex = Array.IndexOf(args, arg);
                             if (helpIndex + 1 < args.Length && !args[helpIndex + 1].StartsWith("/"))
                             {
                                 string searchTerm = args[helpIndex + 1];
                                 Helper.ShowFilteredHelp(searchTerm);
+                                return (ParseResultType.ShowHelp, null);
+                            }
+                            
+                            // Check if next argument is an action specification
+                            if (helpIndex + 1 < args.Length && 
+                                (args[helpIndex + 1].StartsWith("/a:", StringComparison.OrdinalIgnoreCase) ||
+                                 args[helpIndex + 1].StartsWith("/action:", StringComparison.OrdinalIgnoreCase)))
+                            {
+                                string action = ExtractValue(args[helpIndex + 1], "/a:", "/action:");
+                                Helper.ShowActionHelp(action);
                                 return (ParseResultType.ShowHelp, null);
                             }
                             
@@ -107,6 +110,14 @@ namespace MSSQLand.Utilities
                     {
                         actionType = ExtractValue(arg, "/a:", "/action:");
                         actionFound = true; // Mark that action has been found
+                        
+                        // Check if next argument is /help for action-specific help
+                        int actionIndex = Array.IndexOf(args, arg);
+                        if (actionIndex + 1 < args.Length && args[actionIndex + 1] == "/help")
+                        {
+                            Helper.ShowActionHelp(actionType);
+                            return (ParseResultType.ShowHelp, null);
+                        }
                     }
                     else if (arg.StartsWith("/port:", StringComparison.OrdinalIgnoreCase))
                     {

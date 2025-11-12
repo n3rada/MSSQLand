@@ -31,7 +31,7 @@ MSSQLand.exe /h:192.168.1.10 /port:14333 /c:local /u:sa /p:password /a:info
 **Getting help:**
 - `/help` - Show all available actions
 - `/help search_term` - Filter actions (e.g., `/help adsi` shows all ADSI-related actions)
-- `/help /a:createuser` - Show detailed help for a specific action
+- `/a:createuser /help` - Show detailed help for a specific action
 
 ## 📃 Documentation
 
