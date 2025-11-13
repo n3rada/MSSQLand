@@ -45,7 +45,7 @@ namespace MSSQLand.Actions.Domain
                 }
 
                 // Get group memberships using xp_logininfo
-                string query = $"EXEC xp_logininfo @acctname = '{systemUser}', @option = 'all';";
+                string query = $"EXEC master.dbo.xp_logininfo @acctname = '{systemUser}', @option = 'all';";
                 DataTable groupsTable = databaseContext.QueryService.ExecuteTable(query);
 
                 if (groupsTable == null || groupsTable.Rows.Count == 0)
