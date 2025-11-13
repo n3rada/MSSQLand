@@ -64,25 +64,49 @@ namespace MSSQLand.Services
         /// </summary>
         /// <param name="connection">An open SQL connection to use for the query.</param>
         /// <returns>A tuple containing the username and system user.</returns>
-        public (string Name, string SystemUser) GetInfo()
+        public (string MappedUser, string SystemUser) GetInfo()
         {
-            const string query = "SELECT USER_NAME() AS U, SYSTEM_USER AS S;";
+            string mappedUser = "Unknown";
+            string systemUser = "Unknown";
 
-            string name = "";
-            string loggedInUserName = "";
-
-            using var reader = _queryService.Execute(query);
-
-            if (reader.Read())
+            // Query USER_NAME() separately
+            // mapped database user
+            try
             {
-                name = reader["U"]?.ToString() ?? "Unknown";
-                loggedInUserName = reader["S"]?.ToString() ?? "Unknown";
+                const string userNameQuery = "SELECT USER_NAME();";
+                using var reader1 = _queryService.Execute(userNameQuery);
+                if (reader1.Read())
+                {
+                    mappedUser = reader1[0]?.ToString() ?? "Unknown";
+                    Logger.Debug($"USER_NAME() returned: {mappedUser}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Error retrieving USER_NAME(): {ex.Message}");
             }
 
-            MappedUser = name;
-            SystemUser = loggedInUserName;
+            // Query SYSTEM_USER separately
+            // login name
+            try
+            {
+                const string systemUserQuery = "SELECT SYSTEM_USER;";
+                using var reader2 = _queryService.Execute(systemUserQuery);
+                if (reader2.Read())
+                {
+                    systemUser = reader2[0]?.ToString() ?? "Unknown";
+                    Logger.Debug($"SYSTEM_USER returned: {systemUser}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Error retrieving SYSTEM_USER: {ex.Message}");
+            }
 
-            return (name, loggedInUserName);
+            MappedUser = mappedUser;
+            SystemUser = systemUser;
+
+            return (mappedUser, systemUser);
         }
 
         /// <summary>
