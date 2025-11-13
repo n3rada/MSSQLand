@@ -22,7 +22,6 @@ namespace MSSQLand.Actions.Domain
 
             try
             {
-                string userName = databaseContext.UserService.UserName;
                 string systemUser = databaseContext.UserService.SystemUser;
                 Logger.Info($"System User: {systemUser}");
 
@@ -63,7 +62,6 @@ namespace MSSQLand.Actions.Domain
                 // Create result dictionary
                 var result = new Dictionary<string, string>
                 {
-                    { "User Name", userName },
                     { "System User", systemUser },
                     { "User SID", AdSidString }
                 };
