@@ -23,14 +23,7 @@ namespace MSSQLand.Actions.Domain
             try
             {
                 // Get the current system user
-                (string userName, string systemUser) = databaseContext.UserService.GetInfo();
-
-                if (string.IsNullOrEmpty(systemUser))
-                {
-                    Logger.Error("Could not determine current system user.");
-                    return null;
-                }
-
+                string systemUser = databaseContext.UserService.SystemUser;
                 Logger.Info($"System User: {systemUser}");
 
                 // Get the user's SID using SUSER_SID()
