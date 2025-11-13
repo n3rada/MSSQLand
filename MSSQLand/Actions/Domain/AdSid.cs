@@ -22,7 +22,7 @@ namespace MSSQLand.Actions.Domain
 
             try
             {
-                // Get the current system user
+                string userName = databaseContext.UserService.UserName;
                 string systemUser = databaseContext.UserService.SystemUser;
                 Logger.Info($"System User: {systemUser}");
 
