@@ -110,6 +110,7 @@ namespace MSSQLand.Services
             if (Connection == null || Connection.State != ConnectionState.Open)
             {
                 return null;
+            }
 
             string finalQuery = PrepareQuery(query);
 
