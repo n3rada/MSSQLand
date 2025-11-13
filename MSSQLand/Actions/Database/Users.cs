@@ -19,74 +19,49 @@ namespace MSSQLand.Actions.Database
         {
             Logger.Info("Server principals with role memberships");
 
-            // Try comprehensive query first (requires VIEW ANY DEFINITION or VIEW SERVER STATE)
-            string comprehensiveQuery = @"
+            string query = @"
                 SELECT r.name AS Name, r.type_desc AS Type, r.is_disabled, r.create_date, r.modify_date,
-                       STUFF((
-                           SELECT ', ' + role.name
-                           FROM master.sys.server_role_members srm
-                           INNER JOIN master.sys.server_principals role ON srm.role_principal_id = role.principal_id
-                           WHERE srm.member_principal_id = r.principal_id
-                           FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS groups
+                       sl.sysadmin, sl.securityadmin, sl.serveradmin, sl.setupadmin, 
+                       sl.processadmin, sl.diskadmin, sl.dbcreator, sl.bulkadmin 
                 FROM master.sys.server_principals r 
+                LEFT JOIN master.sys.syslogins sl ON sl.sid = r.sid 
                 WHERE r.type IN ('G','U','E','S','X') AND r.name NOT LIKE '##%'
                 ORDER BY r.modify_date DESC;";
 
-            DataTable table;
-            
-            try
+            DataTable rawTable = databaseContext.QueryService.ExecuteTable(query);
+
+            // Post-process to create groups column from role flags
+            DataTable table = new DataTable();
+            table.Columns.Add("Name", typeof(string));
+            table.Columns.Add("Type", typeof(string));
+            table.Columns.Add("is_disabled", typeof(bool));
+            table.Columns.Add("create_date", typeof(DateTime));
+            table.Columns.Add("modify_date", typeof(DateTime));
+            table.Columns.Add("groups", typeof(string));
+
+            string[] roleColumns = { "sysadmin", "securityadmin", "serveradmin", "setupadmin", 
+                                    "processadmin", "diskadmin", "dbcreator", "bulkadmin" };
+
+            foreach (DataRow row in rawTable.Rows)
             {
-                table = databaseContext.QueryService.ExecuteTable(comprehensiveQuery);
-            }
-            catch
-            {
-                // Fallback to basic fixed server roles query (works with lower privileges)
-                Logger.Warning("Insufficient permissions for comprehensive role query, using basic fixed roles");
+                List<string> roles = new List<string>();
                 
-                string basicQuery = @"
-                    SELECT r.name AS Name, r.type_desc AS Type, r.is_disabled, r.create_date, r.modify_date,
-                           sl.sysadmin, sl.securityadmin, sl.serveradmin, sl.setupadmin, 
-                           sl.processadmin, sl.diskadmin, sl.dbcreator, sl.bulkadmin 
-                    FROM master.sys.server_principals r 
-                    LEFT JOIN master.sys.syslogins sl ON sl.sid = r.sid 
-                    WHERE r.type IN ('G','U','E','S','X') AND r.name NOT LIKE '##%'
-                    ORDER BY r.modify_date DESC;";
-
-                DataTable rawTable = databaseContext.QueryService.ExecuteTable(basicQuery);
-                
-                // Transform to groups format
-                table = new DataTable();
-                table.Columns.Add("Name", typeof(string));
-                table.Columns.Add("Type", typeof(string));
-                table.Columns.Add("is_disabled", typeof(bool));
-                table.Columns.Add("create_date", typeof(DateTime));
-                table.Columns.Add("modify_date", typeof(DateTime));
-                table.Columns.Add("groups", typeof(string));
-
-                string[] roleColumns = { "sysadmin", "securityadmin", "serveradmin", "setupadmin", 
-                                        "processadmin", "diskadmin", "dbcreator", "bulkadmin" };
-
-                foreach (DataRow row in rawTable.Rows)
+                foreach (string roleColumn in roleColumns)
                 {
-                    List<string> groups = new List<string>();
-                    
-                    foreach (string roleColumn in roleColumns)
+                    if (row[roleColumn] != DBNull.Value && Convert.ToBoolean(row[roleColumn]))
                     {
-                        if (row[roleColumn] != DBNull.Value && Convert.ToBoolean(row[roleColumn]))
-                        {
-                            groups.Add(roleColumn);
-                        }
+                        roles.Add(roleColumn);
                     }
-
-                    table.Rows.Add(
-                        row["Name"],
-                        row["Type"],
-                        row["is_disabled"],
-                        row["create_date"],
-                        row["modify_date"],
-                        string.Join(", ", groups)
-                    );
                 }
+
+                table.Rows.Add(
+                    row["Name"],
+                    row["Type"],
+                    row["is_disabled"],
+                    row["create_date"],
+                    row["modify_date"],
+                    string.Join(", ", roles)
+                );
             }
 
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(table));
