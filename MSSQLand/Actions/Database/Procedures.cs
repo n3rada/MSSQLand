@@ -100,7 +100,7 @@ namespace MSSQLand.Actions.Database
         private DataTable ListProcedures(DatabaseContext databaseContext)
         {
             Logger.NewLine();
-            Logger.Info("Retrieving all stored procedures in the database...");
+            Logger.Task("Retrieving all stored procedures in the database");
 
             string query = @"
                 SELECT 
@@ -121,6 +121,9 @@ namespace MSSQLand.Actions.Database
 
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(procedures));
 
+            Logger.NewLine();
+            Logger.Info($"Total: {procedures.Rows.Count} stored procedure(s) found");
+
             return procedures;
         }
 
@@ -129,7 +132,7 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private DataTable ExecuteProcedure(DatabaseContext databaseContext, string procedureName, string procedureArgs)
         {
-            Logger.Info($"Executing stored procedure: {procedureName}");
+            Logger.Task($"Executing stored procedure: {procedureName}");
 
             string query = $"EXEC {procedureName} {procedureArgs};";
 
@@ -138,8 +141,8 @@ namespace MSSQLand.Actions.Database
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
 
                 Logger.Success($"Stored procedure '{procedureName}' executed.");
+                Logger.NewLine();
                 Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(result));
-
                 return result;
             }
             catch (Exception ex)
@@ -155,7 +158,7 @@ namespace MSSQLand.Actions.Database
         private object? ReadProcedureDefinition(DatabaseContext databaseContext, string procedureName)
         {
             Logger.NewLine();
-            Logger.Info($"Retrieving definition of stored procedure: {procedureName}");
+            Logger.Task($"Retrieving definition of stored procedure: {procedureName}");
 
             string query = $@"
                 SELECT 
@@ -220,6 +223,9 @@ namespace MSSQLand.Actions.Database
                 Logger.Success($"Found {result.Rows.Count} stored procedure(s) containing '{keyword}'.");
                 Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(result));
 
+                Logger.NewLine();
+                Logger.Info($"Total: {result.Rows.Count} stored procedure(s) matching search criteria");
+
                 return result;
             }
             catch (Exception ex)
@@ -248,9 +254,12 @@ namespace MSSQLand.Actions.Database
                 INNER JOIN sys.objects AS o ON m.object_id = o.object_id
                 WHERE o.type = 'P' 
                 AND (
-                    (m.definition LIKE '%EXEC%(%@%' OR m.definition LIKE '%EXECUTE%(%@%')
-                    OR (m.definition LIKE '%sp_executesql%' AND m.definition LIKE '%@%')
-                    OR (m.definition LIKE '%+%@%+%' AND (m.definition LIKE '%EXEC%' OR m.definition LIKE '%EXECUTE%'))
+                    -- String concatenation with EXEC/EXECUTE (likely dynamic SQL)
+                    (m.definition LIKE '%+%@%' AND (m.definition LIKE '%EXEC(%' OR m.definition LIKE '%EXECUTE(%'))
+                    OR (m.definition LIKE '%EXEC %''%+%@%' OR m.definition LIKE '%EXECUTE %''%+%@%')
+                    OR (m.definition LIKE '%EXEC(@%' OR m.definition LIKE '%EXECUTE(@%')
+                    -- sp_executesql without proper parameterization indicators
+                    OR (m.definition LIKE '%sp_executesql%' AND m.definition LIKE '%+%@%')
                 )
                 ORDER BY o.modify_date DESC;";
 
@@ -273,29 +282,46 @@ namespace MSSQLand.Actions.Database
 
                 foreach (DataRow row in fullResult.Rows)
                 {
-                    string definition = row["definition"].ToString().ToUpper();
+                    string definition = row["definition"].ToString();
+                    string definitionUpper = definition.ToUpper();
                     string schemaName = row["schema_name"].ToString();
                     string procName = row["procedure_name"].ToString();
                     DateTime modifyDate = (DateTime)row["modify_date"];
 
                     string pattern = "";
 
-                    // Detect specific patterns
-                    if (definition.Contains("EXEC") && definition.Contains("+") && definition.Contains("@"))
+                    // More precise pattern detection
+                    // Pattern 1: EXEC('string' + @param) or EXEC 'string' + @param
+                    if ((definitionUpper.Contains("EXEC(") || definitionUpper.Contains("EXEC ")) && 
+                        definitionUpper.Contains("+") && definitionUpper.Contains("@") &&
+                        (definitionUpper.Contains("'") || definitionUpper.Contains("\"")))
                     {
-                        pattern = "Dynamic EXEC with string concatenation";
+                        // Exclude legitimate procedure calls like EXEC dbo.ProcName
+                        if (!System.Text.RegularExpressions.Regex.IsMatch(definition, @"EXEC\s+\[?[a-zA-Z_][\w]*\]?\.\[?[a-zA-Z_][\w]*\]?", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                        {
+                            pattern = "Dynamic EXEC with string concatenation (e.g., EXEC('SELECT * FROM ' + @table))";
+                        }
                     }
-                    else if (definition.Contains("EXECUTE") && definition.Contains("+") && definition.Contains("@"))
+                    // Pattern 2: EXECUTE('string' + @param) or EXECUTE 'string' + @param
+                    else if ((definitionUpper.Contains("EXECUTE(") || definitionUpper.Contains("EXECUTE ")) && 
+                             definitionUpper.Contains("+") && definitionUpper.Contains("@") &&
+                             (definitionUpper.Contains("'") || definitionUpper.Contains("\"")))
                     {
-                        pattern = "Dynamic EXECUTE with string concatenation";
+                        if (!System.Text.RegularExpressions.Regex.IsMatch(definition, @"EXECUTE\s+\[?[a-zA-Z_][\w]*\]?\.\[?[a-zA-Z_][\w]*\]?", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                        {
+                            pattern = "Dynamic EXECUTE with string concatenation (e.g., EXECUTE('UPDATE ' + @query))";
+                        }
                     }
-                    else if (definition.Contains("SP_EXECUTESQL") && definition.Contains("@"))
+                    // Pattern 3: EXEC(@variable) or EXECUTE(@variable) - executing variable content directly
+                    else if ((definitionUpper.Contains("EXEC(@") || definitionUpper.Contains("EXECUTE(@")) &&
+                             !definitionUpper.Contains("EXEC(@") && !definitionUpper.Contains("EXECUTE(@"))
                     {
-                        pattern = "sp_executesql with parameters (review for proper parameterization)";
+                        pattern = "Direct execution of variable (e.g., EXEC(@sql))";
                     }
-                    else if ((definition.Contains("EXEC(") || definition.Contains("EXECUTE(")) && definition.Contains("@"))
+                    // Pattern 4: sp_executesql with concatenation
+                    else if (definitionUpper.Contains("SP_EXECUTESQL") && definitionUpper.Contains("+") && definitionUpper.Contains("@"))
                     {
-                        pattern = "Direct EXEC() with parameter reference";
+                        pattern = "sp_executesql with string concatenation (may not be properly parameterized)";
                     }
 
                     if (!string.IsNullOrEmpty(pattern))
@@ -314,6 +340,7 @@ namespace MSSQLand.Actions.Database
                 Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(result));
 
                 Logger.NewLine();
+                Logger.Info($"Total: {result.Rows.Count} potentially vulnerable stored procedure(s) found");
                 Logger.Info("Review these procedures manually. Use '/a:procedures read <name>' to inspect the full definition.");
 
                 return result;
