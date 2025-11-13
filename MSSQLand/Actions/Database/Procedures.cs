@@ -7,9 +7,9 @@ namespace MSSQLand.Actions.Database
 {
     internal class Procedures : BaseAction
     {
-        private enum Mode { List, Exec, Read, Search }
+        private enum Mode { List, Exec, Read, Search, Sqli }
         
-        [ArgumentMetadata(Position = 0, Description = "Mode: list, exec, read, or search (default: list)")]
+        [ArgumentMetadata(Position = 0, Description = "Mode: list, exec, read, search, or sqli (default: list)")]
         private Mode _mode = Mode.List;
         
         [ArgumentMetadata(Position = 1, Description = "Stored procedure name (required for exec/read) or search keyword (required for search)")]
@@ -65,8 +65,12 @@ namespace MSSQLand.Actions.Database
                     _searchKeyword = parts[1];
                     break;
 
+                case "sqli":
+                    _mode = Mode.Sqli;
+                    break;
+
                 default:
-                    throw new ArgumentException("Invalid mode. Use 'list', 'exec <StoredProcedureName>', 'read <StoredProcedureName>', or 'search <keyword>'");
+                    throw new ArgumentException("Invalid mode. Use 'list', 'exec <StoredProcedureName>', 'read <StoredProcedureName>', 'search <keyword>', or 'sqli'");
             }
         }
 
@@ -82,6 +86,8 @@ namespace MSSQLand.Actions.Database
                     return ReadProcedureDefinition(databaseContext, _procedureName);
                 case Mode.Search:
                     return SearchProcedures(databaseContext, _searchKeyword);
+                case Mode.Sqli:
+                    return FindSqliVulnerable(databaseContext);
                 default:
                     Logger.Error("Unknown execution mode.");
                     return null;
@@ -219,6 +225,102 @@ namespace MSSQLand.Actions.Database
             catch (Exception ex)
             {
                 Logger.Error($"Error searching stored procedures: {ex.Message}");
+                return new DataTable();
+            }
+        }
+
+        /// <summary>
+        /// Finds stored procedures potentially vulnerable to SQL injection by detecting dynamic SQL execution with parameters.
+        /// </summary>
+        private DataTable FindSqliVulnerable(DatabaseContext databaseContext)
+        {
+            Logger.NewLine();
+            Logger.Info("Searching for stored procedures potentially vulnerable to SQL injection...");
+
+            string query = @"
+                SELECT 
+                    SCHEMA_NAME(o.schema_id) AS schema_name,
+                    o.name AS procedure_name,
+                    o.create_date,
+                    o.modify_date,
+                    m.definition
+                FROM sys.sql_modules AS m
+                INNER JOIN sys.objects AS o ON m.object_id = o.object_id
+                WHERE o.type = 'P' 
+                AND (
+                    (m.definition LIKE '%EXEC%(%@%' OR m.definition LIKE '%EXECUTE%(%@%')
+                    OR (m.definition LIKE '%sp_executesql%' AND m.definition LIKE '%@%')
+                    OR (m.definition LIKE '%+%@%+%' AND (m.definition LIKE '%EXEC%' OR m.definition LIKE '%EXECUTE%'))
+                )
+                ORDER BY o.modify_date DESC;";
+
+            try
+            {
+                DataTable fullResult = databaseContext.QueryService.ExecuteTable(query);
+
+                if (fullResult.Rows.Count == 0)
+                {
+                    Logger.Success("No potentially vulnerable stored procedures found.");
+                    return new DataTable();
+                }
+
+                // Create result table with vulnerability details
+                DataTable result = new();
+                result.Columns.Add("schema_name", typeof(string));
+                result.Columns.Add("procedure_name", typeof(string));
+                result.Columns.Add("vulnerability_pattern", typeof(string));
+                result.Columns.Add("modify_date", typeof(DateTime));
+
+                foreach (DataRow row in fullResult.Rows)
+                {
+                    string definition = row["definition"].ToString().ToUpper();
+                    string schemaName = row["schema_name"].ToString();
+                    string procName = row["procedure_name"].ToString();
+                    DateTime modifyDate = (DateTime)row["modify_date"];
+
+                    string pattern = "";
+
+                    // Detect specific patterns
+                    if (definition.Contains("EXEC") && definition.Contains("+") && definition.Contains("@"))
+                    {
+                        pattern = "Dynamic EXEC with string concatenation";
+                    }
+                    else if (definition.Contains("EXECUTE") && definition.Contains("+") && definition.Contains("@"))
+                    {
+                        pattern = "Dynamic EXECUTE with string concatenation";
+                    }
+                    else if (definition.Contains("SP_EXECUTESQL") && definition.Contains("@"))
+                    {
+                        pattern = "sp_executesql with parameters (review for proper parameterization)";
+                    }
+                    else if ((definition.Contains("EXEC(") || definition.Contains("EXECUTE(")) && definition.Contains("@"))
+                    {
+                        pattern = "Direct EXEC() with parameter reference";
+                    }
+
+                    if (!string.IsNullOrEmpty(pattern))
+                    {
+                        result.Rows.Add(schemaName, procName, pattern, modifyDate);
+                    }
+                }
+
+                if (result.Rows.Count == 0)
+                {
+                    Logger.Success("No high-risk SQL injection patterns found.");
+                    return result;
+                }
+
+                Logger.Warning($"Found {result.Rows.Count} stored procedure(s) with potential SQL injection vulnerabilities!");
+                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(result));
+
+                Logger.NewLine();
+                Logger.Info("Review these procedures manually. Use '/a:procedures read <name>' to inspect the full definition.");
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error searching for SQL injection vulnerabilities: {ex.Message}");
                 return new DataTable();
             }
         }
