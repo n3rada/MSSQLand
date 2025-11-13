@@ -330,91 +330,128 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private bool ContainsDynamicExecOutsideQuotes(string definition)
         {
-            bool inSingleQuote = false;
-            bool inDoubleQuote = false;
+            // Remove all string literals to simplify pattern matching
+            string cleanedDefinition = RemoveStringLiterals(definition);
             
-            for (int i = 0; i < definition.Length; i++)
+            // Pattern 1: EXEC( ... + @param ...) or EXECUTE( ... + @param ...)
+            if (System.Text.RegularExpressions.Regex.IsMatch(cleanedDefinition, 
+                @"EXEC(UTE)?\s*\([^)]*\+\s*@", 
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
             {
-                char c = definition[i];
-                
-                // Track quote boundaries (handle escaped quotes '')
-                if (c == '\'' && (i == 0 || definition[i - 1] != '\''))
-                {
-                    inSingleQuote = !inSingleQuote;
-                    continue;
-                }
-                else if (c == '"' && (i == 0 || definition[i - 1] != '\\'))
-                {
-                    inDoubleQuote = !inDoubleQuote;
-                    continue;
-                }
-                
-                // Skip if we're inside quotes
-                if (inSingleQuote || inDoubleQuote)
-                {
-                    continue;
-                }
-                
-                // Check for EXEC ( or EXECUTE ( outside quotes
-                if (i + 5 < definition.Length)
-                {
-                    string segment = definition.Substring(i, Math.Min(10, definition.Length - i)).ToUpper();
-                    
-                    // Match EXEC ( or EXECUTE ( with whitespace variations
-                    if (System.Text.RegularExpressions.Regex.IsMatch(segment, @"^EXEC(UTE)?\s*\("))
-                    {
-                        // Now check if there's concatenation with @ parameter in this EXEC statement
-                        int openParen = 1;
-                        int j = i + segment.IndexOf('(') + 1;
-                        
-                        while (j < definition.Length && openParen > 0)
-                        {
-                            if (definition[j] == '\'') 
-                            {
-                                // Skip string content inside EXEC()
-                                j++;
-                                while (j < definition.Length && definition[j] != '\'')
-                                {
-                                    if (definition[j] == '\\') j++; // Skip escaped chars
-                                    j++;
-                                }
-                            }
-                            else if (definition[j] == '(')
-                            {
-                                openParen++;
-                            }
-                            else if (definition[j] == ')')
-                            {
-                                openParen--;
-                            }
-                            else if (definition[j] == '+' && j + 1 < definition.Length)
-                            {
-                                // Found + operator, check if followed by @ (parameter reference)
-                                int k = j + 1;
-                                while (k < definition.Length && char.IsWhiteSpace(definition[k])) k++;
-                                
-                                if (k < definition.Length && definition[k] == '@')
-                                {
-                                    return true; // Found: EXEC( ... + @param )
-                                }
-                            }
-                            j++;
-                        }
-                    }
-                }
-                
-                // Check for EXEC(@var) or EXECUTE(@var) - direct variable execution
-                if (i + 6 < definition.Length)
-                {
-                    string segment = definition.Substring(i, Math.Min(15, definition.Length - i)).ToUpper();
-                    if (System.Text.RegularExpressions.Regex.IsMatch(segment, @"^EXEC(UTE)?\s*\(\s*@"))
-                    {
-                        return true;
-                    }
-                }
+                return true;
+            }
+            
+            // Pattern 2: EXEC( @param + ...) or EXECUTE( @param + ...)
+            if (System.Text.RegularExpressions.Regex.IsMatch(cleanedDefinition, 
+                @"EXEC(UTE)?\s*\(\s*@[^\s)]*\s*\+", 
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            {
+                return true;
+            }
+            
+            // Pattern 3: EXEC @variable or EXECUTE @variable (direct variable execution without parentheses)
+            if (System.Text.RegularExpressions.Regex.IsMatch(cleanedDefinition, 
+                @"EXEC(UTE)?\s+@[a-zA-Z_][\w]*\s*($|;|\s)", 
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            {
+                return true;
+            }
+            
+            // Pattern 4: EXEC(@variable) or EXECUTE(@variable) (direct variable execution with parentheses)
+            if (System.Text.RegularExpressions.Regex.IsMatch(cleanedDefinition, 
+                @"EXEC(UTE)?\s*\(\s*@[a-zA-Z_][\w]*\s*\)", 
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            {
+                return true;
+            }
+            
+            // Pattern 5: sp_executesql with concatenation
+            if (System.Text.RegularExpressions.Regex.IsMatch(cleanedDefinition, 
+                @"sp_executesql[^;]*\+\s*@", 
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            {
+                return true;
             }
             
             return false;
+        }
+        
+        /// <summary>
+        /// Removes string literals from SQL code to simplify pattern matching.
+        /// Handles SQL's '' escape sequence correctly.
+        /// </summary>
+        private string RemoveStringLiterals(string sql)
+        {
+            var result = new System.Text.StringBuilder();
+            int i = 0;
+            
+            while (i < sql.Length)
+            {
+                // Check for single-quoted string
+                if (sql[i] == '\'')
+                {
+                    i++; // Skip opening quote
+                    
+                    // Skip until closing quote, handling '' escape sequence
+                    while (i < sql.Length)
+                    {
+                        if (sql[i] == '\'')
+                        {
+                            // Check if it's an escaped quote ''
+                            if (i + 1 < sql.Length && sql[i + 1] == '\'')
+                            {
+                                i += 2; // Skip both quotes
+                            }
+                            else
+                            {
+                                i++; // Skip closing quote
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            i++;
+                        }
+                    }
+                }
+                // Check for double-quoted identifier (SQL Server supports this with QUOTED_IDENTIFIER ON)
+                else if (sql[i] == '"')
+                {
+                    result.Append(sql[i]); // Keep double quotes as they might be identifiers
+                    i++;
+                }
+                // Check for single-line comment --
+                else if (i + 1 < sql.Length && sql[i] == '-' && sql[i + 1] == '-')
+                {
+                    // Skip until end of line
+                    while (i < sql.Length && sql[i] != '\n' && sql[i] != '\r')
+                    {
+                        i++;
+                    }
+                }
+                // Check for multi-line comment /* */
+                else if (i + 1 < sql.Length && sql[i] == '/' && sql[i + 1] == '*')
+                {
+                    i += 2;
+                    // Skip until */
+                    while (i + 1 < sql.Length)
+                    {
+                        if (sql[i] == '*' && sql[i + 1] == '/')
+                        {
+                            i += 2;
+                            break;
+                        }
+                        i++;
+                    }
+                }
+                else
+                {
+                    result.Append(sql[i]);
+                    i++;
+                }
+            }
+            
+            return result.ToString();
         }
     }
 }
