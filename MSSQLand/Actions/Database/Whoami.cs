@@ -131,7 +131,7 @@ namespace MSSQLand.Actions.Database
                         // Add groups (not the user itself)
                         if (!string.IsNullOrEmpty(permissionPath) && 
                             !permissionPath.Equals(systemUser, StringComparison.OrdinalIgnoreCase) &&
-                            type?.Contains("group", StringComparison.OrdinalIgnoreCase) == true)
+                            type?.IndexOf("group", StringComparison.OrdinalIgnoreCase) >= 0)
                         {
                             groups.Add(permissionPath);
                         }
