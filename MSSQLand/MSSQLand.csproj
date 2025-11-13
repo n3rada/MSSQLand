@@ -83,7 +83,7 @@
     <Compile Include="Actions\Domain\AdGroups.cs" />
     <Compile Include="Actions\Domain\AdDomain.cs" />
     <Compile Include="Actions\Domain\AdSid.cs" />
-    <Compile Include="Actions\Domain\GroupMembers.cs" />
+    <Compile Include="Actions\Domain\AdMembers.cs" />
     <Compile Include="Actions\Domain\RidCycle.cs" />
     <Compile Include="Actions\Execution\QueryAll.cs" />
     <Compile Include="Actions\Network\LinkedServerExplorer.cs" />
