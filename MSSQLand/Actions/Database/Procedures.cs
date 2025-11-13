@@ -254,11 +254,13 @@ namespace MSSQLand.Actions.Database
                 INNER JOIN sys.objects AS o ON m.object_id = o.object_id
                 WHERE o.type = 'P' 
                 AND (
-                    -- String concatenation with EXEC/EXECUTE (likely dynamic SQL)
-                    (m.definition LIKE '%+%@%' AND (m.definition LIKE '%EXEC(%' OR m.definition LIKE '%EXECUTE(%'))
-                    OR (m.definition LIKE '%EXEC %''%+%@%' OR m.definition LIKE '%EXECUTE %''%+%@%')
-                    OR (m.definition LIKE '%EXEC(@%' OR m.definition LIKE '%EXECUTE(@%')
-                    -- sp_executesql without proper parameterization indicators
+                    -- EXEC with string concatenation using parameters
+                    (m.definition LIKE '%EXEC (%' AND m.definition LIKE '%+%@%')
+                    OR (m.definition LIKE '%EXECUTE (%' AND m.definition LIKE '%+%@%')
+                    -- Direct variable execution
+                    OR m.definition LIKE '%EXEC(@%'
+                    OR m.definition LIKE '%EXECUTE(@%'
+                    -- sp_executesql with concatenation
                     OR (m.definition LIKE '%sp_executesql%' AND m.definition LIKE '%+%@%')
                 )
                 ORDER BY o.modify_date DESC;";
@@ -277,56 +279,27 @@ namespace MSSQLand.Actions.Database
                 DataTable result = new();
                 result.Columns.Add("schema_name", typeof(string));
                 result.Columns.Add("procedure_name", typeof(string));
-                result.Columns.Add("vulnerability_pattern", typeof(string));
                 result.Columns.Add("modify_date", typeof(DateTime));
 
                 foreach (DataRow row in fullResult.Rows)
                 {
                     string definition = row["definition"].ToString();
-                    string definitionUpper = definition.ToUpper();
                     string schemaName = row["schema_name"].ToString();
                     string procName = row["procedure_name"].ToString();
                     DateTime modifyDate = (DateTime)row["modify_date"];
 
-                    string pattern = "";
+                    bool isVulnerable = false;
 
-                    // More precise pattern detection
-                    // Pattern 1: EXEC('string' + @param) or EXEC 'string' + @param
-                    if ((definitionUpper.Contains("EXEC(") || definitionUpper.Contains("EXEC ")) && 
-                        definitionUpper.Contains("+") && definitionUpper.Contains("@") &&
-                        (definitionUpper.Contains("'") || definitionUpper.Contains("\"")))
+                    // Check if EXEC/EXECUTE with concatenation is NOT inside quotes
+                    // Pattern: EXEC ('string' + @param) outside of quoted strings
+                    if (ContainsDynamicExecOutsideQuotes(definition))
                     {
-                        // Exclude legitimate procedure calls like EXEC dbo.ProcName
-                        if (!System.Text.RegularExpressions.Regex.IsMatch(definition, @"EXEC\s+\[?[a-zA-Z_][\w]*\]?\.\[?[a-zA-Z_][\w]*\]?", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
-                        {
-                            pattern = "Dynamic EXEC with string concatenation (e.g., EXEC('SELECT * FROM ' + @table))";
-                        }
-                    }
-                    // Pattern 2: EXECUTE('string' + @param) or EXECUTE 'string' + @param
-                    else if ((definitionUpper.Contains("EXECUTE(") || definitionUpper.Contains("EXECUTE ")) && 
-                             definitionUpper.Contains("+") && definitionUpper.Contains("@") &&
-                             (definitionUpper.Contains("'") || definitionUpper.Contains("\"")))
-                    {
-                        if (!System.Text.RegularExpressions.Regex.IsMatch(definition, @"EXECUTE\s+\[?[a-zA-Z_][\w]*\]?\.\[?[a-zA-Z_][\w]*\]?", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
-                        {
-                            pattern = "Dynamic EXECUTE with string concatenation (e.g., EXECUTE('UPDATE ' + @query))";
-                        }
-                    }
-                    // Pattern 3: EXEC(@variable) or EXECUTE(@variable) - executing variable content directly
-                    else if ((definitionUpper.Contains("EXEC(@") || definitionUpper.Contains("EXECUTE(@")) &&
-                             !definitionUpper.Contains("EXEC(@") && !definitionUpper.Contains("EXECUTE(@"))
-                    {
-                        pattern = "Direct execution of variable (e.g., EXEC(@sql))";
-                    }
-                    // Pattern 4: sp_executesql with concatenation
-                    else if (definitionUpper.Contains("SP_EXECUTESQL") && definitionUpper.Contains("+") && definitionUpper.Contains("@"))
-                    {
-                        pattern = "sp_executesql with string concatenation (may not be properly parameterized)";
+                        isVulnerable = true;
                     }
 
-                    if (!string.IsNullOrEmpty(pattern))
+                    if (isVulnerable)
                     {
-                        result.Rows.Add(schemaName, procName, pattern, modifyDate);
+                        result.Rows.Add(schemaName, procName, modifyDate);
                     }
                 }
 
@@ -350,6 +323,98 @@ namespace MSSQLand.Actions.Database
                 Logger.Error($"Error searching for SQL injection vulnerabilities: {ex.Message}");
                 return new DataTable();
             }
+        }
+
+        /// <summary>
+        /// Checks if a procedure contains dynamic EXEC/EXECUTE with string concatenation outside of quoted strings.
+        /// </summary>
+        private bool ContainsDynamicExecOutsideQuotes(string definition)
+        {
+            bool inSingleQuote = false;
+            bool inDoubleQuote = false;
+            
+            for (int i = 0; i < definition.Length; i++)
+            {
+                char c = definition[i];
+                
+                // Track quote boundaries (handle escaped quotes '')
+                if (c == '\'' && (i == 0 || definition[i - 1] != '\''))
+                {
+                    inSingleQuote = !inSingleQuote;
+                    continue;
+                }
+                else if (c == '"' && (i == 0 || definition[i - 1] != '\\'))
+                {
+                    inDoubleQuote = !inDoubleQuote;
+                    continue;
+                }
+                
+                // Skip if we're inside quotes
+                if (inSingleQuote || inDoubleQuote)
+                {
+                    continue;
+                }
+                
+                // Check for EXEC ( or EXECUTE ( outside quotes
+                if (i + 5 < definition.Length)
+                {
+                    string segment = definition.Substring(i, Math.Min(10, definition.Length - i)).ToUpper();
+                    
+                    // Match EXEC ( or EXECUTE ( with whitespace variations
+                    if (System.Text.RegularExpressions.Regex.IsMatch(segment, @"^EXEC(UTE)?\s*\("))
+                    {
+                        // Now check if there's concatenation with @ parameter in this EXEC statement
+                        int openParen = 1;
+                        int j = i + segment.IndexOf('(') + 1;
+                        
+                        while (j < definition.Length && openParen > 0)
+                        {
+                            if (definition[j] == '\'') 
+                            {
+                                // Skip string content inside EXEC()
+                                j++;
+                                while (j < definition.Length && definition[j] != '\'')
+                                {
+                                    if (definition[j] == '\\') j++; // Skip escaped chars
+                                    j++;
+                                }
+                            }
+                            else if (definition[j] == '(')
+                            {
+                                openParen++;
+                            }
+                            else if (definition[j] == ')')
+                            {
+                                openParen--;
+                            }
+                            else if (definition[j] == '+' && j + 1 < definition.Length)
+                            {
+                                // Found + operator, check if followed by @ (parameter reference)
+                                int k = j + 1;
+                                while (k < definition.Length && char.IsWhiteSpace(definition[k])) k++;
+                                
+                                if (k < definition.Length && definition[k] == '@')
+                                {
+                                    return true; // Found: EXEC( ... + @param )
+                                }
+                            }
+                            j++;
+                        }
+                    }
+                }
+                
+                // Check for EXEC(@var) or EXECUTE(@var) - direct variable execution
+                if (i + 6 < definition.Length)
+                {
+                    string segment = definition.Substring(i, Math.Min(15, definition.Length - i)).ToUpper();
+                    if (System.Text.RegularExpressions.Regex.IsMatch(segment, @"^EXEC(UTE)?\s*\(\s*@"))
+                    {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
         }
     }
 }
