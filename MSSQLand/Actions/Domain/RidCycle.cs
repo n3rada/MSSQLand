@@ -65,7 +65,7 @@ namespace MSSQLand.Actions.Domain
         {
             Logger.TaskNested($"Starting RID cycling (max RID: {_maxRid})");
             Logger.Info("Note: This enumerates domain objects (users and groups), not group membership.");
-            Logger.Info("Use 'groupmembers DOMAIN\\GroupName' to see members of a specific group.");
+            Logger.Info("Use 'ADGroupMembers DOMAIN\\GroupName' to see members of a specific group.");
             Logger.NewLine();
             
             var results = new List<Dictionary<string, object>>();

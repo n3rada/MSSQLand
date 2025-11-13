@@ -81,7 +81,7 @@
     <Compile Include="Actions\Database\ExtendedProcs.cs" />
     <Compile Include="Actions\Database\RoleMembers.cs" />
     <Compile Include="Actions\Domain\DomainSid.cs" />
-    <Compile Include="Actions\Domain\GroupMembers.cs" />
+    <Compile Include="Actions\Domain\ADGroupMembers.cs" />
     <Compile Include="Actions\Domain\RidCycle.cs" />
     <Compile Include="Actions\Execution\QueryAll.cs" />
     <Compile Include="Actions\Network\LinkedServerExplorer.cs" />
