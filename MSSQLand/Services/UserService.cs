@@ -66,47 +66,20 @@ namespace MSSQLand.Services
         /// <returns>A tuple containing the username and system user.</returns>
         public (string MappedUser, string SystemUser) GetInfo()
         {
-            string mappedUser = "Unknown";
-            string systemUser = "Unknown";
+            const string query = "SELECT USER_NAME() AS U, SYSTEM_USER AS S;";
 
-            // Query USER_NAME() separately
-            // mapped database user
-            try
+            string MappedUser = "";
+            string SystemUser = "";
+
+            using var reader = _queryService.Execute(query);
+
+            if (reader.Read())
             {
-                const string userNameQuery = "SELECT USER_NAME();";
-                using var reader1 = _queryService.Execute(userNameQuery);
-                if (reader1.Read())
-                {
-                    mappedUser = reader1[0]?.ToString() ?? "Unknown";
-                    Logger.Debug($"USER_NAME() returned: {mappedUser}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Warning($"Error retrieving USER_NAME(): {ex.Message}");
+                MappedUser = reader["U"]?.ToString() ?? "Unknown";
+                SystemUser = reader["S"]?.ToString() ?? "Unknown";
             }
 
-            // Query SYSTEM_USER separately
-            // login name
-            try
-            {
-                const string systemUserQuery = "SELECT SYSTEM_USER;";
-                using var reader2 = _queryService.Execute(systemUserQuery);
-                if (reader2.Read())
-                {
-                    systemUser = reader2[0]?.ToString() ?? "Unknown";
-                    Logger.Debug($"SYSTEM_USER returned: {systemUser}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Warning($"Error retrieving SYSTEM_USER: {ex.Message}");
-            }
-
-            MappedUser = mappedUser;
-            SystemUser = systemUser;
-
-            return (mappedUser, systemUser);
+            return (MappedUser, SystemUser);
         }
 
         /// <summary>
