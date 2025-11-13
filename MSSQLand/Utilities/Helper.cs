@@ -68,7 +68,7 @@ namespace MSSQLand.Utilities
                 markdownContent.AppendLine($"### {category} Actions");
                 markdownContent.AppendLine();
 
-                foreach (var (ActionName, Description, Arguments) in groupedActions[category])
+                foreach ((string ActionName, string Description, List<string> Arguments) in groupedActions[category])
                 {
                     markdownContent.AppendLine($"#### `{ActionName}`");
                     markdownContent.AppendLine($"**Description:** {Description}");
@@ -116,9 +116,9 @@ namespace MSSQLand.Utilities
 
             var actions = ActionFactory.GetAvailableActions();
             var matchedActions = actions.Where(a =>
-                a.ActionName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                a.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                (a.Arguments != null && a.Arguments.Any(arg => arg.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)))
+                a.ActionName.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                a.Description.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                (a.Arguments != null && a.Arguments.Any(arg => arg.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0))
             ).ToList();
 
             if (matchedActions.Count == 0)
@@ -130,7 +130,7 @@ namespace MSSQLand.Utilities
 
             Console.WriteLine($"Found {matchedActions.Count} matching action(s):\n");
 
-            foreach (var (ActionName, Description, Arguments) in matchedActions)
+            foreach ((string ActionName, string Description, List<string> Arguments) in matchedActions)
             {
                 Console.WriteLine($"{ActionName} - {Description}");
 
@@ -172,7 +172,7 @@ namespace MSSQLand.Utilities
 
             var actions = ActionFactory.GetAvailableActions();
 
-            foreach (var (ActionName, Description, Arguments) in actions)
+            foreach ((string ActionName, string Description, List<string> Arguments) in actions)
             {
                 // Print the main line: "actionName - description"
                 Console.WriteLine($"{ActionName} - {Description}");
