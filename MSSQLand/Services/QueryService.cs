@@ -13,6 +13,8 @@ namespace MSSQLand.Services
         public string ExecutionServer { get; set; }
 
         private LinkedServers _linkedServers = new();
+        
+        private const int MAX_RETRIES = 3;
 
 
         /// <summary>
@@ -98,13 +100,17 @@ namespace MSSQLand.Services
                 throw new ArgumentException("Query cannot be null or empty.", nameof(query));
             }
 
-            if (Connection == null || Connection.State != ConnectionState.Open)
+            // Check if we've exceeded max retries
+            if (retryCount > MAX_RETRIES)
             {
-                Logger.Error("Database connection is not initialized or not open.");
+                Logger.Error($"Maximum retry attempts ({MAX_RETRIES}) exceeded. Aborting query execution.");
                 return null;
             }
+            
+            if (Connection == null || Connection.State != ConnectionState.Open)
+            {
+                return null;
 
-            const int maxRetries = 3;
             string finalQuery = PrepareQuery(query);
 
             try
@@ -127,10 +133,10 @@ namespace MSSQLand.Services
                     return command.ExecuteNonQuery();
                 }
             }
-            catch (SqlException ex) when (ex.Message.Contains("Timeout") && retryCount < maxRetries)
+            catch (SqlException ex) when (ex.Message.Contains("Timeout"))
             {
                 int newTimeout = timeout * 2; // Exponential backoff
-                Logger.Warning($"Query timed out after {timeout} seconds. Retrying with {newTimeout} seconds (attempt {retryCount + 1}/{maxRetries})");
+                Logger.Warning($"Query timed out after {timeout} seconds. Retrying with {newTimeout} seconds (attempt {retryCount + 1}/{MAX_RETRIES})");
                 return ExecuteWithHandling(query, executeReader, newTimeout, retryCount + 1);
             }
             catch (Exception ex)
@@ -142,18 +148,18 @@ namespace MSSQLand.Services
                     Logger.Warning("The targeted server is not configured for Remote Procedure Call (RPC)");
                     Logger.WarningNested("Trying again with OPENQUERY");
                     _linkedServers.UseRemoteProcedureCall = false;
-                    return ExecuteWithHandling(query, executeReader, timeout, retryCount);
+                    return ExecuteWithHandling(query, executeReader, timeout, MAX_RETRIES - 1);
                 }
 
                 if (ex.Message.Contains("The metadata could not be determined"))
                 {
                     Logger.Warning("DDL statement detected - wrapping query to make it OPENQUERY-compatible");
                     
-                    // Wrap the query to return a result set
-                    string wrappedQuery = $"BEGIN TRY {query.TrimEnd(';')} SELECT 'Success' AS Result END TRY BEGIN CATCH SELECT ERROR_MESSAGE() AS Result END CATCH";
+                    // Wrap the query to return a result set - use EXEC to avoid metadata issues
+                    string wrappedQuery = $"DECLARE @result NVARCHAR(MAX); BEGIN TRY {query.TrimEnd(';')}; SET @result = 'Success'; END TRY BEGIN CATCH SET @result = ERROR_MESSAGE(); END CATCH; SELECT @result AS Result;";
                     
                     Logger.WarningNested("Retrying with wrapped query");
-                    return ExecuteWithHandling(wrappedQuery, executeReader, timeout, retryCount);
+                    return ExecuteWithHandling(wrappedQuery, executeReader, timeout, MAX_RETRIES - 1);
                 }
 
                 if (ex.Message.Contains("is not supported") && ex.Message.Contains("master.") && query.Contains("master."))
@@ -164,7 +170,7 @@ namespace MSSQLand.Services
                     // Remove all master. prefixes from the query
                     string queryWithoutPrefix = query.Replace("master.", "");
                     
-                    return ExecuteWithHandling(queryWithoutPrefix, executeReader, timeout, retryCount);
+                    return ExecuteWithHandling(queryWithoutPrefix, executeReader, timeout, MAX_RETRIES - 1);
                 }
 
                 throw;
