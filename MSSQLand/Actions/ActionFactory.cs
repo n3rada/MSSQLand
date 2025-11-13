@@ -49,9 +49,11 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             // DOMAIN ACTIONS (MSSQLand.Actions.Domain)
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "domsid", (typeof(DomainSid), "Retrieve the domain SID using DEFAULT_DOMAIN() and SUSER_SID().") },
+            { "ad-domain", (typeof(AdDomain), "Retrieve the domain SID using DEFAULT_DOMAIN() and SUSER_SID().") },
+            { "ad-sid", (typeof(AdSid), "Retrieve the current user's SID using SUSER_SID().") },
+            { "ad-groups", (typeof(AdGroups), "Retrieve Active Directory group memberships for the current user using xp_logininfo.") },
             { "ridcycle", (typeof(RidCycle), "Enumerate domain users by RID cycling using SUSER_SNAME().") },
-            { "domgroupmembers", (typeof(DomGroupMembers), "Retrieve members of an Active Directory group (e.g., DOMAIN\\Domain Admins).") },
+            { "ad-members", (typeof(AdMembers), "Retrieve members of an Active Directory group (e.g., DOMAIN\\Domain Admins).") },
             
             // ═══════════════════════════════════════════════════════════════════════════════
             // EXECUTION ACTIONS (MSSQLand.Actions.Execution)

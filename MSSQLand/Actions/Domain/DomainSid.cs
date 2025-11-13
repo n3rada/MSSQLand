@@ -9,7 +9,7 @@ namespace MSSQLand.Actions.Domain
     /// <summary>
     /// Retrieves the domain SID using SUSER_SID and DEFAULT_DOMAIN functions.
     /// </summary>
-    internal class DomainSid : BaseAction
+    internal class AdDomain : BaseAction
     {
         public override void ValidateArguments(string additionalArguments)
         {
@@ -42,53 +42,22 @@ namespace MSSQLand.Actions.Domain
                 }
 
                 // Parse the binary SID
-                string domainSidString;
-                string domainSidPrefix;
-                object rawSidObj = dtSid.Rows[0][0];
-
-                if (rawSidObj is byte[] sidBytes)
+                string AdDomainString = SidParser.ParseSid(rawSidObj);
+                
+                if (string.IsNullOrEmpty(AdDomainString))
                 {
-                    // Convert binary SID to S-1-... format
-                    var sid = new SecurityIdentifier(sidBytes, 0);
-                    domainSidString = sid.Value;
-                }
-                else
-                {
-                    // Handle string-based SID formats
-                    string maybeSid = rawSidObj.ToString();
-                    if (maybeSid.StartsWith("S-"))
-                    {
-                        domainSidString = maybeSid;
-                    }
-                    else
-                    {
-                        // Try parsing hex format (0x...)
-                        string hex = maybeSid.StartsWith("0x", StringComparison.OrdinalIgnoreCase) 
-                            ? maybeSid.Substring(2) 
-                            : maybeSid;
-                        try
-                        {
-                            var bytes = Misc.HexStringToBytes(hex);
-                            var sid = new SecurityIdentifier(bytes, 0);
-                            domainSidString = sid.Value;
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.Error($"Unable to parse domain SID: {ex.Message}");
-                            return null;
-                        }
-                    }
-                }
-
-                // Strip the trailing RID to get the domain SID prefix (S-1-5-21-XXXXXXXXX-XXXXXXXXX-XXXXXXXXX)
-                int lastDash = domainSidString.LastIndexOf('-');
-                if (lastDash <= 0)
-                {
-                    Logger.Error($"Unexpected SID format: {domainSidString}");
+                    Logger.Error("Unable to parse domain SID from SUSER_SID() result.");
                     return null;
                 }
+
+                // Strip the trailing RID to get the domain SID prefix
+                string AdDomainPrefix = SidParser.GetAdDomain(AdDomainString);
                 
-                domainSidPrefix = domainSidString.Substring(0, lastDash);
+                if (string.IsNullOrEmpty(AdDomainPrefix))
+                {
+                    Logger.Error($"Unexpected SID format: {AdDomainString}");
+                    return null;
+                }
 
                 Logger.NewLine();
                 Logger.Success("Domain SID information retrieved");
@@ -97,8 +66,8 @@ namespace MSSQLand.Actions.Domain
                 var result = new Dictionary<string, string>
                 {
                     { "Domain", domain },
-                    { "Full SID (Domain Admins)", domainSidString },
-                    { "Domain SID", domainSidPrefix }
+                    { "Full SID (Domain Admins)", AdDomainString },
+                    { "Domain SID", AdDomainPrefix }
                 };
 
                 // Display as markdown table

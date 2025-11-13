@@ -164,7 +164,7 @@
 **Arguments:**
 - [pos:0] maxRid (int, default: 10000) - Maximum RID to enumerate (default: 10000)
 
-#### `DomGroupMembers`
+#### `AdMembers`
 **Description:** Retrieve members of an Active Directory group (e.g., DOMAIN\Domain Admins).
 
 **Arguments:**

@@ -80,8 +80,10 @@
     <Compile Include="Actions\ArgumentMetadataAttribute.cs" />
     <Compile Include="Actions\Database\ExtendedProcs.cs" />
     <Compile Include="Actions\Database\RoleMembers.cs" />
-    <Compile Include="Actions\Domain\DomainSid.cs" />
-    <Compile Include="Actions\Domain\DomGroupMembers.cs" />
+    <Compile Include="Actions\Domain\AdGroups.cs" />
+    <Compile Include="Actions\Domain\AdDomain.cs" />
+    <Compile Include="Actions\Domain\AdSid.cs" />
+    <Compile Include="Actions\Domain\GroupMembers.cs" />
     <Compile Include="Actions\Domain\RidCycle.cs" />
     <Compile Include="Actions\Execution\QueryAll.cs" />
     <Compile Include="Actions\Network\LinkedServerExplorer.cs" />
@@ -144,6 +146,7 @@
     <Compile Include="Utilities\Logger.cs" />
     <Compile Include="Utilities\MarkdownFormater.cs" />
     <Compile Include="Utilities\Misc.cs" />
+    <Compile Include="Utilities\SidParser.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

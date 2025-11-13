@@ -40,9 +40,6 @@ namespace MSSQLand.Actions.Database
                                        .Select(row => row.Field<string>("name"))
                                        .ToList();
 
-            // Try to get AD group memberships
-            List<string> adGroups = GetActiveDirectoryGroups(databaseContext, systemUser);
-
             // Display the user information
             Logger.NewLine();
             Logger.Info("User Details:");
@@ -54,11 +51,6 @@ namespace MSSQLand.Actions.Database
                 { "Roles", string.Join(", ", userRoles) },
                 { "Accessible Databases", string.Join(", ", databaseNames) }
             };
-
-            if (adGroups.Count > 0)
-            {
-                userDetails.Add("AD Group Memberships", string.Join(", ", adGroups));
-            }
 
             Console.WriteLine(MarkdownFormatter.ConvertDictionaryToMarkdownTable(userDetails, "Property", "Value"));
 
@@ -92,58 +84,6 @@ namespace MSSQLand.Actions.Database
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(fixedServerRolesTable));
 
             return null;
-
-        }
-
-        /// <summary>
-        /// Attempts to retrieve Active Directory group memberships for the current user.
-        /// </summary>
-        private List<string> GetActiveDirectoryGroups(DatabaseContext databaseContext, string systemUser)
-        {
-            List<string> groups = new();
-
-            try
-            {
-                // Check if xp_logininfo is available
-                var xprocCheck = databaseContext.QueryService.ExecuteTable(
-                    "SELECT * FROM master.sys.all_objects WHERE name = 'xp_logininfo' AND type = 'X';"
-                );
-
-                if (xprocCheck.Rows.Count == 0)
-                {
-                    Logger.Debug("xp_logininfo not available for AD group enumeration");
-                    return groups;
-                }
-
-                // Try to get group memberships using xp_logininfo
-                string query = $"EXEC xp_logininfo @acctname = '{systemUser}', @option = 'all';";
-                DataTable groupsTable = databaseContext.QueryService.ExecuteTable(query);
-
-                if (groupsTable != null && groupsTable.Rows.Count > 0)
-                {
-                    foreach (DataRow row in groupsTable.Rows)
-                    {
-                        // xp_logininfo returns columns: account name, type, privilege, mapped login name, permission path
-                        string accountName = row["account name"]?.ToString();
-                        string type = row["type"]?.ToString();
-                        string permissionPath = row["permission path"]?.ToString();
-
-                        // Add groups (not the user itself)
-                        if (!string.IsNullOrEmpty(permissionPath) && 
-                            !permissionPath.Equals(systemUser, StringComparison.OrdinalIgnoreCase) &&
-                            type?.IndexOf("group", StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
-                            groups.Add(permissionPath);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Debug($"Could not retrieve AD group memberships: {ex.Message}");
-            }
-
-            return groups;
         }
     }
 }

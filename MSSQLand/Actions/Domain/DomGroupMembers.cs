@@ -8,7 +8,7 @@ namespace MSSQLand.Actions.Domain
     /// <summary>
     /// Retrieves members of a specific Active Directory group using multiple methods.
     /// </summary>
-    internal class DomGroupMembers : BaseAction
+    internal class AdMembers : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "AD group name (e.g., DOMAIN\\Domain Admins)")]
         private string _groupName;

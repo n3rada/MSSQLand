@@ -65,18 +65,18 @@ namespace MSSQLand.Actions.Domain
         {
             Logger.TaskNested($"Starting RID cycling (max RID: {_maxRid})");
             Logger.Info("Note: This enumerates domain objects (users and groups), not group membership.");
-            Logger.Info("Use 'DomGroupMembers DOMAIN\\GroupName' to see members of a specific group.");
+            Logger.Info("Use 'AdMembers DOMAIN\\GroupName' to see members of a specific group.");
             Logger.NewLine();
             
             var results = new List<Dictionary<string, object>>();
 
             try
             {
-                // Use DomainSid action to get domain SID information
-                var domainSidAction = new DomainSid();
-                domainSidAction.ValidateArguments(null);
+                // Use AdDomain action to get domain SID information
+                var AdDomainAction = new AdDomain();
+                AdDomainAction.ValidateArguments(null);
                 
-                var domainInfo = domainSidAction.Execute(databaseContext) as Dictionary<string, string>;
+                var domainInfo = AdDomainAction.Execute(databaseContext) as Dictionary<string, string>;
                 
                 if (domainInfo == null)
                 {
@@ -85,10 +85,10 @@ namespace MSSQLand.Actions.Domain
                 }
 
                 string domain = domainInfo["Domain"];
-                string domainSidPrefix = domainInfo["Domain SID"];
+                string AdDomainPrefix = domainInfo["Domain SID"];
                 
                 Logger.Info($"Target domain: {domain}");
-                Logger.Info($"Domain SID prefix: {domainSidPrefix}");
+                Logger.Info($"Domain SID prefix: {AdDomainPrefix}");
                 Logger.NewLine();
 
                 // Iterate in batches - use semicolon-separated queries like Python
@@ -103,7 +103,7 @@ namespace MSSQLand.Actions.Domain
                     for (int i = 0; i < sidsToCheck; i++)
                     {
                         int rid = start + i;
-                        queries.Add($"SELECT SUSER_SNAME(SID_BINARY(N'{domainSidPrefix}-{rid}'))");
+                        queries.Add($"SELECT SUSER_SNAME(SID_BINARY(N'{AdDomainPrefix}-{rid}'))");
                     }
                     
                     string sql = string.Join("; ", queries);
