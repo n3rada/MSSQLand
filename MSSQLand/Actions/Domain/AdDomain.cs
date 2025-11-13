@@ -41,6 +41,9 @@ namespace MSSQLand.Actions.Domain
                     return null;
                 }
 
+                // Extract the binary SID from the query result
+                object rawSidObj = dtSid.Rows[0][0];
+                
                 // Parse the binary SID
                 string AdDomainString = SidParser.ParseSid(rawSidObj);
                 
