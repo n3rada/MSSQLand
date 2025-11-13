@@ -7,16 +7,19 @@ namespace MSSQLand.Actions.Database
 {
     internal class Procedures : BaseAction
     {
-        private enum Mode { List, Exec, Read }
+        private enum Mode { List, Exec, Read, Search }
         
-        [ArgumentMetadata(Position = 0, Description = "Mode: list, exec, or read (default: list)")]
+        [ArgumentMetadata(Position = 0, Description = "Mode: list, exec, read, or search (default: list)")]
         private Mode _mode = Mode.List;
         
-        [ArgumentMetadata(Position = 1, Description = "Stored procedure name (required for exec/read)")]
+        [ArgumentMetadata(Position = 1, Description = "Stored procedure name (required for exec/read) or search keyword (required for search)")]
         private string? _procedureName;
         
         [ArgumentMetadata(Position = 2, Description = "Procedure arguments (optional for exec)")]
         private string? _procedureArgs;
+        
+        [ExcludeFromArguments]
+        private string? _searchKeyword;
 
         public override void ValidateArguments(string additionalArguments)
         {
@@ -53,8 +56,17 @@ namespace MSSQLand.Actions.Database
                     _procedureName = parts[1];
                     break;
 
+                case "search":
+                    if (parts.Length < 2)
+                    {
+                        throw new ArgumentException("Missing search keyword. Example: /a:procedures search EXEC");
+                    }
+                    _mode = Mode.Search;
+                    _searchKeyword = parts[1];
+                    break;
+
                 default:
-                    throw new ArgumentException("Invalid mode. Use 'list', 'exec <StoredProcedureName>', or 'read <StoredProcedureName> <Args>'");
+                    throw new ArgumentException("Invalid mode. Use 'list', 'exec <StoredProcedureName>', 'read <StoredProcedureName>', or 'search <keyword>'");
             }
         }
 
@@ -68,6 +80,8 @@ namespace MSSQLand.Actions.Database
                     return ExecuteProcedure(databaseContext, _procedureName, _procedureArgs);
                 case Mode.Read:
                     return ReadProcedureDefinition(databaseContext, _procedureName);
+                case Mode.Search:
+                    return SearchProcedures(databaseContext, _searchKeyword);
                 default:
                     Logger.Error("Unknown execution mode.");
                     return null;
@@ -164,6 +178,48 @@ namespace MSSQLand.Actions.Database
             {
                 Logger.Error($"Error retrieving stored procedure definition: {ex.Message}");
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Searches for stored procedures containing a specific keyword in their definition.
+        /// </summary>
+        private DataTable SearchProcedures(DatabaseContext databaseContext, string keyword)
+        {
+            Logger.NewLine();
+            Logger.Info($"Searching for stored procedures containing keyword: '{keyword}'");
+
+            string query = $@"
+                SELECT 
+                    SCHEMA_NAME(o.schema_id) AS schema_name,
+                    o.name AS procedure_name,
+                    o.create_date,
+                    o.modify_date
+                FROM sys.sql_modules AS m
+                INNER JOIN sys.objects AS o ON m.object_id = o.object_id
+                WHERE o.type = 'P' 
+                AND m.definition LIKE '%{keyword}%'
+                ORDER BY o.modify_date DESC;";
+
+            try
+            {
+                DataTable result = databaseContext.QueryService.ExecuteTable(query);
+
+                if (result.Rows.Count == 0)
+                {
+                    Logger.Warning($"No stored procedures found containing keyword '{keyword}'.");
+                    return result;
+                }
+
+                Logger.Success($"Found {result.Rows.Count} stored procedure(s) containing '{keyword}'.");
+                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(result));
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error searching stored procedures: {ex.Message}");
+                return new DataTable();
             }
         }
     }
