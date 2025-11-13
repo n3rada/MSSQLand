@@ -226,6 +226,7 @@ namespace MSSQLand.Services
         /// <returns>The modified query, accounting for linked servers if applicable.</returns>
         private string PrepareQuery(string query)
         {
+            query = RemoveSqlComments(query);
             Logger.Debug($"Query to execute: {query}");
             string finalQuery = query;
 
@@ -242,6 +243,60 @@ namespace MSSQLand.Services
             }
 
             return finalQuery;
+        }
+
+        /// <summary>
+        /// Removes SQL comments (single-line -- and multi-line /* */) from a query.
+        /// </summary>
+        /// <param name="query">The SQL query with potential comments.</param>
+        /// <returns>The query without comments.</returns>
+        private string RemoveSqlComments(string query)
+        {
+            // Remove multi-line comments /* ... */
+            query = System.Text.RegularExpressions.Regex.Replace(query, @"/\*.*?\*/", "", System.Text.RegularExpressions.RegexOptions.Singleline);
+            
+            // Remove single-line comments -- ... (but preserve strings containing --)
+            var lines = query.Split(new[] { '\r', '\n' }, StringSplitOptions.None);
+            for (int i = 0; i < lines.Length; i++)
+            {
+                int commentIndex = -1;
+                bool inString = false;
+                char stringChar = '\0';
+                
+                for (int j = 0; j < lines[i].Length - 1; j++)
+                {
+                    char current = lines[i][j];
+                    char next = lines[i][j + 1];
+                    
+                    // Track string boundaries
+                    if ((current == '\'' || current == '"') && (j == 0 || lines[i][j - 1] != '\\'))
+                    {
+                        if (!inString)
+                        {
+                            inString = true;
+                            stringChar = current;
+                        }
+                        else if (current == stringChar)
+                        {
+                            inString = false;
+                        }
+                    }
+                    
+                    // Find comment start (not inside a string)
+                    if (!inString && current == '-' && next == '-')
+                    {
+                        commentIndex = j;
+                        break;
+                    }
+                }
+                
+                if (commentIndex >= 0)
+                {
+                    lines[i] = lines[i].Substring(0, commentIndex).TrimEnd();
+                }
+            }
+            
+            return string.Join("\n", lines);
         }
     }
 }
