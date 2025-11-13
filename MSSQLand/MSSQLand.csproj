@@ -87,6 +87,7 @@
     <Compile Include="Actions\Network\LinkedServerExplorer.cs" />
     <Compile Include="Actions\Database\OleDbProvidersInfo.cs" />
     <Compile Include="Actions\Database\Procedures.cs" />
+    <Compile Include="Actions\Database\Configs.cs" />
     <Compile Include="Actions\Database\Search.cs" />
     <Compile Include="Actions\Database\Whoami.cs" />
     <Compile Include="Actions\ExcludeFromArgumentsAttribute.cs" />

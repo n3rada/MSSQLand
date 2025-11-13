@@ -16,7 +16,23 @@ namespace MSSQLand.Services
             _server = server;
         }
 
-        
+        /// <summary>
+        /// Gets the current status of a configuration option without logging.
+        /// </summary>
+        /// <param name="optionName">The name of the configuration option.</param>
+        /// <returns>1 if enabled, 0 if disabled, -1 if not found or error.</returns>
+        public int GetConfigurationStatus(string optionName)
+        {
+            try
+            {
+                var result = _queryService.ExecuteScalar($"SELECT value_in_use FROM master.sys.configurations WHERE name = '{optionName}';");
+                return result != null ? Convert.ToInt32(result) : -1;
+            }
+            catch
+            {
+                return -1;
+            }
+        }
 
         public bool CheckAssembly(string assemblyName)
         {

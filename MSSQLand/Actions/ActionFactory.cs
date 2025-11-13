@@ -38,6 +38,7 @@ namespace MSSQLand.Utilities
             { "users", (typeof(Users), "List all database users.") },
             { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).") },
             { "permissions", (typeof(Permissions), "Enumerate user and role permissions.") },
+            { "configs", (typeof(Configs), "List security-sensitive configuration options with their activation status.") },
             { "search", (typeof(Search), "Search for keywords in column names and data across databases.") },
             { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.") },
             { "monitor", (typeof(Monitor), "Display currently running SQL commands and active sessions.") },

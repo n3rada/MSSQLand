@@ -25,7 +25,6 @@ namespace MSSQLand.Actions.Execution
             _command = additionalArguments;
         }
 
-
         /// <summary>
         /// Executes the provided shell command on the SQL server using xp_cmdshell.
         /// </summary>
