@@ -9,10 +9,7 @@ namespace MSSQLand.Actions.Database
 {
     internal class Search : BaseAction
     {
-        [ArgumentMetadata(Position = 0, ShortName = "db", LongName = "database", Description = "Database name or * for all databases")]
-        private string _database;
-
-        [ArgumentMetadata(Position = 1, ShortName = "k", LongName = "keyword", Required = true, Description = "Keyword to search for")]
+        [ArgumentMetadata(Position = 0, ShortName = "k", LongName = "keyword", Required = true, Description = "Keyword to search for, or * to search all accessible databases")]
         private string _keyword;
 
         [ExcludeFromArguments]
@@ -20,36 +17,19 @@ namespace MSSQLand.Actions.Database
 
         public override void ValidateArguments(string additionalArguments)
         {
-            // Split the additional argument into parts (database and keywords)
-            string[] parts = SplitArguments(additionalArguments);
-
-            if (parts.Length == 1)
+            if (string.IsNullOrEmpty(additionalArguments))
             {
-                // Only the keyword is provided
-                _keyword = parts[0].Trim();
-                _database = null; // Use the default database
-            }
-            else if (parts.Length == 2)
-            {
-                // Check if first argument is "*" for all databases
-                if (parts[0].Trim() == "*")
-                {
-                    _allDatabases = true;
-                    _keyword = parts[1].Trim();
-                }
-                else
-                {
-                    // Both database and keyword are provided
-                    _database = parts[0].Trim();
-                    _keyword = parts[1].Trim();
-                }
-            }
-            else
-            {
-                throw new ArgumentException("Invalid arguments. Search usage: [database|*] keyword");
+                throw new ArgumentException("Keyword is required. Usage: /a:search <keyword> or /a:search * to search all databases");
             }
 
-            if (string.IsNullOrEmpty(_keyword))
+            _keyword = additionalArguments.Trim();
+
+            // Check if searching all databases
+            if (_keyword == "*")
+            {
+                _allDatabases = true;
+            }
+            else if (string.IsNullOrEmpty(_keyword))
             {
                 throw new ArgumentException("The keyword cannot be empty.");
             }
@@ -59,11 +39,11 @@ namespace MSSQLand.Actions.Database
         {
             List<string> databasesToSearch = new();
 
-            Logger.Task($"Lurking for '{_keyword}' accross accessible user tables only (excluding Microsoft system tables)");
-
             if (_allDatabases)
             {
-                Logger.TaskNested("Searching across ALL accessible databases");
+                Logger.Task("Searching for keyword across ALL accessible databases");
+                Logger.TaskNested("Searching in accessible user tables only (excluding Microsoft system tables)");
+                
                 // Get all accessible databases
                 DataTable accessibleDatabases = databaseContext.QueryService.ExecuteTable(
                     "SELECT name FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1 AND state = 0 ORDER BY name;"
@@ -78,12 +58,10 @@ namespace MSSQLand.Actions.Database
             }
             else
             {
-                // Use specified database or default
-                if (string.IsNullOrEmpty(_database))
-                {
-                    _database = databaseContext.Server.Database;
-                }
-                databasesToSearch.Add(_database);
+                Logger.Task($"Lurking for '{_keyword}' in user tables only (excluding Microsoft system tables)");
+                // Use the database from /db: global parameter
+                string database = databaseContext.Server.Database;
+                databasesToSearch.Add(database);
             }
             
             int totalHeaderMatches = 0;
