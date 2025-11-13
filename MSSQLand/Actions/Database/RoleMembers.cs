@@ -30,7 +30,6 @@ SELECT
     l.is_disabled AS IsDisabled,
     l.create_date AS CreateDate,
     l.modify_date AS ModifyDate,
-    l.tenant_id AS TenantId
 FROM master.sys.server_role_members rm
 JOIN master.sys.server_principals r ON rm.role_principal_id = r.principal_id
 JOIN master.sys.server_principals l ON rm.member_principal_id = l.principal_id
