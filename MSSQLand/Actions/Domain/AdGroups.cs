@@ -84,7 +84,7 @@ namespace MSSQLand.Actions.Domain
 
                     Logger.TaskNested($"Checking membership in {windowsGroups.Rows.Count} Windows group(s)...");
 
-                    var memberGroups = new List<Dictionary<string, string>>();
+                    var groups = new List<Dictionary<string, string>>();
 
                     foreach (DataRow row in windowsGroups.Rows)
                     {
@@ -102,7 +102,7 @@ namespace MSSQLand.Actions.Domain
 
                                 if (isMember == 1)
                                 {
-                                    memberGroups.Add(new Dictionary<string, string>
+                                    groups.Add(new Dictionary<string, string>
                                     {
                                         { "Group Name", groupName },
                                         { "Type", "Windows Group" },
@@ -117,34 +117,35 @@ namespace MSSQLand.Actions.Domain
                         }
                     }
 
-                    if (memberGroups.Count == 0)
+                    if (groups.Count == 0)
                     {
                         Logger.Warning("You are not a member of any Windows groups in SQL Server.");
                         return null;
                     }
 
                     Logger.NewLine();
-                    Logger.Success($"Found {memberGroups.Count} group membership(s)");
+                    Logger.Success($"Found {groups.Count} group membership(s)");
 
-                    DataTable fallbackResultTable = new();
-                    fallbackResultTable.Columns.Add("Group Name", typeof(string));
-                    fallbackResultTable.Columns.Add("Type", typeof(string));
-                    fallbackResultTable.Columns.Add("Is Disabled", typeof(string));
+                    // Display results
+                    DataTable resultTable = new DataTable();
+                    resultTable.Columns.Add("Group Name", typeof(string));
+                    resultTable.Columns.Add("Type", typeof(string));
+                    resultTable.Columns.Add("Status", typeof(string));
 
-                    foreach (var group in memberGroups)
+                    foreach (var group in groups)
                     {
-                        fallbackResultTable.Rows.Add(
+                        resultTable.Rows.Add(
                             group["Group Name"],
                             group["Type"],
                             group["Is Disabled"]
                         );
                     }
 
-                    Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(fallbackResultTable));
-                    return memberGroups;
+                    Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+                    return groups;
                 }
 
-                // Parse the results
+                // Parse xp_logininfo results
                 var groups = new List<Dictionary<string, string>>();
                 
                 foreach (DataRow row in groupsTable.Rows)
@@ -163,7 +164,7 @@ namespace MSSQLand.Actions.Domain
                         {
                             { "Group Name", permissionPath ?? accountName },
                             { "Type", type },
-                            { "Privilege", privilege ?? "N/A" }
+                            { "Status", privilege ?? "N/A" }
                         });
                     }
                 }
@@ -177,18 +178,18 @@ namespace MSSQLand.Actions.Domain
                 Logger.NewLine();
                 Logger.Success($"Found {groups.Count} AD group membership(s)");
 
-                // Display as markdown table
+                // Display results
                 DataTable resultTable = new DataTable();
                 resultTable.Columns.Add("Group Name", typeof(string));
                 resultTable.Columns.Add("Type", typeof(string));
-                resultTable.Columns.Add("Privilege", typeof(string));
+                resultTable.Columns.Add("Status", typeof(string));
 
                 foreach (var group in groups)
                 {
                     resultTable.Rows.Add(
                         group["Group Name"],
                         group["Type"],
-                        group["Privilege"]
+                        group["Status"]
                     );
                 }
 
