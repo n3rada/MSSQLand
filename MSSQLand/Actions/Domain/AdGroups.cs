@@ -18,7 +18,7 @@ namespace MSSQLand.Actions.Domain
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Retrieving Active Directory group memberships");
+            Logger.Task("Retrieving Active Directory group memberships");
 
             try
             {
@@ -33,25 +33,115 @@ namespace MSSQLand.Actions.Domain
 
                 Logger.Info($"System User: {systemUser}");
 
-                // Check if xp_logininfo is available
-                var xprocCheck = databaseContext.QueryService.ExecuteTable(
-                    "SELECT * FROM master.sys.all_objects WHERE name = 'xp_logininfo' AND type = 'X';"
-                );
-
-                if (xprocCheck.Rows.Count == 0)
+                // Check if it's a domain user
+                if (!databaseContext.UserService.IsDomainUser)
                 {
-                    Logger.Error("xp_logininfo extended procedure is not available.");
+                    Logger.Warning("Current user is not a Windows domain user.");
                     return null;
                 }
 
-                // Get group memberships using xp_logininfo
-                string query = $"EXEC master.dbo.xp_logininfo @acctname = '{systemUser}', @option = 'all';";
-                DataTable groupsTable = databaseContext.QueryService.ExecuteTable(query);
+                // Try xp_logininfo first (most detailed, but requires elevated privileges)
+                DataTable groupsTable = null;
+                bool useXpLogininfo = false;
 
-                if (groupsTable == null || groupsTable.Rows.Count == 0)
+                try
                 {
-                    Logger.Warning("No group memberships found or user is not a domain account.");
-                    return null;
+                    Logger.TaskNested("Attempting to use xp_logininfo...");
+                    string query = $"EXEC master.dbo.xp_logininfo @acctname = '{systemUser}', @option = 'all';";
+                    groupsTable = databaseContext.QueryService.ExecuteTable(query);
+                    
+                    if (groupsTable != null && groupsTable.Rows.Count > 0)
+                    {
+                        useXpLogininfo = true;
+                        Logger.Success("Retrieved group memberships via xp_logininfo");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warning($"xp_logininfo not available or insufficient permissions: {ex.Message}");
+                }
+
+                // Fallback: Use IS_MEMBER() to check all Windows groups
+                if (!useXpLogininfo)
+                {
+                    Logger.TaskNested("Using fallback method: IS_MEMBER() checks");
+                    
+                    string groupsQuery = @"
+                        SELECT name, type_desc, is_disabled, create_date
+                        FROM master.sys.server_principals
+                        WHERE type = 'G'
+                        AND name LIKE '%\%'
+                        AND name NOT LIKE '##%'
+                        ORDER BY name;";
+
+                    DataTable windowsGroups = databaseContext.QueryService.ExecuteTable(groupsQuery);
+
+                    if (windowsGroups.Rows.Count == 0)
+                    {
+                        Logger.Warning("No Windows groups found in SQL Server principals.");
+                        return null;
+                    }
+
+                    Logger.TaskNested($"Checking membership in {windowsGroups.Rows.Count} Windows group(s)...");
+
+                    var memberGroups = new List<Dictionary<string, string>>();
+
+                    foreach (DataRow row in windowsGroups.Rows)
+                    {
+                        string groupName = row["name"].ToString();
+                        bool isDisabled = Convert.ToBoolean(row["is_disabled"]);
+
+                        try
+                        {
+                            string memberCheckQuery = $"SELECT IS_MEMBER('{groupName.Replace("'", "''")}') AS IsMember;";
+                            DataTable memberCheck = databaseContext.QueryService.ExecuteTable(memberCheckQuery);
+
+                            if (memberCheck.Rows.Count > 0 && memberCheck.Rows[0][0] != DBNull.Value)
+                            {
+                                int isMember = Convert.ToInt32(memberCheck.Rows[0][0]);
+
+                                if (isMember == 1)
+                                {
+                                    memberGroups.Add(new Dictionary<string, string>
+                                    {
+                                        { "Group Name", groupName },
+                                        { "Type", "Windows Group" },
+                                        { "Is Disabled", isDisabled.ToString() }
+                                    });
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // IS_MEMBER might fail for some groups
+                        }
+                    }
+
+                    if (memberGroups.Count == 0)
+                    {
+                        Logger.Warning("You are not a member of any Windows groups in SQL Server.");
+                        return null;
+                    }
+
+                    Logger.NewLine();
+                    Logger.Success($"Found {memberGroups.Count} group membership(s)");
+
+                    DataTable resultTable = new DataTable();
+                    resultTable.Columns.Add("Group Name", typeof(string));
+                    resultTable.Columns.Add("Type", typeof(string));
+                    resultTable.Columns.Add("Is Disabled", typeof(string));
+
+                    foreach (var group in memberGroups)
+                    {
+                        resultTable.Rows.Add(
+                            group["Group Name"],
+                            group["Type"],
+                            group["Is Disabled"]
+                        );
+                    }
+
+                    Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+                    return memberGroups;
                 }
 
                 // Parse the results
