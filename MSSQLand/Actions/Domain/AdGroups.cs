@@ -54,8 +54,6 @@ namespace MSSQLand.Actions.Domain
 
                 // Query additional details for each group
                 var groups = new List<Dictionary<string, string>>();
-                // Query additional details for each group
-                var groups = new List<Dictionary<string, string>>();
                 
                 foreach (string groupName in groupNames)
                 {
