@@ -44,6 +44,9 @@ namespace MSSQLand.Actions.Domain
                 DataTable groupsTable = null;
                 bool useXpLogininfo = false;
 
+                // Prepare result structures
+                var groups = new List<Dictionary<string, string>>();
+
                 try
                 {
                     Logger.TaskNested("Attempting to use xp_logininfo...");
@@ -84,8 +87,6 @@ namespace MSSQLand.Actions.Domain
 
                     Logger.TaskNested($"Checking membership in {windowsGroups.Rows.Count} Windows group(s)...");
 
-                    var groups = new List<Dictionary<string, string>>();
-
                     foreach (DataRow row in windowsGroups.Rows)
                     {
                         string groupName = row["name"].ToString();
@@ -106,7 +107,7 @@ namespace MSSQLand.Actions.Domain
                                     {
                                         { "Group Name", groupName },
                                         { "Type", "Windows Group" },
-                                        { "Is Disabled", isDisabled.ToString() }
+                                        { "Status", isDisabled.ToString() }
                                     });
                                 }
                             }
@@ -116,37 +117,10 @@ namespace MSSQLand.Actions.Domain
                             // IS_MEMBER might fail for some groups
                         }
                     }
-
-                    if (groups.Count == 0)
-                    {
-                        Logger.Warning("You are not a member of any Windows groups in SQL Server.");
-                        return null;
-                    }
-
-                    Logger.NewLine();
-                    Logger.Success($"Found {groups.Count} group membership(s)");
-
-                    // Display results
-                    DataTable resultTable = new DataTable();
-                    resultTable.Columns.Add("Group Name", typeof(string));
-                    resultTable.Columns.Add("Type", typeof(string));
-                    resultTable.Columns.Add("Status", typeof(string));
-
-                    foreach (var group in groups)
-                    {
-                        resultTable.Rows.Add(
-                            group["Group Name"],
-                            group["Type"],
-                            group["Is Disabled"]
-                        );
-                    }
-
-                    Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
-                    return groups;
                 }
-
-                // Parse xp_logininfo results
-                var groups = new List<Dictionary<string, string>>();
+                else
+                {
+                    // Parse xp_logininfo results
                 
                 foreach (DataRow row in groupsTable.Rows)
                 {
@@ -169,6 +143,7 @@ namespace MSSQLand.Actions.Domain
                     }
                 }
 
+                // Check if any groups found
                 if (groups.Count == 0)
                 {
                     Logger.Warning("User is not a member of any domain groups.");
@@ -176,7 +151,7 @@ namespace MSSQLand.Actions.Domain
                 }
 
                 Logger.NewLine();
-                Logger.Success($"Found {groups.Count} AD group membership(s)");
+                Logger.Success($"Found {groups.Count} group membership(s)");
 
                 // Display results
                 DataTable resultTable = new DataTable();
