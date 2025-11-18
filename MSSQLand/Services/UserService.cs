@@ -1,6 +1,7 @@
 ﻿using MSSQLand.Utilities;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 
 namespace MSSQLand.Services
