@@ -101,6 +101,20 @@ namespace MSSQLand
                 Logger.Info($"Logged in on {databaseContext.Server.Hostname} as {systemUser}");
                 Logger.InfoNested($"Mapped to the user {userName} ");
 
+                // Check if user is mapped to themselves and is a domain user (implies group-based access)
+                if (userName.Equals(systemUser, StringComparison.OrdinalIgnoreCase) && 
+                    databaseContext.UserService.IsDomainUser)
+                {
+                    Logger.InfoNested("Access granted through Active Directory group membership (no direct login)");
+                    
+                    // Try to identify the group
+                    var adGroups = databaseContext.UserService.GetUserAdGroups();
+                    if (adGroups.Count > 0)
+                    {
+                        Logger.InfoNested($"Member of {adGroups.Count} AD group(s): {string.Join(", ", adGroups)}");
+                    }
+                }
+
                 // If LinkedServers variable exists and has valid server names
                 if (arguments.LinkedServers?.ServerNames != null && arguments.LinkedServers.ServerNames.Length > 0)
                 {
@@ -112,6 +126,19 @@ namespace MSSQLand
 
                     Logger.Info($"Logged in on {databaseContext.QueryService.ExecutionServer} as {systemUser}");
                     Logger.InfoNested($"Mapped to the user {userName} ");
+
+                    // Check for group-based access on linked server as well
+                    if (userName.Equals(systemUser, StringComparison.OrdinalIgnoreCase) && 
+                        databaseContext.UserService.IsDomainUser)
+                    {
+                        Logger.InfoNested("Access granted through Active Directory group membership (no direct login)");
+                        
+                        var adGroups = databaseContext.UserService.GetUserAdGroups();
+                        if (adGroups.Count > 0)
+                        {
+                            Logger.InfoNested($"Member of {adGroups.Count} AD group(s): {string.Join(", ", adGroups)}");
+                        }
+                    }
                 }
 
                 Logger.Task($"Executing action '{arguments.Action.GetName()}' against {databaseContext.QueryService.ExecutionServer}");
