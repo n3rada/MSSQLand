@@ -126,21 +126,21 @@ namespace MSSQLand.Actions.Domain
                     Logger.NewLine();
                     Logger.Success($"Found {memberGroups.Count} group membership(s)");
 
-                    DataTable resultTable = new DataTable();
-                    resultTable.Columns.Add("Group Name", typeof(string));
-                    resultTable.Columns.Add("Type", typeof(string));
-                    resultTable.Columns.Add("Is Disabled", typeof(string));
+                    DataTable fallbackResultTable = new();
+                    fallbackResultTable.Columns.Add("Group Name", typeof(string));
+                    fallbackResultTable.Columns.Add("Type", typeof(string));
+                    fallbackResultTable.Columns.Add("Is Disabled", typeof(string));
 
                     foreach (var group in memberGroups)
                     {
-                        resultTable.Rows.Add(
+                        fallbackResultTable.Rows.Add(
                             group["Group Name"],
                             group["Type"],
                             group["Is Disabled"]
                         );
                     }
 
-                    Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+                    Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(fallbackResultTable));
                     return memberGroups;
                 }
 
