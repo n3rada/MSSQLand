@@ -13,9 +13,34 @@ namespace MSSQLand.Services
         /// Dictionary to cache admin status for each execution server.
         /// </summary>
         private readonly ConcurrentDictionary<string, bool> _adminStatusCache = new();
+        
+        /// <summary>
+        /// Dictionary to cache domain user status for each execution server.
+        /// </summary>
+        private readonly ConcurrentDictionary<string, bool> _isDomainUserCache = new();
 
         public string MappedUser { get; private set; }
         public string SystemUser { get; private set; }
+        
+        public bool IsDomainUser 
+        { 
+            get
+            {
+                // Check if the domain user status is already cached for the current ExecutionServer
+                if (_isDomainUserCache.TryGetValue(_queryService.ExecutionServer, out bool isDomainUser))
+                {
+                    return isDomainUser;
+                }
+
+                // If not cached, compute and store the result
+                bool domainUserStatus = CheckIfDomainUser();
+
+                // Cache the result for the current ExecutionServer
+                _isDomainUserCache[_queryService.ExecutionServer] = domainUserStatus;
+
+                return domainUserStatus;
+            }
+        }
 
 
         public UserService(QueryService queryService)
@@ -84,6 +109,38 @@ namespace MSSQLand.Services
             this.SystemUser = systemUser;
 
             return (mappedUser, systemUser);
+        }
+
+        /// <summary>
+        /// Checks if the current system user is a Windows domain user.
+        /// </summary>
+        /// <returns>True if the user is a Windows domain user; otherwise, false.</returns>
+        private bool CheckIfDomainUser()
+        {
+            if (string.IsNullOrEmpty(SystemUser))
+            {
+                return false;
+            }
+
+            try
+            {
+                string checkQuery = $"SELECT type_desc FROM master.sys.server_principals WHERE name = '{SystemUser.Replace("'", "''")}';";
+                object result = _queryService.ExecuteScalar(checkQuery);
+                
+                if (result != null && result != DBNull.Value)
+                {
+                    string typeDesc = result.ToString();
+                    // Windows logins: WINDOWS_LOGIN, WINDOWS_GROUP
+                    return typeDesc.StartsWith("WINDOWS_", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            catch
+            {
+                // If we can't query, fall back to backslash check
+                return SystemUser.Contains("\\");
+            }
+
+            return false;
         }
 
         /// <summary>
