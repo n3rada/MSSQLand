@@ -121,25 +121,25 @@ namespace MSSQLand.Actions.Domain
                 else
                 {
                     // Parse xp_logininfo results
-                
-                foreach (DataRow row in groupsTable.Rows)
-                {
-                    string accountName = row["account name"]?.ToString();
-                    string type = row["type"]?.ToString();
-                    string privilege = row["privilege"]?.ToString();
-                    string mappedLoginName = row["mapped login name"]?.ToString();
-                    string permissionPath = row["permission path"]?.ToString();
-
-                    // Filter to show only groups (not the user itself)
-                    if (!string.IsNullOrEmpty(type) && 
-                        type.IndexOf("group", StringComparison.OrdinalIgnoreCase) >= 0)
+                    foreach (DataRow row in groupsTable.Rows)
                     {
-                        groups.Add(new Dictionary<string, string>
+                        string accountName = row["account name"]?.ToString();
+                        string type = row["type"]?.ToString();
+                        string privilege = row["privilege"]?.ToString();
+                        string mappedLoginName = row["mapped login name"]?.ToString();
+                        string permissionPath = row["permission path"]?.ToString();
+
+                        // Filter to show only groups (not the user itself)
+                        if (!string.IsNullOrEmpty(type) && 
+                            type.IndexOf("group", StringComparison.OrdinalIgnoreCase) >= 0)
                         {
-                            { "Group Name", permissionPath ?? accountName },
-                            { "Type", type },
-                            { "Status", privilege ?? "N/A" }
-                        });
+                            groups.Add(new Dictionary<string, string>
+                            {
+                                { "Group Name", permissionPath ?? accountName },
+                                { "Type", type },
+                                { "Status", privilege ?? "N/A" }
+                            });
+                        }
                     }
                 }
 
