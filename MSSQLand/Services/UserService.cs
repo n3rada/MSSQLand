@@ -68,18 +68,22 @@ namespace MSSQLand.Services
         {
             const string query = "SELECT USER_NAME() AS U, SYSTEM_USER AS S;";
 
-            string MappedUser = "";
-            string SystemUser = "";
+            string mappedUser = "";
+            string systemUser = "";
 
             using var reader = _queryService.Execute(query);
 
             if (reader.Read())
             {
-                MappedUser = reader["U"]?.ToString() ?? "Unknown";
-                SystemUser = reader["S"]?.ToString() ?? "Unknown";
+                mappedUser = reader["U"]?.ToString() ?? "Unknown";
+                systemUser = reader["S"]?.ToString() ?? "Unknown";
             }
 
-            return (MappedUser, SystemUser);
+            // Update the properties
+            this.MappedUser = mappedUser;
+            this.SystemUser = systemUser;
+
+            return (mappedUser, systemUser);
         }
 
         /// <summary>
