@@ -40,131 +40,76 @@ namespace MSSQLand.Actions.Domain
                     return null;
                 }
 
-                // Try xp_logininfo first (most detailed, but requires elevated privileges)
-                DataTable groupsTable = null;
-                bool useXpLogininfo = false;
+                // Use the centralized method from UserService
+                var groupNames = databaseContext.UserService.GetUserAdGroups();
 
-                // Prepare result structures
-                var groups = new List<Dictionary<string, string>>();
-
-                try
+                if (groupNames.Count == 0)
                 {
-                    Logger.TaskNested("Attempting to use xp_logininfo...");
-                    string query = $"EXEC master.dbo.xp_logininfo @acctname = '{systemUser}', @option = 'all';";
-                    groupsTable = databaseContext.QueryService.ExecuteTable(query);
-                    
-                    if (groupsTable != null && groupsTable.Rows.Count > 0)
-                    {
-                        useXpLogininfo = true;
-                        Logger.Success("Retrieved group memberships via xp_logininfo");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Warning($"xp_logininfo not available or insufficient permissions: {ex.Message}");
-                }
-
-                // Fallback: Use IS_MEMBER() to check all Windows groups
-                if (!useXpLogininfo)
-                {
-                    Logger.TaskNested("Using fallback method: IS_MEMBER() checks");
-                    
-                    string groupsQuery = @"
-                        SELECT name, type_desc, is_disabled, create_date
-                        FROM master.sys.server_principals
-                        WHERE type = 'G'
-                        AND name LIKE '%\%'
-                        AND name NOT LIKE '##%'
-                        ORDER BY name;";
-
-                    DataTable windowsGroups = databaseContext.QueryService.ExecuteTable(groupsQuery);
-
-                    if (windowsGroups.Rows.Count == 0)
-                    {
-                        Logger.Warning("No Windows groups found in SQL Server principals.");
-                        return null;
-                    }
-
-                    Logger.TaskNested($"Checking membership in {windowsGroups.Rows.Count} Windows group(s)...");
-
-                    foreach (DataRow row in windowsGroups.Rows)
-                    {
-                        string groupName = row["name"].ToString();
-                        bool isDisabled = Convert.ToBoolean(row["is_disabled"]);
-
-                        try
-                        {
-                            string memberCheckQuery = $"SELECT IS_MEMBER('{groupName.Replace("'", "''")}') AS IsMember;";
-                            DataTable memberCheck = databaseContext.QueryService.ExecuteTable(memberCheckQuery);
-
-                            if (memberCheck.Rows.Count > 0 && memberCheck.Rows[0][0] != DBNull.Value)
-                            {
-                                int isMember = Convert.ToInt32(memberCheck.Rows[0][0]);
-
-                                if (isMember == 1)
-                                {
-                                    groups.Add(new Dictionary<string, string>
-                                    {
-                                        { "Group Name", groupName },
-                                        { "Type", "Windows Group" },
-                                        { "Status", isDisabled.ToString() }
-                                    });
-                                }
-                            }
-                        }
-                        catch
-                        {
-                            // IS_MEMBER might fail for some groups
-                        }
-                    }
-                }
-                else
-                {
-                    // Parse xp_logininfo results
-                    foreach (DataRow row in groupsTable.Rows)
-                    {
-                        string accountName = row["account name"]?.ToString();
-                        string type = row["type"]?.ToString();
-                        string privilege = row["privilege"]?.ToString();
-                        string mappedLoginName = row["mapped login name"]?.ToString();
-                        string permissionPath = row["permission path"]?.ToString();
-
-                        // Filter to show only groups (not the user itself)
-                        if (!string.IsNullOrEmpty(type) && 
-                            type.IndexOf("group", StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
-                            groups.Add(new Dictionary<string, string>
-                            {
-                                { "Group Name", permissionPath ?? accountName },
-                                { "Type", type },
-                                { "Status", privilege ?? "N/A" }
-                            });
-                        }
-                    }
-                }
-
-                // Check if any groups found
-                if (groups.Count == 0)
-                {
-                    Logger.Warning("User is not a member of any domain groups.");
+                    Logger.Warning("User is not a member of any domain groups in SQL Server.");
                     return null;
                 }
 
                 Logger.NewLine();
-                Logger.Success($"Found {groups.Count} group membership(s)");
+                Logger.Success($"Found {groupNames.Count} group membership(s)");
+
+                // Query additional details for each group
+                var groups = new List<Dictionary<string, string>>();
+                // Query additional details for each group
+                var groups = new List<Dictionary<string, string>>();
+                
+                foreach (string groupName in groupNames)
+                {
+                    try
+                    {
+                        string detailsQuery = $@"
+                            SELECT type_desc, is_disabled
+                            FROM master.sys.server_principals
+                            WHERE name = '{groupName.Replace("'", "''")}';";
+                        
+                        var details = databaseContext.QueryService.ExecuteTable(detailsQuery);
+                        
+                        if (details.Rows.Count > 0)
+                        {
+                            groups.Add(new Dictionary<string, string>
+                            {
+                                { "Group Name", groupName },
+                                { "Type", details.Rows[0]["type_desc"]?.ToString() ?? "Windows Group" },
+                                { "Is Disabled", details.Rows[0]["is_disabled"]?.ToString() ?? "Unknown" }
+                            });
+                        }
+                        else
+                        {
+                            groups.Add(new Dictionary<string, string>
+                            {
+                                { "Group Name", groupName },
+                                { "Type", "Windows Group" },
+                                { "Is Disabled", "Unknown" }
+                            });
+                        }
+                    }
+                    catch
+                    {
+                        groups.Add(new Dictionary<string, string>
+                        {
+                            { "Group Name", groupName },
+                            { "Type", "Windows Group" },
+                            { "Is Disabled", "Unknown" }
+                        });
+                    }
+                }
 
                 // Display results
                 DataTable resultTable = new DataTable();
                 resultTable.Columns.Add("Group Name", typeof(string));
                 resultTable.Columns.Add("Type", typeof(string));
-                resultTable.Columns.Add("Status", typeof(string));
+                resultTable.Columns.Add("Is Disabled", typeof(string));
 
                 foreach (var group in groups)
                 {
                     resultTable.Rows.Add(
                         group["Group Name"],
                         group["Type"],
-                        group["Status"]
+                        group["Is Disabled"]
                     );
                 }
 

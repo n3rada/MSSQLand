@@ -18,6 +18,11 @@ namespace MSSQLand.Services
         /// Dictionary to cache domain user status for each execution server.
         /// </summary>
         private readonly ConcurrentDictionary<string, bool> _isDomainUserCache = new();
+        
+        /// <summary>
+        /// Dictionary to cache AD group memberships for each execution server.
+        /// </summary>
+        private readonly ConcurrentDictionary<string, List<string>> _adGroupsCache = new();
 
         public string MappedUser { get; private set; }
         public string SystemUser { get; private set; }
@@ -113,6 +118,8 @@ namespace MSSQLand.Services
 
         /// <summary>
         /// Checks if the current system user is a Windows domain user.
+        /// Logic: If the username contains a backslash AND is not a SQL_LOGIN, it's a domain user.
+        /// This handles both direct logins and group-based access.
         /// </summary>
         /// <returns>True if the user is a Windows domain user; otherwise, false.</returns>
         private bool CheckIfDomainUser()
@@ -122,25 +129,132 @@ namespace MSSQLand.Services
                 return false;
             }
 
+            // Check if username has the DOMAIN\username format
+            int backslashIndex = SystemUser.IndexOf('\\');
+            if (backslashIndex <= 0 || backslashIndex >= SystemUser.Length - 1)
+            {
+                // No backslash or invalid format - not a domain user
+                return false;
+            }
+
             try
             {
+                // Check if this is a SQL login (not Windows authentication)
                 string checkQuery = $"SELECT type_desc FROM master.sys.server_principals WHERE name = '{SystemUser.Replace("'", "''")}';";
                 object result = _queryService.ExecuteScalar(checkQuery);
                 
                 if (result != null && result != DBNull.Value)
                 {
                     string typeDesc = result.ToString();
-                    // Windows logins: WINDOWS_LOGIN, WINDOWS_GROUP
-                    return typeDesc.StartsWith("WINDOWS_", StringComparison.OrdinalIgnoreCase);
+                    // If it's a SQL_LOGIN, then it's NOT a domain user (even if it has a backslash)
+                    return !typeDesc.Equals("SQL_LOGIN", StringComparison.OrdinalIgnoreCase);
                 }
+                
+                // User not found in sys.server_principals (group-based access) - it's a domain user
+                return true;
             }
             catch
             {
-                // If we can't query, fall back to backslash check
-                return SystemUser.Contains("\\");
+                // If query fails, assume backslash means domain user
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Retrieves the list of AD groups the current user is a member of.
+        /// Uses IS_MEMBER() to check all Windows groups in SQL Server.
+        /// Results are cached per execution server.
+        /// </summary>
+        /// <returns>List of AD group names the user belongs to, or empty list if none found.</returns>
+        public List<string> GetUserAdGroups()
+        {
+            // Check if groups are already cached for the current ExecutionServer
+            if (_adGroupsCache.TryGetValue(_queryService.ExecutionServer, out List<string> cachedGroups))
+            {
+                return cachedGroups;
             }
 
-            return false;
+            var groups = new List<string>();
+
+            if (string.IsNullOrEmpty(SystemUser) || !IsDomainUser)
+            {
+                _adGroupsCache[_queryService.ExecutionServer] = groups;
+                return groups;
+            }
+
+            try
+            {
+                // Try xp_logininfo first (most comprehensive but requires privileges)
+                try
+                {
+                    string query = $"EXEC master.dbo.xp_logininfo @acctname = '{SystemUser.Replace("'", "''")}', @option = 'all';";
+                    var groupsTable = _queryService.ExecuteTable(query);
+
+                    if (groupsTable != null && groupsTable.Rows.Count > 0)
+                    {
+                        foreach (System.Data.DataRow row in groupsTable.Rows)
+                        {
+                            string type = row["type"]?.ToString();
+                            if (!string.IsNullOrEmpty(type) && 
+                                type.IndexOf("group", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                string groupName = row["permission path"]?.ToString() ?? row["account name"]?.ToString();
+                                if (!string.IsNullOrEmpty(groupName))
+                                {
+                                    groups.Add(groupName);
+                                }
+                            }
+                        }
+
+                        // Cache and return
+                        _adGroupsCache[_queryService.ExecutionServer] = groups;
+                        return groups;
+                    }
+                }
+                catch
+                {
+                    // xp_logininfo not available, fall through to IS_MEMBER approach
+                }
+
+                // Fallback: Use IS_MEMBER() to check all Windows groups
+                string groupsQuery = @"
+                    SELECT name
+                    FROM master.sys.server_principals
+                    WHERE type = 'G'
+                    AND name LIKE '%\%'
+                    AND name NOT LIKE '##%'
+                    ORDER BY name;";
+
+                var windowsGroups = _queryService.ExecuteTable(groupsQuery);
+
+                foreach (System.Data.DataRow row in windowsGroups.Rows)
+                {
+                    string groupName = row["name"].ToString();
+
+                    try
+                    {
+                        string memberCheckQuery = $"SELECT IS_MEMBER('{groupName.Replace("'", "''")}');";
+                        object result = _queryService.ExecuteScalar(memberCheckQuery);
+
+                        if (result != null && result != DBNull.Value && Convert.ToInt32(result) == 1)
+                        {
+                            groups.Add(groupName);
+                        }
+                    }
+                    catch
+                    {
+                        // IS_MEMBER might fail for some groups
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Error retrieving AD groups: {ex.Message}");
+            }
+
+            // Cache the result
+            _adGroupsCache[_queryService.ExecutionServer] = groups;
+            return groups;
         }
 
         /// <summary>
