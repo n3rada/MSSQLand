@@ -49,31 +49,50 @@ ORDER BY r.is_fixed_role DESC, r.name;";
                 return null;
             }
 
+            // Get all role members in a single query
+            string allMembersQuery = @"
+                SELECT 
+                    r.name AS role_name,
+                    m.name AS member_name
+                FROM sys.database_principals r
+                INNER JOIN sys.database_role_members rm ON r.principal_id = rm.role_principal_id
+                INNER JOIN sys.database_principals m ON rm.member_principal_id = m.principal_id
+                WHERE r.type = 'R'
+                ORDER BY r.name, m.name;";
+
+            var allMembers = databaseContext.QueryService.ExecuteTable(allMembersQuery);
+
+            // Build a dictionary for fast lookup: key = role_name, value = list of members
+            var membersDict = new Dictionary<string, List<string>>();
+            
+            foreach (DataRow memberRow in allMembers.Rows)
+            {
+                string roleName = memberRow["role_name"].ToString();
+                string memberName = memberRow["member_name"].ToString();
+
+                if (!membersDict.ContainsKey(roleName))
+                {
+                    membersDict[roleName] = new List<string>();
+                }
+                membersDict[roleName].Add(memberName);
+            }
+
             // Add Members column
             allRoles.Columns.Add("Members", typeof(string));
 
-            // Get members for each role
+            // Map members to roles
             foreach (DataRow roleRow in allRoles.Rows)
             {
                 string roleName = roleRow["RoleName"].ToString();
-                
-                string membersQuery = $@"
-                    SELECT m.name
-                    FROM sys.database_principals r
-                    INNER JOIN sys.database_role_members rm ON r.principal_id = rm.role_principal_id
-                    INNER JOIN sys.database_principals m ON rm.member_principal_id = m.principal_id
-                    WHERE r.name = '{roleName.Replace("'", "''")}'
-                    ORDER BY m.name;";
 
-                var membersTable = databaseContext.QueryService.ExecuteTable(membersQuery);
-                
-                var membersList = new List<string>();
-                foreach (DataRow memberRow in membersTable.Rows)
+                if (membersDict.TryGetValue(roleName, out var members))
                 {
-                    membersList.Add(memberRow["name"].ToString());
+                    roleRow["Members"] = string.Join(", ", members);
                 }
-
-                roleRow["Members"] = membersList.Count > 0 ? string.Join(", ", membersList) : "";
+                else
+                {
+                    roleRow["Members"] = "";
+                }
             }
 
             // Separate fixed roles from custom roles
