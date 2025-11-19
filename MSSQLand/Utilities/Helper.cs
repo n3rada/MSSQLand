@@ -54,6 +54,8 @@ namespace MSSQLand.Utilities
         /// </summary>
         public static void Show()
         {
+            MarkdownFormatter formatter = new MarkdownFormatter();
+
             // Usage instruction
             Console.WriteLine("Usage: /h:localhost /c:token /a:whoami\n");
             Console.WriteLine("Quick Help:");
@@ -65,12 +67,12 @@ namespace MSSQLand.Utilities
             // Provide a quick reference of top-level arguments or usage
             Console.WriteLine();
             Console.WriteLine("CLI arguments:");
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(getArguments()));
+            Console.WriteLine(formatter.ConvertDataTable(getArguments()));
 
             // Provide credential types
             Console.WriteLine();
             Console.WriteLine("Credential types:");
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(getCredentialTypes()));
+            Console.WriteLine(formatter.ConvertDataTable(getCredentialTypes()));
 
             // Add Utilities Section
             Console.WriteLine();
