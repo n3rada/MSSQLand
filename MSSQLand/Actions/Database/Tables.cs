@@ -50,35 +50,59 @@ namespace MSSQLand.Actions.Database
 
             DataTable tables = databaseContext.QueryService.ExecuteTable(query);
 
+            if (tables.Rows.Count == 0)
+            {
+                Logger.Warning("No tables found.");
+                return tables;
+            }
+
+            // Get all permissions in a single query
+            string allPermissionsQuery = $@"
+                USE [{_database}];
+                SELECT 
+                    SCHEMA_NAME(o.schema_id) AS schema_name,
+                    o.name AS object_name,
+                    p.permission_name
+                FROM sys.objects o
+                CROSS APPLY fn_my_permissions(QUOTENAME(SCHEMA_NAME(o.schema_id)) + '.' + QUOTENAME(o.name), 'OBJECT') p
+                WHERE o.type IN ('U', 'V')
+                ORDER BY o.name, p.permission_name;";
+
+            DataTable allPermissions = databaseContext.QueryService.ExecuteTable(allPermissionsQuery);
+
+            // Build a dictionary for fast lookup: key = "schema.table", value = list of permissions
+            var permissionsDict = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>>();
+            
+            foreach (DataRow permRow in allPermissions.Rows)
+            {
+                string key = $"{permRow["schema_name"]}.{permRow["object_name"]}";
+                string permission = permRow["permission_name"].ToString();
+
+                if (!permissionsDict.ContainsKey(key))
+                {
+                    permissionsDict[key] = new System.Collections.Generic.List<string>();
+                }
+                permissionsDict[key].Add(permission);
+            }
+
             // Add a column for permissions
             tables.Columns.Add("Permissions", typeof(string));
 
+            // Map permissions to tables
             foreach (DataRow row in tables.Rows)
             {
                 string schemaName = row["SchemaName"].ToString();
                 string tableName = row["TableName"].ToString();
+                string key = $"{schemaName}.{tableName}";
 
-
-                // Query to get user permissions on the table
-
-                // Query to get permissions
-                string permissionQuery = $@"
-                USE [{_database}];
-                SELECT DISTINCT
-                    permission_name
-                FROM 
-                    fn_my_permissions('[{schemaName}].[{tableName}]', 'OBJECT');
-                ";
-
-                DataTable permissionResult = databaseContext.QueryService.ExecuteTable(permissionQuery);
-
-                // Concatenate permissions as a comma-separated string
-                string permissions = string.Join(", ", permissionResult.AsEnumerable()
-                    .Select(r => r["permission_name"].ToString()));
-
-                // Add permissions to the result row
-                row["Permissions"] = permissions;
-
+                if (permissionsDict.TryGetValue(key, out var permissions))
+                {
+                    row["Permissions"] = string.Join(", ", permissions);
+                }
+                else
+                {
+                    row["Permissions"] = "";
+                }
             }
 
 
