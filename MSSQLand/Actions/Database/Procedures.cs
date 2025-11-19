@@ -119,30 +119,52 @@ namespace MSSQLand.Actions.Database
                 return procedures;
             }
 
+            // Get all permissions in a single query
+            string allPermissionsQuery = @"
+                SELECT 
+                    SCHEMA_NAME(o.schema_id) AS schema_name,
+                    o.name AS object_name,
+                    p.permission_name
+                FROM sys.objects o
+                CROSS APPLY fn_my_permissions(QUOTENAME(SCHEMA_NAME(o.schema_id)) + '.' + QUOTENAME(o.name), 'OBJECT') p
+                WHERE o.type = 'P'
+                ORDER BY o.name, p.permission_name;";
+
+            DataTable allPermissions = databaseContext.QueryService.ExecuteTable(allPermissionsQuery);
+
+            // Build a dictionary for fast lookup: key = "schema.procedure", value = list of permissions
+            var permissionsDict = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>>();
+            
+            foreach (DataRow permRow in allPermissions.Rows)
+            {
+                string key = $"{permRow["schema_name"]}.{permRow["object_name"]}";
+                string permission = permRow["permission_name"].ToString();
+
+                if (!permissionsDict.ContainsKey(key))
+                {
+                    permissionsDict[key] = new System.Collections.Generic.List<string>();
+                }
+                permissionsDict[key].Add(permission);
+            }
+
             // Add a column for permissions
             procedures.Columns.Add("Permissions", typeof(string));
 
+            // Map permissions to procedures
             foreach (DataRow row in procedures.Rows)
             {
                 string schemaName = row["schema_name"].ToString();
                 string procedureName = row["procedure_name"].ToString();
+                string key = $"{schemaName}.{procedureName}";
 
-                // Query to get user permissions on the procedure
-                string permissionQuery = $@"
-                    SELECT DISTINCT
-                        permission_name
-                    FROM 
-                        fn_my_permissions('[{schemaName}].[{procedureName}]', 'OBJECT');
-                ";
-
-                DataTable permissionResult = databaseContext.QueryService.ExecuteTable(permissionQuery);
-
-                // Concatenate permissions as a comma-separated string
-                string permissions = string.Join(", ", permissionResult.AsEnumerable()
-                    .Select(r => r["permission_name"].ToString()));
-
-                // Add permissions to the result row
-                row["Permissions"] = permissions;
+                if (permissionsDict.TryGetValue(key, out var permissions))
+                {
+                    row["Permissions"] = string.Join(", ", permissions);
+                }
+                else
+                {
+                    row["Permissions"] = "";
+                }
             }
 
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(procedures));
