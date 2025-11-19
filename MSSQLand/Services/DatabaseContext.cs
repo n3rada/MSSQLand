@@ -25,8 +25,6 @@ namespace MSSQLand.Services
 
             Server.Hostname = QueryService.ExecutionServer;
 
-            Server.IsAzureSQL = QueryService.IsAzureSQL();
-
             if (HandleImpersonation() == false)
             {
                 throw new Exception("Failed to handle impersonation. Exiting.");

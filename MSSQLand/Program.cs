@@ -137,7 +137,12 @@ namespace MSSQLand
                             Logger.InfoNested($"Authorized via {adGroups.Count} AD group(s): {string.Join(", ", adGroups)}");
                         }
                     }
+                    
+  
                 }
+
+                // Detect Azure SQL on the final execution server
+                databaseContext.QueryService.IsAzureSQL();
 
                 Logger.Task($"Executing action '{arguments.Action.GetName()}' against {databaseContext.QueryService.ExecutionServer}");
 
