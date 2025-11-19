@@ -23,6 +23,13 @@ namespace MSSQLand.Actions.Network
         /// <param name="databaseContext">The ConnectionManager for executing the query.</param>
         public override object? Execute(DatabaseContext databaseContext)
         {
+            // Check if running on Azure SQL Database
+            if (databaseContext.QueryService.IsAzureSQL())
+            {
+                Logger.Warning("Linked servers are not supported on Azure SQL Database (PaaS)");
+                return null;
+            }
+
             Logger.TaskNested($"Retrieving Linked SQL Servers");
 
             DataTable resultTable = GetLinkedServers(databaseContext);
@@ -51,9 +58,9 @@ namespace MSSQLand.Actions.Network
                     srv.is_rpc_out_enabled AS [RPC Out],
                     srv.is_data_access_enabled AS [OPENQUERY],
                     srv.is_collation_compatible AS [Collation]
-                FROM master.sys.servers srv
-                LEFT JOIN master.sys.linked_logins ll ON srv.server_id = ll.server_id
-                LEFT JOIN master.sys.server_principals prin ON ll.local_principal_id = prin.principal_id
+                FROM sys.servers srv
+                LEFT JOIN sys.linked_logins ll ON srv.server_id = ll.server_id
+                LEFT JOIN sys.server_principals prin ON ll.local_principal_id = prin.principal_id
                 WHERE srv.is_linked = 1
                 ORDER BY srv.modify_date DESC;";
 
