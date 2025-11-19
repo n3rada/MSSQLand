@@ -1,6 +1,7 @@
 ﻿using MSSQLand.Models;
 using MSSQLand.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
@@ -15,6 +16,11 @@ namespace MSSQLand.Services
         private LinkedServers _linkedServers = new();
         
         private const int MAX_RETRIES = 3;
+
+        /// <summary>
+        /// Dictionary to cache Azure SQL detection for each execution server.
+        /// </summary>
+        private readonly ConcurrentDictionary<string, bool> _isAzureSQLCache = new();
 
 
         /// <summary>
@@ -297,6 +303,80 @@ namespace MSSQLand.Services
             }
             
             return string.Join("\n", lines);
+        }
+
+        /// <summary>
+        /// Checks if the current execution server is Azure SQL Database.
+        /// Results are cached per server for performance.
+        /// </summary>
+        /// <returns>True if the server is Azure SQL, otherwise false.</returns>
+        public bool IsAzureSQL()
+        {
+            // Check if Azure SQL detection is already cached for the current ExecutionServer
+            if (_isAzureSQLCache.TryGetValue(ExecutionServer, out bool isAzure))
+            {
+                return isAzure;
+            }
+
+            // If not cached, detect and store the result
+            bool azureStatus = DetectAzureSQL();
+
+            // Cache the result for the current ExecutionServer
+            _isAzureSQLCache[ExecutionServer] = azureStatus;
+
+            if (azureStatus)
+            {
+                Logger.Debug($"Detected Azure SQL Database on {ExecutionServer}");
+            }
+
+            return azureStatus;
+        }
+
+        /// <summary>
+        /// Detects if the current execution server is Azure SQL by checking @@VERSION.
+        /// </summary>
+        /// <returns>True if Azure SQL Database (PaaS) is detected, otherwise false.</returns>
+        private bool DetectAzureSQL()
+        {
+            try
+            {
+                string version = ExecuteScalar("SELECT @@VERSION")?.ToString();
+                
+                if (string.IsNullOrEmpty(version))
+                {
+                    return false;
+                }
+                
+                // Check if it contains "Microsoft SQL Azure"
+                bool isAzure = version.Contains("Microsoft SQL Azure", StringComparison.OrdinalIgnoreCase);
+                
+                if (isAzure)
+                {
+                    // Distinguish between Azure SQL Database and Managed Instance
+                    // Azure SQL Database (PaaS) contains "SQL Azure" but NOT "Managed Instance"
+                    // Azure SQL Managed Instance contains both "SQL Azure" and specific MI indicators
+                    bool isManagedInstance = version.Contains("Azure SQL Managed Instance", StringComparison.OrdinalIgnoreCase) ||
+                                           version.Contains("SQL Azure Managed Instance", StringComparison.OrdinalIgnoreCase);
+                    
+                    if (isManagedInstance)
+                    {
+                        Logger.Info($"Detected Azure SQL Managed Instance on {ExecutionServer} - full feature set");
+                        return false; // Managed Instance has full features
+                    }
+                    else
+                    {
+                        Logger.Info($"Detected Azure SQL Database (PaaS) on {ExecutionServer} - limited feature set");
+                        return true; // PaaS has limitations
+                    }
+                }
+                
+                return false;
+            }
+            catch
+            {
+                // If detection fails, assume it's not Azure SQL
+                return false;
+            }
         }
     }
 }

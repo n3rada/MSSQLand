@@ -43,6 +43,8 @@ namespace MSSQLand.Models
 
         public bool Legacy { get; private set; } = false;
 
+        public bool IsAzureSQL { get; set; } = false;
+
         public int Port { get; set; } = 1433; // Default SQL Server port
 
         public string Database { get; set; } = "master";
