@@ -127,7 +127,7 @@ namespace MSSQLand.Actions.Database
                     }
 
                     Logger.Success($"Fixed Server Roles ({fixedServerRoles.Count} roles)");
-                    Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(fixedServerRolesTable));
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(fixedServerRolesTable));
                     Console.WriteLine();
                 }
 
@@ -153,7 +153,7 @@ namespace MSSQLand.Actions.Database
                     }
 
                     Logger.Success($"Custom Server Roles ({customServerRoles.Count} roles)");
-                    Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(customServerRolesTable));
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(customServerRolesTable));
                     Console.WriteLine();
                 }
             }
@@ -263,7 +263,7 @@ ORDER BY r.is_fixed_role DESC, r.name;";
                 }
 
                 Logger.Success($"Fixed Database Roles ({fixedRolesData.Count} roles)");
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(fixedRolesTable));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(fixedRolesTable));
                 Console.WriteLine();
             }
 
@@ -289,7 +289,7 @@ ORDER BY r.is_fixed_role DESC, r.name;";
                 }
 
                 Logger.Success($"Custom Database Roles ({customRolesData.Count} roles)");
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(customRolesTable));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(customRolesTable));
             }
             else
             {

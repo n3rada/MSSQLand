@@ -133,7 +133,7 @@ namespace MSSQLand.Actions.Database
             DROP TABLE #ProviderInformation";
 
 
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable(query)));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(databaseContext.QueryService.ExecuteTable(query)));
 
             return null;
 

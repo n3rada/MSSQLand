@@ -72,7 +72,7 @@ namespace MSSQLand.Actions.Database
             DataTable rows = databaseContext.QueryService.ExecuteTable($"SELECT * FROM {targetTable};");
 
 
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(rows));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(rows));
 
             return rows;
 

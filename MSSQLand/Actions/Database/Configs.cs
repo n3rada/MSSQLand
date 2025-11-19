@@ -106,7 +106,7 @@ namespace MSSQLand.Actions.Database
             }
 
             // Display as markdown table
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(dt));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(dt));
 
             // Summary
             Logger.NewLine();

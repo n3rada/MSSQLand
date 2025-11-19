@@ -102,7 +102,7 @@ namespace MSSQLand.Actions.Domain
                 Logger.Success($"Found {membersTable.Rows.Count} member(s) using xp_logininfo");
 
                 // Display the results
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(membersTable));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(membersTable));
 
                 return membersTable;
             }
@@ -153,7 +153,7 @@ namespace MSSQLand.Actions.Domain
 
                 Logger.NewLine();
                 Logger.Success($"Found {membersTable.Rows.Count} member(s) using OPENQUERY/ADSI");
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(membersTable));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(membersTable));
 
                 return membersTable;
             }

@@ -103,7 +103,7 @@ namespace MSSQLand.Actions.Execution
             }
 
             Logger.Info("Combined results:");
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(combinedResults));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(combinedResults));
             
             return combinedResults;
         }

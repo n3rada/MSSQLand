@@ -45,7 +45,7 @@ namespace MSSQLand.Services
         {
             string query = $"SELECT * FROM master.sys.assembly_modules;";
 
-            string result = MarkdownFormatter.ConvertDataTableToMarkdownTable(_queryService.ExecuteTable(query)).ToLower();
+            string result = OutputFormatter.ConvertDataTable(_queryService.ExecuteTable(query)).ToLower();
 
             if (result.Contains(assemblyName.ToLower()))
             {

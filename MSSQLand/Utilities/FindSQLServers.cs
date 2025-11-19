@@ -90,7 +90,7 @@ namespace MSSQLand.Utilities
                     };
 
                     // Output details as a Markdown table
-                    Console.WriteLine(MarkdownFormatter.ConvertDictionaryToMarkdownTable(spnDetails, "Property", "Value"));
+                    Console.WriteLine(OutputFormatter.ConvertDictionary(spnDetails, "Property", "Value"));
                     sqlServerCount++;
                 }
             }

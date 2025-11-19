@@ -56,7 +56,7 @@ namespace MSSQLand.Actions.Network
             try
             {
                 DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
 
                 Logger.Success($"RPC {_action.ToString().ToLower()} action executed successfully on '{_linkedServerName}'");
                 return resultTable;

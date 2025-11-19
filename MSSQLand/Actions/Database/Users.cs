@@ -75,7 +75,7 @@ namespace MSSQLand.Actions.Database
                 );
             }
 
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(table));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(table));
             Logger.NewLine();
 
             Logger.Info("Database users in current database context");
@@ -87,7 +87,7 @@ namespace MSSQLand.Actions.Database
                 WHERE type NOT IN ('R', 'A', 'X') AND sid IS NOT null AND name NOT LIKE '##%' 
                 ORDER BY modify_date DESC;";
 
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(
+            Console.WriteLine(OutputFormatter.ConvertDataTable(
                 databaseContext.QueryService.ExecuteTable(databaseUsersQuery)));
 
             return null;

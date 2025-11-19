@@ -53,7 +53,7 @@ namespace MSSQLand.Actions.Domain
 
             DataTable answer = databaseContext.QueryService.ExecuteTable(query);
 
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(answer));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(answer));
 
             return answer;
         }

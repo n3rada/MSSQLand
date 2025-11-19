@@ -71,7 +71,7 @@ namespace MSSQLand.Actions.Database
             allDatabases.Columns["Owner"].SetOrdinal(4);
 
             // Output the final table
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(allDatabases));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(allDatabases));
 
             return allDatabases;
         }

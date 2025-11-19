@@ -131,7 +131,7 @@ namespace MSSQLand.Actions.Database
                     .CopyToDataTable();
 
                 Logger.Success($"Found {sortedTable.Rows.Count} extended stored procedures.");
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(sortedTable));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(sortedTable));
 
                 return sortedTable;
             }

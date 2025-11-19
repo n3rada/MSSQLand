@@ -277,7 +277,7 @@ namespace MSSQLand.Utilities
                         credentialsTable.Rows.Add(credential.Name, credential.Description, requiredArgs);
                     }
                     
-                    Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(credentialsTable));
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(credentialsTable));
                     return (ParseResultType.InvalidInput, null);
                 }
 

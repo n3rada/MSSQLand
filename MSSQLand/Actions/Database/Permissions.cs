@@ -61,15 +61,15 @@ namespace MSSQLand.Actions.Database
                 Logger.Info("Server permissions");
 
 
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'SERVER');")));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(databaseContext.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'SERVER');")));
 
                 Logger.Info("Database permissions");
 
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'DATABASE');")));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(databaseContext.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'DATABASE');")));
 
                 Logger.Info("Database access");
 
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(databaseContext.QueryService.ExecuteTable("SELECT name AS [Accessible Database] FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1;")));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(databaseContext.QueryService.ExecuteTable("SELECT name AS [Accessible Database] FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1;")));
 
                 return null;
             }
@@ -88,7 +88,7 @@ namespace MSSQLand.Actions.Database
 
             var dataTable = databaseContext.QueryService.ExecuteTable(query);
 
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(dataTable));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(dataTable));
             return null;
         }
     }

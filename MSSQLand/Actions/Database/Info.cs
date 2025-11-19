@@ -65,7 +65,7 @@ namespace MSSQLand.Actions.Database
             }
 
 
-            Console.WriteLine(MarkdownFormatter.ConvertDictionaryToMarkdownTable(results, "Information", "Value"));
+            Console.WriteLine(OutputFormatter.ConvertDictionary(results, "Information", "Value"));
 
             return results;
 

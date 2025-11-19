@@ -77,7 +77,7 @@ namespace MSSQLand.Actions.Domain
                 }
 
                 // Display as markdown table
-                Console.WriteLine(MarkdownFormatter.ConvertDictionaryToMarkdownTable(result, "Property", "Value"));
+                Console.WriteLine(OutputFormatter.ConvertDictionary(result, "Property", "Value"));
 
                 return result;
             }

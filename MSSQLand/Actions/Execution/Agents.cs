@@ -96,7 +96,7 @@ namespace MSSQLand.Actions.Execution
             }
 
             Logger.Success($"Found {jobsTable.Rows.Count} SQL Agent job(s)");
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(jobsTable));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(jobsTable));
 
             return jobsTable;
         }

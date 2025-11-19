@@ -47,7 +47,7 @@ ORDER BY l.create_date DESC;";
                 Logger.Success($"Found {result.Rows.Count} member(s) in role '{_roleName}'");
             }
 
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(result));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(result));
 
             return null;
         }

@@ -118,7 +118,7 @@ namespace MSSQLand.Actions.Administration
             Logger.NewLine();
 
             // Display formatted markdown table
-            Console.WriteLine(MarkdownFormatter.ConvertListToMarkdownTable(adsiServers, "ADSI Servers"));
+            Console.WriteLine(OutputFormatter.ConvertList(adsiServers, "ADSI Servers"));
 
             return adsiServers;
         }

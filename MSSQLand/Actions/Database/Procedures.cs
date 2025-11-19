@@ -168,7 +168,7 @@ namespace MSSQLand.Actions.Database
                 }
             }
 
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(procedures));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(procedures));
 
             Logger.NewLine();
             Logger.Info($"Total: {procedures.Rows.Count} stored procedure(s) found");
@@ -191,7 +191,7 @@ namespace MSSQLand.Actions.Database
 
                 Logger.Success($"Stored procedure '{procedureName}' executed.");
                 Logger.NewLine();
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(result));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(result));
                 return result;
             }
             catch (Exception ex)
@@ -270,7 +270,7 @@ namespace MSSQLand.Actions.Database
                 }
 
                 Logger.Success($"Found {result.Rows.Count} stored procedure(s) containing '{keyword}'.");
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(result));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(result));
 
                 Logger.NewLine();
                 Logger.Info($"Total: {result.Rows.Count} stored procedure(s) matching search criteria");
@@ -359,7 +359,7 @@ namespace MSSQLand.Actions.Database
                 }
 
                 Logger.Success($"Found {result.Rows.Count} potential SQL injection pattern(s) in stored procedures");
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(result));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(result));
 
                 Logger.NewLine();
                 Logger.Warning("These results require manual verification.");

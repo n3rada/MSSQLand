@@ -64,12 +64,12 @@ namespace MSSQLand.Utilities
             // Provide a quick reference of top-level arguments or usage
             Console.WriteLine();
             Console.WriteLine("CLI arguments:");
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(getArguments()));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(getArguments()));
 
             // Provide credential types
             Console.WriteLine();
             Console.WriteLine("Credential types:");
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(getCredentialTypes()));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(getCredentialTypes()));
 
             // Add Utilities Section
             Console.WriteLine();

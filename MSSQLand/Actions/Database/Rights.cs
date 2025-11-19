@@ -132,7 +132,7 @@ namespace MSSQLand.Actions.Database
                     );
                 }
 
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(enabledTable));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(enabledTable));
                 Logger.NewLine();
             }
 
@@ -152,7 +152,7 @@ namespace MSSQLand.Actions.Database
                     );
                 }
 
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(disabledTable));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(disabledTable));
                 Logger.NewLine();
             }
         }

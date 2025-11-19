@@ -27,7 +27,7 @@ namespace MSSQLand.Actions.Administration
             FROM master.sys.dm_exec_sessions
             ORDER BY login_time DESC;";
 
-            Console.WriteLine(MarkdownFormatter.ConvertSqlDataReaderToMarkdownTable(databaseContext.QueryService.Execute(sessionsQuery)));
+            Console.WriteLine(OutputFormatter.ConvertSqlDataReader(databaseContext.QueryService.Execute(sessionsQuery)));
 
             return null;
         }

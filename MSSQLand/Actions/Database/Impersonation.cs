@@ -65,7 +65,7 @@ ORDER BY create_date DESC;";
                 }
             }
 
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(queryResult));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(queryResult));
 
             return queryResult;
         }

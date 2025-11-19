@@ -179,7 +179,7 @@ namespace MSSQLand.Actions.Network
         ORDER BY srv.name;";
 
             DataTable results = databaseContext.QueryService.ExecuteTable(query);
-            Logger.Debug(MarkdownFormatter.ConvertDataTableToMarkdownTable(results));
+            Logger.Debug(OutputFormatter.ConvertDataTable(results));
             return results;
         }
 

@@ -106,7 +106,7 @@ namespace MSSQLand.Actions.Database
             }
 
 
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(tables));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(tables));
 
             return tables;
         }

@@ -234,7 +234,7 @@ namespace MSSQLand.Actions.Domain
                             );
                         }
 
-                        Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
                     }
                 }
             }

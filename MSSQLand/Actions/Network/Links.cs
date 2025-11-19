@@ -26,7 +26,7 @@ namespace MSSQLand.Actions.Network
 
             DataTable resultTable = GetLinkedServers(databaseContext);
 
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
 
             return resultTable;
 

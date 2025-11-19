@@ -183,7 +183,7 @@ namespace MSSQLand.Actions.Network
                 Logger.Success($"Retrieved {result.Rows.Count} result{(result.Rows.Count > 1 ? "s" : "")}");
 
                 // Display the results
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(result));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(result));
 
                 return result;
             }

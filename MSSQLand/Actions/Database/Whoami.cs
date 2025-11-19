@@ -104,7 +104,7 @@ namespace MSSQLand.Actions.Database
                 { "Accessible Databases", string.Join(", ", databaseNames) }
             };
 
-            Console.WriteLine(MarkdownFormatter.ConvertDictionaryToMarkdownTable(userDetails, "Property", "Value"));
+            Console.WriteLine(OutputFormatter.ConvertDictionary(userDetails, "Property", "Value"));
 
             return null;
         }

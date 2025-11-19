@@ -59,7 +59,7 @@ namespace MSSQLand.Actions.Execution
                     return resultTable;
                 }
 
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
                 return resultTable;
             }
             catch (SqlException sqlEx)

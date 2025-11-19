@@ -162,7 +162,7 @@ namespace MSSQLand.Actions.Database
             if (headerMatchCount > 0)
             {
                 Logger.Success($"Found {headerMatchCount} column header match(es) containing '{_keyword}':");
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(headerMatches));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(headerMatches));
             }
 
             // Search for the keyword in each table's rows
@@ -218,7 +218,7 @@ namespace MSSQLand.Actions.Database
                         rowMatchCount += resultTable.Rows.Count;
                         Logger.NewLine();
                         Logger.Success($"Found {resultTable.Rows.Count} row(s) containing '{_keyword}' in [{database}].[{schema}].[{table}]:");
-                        Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(resultTable));
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
                     }
                 }
                 catch (Exception ex)

@@ -39,7 +39,7 @@ namespace MSSQLand.Actions.Administration
             WHERE r.session_id != @@SPID
             ORDER BY r.start_time DESC;";
 
-            Console.WriteLine(MarkdownFormatter.ConvertSqlDataReaderToMarkdownTable(databaseContext.QueryService.Execute(currentCommandsQuery)));
+            Console.WriteLine(OutputFormatter.ConvertSqlDataReader(databaseContext.QueryService.Execute(currentCommandsQuery)));
 
             return null;
         }
