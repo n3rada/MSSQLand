@@ -63,13 +63,20 @@ namespace MSSQLand.Actions.Database
                         ? queryResult.Rows[0][0]?.ToString() ?? "NULL"
                         : "NULL";
 
-                    // Remove line breaks from @@VERSION output
+                    // Split Full Version String into multiple rows
                     if (key == "Full Version String")
                     {
-                        result = result.Replace("\r\n", " ").Replace("\n", " ").Replace("\r", " ");
+                        var lines = result.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries);
+                        for (int i = 0; i < lines.Length; i++)
+                        {
+                            string lineKey = i == 0 ? key : $"{key} (Line {i + 1})";
+                            results[lineKey] = lines[i].Trim();
+                        }
                     }
-
-                    results[key] = result;
+                    else
+                    {
+                        results[key] = result;
+                    }
                 }
                 catch (Exception ex)
                 {
