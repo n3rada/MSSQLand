@@ -72,47 +72,7 @@ namespace MSSQLand.Actions.Database
 
             DataTable rawTable = databaseContext.QueryService.ExecuteTable(query);
 
-            // Post-process to create groups column from role flags
-            DataTable table = new DataTable();
-            table.Columns.Add("Name", typeof(string));
-            table.Columns.Add("Type", typeof(string));
-            table.Columns.Add("is_disabled", typeof(bool));
-            table.Columns.Add("create_date", typeof(DateTime));
-            table.Columns.Add("modify_date", typeof(DateTime));
-            table.Columns.Add("groups", typeof(string));
-
-            string[] roleColumns = { "sysadmin", "securityadmin", "serveradmin", "setupadmin", 
-                                    "processadmin", "diskadmin", "dbcreator", "bulkadmin" };
-
-            foreach (DataRow row in rawTable.Rows)
-            {
-                List<string> roles = new List<string>();
-                
-                foreach (string roleColumn in roleColumns)
-                {
-                    if (row[roleColumn] != DBNull.Value && Convert.ToBoolean(row[roleColumn]))
-                    {
-                        roles.Add(roleColumn);
-                    }
-                }
-
-                // Add custom roles if any
-                if (row["custom_roles"] != DBNull.Value && !string.IsNullOrWhiteSpace(row["custom_roles"].ToString()))
-                {
-                    roles.Add(row["custom_roles"].ToString());
-                }
-
-                table.Rows.Add(
-                    row["Name"],
-                    row["Type"],
-                    row["is_disabled"],
-                    row["create_date"],
-                    row["modify_date"],
-                    string.Join(", ", roles)
-                );
-            }
-
-            Console.WriteLine(OutputFormatter.ConvertDataTable(table));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(rawTable));
             Logger.NewLine();
 
             Logger.Info("Database users in current database context");
