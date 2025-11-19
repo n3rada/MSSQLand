@@ -243,9 +243,6 @@ namespace MSSQLand.Utilities
                     return (ParseResultType.ShowHelp, null);
                 }
 
-                // Get the action from the factory
-                parsedArgs.Action = ActionFactory.GetAction(actionType, parsedArgs.AdditionalArguments);
-
                 // Check if credential type is empty or null
                 if (string.IsNullOrWhiteSpace(parsedArgs.CredentialType))
                 {
@@ -279,6 +276,9 @@ namespace MSSQLand.Utilities
                 parsedArgs.Username = username;
                 parsedArgs.Password = password;
                 parsedArgs.Domain = domain;
+
+                // Get the action from the factory (after validation)
+                parsedArgs.Action = ActionFactory.GetAction(actionType, parsedArgs.AdditionalArguments);
 
                 // Show parsed arguments only in debug mode
                 if (Logger.IsDebugEnabled)
