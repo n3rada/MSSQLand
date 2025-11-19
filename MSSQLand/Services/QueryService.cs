@@ -238,8 +238,6 @@ namespace MSSQLand.Services
 
             if (!_linkedServers.IsEmpty)
             {
-                Logger.DebugNested("Linked server detected");
-
                 finalQuery = _linkedServers.UseRemoteProcedureCall
                     ? _linkedServers.BuildRemoteProcedureCallChain(query)
                     : _linkedServers.BuildSelectOpenQueryChain(query);
