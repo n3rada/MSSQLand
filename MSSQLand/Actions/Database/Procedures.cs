@@ -267,7 +267,9 @@ namespace MSSQLand.Actions.Database
         private DataTable FindSqliVulnerable(DatabaseContext databaseContext)
         {
             Logger.NewLine();
-            Logger.Info("Searching for stored procedures potentially vulnerable to SQL injection...");
+            Logger.Info("Searching for stored procedures potentially vulnerable to SQL injection");
+            Logger.InfoNested("Results require manual verification, this is a heuristic detection");
+            Logger.NewLine();
 
             string query = @"
                 SELECT 
@@ -288,6 +290,9 @@ namespace MSSQLand.Actions.Database
                     OR m.definition LIKE '%EXECUTE(@%'
                     -- sp_executesql with concatenation
                     OR (m.definition LIKE '%sp_executesql%' AND m.definition LIKE '%+%@%')
+                    -- SET @var = @var + concatenation
+                    OR (m.definition LIKE '%SET @%=%@%+%@%')
+                    OR (m.definition LIKE '%SET @%=@%+%''%')
                 )
                 ORDER BY o.modify_date DESC;";
 
@@ -305,6 +310,8 @@ namespace MSSQLand.Actions.Database
                 DataTable result = new();
                 result.Columns.Add("schema_name", typeof(string));
                 result.Columns.Add("procedure_name", typeof(string));
+                result.Columns.Add("vulnerability_pattern", typeof(string));
+                result.Columns.Add("vulnerable_line", typeof(string));
                 result.Columns.Add("modify_date", typeof(DateTime));
 
                 foreach (DataRow row in fullResult.Rows)
@@ -314,18 +321,11 @@ namespace MSSQLand.Actions.Database
                     string procName = row["procedure_name"].ToString();
                     DateTime modifyDate = (DateTime)row["modify_date"];
 
-                    bool isVulnerable = false;
+                    var vulnerabilities = FindVulnerablePatterns(definition);
 
-                    // Check if EXEC/EXECUTE with concatenation is NOT inside quotes
-                    // Pattern: EXEC ('string' + @param) outside of quoted strings
-                    if (ContainsDynamicExecOutsideQuotes(definition))
+                    foreach (var vuln in vulnerabilities)
                     {
-                        isVulnerable = true;
-                    }
-
-                    if (isVulnerable)
-                    {
-                        result.Rows.Add(schemaName, procName, modifyDate);
+                        result.Rows.Add(schemaName, procName, vuln.Pattern, vuln.Line, modifyDate);
                     }
                 }
 
@@ -335,12 +335,12 @@ namespace MSSQLand.Actions.Database
                     return result;
                 }
 
-                Logger.Warning($"Found {result.Rows.Count} stored procedure(s) with potential SQL injection vulnerabilities!");
+                Logger.Success($"Found {result.Rows.Count} potential SQL injection pattern(s) in stored procedures");
                 Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(result));
 
                 Logger.NewLine();
-                Logger.Info($"Total: {result.Rows.Count} potentially vulnerable stored procedure(s) found");
-                Logger.Info("Review these procedures manually. Use '/a:procedures read <name>' to inspect the full definition.");
+                Logger.Warning("These results require manual verification.");
+                Logger.WarningNested("Use '/a:procedures read <name>' to inspect the full definition.");
 
                 return result;
             }
@@ -352,132 +352,89 @@ namespace MSSQLand.Actions.Database
         }
 
         /// <summary>
-        /// Checks if a procedure contains dynamic EXEC/EXECUTE with string concatenation outside of quoted strings.
+        /// Finds vulnerable patterns and returns the pattern type and the actual vulnerable line.
         /// </summary>
-        private bool ContainsDynamicExecOutsideQuotes(string definition)
+        private List<(string Pattern, string Line)> FindVulnerablePatterns(string definition)
         {
-            // Remove all string literals to simplify pattern matching
-            string cleanedDefinition = RemoveStringLiterals(definition);
-            
-            // Pattern 1: EXEC( ... + @param ...) or EXECUTE( ... + @param ...)
-            if (System.Text.RegularExpressions.Regex.IsMatch(cleanedDefinition, 
-                @"EXEC(UTE)?\s*\([^)]*\+\s*@", 
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            var vulnerabilities = new List<(string, string)>();
+            string[] lines = definition.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+
+            for (int i = 0; i < lines.Length; i++)
             {
-                return true;
+                string line = lines[i].Trim();
+                
+                // Skip comments and empty lines
+                if (string.IsNullOrWhiteSpace(line) || line.StartsWith("--"))
+                    continue;
+
+                string lineUpper = line.ToUpper();
+                
+                // Pattern 1: Direct EXEC/EXECUTE with concatenation
+                if (System.Text.RegularExpressions.Regex.IsMatch(line, 
+                    @"EXEC(UTE)?\s*\([^)]*\+\s*@", 
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                {
+                    vulnerabilities.Add(("EXEC with concatenation", TruncateLine(line, 80)));
+                }
+                
+                // Pattern 2: Direct variable execution
+                else if (System.Text.RegularExpressions.Regex.IsMatch(line, 
+                    @"EXEC(UTE)?\s*\(\s*@[a-zA-Z_][\w]*\s*\)", 
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase) ||
+                    System.Text.RegularExpressions.Regex.IsMatch(line, 
+                    @"EXEC(UTE)?\s+@[a-zA-Z_][\w]*\s*($|;|\s)", 
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                {
+                    vulnerabilities.Add(("Direct variable execution", TruncateLine(line, 80)));
+                }
+                
+                // Pattern 3: sp_executesql with concatenation (excluding safe parameterized patterns)
+                else if (lineUpper.Contains("SP_EXECUTESQL") && line.Contains("+") && line.Contains("@"))
+                {
+                    // Check if it's NOT a safe parameterized query pattern
+                    if (!System.Text.RegularExpressions.Regex.IsMatch(line, 
+                        @"sp_executesql\s+@\w+\s*,\s*N'[^']*@", 
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                    {
+                        vulnerabilities.Add(("sp_executesql with concatenation", TruncateLine(line, 80)));
+                    }
+                }
+                
+                // Pattern 4: Building dynamic SQL with SET and concatenation
+                else if (lineUpper.Contains("SET @") && line.Contains("=") && line.Contains("+"))
+                {
+                    // Check if it's concatenating with parameters or strings
+                    if (System.Text.RegularExpressions.Regex.IsMatch(line, 
+                        @"SET\s+@\w+\s*=\s*[^=]*\+\s*@", 
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                    {
+                        vulnerabilities.Add(("Dynamic SQL building", TruncateLine(line, 80)));
+                    }
+                }
+                
+                // Pattern 5: Multi-line concatenation (look for += pattern)
+                else if (lineUpper.Contains("SET @") && (line.Contains("+=") || 
+                    System.Text.RegularExpressions.Regex.IsMatch(line, 
+                    @"SET\s+@(\w+)\s*=\s*@\1\s*\+", 
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase)))
+                {
+                    vulnerabilities.Add(("Multi-line SQL concatenation", TruncateLine(line, 80)));
+                }
             }
-            
-            // Pattern 2: EXEC( @param + ...) or EXECUTE( @param + ...)
-            if (System.Text.RegularExpressions.Regex.IsMatch(cleanedDefinition, 
-                @"EXEC(UTE)?\s*\(\s*@[^\s)]*\s*\+", 
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
-            {
-                return true;
-            }
-            
-            // Pattern 3: EXEC @variable or EXECUTE @variable (direct variable execution without parentheses)
-            if (System.Text.RegularExpressions.Regex.IsMatch(cleanedDefinition, 
-                @"EXEC(UTE)?\s+@[a-zA-Z_][\w]*\s*($|;|\s)", 
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
-            {
-                return true;
-            }
-            
-            // Pattern 4: EXEC(@variable) or EXECUTE(@variable) (direct variable execution with parentheses)
-            if (System.Text.RegularExpressions.Regex.IsMatch(cleanedDefinition, 
-                @"EXEC(UTE)?\s*\(\s*@[a-zA-Z_][\w]*\s*\)", 
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
-            {
-                return true;
-            }
-            
-            // Pattern 5: sp_executesql with concatenation
-            if (System.Text.RegularExpressions.Regex.IsMatch(cleanedDefinition, 
-                @"sp_executesql[^;]*\+\s*@", 
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
-            {
-                return true;
-            }
-            
-            return false;
+
+            return vulnerabilities;
         }
-        
+
         /// <summary>
-        /// Removes string literals from SQL code to simplify pattern matching.
-        /// Handles SQL's '' escape sequence correctly.
+        /// Truncates a line to a maximum length and adds ellipsis if needed.
         /// </summary>
-        private string RemoveStringLiterals(string sql)
+        private string TruncateLine(string line, int maxLength)
         {
-            var result = new System.Text.StringBuilder();
-            int i = 0;
+            line = line.Trim();
+            if (line.Length <= maxLength)
+                return line;
             
-            while (i < sql.Length)
-            {
-                // Check for single-quoted string
-                if (sql[i] == '\'')
-                {
-                    i++; // Skip opening quote
-                    
-                    // Skip until closing quote, handling '' escape sequence
-                    while (i < sql.Length)
-                    {
-                        if (sql[i] == '\'')
-                        {
-                            // Check if it's an escaped quote ''
-                            if (i + 1 < sql.Length && sql[i + 1] == '\'')
-                            {
-                                i += 2; // Skip both quotes
-                            }
-                            else
-                            {
-                                i++; // Skip closing quote
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            i++;
-                        }
-                    }
-                }
-                // Check for double-quoted identifier (SQL Server supports this with QUOTED_IDENTIFIER ON)
-                else if (sql[i] == '"')
-                {
-                    result.Append(sql[i]); // Keep double quotes as they might be identifiers
-                    i++;
-                }
-                // Check for single-line comment --
-                else if (i + 1 < sql.Length && sql[i] == '-' && sql[i + 1] == '-')
-                {
-                    // Skip until end of line
-                    while (i < sql.Length && sql[i] != '\n' && sql[i] != '\r')
-                    {
-                        i++;
-                    }
-                }
-                // Check for multi-line comment /* */
-                else if (i + 1 < sql.Length && sql[i] == '/' && sql[i + 1] == '*')
-                {
-                    i += 2;
-                    // Skip until */
-                    while (i + 1 < sql.Length)
-                    {
-                        if (sql[i] == '*' && sql[i + 1] == '/')
-                        {
-                            i += 2;
-                            break;
-                        }
-                        i++;
-                    }
-                }
-                else
-                {
-                    result.Append(sql[i]);
-                    i++;
-                }
-            }
-            
-            return result.ToString();
+            return line.Substring(0, maxLength - 3) + "...";
         }
     }
 }
