@@ -160,7 +160,7 @@ namespace MSSQLand.Actions.Database
             }
 
             // ========== DATABASE-LEVEL ROLES ==========
-            Logger.Info($"Database-Level Roles ({databaseContext.Server.Database})");
+            Logger.Info($"Database-Level Roles ({databaseContext.QueryService.ExecutionDatabase})");
             Logger.NewLine();
 
             // Query all database roles (both fixed and custom)

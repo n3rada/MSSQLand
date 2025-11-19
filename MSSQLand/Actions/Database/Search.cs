@@ -60,8 +60,8 @@ namespace MSSQLand.Actions.Database
             else
             {
                 Logger.Task($"Lurking for '{_keyword}' in user tables only (excluding Microsoft system tables)");
-                // Use the database from /db: global parameter
-                string database = databaseContext.Server.Database;
+                // Use the execution database from QueryService
+                string database = databaseContext.QueryService.ExecutionDatabase;
                 databasesToSearch.Add(database);
             }
             

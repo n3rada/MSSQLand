@@ -78,7 +78,7 @@ namespace MSSQLand.Actions.Execution
                 if (databaseContext.Server.Legacy)
                 {
                     Logger.Info("Legacy server detected. Enabling TRUSTWORTHY property");
-                    databaseContext.QueryService.ExecuteNonProcessing($"ALTER DATABASE {databaseContext.Server.Database} SET TRUSTWORTHY ON;");
+                    databaseContext.QueryService.ExecuteNonProcessing($"ALTER DATABASE [{databaseContext.QueryService.ExecutionDatabase}] SET TRUSTWORTHY ON;");
                 }
 
                 if (!databaseContext.ConfigService.RegisterTrustedAssembly(libraryHash, libraryPath))
@@ -140,7 +140,7 @@ namespace MSSQLand.Actions.Execution
                 {
                     Logger.Info("Resetting TRUSTWORTHY property");
                     databaseContext.QueryService.ExecuteNonProcessing(
-                        $"ALTER DATABASE {databaseContext.Server.Database} SET TRUSTWORTHY OFF;");
+                        $"ALTER DATABASE [{databaseContext.QueryService.ExecutionDatabase}] SET TRUSTWORTHY OFF;");
                 }
             }
         }
