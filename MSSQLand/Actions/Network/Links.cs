@@ -23,57 +23,31 @@ namespace MSSQLand.Actions.Network
         /// <param name="databaseContext">The ConnectionManager for executing the query.</param>
         public override object? Execute(DatabaseContext databaseContext)
         {
-            // Check if running on Azure SQL Database
+            // Check if running on Azure SQL Database (PaaS)
             if (databaseContext.QueryService.IsAzureSQL())
             {
-                Logger.Warning("Linked servers aren't available in Azure SQL Database.");
+                Logger.Warning("Linked servers aren't available in Azure SQL Database (PaaS).");
+                Logger.InfoNested("Linked servers are supported in Azure SQL Managed Instance.");
+                Logger.InfoNested("For Azure SQL Database, use /a:extsources to check External Data Sources.");
                 Logger.NestedWarning("https://learn.microsoft.com/en-us/sql/relational-databases/linked-servers/linked-servers-database-engine");
-    
-                Logger.Info("Checking for External Data Sources");
-                Logger.InfoNested("Azure SQL Database uses External Data Sources instead of traditional linked servers");
                 Logger.NewLine();
-
-                DataTable externalSources = GetAzureExternalDataSources(databaseContext);
-                
-                if (externalSources.Rows.Count == 0)
-                {
-                    Logger.Warning("No external data sources found");
-                }
-                else
-                {
-                    Console.WriteLine(OutputFormatter.ConvertDataTable(externalSources));
-                }
-                
-                return externalSources;
+                return null;
             }
 
             Logger.TaskNested($"Retrieving Linked SQL Servers");
 
             DataTable resultTable = GetLinkedServers(databaseContext);
 
-            Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
+            if (resultTable.Rows.Count == 0)
+            {
+                Logger.Warning("No linked servers found.");
+            }
+            else
+            {
+                Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
+            }
 
             return resultTable;
-
-        }
-
-
-        /// <summary>
-        /// Retrieves external data sources on Azure SQL Database (Elastic Query).
-        /// </summary>
-        private static DataTable GetAzureExternalDataSources(DatabaseContext databaseContext)
-        {
-            string query = @"
-                SELECT
-                    name AS [Name],
-                    type_desc AS [Type],
-                    location AS [Location],
-                    database_name AS [Database Name],
-                    credential_name AS [Credential]
-                FROM sys.external_data_sources
-                ORDER BY name;";
-
-            return databaseContext.QueryService.ExecuteTable(query);
         }
 
 
