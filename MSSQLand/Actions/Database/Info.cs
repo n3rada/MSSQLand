@@ -17,20 +17,27 @@ namespace MSSQLand.Actions.Database
         [ExcludeFromArguments]
         private readonly Dictionary<string, string> _queries = new()
         {
+            // Server Identification
             { "Server Name", "SELECT @@SERVERNAME;" },
-            { "Default Domain", "SELECT DEFAULT_DOMAIN();" },
             { "Host Name", "SELECT SERVERPROPERTY('MachineName');" },
-            { "Operating System Version", "SELECT TOP(1) windows_release + ISNULL(' ' + windows_service_pack_level, '') FROM master.sys.dm_os_windows_info;" },
-            { "SQL Service Process ID", "SELECT SERVERPROPERTY('ProcessId');" },
             { "Instance Name", "SELECT ISNULL(SERVERPROPERTY('InstanceName'), 'DEFAULT');" },
-            { "Authentication Mode", "SELECT CASE SERVERPROPERTY('IsIntegratedSecurityOnly') WHEN 1 THEN 'Windows Authentication only' ELSE 'Mixed mode (Windows + SQL)' END;" },
-            { "Clustered Server", "SELECT CASE SERVERPROPERTY('IsClustered') WHEN 0 THEN 'No' ELSE 'Yes' END;" },
+            { "Default Domain", "SELECT DEFAULT_DOMAIN();" },
+            
+            // SQL Server Information
             { "SQL Version", "SELECT SERVERPROPERTY('ProductVersion');" },
             { "SQL Major Version", "SELECT SERVERPROPERTY('ProductMajorVersion');" },
             { "SQL Edition", "SELECT SERVERPROPERTY('Edition');" },
             { "SQL Service Pack", "SELECT SERVERPROPERTY('ProductLevel');" },
+            { "SQL Service Process ID", "SELECT SERVERPROPERTY('ProcessId');" },
+            
+            // Configuration
+            { "Authentication Mode", "SELECT CASE SERVERPROPERTY('IsIntegratedSecurityOnly') WHEN 1 THEN 'Windows Authentication only' ELSE 'Mixed mode (Windows + SQL)' END;" },
+            { "Clustered Server", "SELECT CASE SERVERPROPERTY('IsClustered') WHEN 0 THEN 'No' ELSE 'Yes' END;" },
+            
+            // Operating System
+            { "Operating System Version", "SELECT TOP(1) windows_release + ISNULL(' ' + windows_service_pack_level, '') FROM master.sys.dm_os_windows_info;" },
             { "OS Architecture", "SELECT CASE WHEN CAST(SERVERPROPERTY('Edition') AS NVARCHAR(128)) LIKE '%64%' THEN '64-bit' ELSE '32-bit' END;" },
-            { "OS Version Number", "SELECT @@VERSION;" },
+            { "Full Version String", "SELECT @@VERSION;" },
         };
 
         public override void ValidateArguments(string additionalArguments)
@@ -57,7 +64,7 @@ namespace MSSQLand.Actions.Database
                         : "NULL";
 
                     // Remove line breaks from @@VERSION output
-                    if (key == "OS Version Number")
+                    if (key == "Full Version String")
                     {
                         result = result.Replace("\r\n", " ").Replace("\n", " ").Replace("\r", " ");
                     }
