@@ -42,8 +42,8 @@ namespace MSSQLand.Actions.Database
                 LEFT JOIN 
                     [{_database}].sys.partitions p ON t.object_id = p.object_id
                 WHERE 
-                    t.type IN ('U', 'V') -- 'U' for user tables, 'V' for views
-                    AND p.index_id IN (0, 1) -- 0 for heaps, 1 for clustered index
+                    t.type IN ('U', 'V')
+                    AND p.index_id IN (0, 1)
                 GROUP BY 
                     s.name, t.name, t.type_desc
                 ORDER BY 
