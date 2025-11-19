@@ -71,8 +71,8 @@ namespace MSSQLand.Actions.Database
 
             DataTable allPermissions = databaseContext.QueryService.ExecuteTable(allPermissionsQuery);
 
-            // Build a dictionary for fast lookup: key = "schema.table", value = list of permissions
-            var permissionsDict = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>>();
+            // Build a dictionary for fast lookup: key = "schema.table", value = set of unique permissions
+            var permissionsDict = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.HashSet<string>>();
             
             foreach (DataRow permRow in allPermissions.Rows)
             {
@@ -81,7 +81,7 @@ namespace MSSQLand.Actions.Database
 
                 if (!permissionsDict.ContainsKey(key))
                 {
-                    permissionsDict[key] = new System.Collections.Generic.List<string>();
+                    permissionsDict[key] = new System.Collections.Generic.HashSet<string>();
                 }
                 permissionsDict[key].Add(permission);
             }
