@@ -79,6 +79,7 @@
     <Compile Include="Actions\Administration\Sessions.cs" />
     <Compile Include="Actions\ArgumentMetadataAttribute.cs" />
     <Compile Include="Actions\Database\ExtendedProcs.cs" />
+    <Compile Include="Actions\Database\Roles.cs" />
     <Compile Include="Actions\Database\RoleMembers.cs" />
     <Compile Include="Actions\Domain\AdGroups.cs" />
     <Compile Include="Actions\Domain\AdDomain.cs" />
