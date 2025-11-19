@@ -63,14 +63,43 @@ namespace MSSQLand.Actions.Database
                         ? queryResult.Rows[0][0]?.ToString() ?? "NULL"
                         : "NULL";
 
-                    // Split Full Version String into multiple rows
+                    // Split Full Version String into multiple rows with meaningful labels
                     if (key == "Full Version String")
                     {
                         var lines = result.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries);
                         for (int i = 0; i < lines.Length; i++)
                         {
-                            string lineKey = i == 0 ? key : $"{key} (Line {i + 1})";
-                            results[lineKey] = lines[i].Trim();
+                            string line = lines[i].Trim();
+                            string lineKey;
+
+                            // Determine the purpose of each line based on its content
+                            if (line.StartsWith("Microsoft SQL", StringComparison.OrdinalIgnoreCase))
+                            {
+                                lineKey = "Product Version";
+                            }
+                            else if (line.StartsWith("Copyright", StringComparison.OrdinalIgnoreCase))
+                            {
+                                lineKey = "Copyright";
+                            }
+                            else if (line.Contains("Edition") && line.Contains("Licensing"))
+                            {
+                                lineKey = "Edition Details";
+                            }
+                            else if (line.Contains("Windows") && (line.Contains("Server") || line.Contains("Build")))
+                            {
+                                lineKey = "OS Details";
+                            }
+                            else if (System.Text.RegularExpressions.Regex.IsMatch(line, @"^\w{3}\s+\d{1,2}\s+\d{4}"))
+                            {
+                                // Matches date patterns like "Oct 7 2025"
+                                lineKey = "Build Date";
+                            }
+                            else
+                            {
+                                lineKey = $"Version Info (Line {i + 1})";
+                            }
+
+                            results[lineKey] = line;
                         }
                     }
                     else
