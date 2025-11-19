@@ -119,6 +119,32 @@ namespace MSSQLand.Actions.Database
                 return procedures;
             }
 
+            // Add a column for permissions
+            procedures.Columns.Add("Permissions", typeof(string));
+
+            foreach (DataRow row in procedures.Rows)
+            {
+                string schemaName = row["schema_name"].ToString();
+                string procedureName = row["procedure_name"].ToString();
+
+                // Query to get user permissions on the procedure
+                string permissionQuery = $@"
+                    SELECT DISTINCT
+                        permission_name
+                    FROM 
+                        fn_my_permissions('[{schemaName}].[{procedureName}]', 'OBJECT');
+                ";
+
+                DataTable permissionResult = databaseContext.QueryService.ExecuteTable(permissionQuery);
+
+                // Concatenate permissions as a comma-separated string
+                string permissions = string.Join(", ", permissionResult.AsEnumerable()
+                    .Select(r => r["permission_name"].ToString()));
+
+                // Add permissions to the result row
+                row["Permissions"] = permissions;
+            }
+
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(procedures));
 
             Logger.NewLine();
