@@ -26,8 +26,25 @@ namespace MSSQLand.Actions.Network
             // Check if running on Azure SQL Database
             if (databaseContext.QueryService.IsAzureSQL())
             {
-                Logger.Warning("Linked servers are not supported on Azure SQL Database (PaaS)");
-                return null;
+                Logger.Warning("Linked servers aren't available in Azure SQL Database.");
+                Logger.NestedWarning("https://learn.microsoft.com/en-us/sql/relational-databases/linked-servers/linked-servers-database-engine");
+    
+                Logger.Info("Checking for External Data Sources");
+                Logger.InfoNested("Azure SQL Database uses External Data Sources instead of traditional linked servers");
+                Logger.NewLine();
+
+                DataTable externalSources = GetAzureExternalDataSources(databaseContext);
+                
+                if (externalSources.Rows.Count == 0)
+                {
+                    Logger.Warning("No external data sources found");
+                }
+                else
+                {
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(externalSources));
+                }
+                
+                return externalSources;
             }
 
             Logger.TaskNested($"Retrieving Linked SQL Servers");
@@ -38,6 +55,25 @@ namespace MSSQLand.Actions.Network
 
             return resultTable;
 
+        }
+
+
+        /// <summary>
+        /// Retrieves external data sources on Azure SQL Database (Elastic Query).
+        /// </summary>
+        private static DataTable GetAzureExternalDataSources(DatabaseContext databaseContext)
+        {
+            string query = @"
+                SELECT
+                    name AS [Name],
+                    type_desc AS [Type],
+                    location AS [Location],
+                    database_name AS [Database Name],
+                    credential_name AS [Credential]
+                FROM sys.external_data_sources
+                ORDER BY name;";
+
+            return databaseContext.QueryService.ExecuteTable(query);
         }
 
 
@@ -58,9 +94,9 @@ namespace MSSQLand.Actions.Network
                     srv.is_rpc_out_enabled AS [RPC Out],
                     srv.is_data_access_enabled AS [OPENQUERY],
                     srv.is_collation_compatible AS [Collation]
-                FROM sys.servers srv
-                LEFT JOIN sys.linked_logins ll ON srv.server_id = ll.server_id
-                LEFT JOIN sys.server_principals prin ON ll.local_principal_id = prin.principal_id
+                FROM master.sys.servers srv
+                LEFT JOIN master.sys.linked_logins ll ON srv.server_id = ll.server_id
+                LEFT JOIN master.sys.server_principals prin ON ll.local_principal_id = prin.principal_id
                 WHERE srv.is_linked = 1
                 ORDER BY srv.modify_date DESC;";
 
