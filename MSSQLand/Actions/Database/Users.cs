@@ -62,14 +62,7 @@ namespace MSSQLand.Actions.Database
                     sp.is_disabled, 
                     sp.create_date, 
                     sp.modify_date,
-                    MAX(CASE WHEN sr.name = 'sysadmin' THEN 1 ELSE 0 END) AS sysadmin,
-                    MAX(CASE WHEN sr.name = 'securityadmin' THEN 1 ELSE 0 END) AS securityadmin,
-                    MAX(CASE WHEN sr.name = 'serveradmin' THEN 1 ELSE 0 END) AS serveradmin,
-                    MAX(CASE WHEN sr.name = 'setupadmin' THEN 1 ELSE 0 END) AS setupadmin,
-                    MAX(CASE WHEN sr.name = 'processadmin' THEN 1 ELSE 0 END) AS processadmin,
-                    MAX(CASE WHEN sr.name = 'diskadmin' THEN 1 ELSE 0 END) AS diskadmin,
-                    MAX(CASE WHEN sr.name = 'dbcreator' THEN 1 ELSE 0 END) AS dbcreator,
-                    MAX(CASE WHEN sr.name = 'bulkadmin' THEN 1 ELSE 0 END) AS bulkadmin
+                    STRING_AGG(sr.name, ', ') AS groups
                 FROM master.sys.server_principals sp
                 LEFT JOIN master.sys.server_role_members srm ON sp.principal_id = srm.member_principal_id
                 LEFT JOIN master.sys.server_principals sr ON srm.role_principal_id = sr.principal_id AND sr.type = 'R'
@@ -101,6 +94,12 @@ namespace MSSQLand.Actions.Database
                     {
                         roles.Add(roleColumn);
                     }
+                }
+
+                // Add custom roles if any
+                if (row["custom_roles"] != DBNull.Value && !string.IsNullOrWhiteSpace(row["custom_roles"].ToString()))
+                {
+                    roles.Add(row["custom_roles"].ToString());
                 }
 
                 table.Rows.Add(
