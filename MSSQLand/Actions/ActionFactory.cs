@@ -108,15 +108,20 @@ namespace MSSQLand.Utilities
             }
         }
 
-        public static List<(string ActionName, string Description, List<string> Arguments)> GetAvailableActions()
+        public static List<(string ActionName, string Description, List<string> Arguments, string Category)> GetAvailableActions()
         {
-            var result = new List<(string ActionName, string Description, List<string> Arguments)>();
+            var result = new List<(string ActionName, string Description, List<string> Arguments, string Category)>();
 
             foreach (var action in ActionMetadata)
             {
                 BaseAction actionInstance = (BaseAction)Activator.CreateInstance(action.Value.ActionClass);
                 List<string> arguments = actionInstance.GetArguments();
-                result.Add((action.Key, action.Value.Description, arguments));
+                
+                // Extract category from namespace (last part after the last dot)
+                string fullNamespace = action.Value.ActionClass.Namespace;
+                string category = fullNamespace.Substring(fullNamespace.LastIndexOf('.') + 1);
+                
+                result.Add((action.Key, action.Value.Description, arguments, category));
             }
 
             return result;

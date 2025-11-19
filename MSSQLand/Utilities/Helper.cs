@@ -33,13 +33,13 @@ namespace MSSQLand.Utilities
 
             Console.WriteLine($"Found {matchedActions.Count} matching action(s):\n");
 
-            foreach ((string ActionName, string Description, List<string> Arguments) in matchedActions)
+            foreach (var action in matchedActions)
             {
-                Console.WriteLine($"{ActionName} - {Description}");
+                Console.WriteLine($"{action.ActionName} - {action.Description}");
 
-                if (Arguments != null && Arguments.Any())
+                if (action.Arguments != null && action.Arguments.Any())
                 {
-                    foreach (var arg in Arguments)
+                    foreach (var arg in action.Arguments)
                     {
                         Console.WriteLine($"  > {arg}");
                     }
@@ -92,14 +92,27 @@ namespace MSSQLand.Utilities
             Console.WriteLine("Available Actions:\n");
 
             var actions = ActionFactory.GetAvailableActions();
+            
+            // Group actions by category
+            var groupedActions = actions.GroupBy(a => a.Category)
+                                       .OrderBy(g => g.Key);
 
-            foreach ((string ActionName, string Description, List<string> Arguments) in actions)
+            int totalCount = 0;
+            foreach (var group in groupedActions)
             {
-                Console.WriteLine($"  {ActionName}");
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine($"[{group.Key}]");
+                Console.ResetColor();
+                
+                foreach (var action in group.OrderBy(a => a.ActionName))
+                {
+                    Console.WriteLine($"  {action.ActionName}");
+                    totalCount++;
+                }
+                Console.WriteLine();
             }
 
-            Console.WriteLine();
-            Console.WriteLine($"Total: {actions.Count} actions");
+            Console.WriteLine($"Total: {totalCount} actions");
             Console.WriteLine();
             Console.WriteLine("For detailed information about a specific action, use: /a:actionname /help");
             Console.WriteLine("Example: /a:whoami /help");
