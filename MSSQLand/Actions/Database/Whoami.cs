@@ -66,19 +66,41 @@ namespace MSSQLand.Actions.Database
                                        .Select(row => row.Field<string>("name"))
                                        .ToList();
 
+            // Get database roles in current database
+            string dbRolesQuery = @"
+                SELECT 
+                    name,
+                    ISNULL(IS_ROLEMEMBER(name), 0) AS is_member
+                FROM sys.database_principals
+                WHERE type = 'R'
+                ORDER BY name;";
+
+            DataTable dbRolesTable = databaseContext.QueryService.ExecuteTable(dbRolesQuery);
+            
+            var userDbRoles = new List<string>();
+            foreach (DataRow dbRoleRow in dbRolesTable.Rows)
+            {
+                if (Convert.ToInt32(dbRoleRow["is_member"]) == 1)
+                {
+                    userDbRoles.Add(dbRoleRow["name"].ToString());
+                }
+            }
+
             // Display the user information
             Logger.NewLine();
             Logger.Info("User Details:");
             
-            var fixedRolesWithMembership = fixedRoles.Select(r => r.IsMember ? $"**{r.Role}**" : r.Role);
-            var customRolesWithMembership = customRoles.Select(r => r.IsMember ? $"**{r.Role}**" : r.Role);
+            // Only show roles where user is a member
+            var userFixedRoles = fixedRoles.Where(r => r.IsMember).Select(r => r.Role);
+            var userCustomRoles = customRoles.Where(r => r.IsMember).Select(r => r.Role);
             
             var userDetails = new Dictionary<string, string>
             {
                 { "User Name", userName },
                 { "System User", systemUser },
-                { "Fixed Roles", string.Join(", ", fixedRolesWithMembership) },
-                { "Custom Roles", string.Join(", ", customRolesWithMembership) },
+                { "Server Fixed Roles", string.Join(", ", userFixedRoles) },
+                { "Server Custom Roles", string.Join(", ", userCustomRoles) },
+                { "Database Roles", string.Join(", ", userDbRoles) },
                 { "Accessible Databases", string.Join(", ", databaseNames) }
             };
 
