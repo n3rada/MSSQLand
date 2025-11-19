@@ -112,10 +112,9 @@ namespace MSSQLand.Utilities
                 Console.WriteLine();
             }
 
-            Console.WriteLine($"Total: {totalCount} actions");
             Console.WriteLine();
             Console.WriteLine("For detailed information about a specific action, use: /a:actionname /help");
-            Console.WriteLine("Example: /a:whoami /help");
+            Console.WriteLine("Example: /a:createuser /help");
             Console.WriteLine();
         }
 
