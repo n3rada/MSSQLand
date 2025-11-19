@@ -12,7 +12,7 @@ MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikiped
 > If you need to connect using Kerberos ticket or NT/LM hashes, go with [mssqlclient-ng](https://github.com/n3rada/mssqlclient-ng), the `Python3` version built with external access from Unix in mind.
 
 > [!NOTE]
-> Do not overthink. Sometimes, during Penetration Testing assessment, it is easier to use [SQL Server Management Studio](https://learn.microsoft.com/en-us/ssms/).
+> Do not forget the basics. During a security assessment, it is sometimes easier to use [SQL Server Management Studio (SSMS)](https://learn.microsoft.com/en-us/ssms/).
 
 ## 🚀 Quick Start
 
