@@ -70,64 +70,19 @@ namespace MSSQLand.Actions.Database
             Logger.NewLine();
             Logger.Info("User Details:");
             
+            var fixedRolesWithMembership = fixedRoles.Select(r => r.IsMember ? $"**{r.Role}**" : r.Role);
+            var customRolesWithMembership = customRoles.Select(r => r.IsMember ? $"**{r.Role}**" : r.Role);
+            
             var userDetails = new Dictionary<string, string>
             {
                 { "User Name", userName },
                 { "System User", systemUser },
-                { "Roles", string.Join(", ", userRoles) },
+                { "Fixed Roles", string.Join(", ", fixedRolesWithMembership) },
+                { "Custom Roles", string.Join(", ", customRolesWithMembership) },
                 { "Accessible Databases", string.Join(", ", databaseNames) }
             };
 
             Console.WriteLine(MarkdownFormatter.ConvertDictionaryToMarkdownTable(userDetails, "Property", "Value"));
-
-            // Define fixed server roles descriptions
-            var roleDescriptions = new Dictionary<string, string>
-            {
-                { "sysadmin", "Full control over the SQL Server instance" },
-                { "serveradmin", "Manage server-wide configurations" },
-                { "setupadmin", "Manage linked servers and setup tasks" },
-                { "processadmin", "Terminate and monitor processes" },
-                { "diskadmin", "Manage disk files for databases" },
-                { "dbcreator", "Create and alter databases" },
-                { "bulkadmin", "Perform bulk data imports" },
-                { "securityadmin", "Manage logins and their properties" },
-                { "public", "Default role for all users" }
-            };
-
-            // Display Fixed Server Roles
-            if (fixedRoles.Any())
-            {
-                DataTable fixedServerRolesTable = new();
-                fixedServerRolesTable.Columns.Add("Role", typeof(string));
-                fixedServerRolesTable.Columns.Add("Key Responsibility", typeof(string));
-                fixedServerRolesTable.Columns.Add("Has", typeof(bool));
-
-                foreach (var (role, isMember) in fixedRoles)
-                {
-                    string description = roleDescriptions.TryGetValue(role, out string desc) ? desc : "Fixed server role";
-                    fixedServerRolesTable.Rows.Add(role, description, isMember);
-                }
-
-                Logger.Info("Fixed Server Roles:");
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(fixedServerRolesTable));
-            }
-
-            // Display Custom Server Roles
-            if (customRoles.Any())
-            {
-                Logger.NewLine();
-                DataTable customServerRolesTable = new();
-                customServerRolesTable.Columns.Add("Role", typeof(string));
-                customServerRolesTable.Columns.Add("Has", typeof(bool));
-
-                foreach (var (role, isMember) in customRoles)
-                {
-                    customServerRolesTable.Rows.Add(role, isMember);
-                }
-
-                Logger.Info("Custom Server Roles:");
-                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(customServerRolesTable));
-            }
 
             return null;
         }
