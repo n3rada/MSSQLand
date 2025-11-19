@@ -5,19 +5,20 @@
 
 | Argument           | Description                                                           |
 | ------------------ | --------------------------------------------------------------------- |
-| /findsql <domain>  | Find SQL Servers in Active Directory (no database connection needed). |
-| /h or /host        | Specify the target SQL Server (mandatory for actions).                |
-| /c or /credentials | Specify the credential type (mandatory for actions).                  |
+| /h or /host        | Specify the target SQL Server hostname. Format: SQL01:user01          |
+| /port              | Specify the SQL Server port (default: 1433).                          |
+| /timeout           | Specify the connection timeout in seconds (default: 15).              |
+| /c or /credentials | Specify the credential type (mandatory).                              |
 | /u or /username    | Provide the username (if required by credential type).                |
 | /p or /password    | Provide the password (if required by credential type).                |
 | /d or /domain      | Provide the domain (if required by credential type).                  |
-| /a or /action      | Specify the action to execute (mandatory for actions).                |
-| /l or /links       | Specify linked server chain for multi-hop connections.                |
-| /db                | Specify the target database (optional).                               |
-| /silent or /s      | Enable silent mode (minimal output).                                  |
+| /db                | Specify the target database (default: master).                        |
+| /l or /links       | Specify linked server chain. Format: server1:user1,server2:user2,...  |
+| /a or /action      | Specify the action to execute.                                        |
+| /silent or /s      | Enable silent mode. No logging, only results.                         |
 | /debug             | Enable debug mode for detailed logs.                                  |
-| /help              | Display this help message and exit.                                   |
-| /printhelp         | Save commands to COMMANDS.md file.                                    |
+| /help              | Display the helper.                                                   |
+| /findsql <domain>  | Find SQL Servers in Active Directory (no database connection needed). |
 
 
 ## 🔑 Credential Types
@@ -108,8 +109,8 @@
 **Description:** List, read, or execute stored procedures.
 
 **Arguments:**
-- [pos:0] mode (enum: Mode [list, exec, read], default: List) - Mode: list, exec, or read (default: list)
-- [pos:1] procedureName (string) - Stored procedure name (required for exec/read)
+- [pos:0] mode (enum: Mode [list, exec, read, search, sqli], default: List) - Mode: list, exec, read, search, or sqli (default: list)
+- [pos:1] procedureName (string) - Stored procedure name (required for exec/read) or search keyword (required for search)
 - [pos:2] procedureArgs (string) - Procedure arguments (optional for exec)
 
 #### `xprocs`
@@ -134,12 +135,16 @@
 **Arguments:**
 - [pos:0] fqtn (string) - Fully qualified table name (database.schema.table) or empty for server/database permissions
 
+#### `configs`
+**Description:** List security-sensitive configuration options with their activation status.
+
+**Arguments:** None
+
 #### `search`
 **Description:** Search for keywords in column names and data across databases.
 
 **Arguments:**
-- [pos:0] database (string) [/db:, /database:] - Database name or * for all databases
-- [pos:1] keyword (string, required) [/k:, /keyword:] - Keyword to search for
+- [pos:0] keyword (string, required) [/k:, /keyword:] - Keyword to search for, or * to search all accessible databases
 
 #### `impersonate`
 **Description:** Check impersonation permissions for SQL logins and Windows principals.
@@ -153,8 +158,18 @@
 
 ### Domain Actions
 
-#### `domsid`
+#### `ad-domain`
 **Description:** Retrieve the domain SID using DEFAULT_DOMAIN() and SUSER_SID().
+
+**Arguments:** None
+
+#### `ad-sid`
+**Description:** Retrieve the current user's SID using SUSER_SID().
+
+**Arguments:** None
+
+#### `ad-groups`
+**Description:** Retrieve Active Directory group memberships for the current user using xp_logininfo.
 
 **Arguments:** None
 
@@ -164,7 +179,7 @@
 **Arguments:**
 - [pos:0] maxRid (int, default: 10000) - Maximum RID to enumerate (default: 10000)
 
-#### `AdMembers`
+#### `ad-members`
 **Description:** Retrieve members of an Active Directory group (e.g., DOMAIN\Domain Admins).
 
 **Arguments:**
