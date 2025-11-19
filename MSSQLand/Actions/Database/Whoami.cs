@@ -18,18 +18,44 @@ namespace MSSQLand.Actions.Database
         {
             (string userName, string systemUser) = databaseContext.UserService.GetInfo();
 
-            // Fetch roles assigned to the current user
-            var rolesTable = databaseContext.QueryService.ExecuteTable(
-                "SELECT sp.name AS RoleName " +
-                "FROM master.sys.server_principals sp " +
-                "INNER JOIN master.sys.server_role_members srm ON sp.principal_id = srm.role_principal_id " +
-                "WHERE srm.member_principal_id = SUSER_ID();"
-            );
+            // Get all roles and check membership in a single query
+            // This uses IS_SRVROLEMEMBER which works even with AD group-based access
+            string rolesQuery = @"
+                SELECT 
+                    name,
+                    is_fixed_role,
+                    ISNULL(IS_SRVROLEMEMBER(name), 0) AS is_member
+                FROM sys.server_principals 
+                WHERE type = 'R' 
+                ORDER BY is_fixed_role DESC, name;";
 
+            DataTable allRolesTable = databaseContext.QueryService.ExecuteTable(rolesQuery);
 
-            var userRoles = rolesTable.AsEnumerable()
-                          .Select(row => row.Field<string>("RoleName"))
-                          .ToHashSet();
+            var fixedRoles = new List<(string Role, bool IsMember)>();
+            var customRoles = new List<(string Role, bool IsMember)>();
+            var userRoles = new HashSet<string>();
+
+            // Separate roles and collect user memberships
+            foreach (DataRow roleRow in allRolesTable.Rows)
+            {
+                string roleName = roleRow["name"].ToString();
+                bool isFixedRole = Convert.ToBoolean(roleRow["is_fixed_role"]);
+                bool isMember = Convert.ToInt32(roleRow["is_member"]) == 1;
+
+                if (isFixedRole)
+                {
+                    fixedRoles.Add((roleName, isMember));
+                }
+                else
+                {
+                    customRoles.Add((roleName, isMember));
+                }
+
+                if (isMember)
+                {
+                    userRoles.Add(roleName);
+                }
+            }
 
             // Query for accessible databases
             DataTable accessibleDatabases = databaseContext.QueryService.ExecuteTable(
@@ -54,34 +80,54 @@ namespace MSSQLand.Actions.Database
 
             Console.WriteLine(MarkdownFormatter.ConvertDictionaryToMarkdownTable(userDetails, "Property", "Value"));
 
-
-            // Define fixed server roles and their descriptions
-            var fixedServerRoles = new List<(string Role, string KeyResponsibility)>
+            // Define fixed server roles descriptions
+            var roleDescriptions = new Dictionary<string, string>
             {
-                ("sysadmin", "Full control over the SQL Server instance"),
-                ("serveradmin", "Manage server-wide configurations"),
-                ("setupadmin", "Manage linked servers and setup tasks"),
-                ("processadmin", "Terminate and monitor processes"),
-                ("diskadmin", "Manage disk files for databases"),
-                ("dbcreator", "Create and alter databases"),
-                ("bulkadmin", "Perform bulk data imports")
+                { "sysadmin", "Full control over the SQL Server instance" },
+                { "serveradmin", "Manage server-wide configurations" },
+                { "setupadmin", "Manage linked servers and setup tasks" },
+                { "processadmin", "Terminate and monitor processes" },
+                { "diskadmin", "Manage disk files for databases" },
+                { "dbcreator", "Create and alter databases" },
+                { "bulkadmin", "Perform bulk data imports" },
+                { "securityadmin", "Manage logins and their properties" },
+                { "public", "Default role for all users" }
             };
 
-            // Create a DataTable to display fixed server roles
-            DataTable fixedServerRolesTable = new();
-            fixedServerRolesTable.Columns.Add("Role", typeof(string));
-            fixedServerRolesTable.Columns.Add("Key Responsibility", typeof(string));
-            fixedServerRolesTable.Columns.Add("Has", typeof(bool));
-
-            foreach (var (role, responsibility) in fixedServerRoles)
+            // Display Fixed Server Roles
+            if (fixedRoles.Any())
             {
-                fixedServerRolesTable.Rows.Add(role, responsibility, userRoles.Contains(role));
+                DataTable fixedServerRolesTable = new();
+                fixedServerRolesTable.Columns.Add("Role", typeof(string));
+                fixedServerRolesTable.Columns.Add("Key Responsibility", typeof(string));
+                fixedServerRolesTable.Columns.Add("Has", typeof(bool));
+
+                foreach (var (role, isMember) in fixedRoles)
+                {
+                    string description = roleDescriptions.TryGetValue(role, out string desc) ? desc : "Fixed server role";
+                    fixedServerRolesTable.Rows.Add(role, description, isMember);
+                }
+
+                Logger.Info("Fixed Server Roles:");
+                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(fixedServerRolesTable));
             }
 
+            // Display Custom Server Roles
+            if (customRoles.Any())
+            {
+                Logger.NewLine();
+                DataTable customServerRolesTable = new();
+                customServerRolesTable.Columns.Add("Role", typeof(string));
+                customServerRolesTable.Columns.Add("Has", typeof(bool));
 
-            // Display the fixed server roles table
-            Logger.Info("Fixed Server Roles:");
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(fixedServerRolesTable));
+                foreach (var (role, isMember) in customRoles)
+                {
+                    customServerRolesTable.Rows.Add(role, isMember);
+                }
+
+                Logger.Info("Custom Server Roles:");
+                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(customServerRolesTable));
+            }
 
             return null;
         }
