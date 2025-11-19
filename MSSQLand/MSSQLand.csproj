@@ -89,6 +89,7 @@
     <Compile Include="Actions\Domain\RidCycle.cs" />
     <Compile Include="Actions\Execution\QueryAll.cs" />
     <Compile Include="Actions\Network\LinkedServerExplorer.cs" />
+    <Compile Include="Actions\Network\ExternalSources.cs" />
     <Compile Include="Actions\Database\OleDbProvidersInfo.cs" />
     <Compile Include="Actions\Database\Procedures.cs" />
     <Compile Include="Actions\Database\Configs.cs" />
