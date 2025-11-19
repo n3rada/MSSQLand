@@ -56,6 +56,9 @@ All output tables are Markdown-friendly and can be copied and pasted directly in
 
 ![Searching pass](./media/example.png)
 
+> [!INFO]
+> You can also have `.csv` compatible output by using the `/o:csv` option.
+
 ## 👑 Show Time
 
 You gain access to a database `SQL01` mapped to the user `dbo`. You need to impersonate `webapp02` in order to connect to linked database `SQL02`. In `SQL02`, you need to impersonate `webapp03` in order to go further and so on and so forth. Let's say you’ve landed an agent inside a `sqlservr.exe` process running under the high-privileged `NT AUTHORITY\SYSTEM`. Lucky you!

@@ -181,6 +181,7 @@ namespace MSSQLand.Utilities
             argumentsTable.Rows.Add("/db", "Specify the target database (default: master).");
             argumentsTable.Rows.Add("/l or /links", "Specify linked server chain. Format: server1:user1,server2:user2,...");
             argumentsTable.Rows.Add("/a or /action", "Specify the action to execute.");
+            argumentsTable.Rows.Add("/o or /output", "Specify output format: markdown (default), csv.");
             argumentsTable.Rows.Add("/silent or /s", "Enable silent mode. No logging, only results.");
             argumentsTable.Rows.Add("/debug", "Enable debug mode for detailed logs.");
             argumentsTable.Rows.Add("/help", "Display the helper.");

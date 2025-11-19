@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using MSSQLand.Actions;
 using MSSQLand.Models;
 using MSSQLand.Services.Credentials;
+using MSSQLand.Utilities.Formatters;
 
 namespace MSSQLand.Utilities
 {
@@ -142,6 +143,20 @@ namespace MSSQLand.Utilities
                             throw new ArgumentException($"Invalid port number: {portValue}. Port must be between 1 and 65535.");
                         }
                         port = parsedPort;
+                    }
+                    else if (arg.StartsWith("/o:", StringComparison.OrdinalIgnoreCase) ||
+                             arg.StartsWith("/output:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string outputFormat = ExtractValue(arg, "/o:", "/output:");
+                        try
+                        {
+                            OutputFormatter.SetFormat(outputFormat);
+                        }
+                        catch (ArgumentException ex)
+                        {
+                            var availableFormats = string.Join(", ", OutputFormatter.GetAvailableFormats());
+                            throw new ArgumentException($"{ex.Message}. Available formats: {availableFormats}");
+                        }
                     }
                     else if (arg.StartsWith("/timeout:", StringComparison.OrdinalIgnoreCase))
                     {
