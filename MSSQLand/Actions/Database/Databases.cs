@@ -16,60 +16,20 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            // Query for all databases
+            // Query for all databases with accessibility, trustworthy status, and owner in a single query
             DataTable allDatabases = databaseContext.QueryService.ExecuteTable(
-                "SELECT dbid, name, crdate, filename FROM master.dbo.sysdatabases ORDER BY crdate DESC;"
-            );
-
-            // Query for accessible databases
-            DataTable accessibleDatabases = databaseContext.QueryService.ExecuteTable(
-                "SELECT name FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1;"
-            );
-
-            // Query for trustworthy databases and owner information
-            DataTable databaseInfo = databaseContext.QueryService.ExecuteTable(
                 @"SELECT 
-                    d.name, 
-                    d.is_trustworthy_on,
-                    SUSER_SNAME(d.owner_sid) AS owner_name
-                FROM master.sys.databases d;"
+                    db.dbid,
+                    db.name,
+                    CAST(HAS_DBACCESS(db.name) AS BIT) AS Accessible,
+                    d.is_trustworthy_on AS Trustworthy,
+                    SUSER_SNAME(d.owner_sid) AS Owner,
+                    db.crdate,
+                    db.filename
+                FROM master.dbo.sysdatabases db
+                LEFT JOIN master.sys.databases d ON db.name = d.name
+                ORDER BY db.name ASC, Accessible DESC, Trustworthy DESC, db.crdate DESC;"
             );
-
-            // Add columns for "Accessible", "Trustworthy", and "Owner"
-            allDatabases.Columns.Add("Accessible", typeof(bool));
-            allDatabases.Columns.Add("Trustworthy", typeof(bool));
-            allDatabases.Columns.Add("Owner", typeof(string));
-
-            // Populate "Accessible", "Trustworthy", and "Owner" columns
-            foreach (DataRow row in allDatabases.Rows)
-            {
-                string dbName = row["name"].ToString();
-
-                // Check accessibility
-                bool isAccessible = accessibleDatabases.AsEnumerable()
-                    .Any(r => r.Field<string>("name") == dbName);
-                row["Accessible"] = isAccessible;
-
-                // Get trustworthy status and owner
-                var dbInfoRow = databaseInfo.AsEnumerable()
-                    .FirstOrDefault(r => r.Field<string>("name") == dbName);
-                
-                if (dbInfoRow != null)
-                {
-                    row["Trustworthy"] = dbInfoRow.Field<bool>("is_trustworthy_on");
-                    row["Owner"] = dbInfoRow.Field<string>("owner_name") ?? "N/A";
-                }
-                else
-                {
-                    row["Trustworthy"] = false;
-                    row["Owner"] = "N/A";
-                }
-            }
-
-            // Reorder columns using SetOrdinal
-            allDatabases.Columns["Accessible"].SetOrdinal(2);
-            allDatabases.Columns["Trustworthy"].SetOrdinal(3);
-            allDatabases.Columns["Owner"].SetOrdinal(4);
 
             // Output the final table
             Console.WriteLine(OutputFormatter.ConvertDataTable(allDatabases));
