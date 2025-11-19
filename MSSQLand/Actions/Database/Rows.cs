@@ -61,10 +61,10 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            // Use the current database if no database is specified
+            // Use the execution database if no database is specified
             if (string.IsNullOrEmpty(_database))
             {
-                _database = databaseContext.Server.Database;
+                _database = databaseContext.QueryService.ExecutionDatabase;
             }
 
             string targetTable = $"[{_database}].[{_schema}].[{_table}]";
