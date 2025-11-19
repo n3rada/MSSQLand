@@ -22,6 +22,7 @@ namespace MSSQLand.Actions.Database
             if (isAzureSQL)
             {
                 // Azure SQL Database: Only show current database (can't enumerate other databases)
+                // in Azure SQL Database the owner is always dbo
                 allDatabases = databaseContext.QueryService.ExecuteTable(
                     @"SELECT 
                         DB_ID() AS dbid,
@@ -29,7 +30,7 @@ namespace MSSQLand.Actions.Database
                         CAST(1 AS BIT) AS Visible,
                         CAST(1 AS BIT) AS Accessible,
                         CAST(is_trustworthy_on AS BIT) AS Trustworthy,
-                        USER_NAME(1) AS Owner,
+                        'dbo' AS Owner,
                         create_date AS crdate
                     FROM sys.databases
                     WHERE database_id = DB_ID();"
