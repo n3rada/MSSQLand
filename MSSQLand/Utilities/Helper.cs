@@ -80,6 +80,7 @@ namespace MSSQLand.Utilities
             Console.WriteLine("  findsql <domain>     - Search for MS SQL Servers in Active Directory.");
             Console.WriteLine();
             Console.WriteLine("For a complete list of actions, use: /a: or /a");
+            Console.WriteLine("For detailed help on a specific action, use: /a:actionname /help");
             Console.WriteLine();
         } 
 
@@ -94,18 +95,15 @@ namespace MSSQLand.Utilities
 
             foreach ((string ActionName, string Description, List<string> Arguments) in actions)
             {
-                Console.WriteLine($"{ActionName} - {Description}");
-
-                if (Arguments != null && Arguments.Any())
-                {
-                    foreach (var arg in Arguments)
-                    {
-                        Console.WriteLine($"  > {arg}");
-                    }
-                }
-
-                Console.WriteLine();
+                Console.WriteLine($"  {ActionName}");
             }
+
+            Console.WriteLine();
+            Console.WriteLine($"Total: {actions.Count} actions");
+            Console.WriteLine();
+            Console.WriteLine("For detailed information about a specific action, use: /a:actionname /help");
+            Console.WriteLine("Example: /a:whoami /help");
+            Console.WriteLine();
         }
 
         /// <summary>
