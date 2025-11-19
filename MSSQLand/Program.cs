@@ -141,6 +141,24 @@ namespace MSSQLand
   
                 }
 
+                // Detect ExecutionDatabase
+                if (string.IsNullOrEmpty(databaseContext.QueryService.ExecutionDatabase) || databaseContext.QueryService.ExecutionDatabase == "master")
+                {
+                    try
+                    {
+                        string actualDatabase = databaseContext.QueryService.ExecuteScalar("SELECT DB_NAME();")?.ToString();
+                        if (!string.IsNullOrEmpty(actualDatabase))
+                        {
+                            databaseContext.QueryService.ExecutionDatabase = actualDatabase;
+                            Logger.Info($"Execution database: {actualDatabase}");
+                        }
+                    }
+                    catch
+                    {
+                        // If detection fails, keep default
+                    }
+                }
+
                 // Detect Azure SQL on the final execution server
                 databaseContext.QueryService.IsAzureSQL();
 
