@@ -347,16 +347,16 @@ namespace MSSQLand.Services
                     return false;
                 }
                 
-                // Check if it contains "Microsoft SQL Azure"
-                bool isAzure = version.Contains("Microsoft SQL Azure", StringComparison.OrdinalIgnoreCase);
+                // Check if it contains "Microsoft SQL Azure" (case-insensitive)
+                bool isAzure = version.IndexOf("Microsoft SQL Azure", StringComparison.OrdinalIgnoreCase) >= 0;
                 
                 if (isAzure)
                 {
                     // Distinguish between Azure SQL Database and Managed Instance
                     // Azure SQL Database (PaaS) contains "SQL Azure" but NOT "Managed Instance"
                     // Azure SQL Managed Instance contains both "SQL Azure" and specific MI indicators
-                    bool isManagedInstance = version.Contains("Azure SQL Managed Instance", StringComparison.OrdinalIgnoreCase) ||
-                                           version.Contains("SQL Azure Managed Instance", StringComparison.OrdinalIgnoreCase);
+                    bool isManagedInstance = version.IndexOf("Azure SQL Managed Instance", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                           version.IndexOf("SQL Azure Managed Instance", StringComparison.OrdinalIgnoreCase) >= 0;
                     
                     if (isManagedInstance)
                     {
