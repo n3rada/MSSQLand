@@ -73,16 +73,51 @@ namespace MSSQLand.Models
 
         public static Server ParseServer(string serverInput)
         {
+            if (string.IsNullOrWhiteSpace(serverInput))
+                throw new ArgumentException("Server input cannot be null or empty.");
+
+            // Split by colon to separate server from user@database
             var parts = serverInput.Split(':');
 
             if (parts.Length < 1 || parts.Length > 2)
                 throw new ArgumentException($"Invalid target format: {serverInput}");
 
-            Server server = new()
+            Server server = new();
+
+            // Parse server part (may contain @database)
+            string serverPart = parts[0];
+            if (serverPart.Contains("@"))
             {
-                Hostname = parts[0],
-                ImpersonationUser = parts.Length > 1 ? parts[1] : null
-            };
+                var serverDbParts = serverPart.Split('@');
+                if (serverDbParts.Length != 2 || string.IsNullOrWhiteSpace(serverDbParts[0]))
+                    throw new ArgumentException($"Invalid server@database format: {serverPart}");
+                
+                server.Hostname = serverDbParts[0];
+                server.Database = serverDbParts[1];
+            }
+            else
+            {
+                server.Hostname = serverPart;
+            }
+
+            // Parse user@database part (if present after colon)
+            if (parts.Length > 1)
+            {
+                string userPart = parts[1];
+                if (userPart.Contains("@"))
+                {
+                    var userDbParts = userPart.Split('@');
+                    if (userDbParts.Length != 2 || string.IsNullOrWhiteSpace(userDbParts[0]))
+                        throw new ArgumentException($"Invalid user@database format: {userPart}");
+                    
+                    server.ImpersonationUser = userDbParts[0];
+                    server.Database = userDbParts[1];
+                }
+                else
+                {
+                    server.ImpersonationUser = userPart;
+                }
+            }
 
             return server;
         }

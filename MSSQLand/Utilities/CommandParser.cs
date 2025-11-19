@@ -24,8 +24,6 @@ namespace MSSQLand.Utilities
         
         // Compiled regex patterns for better performance
         private static readonly Regex TrailingSeparatorRegex = new Regex($"{Regex.Escape(AdditionalArgumentsSeparator)}$", RegexOptions.Compiled);
-        private static readonly Regex DbArgumentRegex = new Regex(@"/db:([^/]+?)(?:/\|/|$)", RegexOptions.Compiled);
-        private static readonly Regex DbRemovalRegex = new Regex(@"/db:[^/]+?(?:/\|/)?", RegexOptions.Compiled);
 
         public (ParseResultType, CommandArgs?) Parse(string[] args)
         {
@@ -171,18 +169,6 @@ namespace MSSQLand.Utilities
                         }
                         connectionTimeout = parsedTimeout;
                     }
-                    else if (arg.StartsWith("/db:", StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (parsedArgs.Host != null)
-                        {
-                            parsedArgs.Host.Database = ExtractValue(arg, "/db:");
-                        }
-                        else
-                        {
-                            // Store for later application when host is parsed
-                            additionalArgumentsBuilder.Append(arg).Append(CommandParser.AdditionalArgumentsSeparator);
-                        }
-                    }
                     else if (!actionFound && (arg.StartsWith("/u:", StringComparison.OrdinalIgnoreCase) ||
                              arg.StartsWith("/username:", StringComparison.OrdinalIgnoreCase)) && username == null)
                     {
@@ -217,18 +203,6 @@ namespace MSSQLand.Utilities
                 // Remove trailing separator and convert to string
                 string additionalArguments = additionalArgumentsBuilder.ToString();
                 parsedArgs.AdditionalArguments = TrailingSeparatorRegex.Replace(additionalArguments, "");
-
-                // Handle deferred /db: if it was in additionalArguments
-                if (parsedArgs.Host != null && parsedArgs.AdditionalArguments.Contains("/db:"))
-                {
-                    var dbMatch = DbArgumentRegex.Match(parsedArgs.AdditionalArguments);
-                    if (dbMatch.Success)
-                    {
-                        parsedArgs.Host.Database = dbMatch.Groups[1].Value;
-                        // Remove /db: from additional arguments
-                        parsedArgs.AdditionalArguments = DbRemovalRegex.Replace(parsedArgs.AdditionalArguments, "").Trim();
-                    }
-                }
 
                 if (parsedArgs.Host == null)
                 {

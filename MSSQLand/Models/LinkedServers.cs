@@ -27,6 +27,12 @@ namespace MSSQLand.Models
         private string[] ComputableImpersonationNames { get; set; }
 
         /// <summary>
+        /// A computed array of database names extracted from the server chain.
+        /// Expectation of {"master", "appdb", "analytics", ... }
+        /// </summary>
+        private string[] ComputableDatabaseNames { get; set; }
+
+        /// <summary>
         /// A public array of server names extracted from the server chain.
         /// Expectation of {"SQL02", "SQL03", "SQL04", ... }
         /// </summary>
@@ -92,7 +98,8 @@ namespace MSSQLand.Models
                 ServerChain = original.ServerChain.Select(server => new Server
                 {
                     Hostname = server.Hostname,
-                    ImpersonationUser = server.ImpersonationUser
+                    ImpersonationUser = server.ImpersonationUser,
+                    Database = server.Database
                 }).ToArray();
             }
 
@@ -117,15 +124,25 @@ namespace MSSQLand.Models
             {
                 string serverName = ServerChain[i].Hostname;
                 string impersonationUser = ServerChain[i].ImpersonationUser;
+                string database = ServerChain[i].Database;
 
-                if (!string.IsNullOrEmpty(impersonationUser))
+                StringBuilder part = new StringBuilder(serverName);
+
+                // Add user@database or just @database
+                if (!string.IsNullOrEmpty(impersonationUser) && !string.IsNullOrEmpty(database) && database != "master")
                 {
-                    chainParts.Add($"{serverName}:{impersonationUser}");
+                    part.Append($":{impersonationUser}@{database}");
                 }
-                else
+                else if (!string.IsNullOrEmpty(impersonationUser))
                 {
-                    chainParts.Add(serverName);
+                    part.Append($":{impersonationUser}");
                 }
+                else if (!string.IsNullOrEmpty(database) && database != "master")
+                {
+                    part.Append($"@{database}");
+                }
+
+                chainParts.Add(part.ToString());
             }
 
             return chainParts;
@@ -138,7 +155,8 @@ namespace MSSQLand.Models
         /// </summary>
         /// <param name="newServer">The hostname of the new linked server.</param>
         /// <param name="impersonationUser">Optional impersonation user.</param>
-        public void AddToChain(string newServer, string? impersonationUser = null)
+        /// <param name="database">Optional database context.</param>
+        public void AddToChain(string newServer, string? impersonationUser = null, string? database = null)
         {
             Logger.Debug($"Adding server {newServer} to the linked server chain.");
 
@@ -148,7 +166,12 @@ namespace MSSQLand.Models
             }
 
             List<Server> updatedChain = ServerChain.ToList();
-            updatedChain.Add(new Server { Hostname = newServer, ImpersonationUser = impersonationUser });
+            updatedChain.Add(new Server 
+            { 
+                Hostname = newServer, 
+                ImpersonationUser = impersonationUser,
+                Database = database ?? "master"
+            });
 
             ServerChain = updatedChain.ToArray();
 
@@ -186,7 +209,8 @@ namespace MSSQLand.Models
             return BuildSelectOpenQueryChainRecursive(
                 linkedServers: ComputableServerNames,
                 query: query,
-                linkedImpersonation: ComputableImpersonationNames
+                linkedImpersonation: ComputableImpersonationNames,
+                linkedDatabases: ComputableDatabaseNames
              );
         }
 
@@ -196,8 +220,10 @@ namespace MSSQLand.Models
         /// <param name="linkedServers">An array of server names representing the path of linked servers to traverse. '0' in front of them is mandatory to make the query work properly.</param>
         /// <param name="query">The SQL query to be executed at the final server in the linked server path.</param>
         /// <param name="thicksCounter">A counter used to double the single quotes for each level of nesting.</param>
+        /// <param name="linkedImpersonation">An array of impersonation users for each server.</param>
+        /// <param name="linkedDatabases">An array of database contexts for each server.</param>
         /// <returns>A string containing the nested `OPENQUERY` statement.</returns>
-        private string BuildSelectOpenQueryChainRecursive(string[] linkedServers, string query, int thicksCounter = 0, string[] linkedImpersonation = null)
+        private string BuildSelectOpenQueryChainRecursive(string[] linkedServers, string query, int thicksCounter = 0, string[] linkedImpersonation = null, string[] linkedDatabases = null)
         {
             if (linkedServers == null || linkedServers.Length == 0)
             {
@@ -217,19 +243,42 @@ namespace MSSQLand.Models
                 linkedImpersonation = linkedImpersonation.Skip(1).ToArray();
             }
 
+            // Prepare the database context, if any
+            string database = null;
+            if (linkedDatabases != null && linkedDatabases.Length > 0)
+            {
+                database = linkedDatabases[0];
+                // Create a new array without the first element
+                linkedDatabases = linkedDatabases.Skip(1).ToArray();
+            }
+
 
             string thicksRepr = new('\'', (int)Math.Pow(2, thicksCounter));
 
             // Base case: if this is the last server in the chain
             if (linkedServers.Length == 1)
             {
+                StringBuilder baseQuery = new StringBuilder();
 
                 if (!string.IsNullOrEmpty(login))
                 {
-                    currentQuery = $"EXECUTE AS LOGIN = '{login}'; {currentQuery.TrimEnd(';')}; REVERT;";
+                    baseQuery.Append($"EXECUTE AS LOGIN = '{login}'; ");
                 }
 
-                currentQuery = currentQuery.Replace("'", thicksRepr);
+                if (!string.IsNullOrEmpty(database) && database != "master")
+                {
+                    baseQuery.Append($"USE [{database}]; ");
+                }
+
+                baseQuery.Append(currentQuery.TrimEnd(';'));
+                baseQuery.Append(";");
+
+                if (!string.IsNullOrEmpty(login))
+                {
+                    baseQuery.Append(" REVERT;");
+                }
+
+                currentQuery = baseQuery.ToString().Replace("'", thicksRepr);
 
                 return currentQuery;
             }
@@ -253,11 +302,19 @@ namespace MSSQLand.Models
                 stringBuilder.Append(impersonationQuery.Replace("'", new('\'', (int)Math.Pow(2, thicksCounter + 1))));
             }
 
+            // Add database context if applicable
+            if (!string.IsNullOrEmpty(database) && database != "master")
+            {
+                string useQuery = $"USE [{database}]; ";
+                stringBuilder.Append(useQuery.Replace("'", new('\'', (int)Math.Pow(2, thicksCounter + 1))));
+            }
+
 
             // Recursive call for the remaining servers
             string recursiveCall = BuildSelectOpenQueryChainRecursive(
                 linkedServers: linkedServers.Skip(1).ToArray(), // Skip the current server
                 linkedImpersonation: linkedImpersonation,
+                linkedDatabases: linkedDatabases,
                 query: currentQuery,
                 thicksCounter: thicksCounter + 1
              );
@@ -289,16 +346,19 @@ namespace MSSQLand.Models
             return BuildRemoteProcedureCallRecursive(
                 linkedServers: ComputableServerNames,
                 query: query,
-                linkedImpersonation: ComputableImpersonationNames
+                linkedImpersonation: ComputableImpersonationNames,
+                linkedDatabases: ComputableDatabaseNames
              );
         }
 
         /// <summary>
         /// Recursively constructs a nested EXEC AT statement for querying linked SQL servers.
-        /// <param name="linkedServers"></param>
-        /// <param name="query"></param>
-        /// <returns></returns>
-        private static string BuildRemoteProcedureCallRecursive(string[] linkedServers, string query, string[] linkedImpersonation = null)
+        /// <param name="linkedServers">An array of server names.</param>
+        /// <param name="query">The SQL query to execute.</param>
+        /// <param name="linkedImpersonation">An array of impersonation users for each server.</param>
+        /// <param name="linkedDatabases">An array of database contexts for each server.</param>
+        /// <returns>A string containing the nested EXEC AT statement.</returns>
+        private static string BuildRemoteProcedureCallRecursive(string[] linkedServers, string query, string[] linkedImpersonation = null, string[] linkedDatabases = null)
         {
             string currentQuery = query;
 
@@ -306,19 +366,40 @@ namespace MSSQLand.Models
             for (int i = linkedServers.Length - 1; i > 0; i--)
             {
                 string server = linkedServers[i];
+                StringBuilder queryBuilder = new StringBuilder();
          
-                if (linkedImpersonation != null || linkedImpersonation.Length > 0)
+                if (linkedImpersonation != null && linkedImpersonation.Length > 0)
                 {
                     string login = linkedImpersonation[i-1];
                     if (!string.IsNullOrEmpty(login))
                     {
-                        currentQuery = $"EXECUTE AS LOGIN = '{login}'; {currentQuery.TrimEnd(';')}; REVERT;";
+                        queryBuilder.Append($"EXECUTE AS LOGIN = '{login}'; ");
                     }
-                    
+                }
+
+                if (linkedDatabases != null && linkedDatabases.Length > 0)
+                {
+                    string database = linkedDatabases[i-1];
+                    if (!string.IsNullOrEmpty(database) && database != "master")
+                    {
+                        queryBuilder.Append($"USE [{database}]; ");
+                    }
+                }
+
+                queryBuilder.Append(currentQuery.TrimEnd(';'));
+                queryBuilder.Append(";");
+
+                if (linkedImpersonation != null && linkedImpersonation.Length > 0)
+                {
+                    string login = linkedImpersonation[i-1];
+                    if (!string.IsNullOrEmpty(login))
+                    {
+                        queryBuilder.Append(" REVERT;");
+                    }
                 }
                     
                 // Double single quotes to escape them in the SQL string
-                currentQuery = $"EXEC ('{currentQuery.Replace("'", "''")} ') AT [{server}]";
+                currentQuery = $"EXEC ('{queryBuilder.ToString().Replace("'", "''")} ') AT [{server}]";
             }
 
             return currentQuery;
@@ -334,6 +415,7 @@ namespace MSSQLand.Models
             ComputableServerNames[0] = "0";
 
             ComputableImpersonationNames = new string[ServerChain.Length];
+            ComputableDatabaseNames = new string[ServerChain.Length];
             ServerNames = new string[ServerChain.Length];
 
             for (int i = 0; i < ServerChain.Length; i++)
@@ -341,6 +423,7 @@ namespace MSSQLand.Models
                 ComputableServerNames[i + 1] = ServerChain[i].Hostname;
                 ServerNames[i] = ServerChain[i].Hostname;
                 ComputableImpersonationNames[i] = ServerChain[i].ImpersonationUser ?? "";
+                ComputableDatabaseNames[i] = ServerChain[i].Database ?? "master";
             }
         }
 

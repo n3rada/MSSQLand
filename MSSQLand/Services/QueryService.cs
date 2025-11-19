@@ -12,6 +12,7 @@ namespace MSSQLand.Services
     {
         public readonly SqlConnection Connection;
         public string ExecutionServer { get; set; }
+        public string ExecutionDatabase { get; set; }
 
         private LinkedServers _linkedServers = new();
         
@@ -35,11 +36,14 @@ namespace MSSQLand.Services
                 if (_linkedServers.ServerNames.Length > 0)
                 {
                     ExecutionServer = _linkedServers.ServerNames.Last();
+                    ExecutionDatabase = _linkedServers.ServerChain.Last().Database ?? "master";
                     Logger.Debug($"Execution server set to: {ExecutionServer}");
+                    Logger.Debug($"Execution database set to: {ExecutionDatabase}");
                 }
                 else
                 {
                     ExecutionServer = GetServerName();
+                    ExecutionDatabase = "master";
                 }
             }
         }
@@ -48,6 +52,7 @@ namespace MSSQLand.Services
         {
             Connection = connection;
             ExecutionServer = GetServerName();
+            ExecutionDatabase = connection.Database ?? "master";
         }
 
         private string GetServerName()

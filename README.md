@@ -16,19 +16,45 @@ MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikiped
 
 ## 🚀 Quick Start
 
+Format: `server:user@database`
+- `server` (required) - The SQL Server hostname or IP
+- `:user` (optional) - User to impersonate on this server
+- `@database` (optional) - Database context (defaults to 'master' if not specified)
+
+All combinations are supported:
+- `server` - Connect to server using default database (master)
+- `server@database` - Connect to server and use specific database
+- `server:user` - Connect to server, impersonate user, use default database
+- `server:user@database` - Connect to server, impersonate user, use specific database
+
 ```shell
 MSSQLand.exe /h:localhost /c:token /a:info
 ```
 
 **Common options:**
 - `/port:1433` - Specify custom port (default: 1433, also common: 1434, 14333, 2433)
-- `/db:master` - Target database (default: master)
 - `/timeout:30` - Connection timeout in seconds (default: 15)
 - `/l:SERVER1:user1,SERVER2:user2` - Chain through linked servers
 
-**Example with options:**
+**Format examples:**
 ```shell
-MSSQLand.exe /h:192.168.1.10 /port:14333 /c:local /u:sa /p:password /a:info
+# Simple: connect to SQL01 using master database
+/h:SQL01
+
+# Impersonate user: connect to SQL01, impersonate webapp01, use master database
+/h:SQL01:webapp01
+
+# Specify database: connect to SQL01, use myapp database (no impersonation)
+/h:SQL01@myapp
+
+# Full format: connect to SQL01, impersonate webapp01, use myapp database
+/h:SQL01:webapp01@myapp
+
+# Linked servers with databases
+/l:SQL02:webapp02@appdb,SQL03:webapp03@analytics,SQL04@proddb
+
+# Mixed (some with database, some without)
+/l:SQL02:webapp02,SQL03:webapp03@mydb,SQL04@reporting
 ```
 
 **Getting help:**
