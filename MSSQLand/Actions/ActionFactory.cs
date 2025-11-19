@@ -78,6 +78,8 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             { "links", (typeof(Links), "Enumerate linked servers and their configuration.") },
             { "extsources", (typeof(ExternalSources), "Enumerate External Data Sources (Azure SQL Database, Synapse, PolyBase).") },
+            { "extcreds", (typeof(ExternalCredentials), "Enumerate database-scoped credentials used by External Data Sources.") },
+            { "exttables", (typeof(ExternalTables), "Enumerate external tables and their remote data locations.") },
             { "linkmap", (typeof(LinkedServerExplorer), "Map all possible linked server chains and execution paths.") },
             { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.") },
             { "adsiquery", (typeof(AdsiQuery), "Query Active Directory via ADSI using fully qualified domain name (auto-creates temp server if needed).") },
