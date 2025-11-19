@@ -29,7 +29,7 @@ namespace MSSQLand.Actions.Database
                         CAST(1 AS BIT) AS Visible,
                         CAST(1 AS BIT) AS Accessible,
                         CAST(is_trustworthy_on AS BIT) AS Trustworthy,
-                        SUSER_SNAME(owner_sid) AS Owner,
+                        USER_NAME(1) AS Owner,
                         create_date AS crdate
                     FROM sys.databases
                     WHERE database_id = DB_ID();"
