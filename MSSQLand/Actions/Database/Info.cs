@@ -56,6 +56,12 @@ namespace MSSQLand.Actions.Database
                         ? queryResult.Rows[0][0]?.ToString() ?? "NULL"
                         : "NULL";
 
+                    // Remove line breaks from @@VERSION output
+                    if (key == "OS Version Number")
+                    {
+                        result = result.Replace("\r\n", " ").Replace("\n", " ").Replace("\r", " ");
+                    }
+
                     results[key] = result;
                 }
                 catch (Exception ex)
