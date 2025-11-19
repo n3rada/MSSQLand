@@ -35,14 +35,10 @@ SELECT
     r.is_fixed_role AS IsFixedRole,
     r.type_desc AS RoleType,
     r.create_date AS CreateDate,
-    r.modify_date AS ModifyDate,
-    ISNULL(m.name, '') AS MemberName,
-    ISNULL(m.type_desc, '') AS MemberType
+    r.modify_date AS ModifyDate
 FROM sys.database_principals r
-LEFT JOIN sys.database_role_members rm ON r.principal_id = rm.role_principal_id
-LEFT JOIN sys.database_principals m ON rm.member_principal_id = m.principal_id
 WHERE r.type = 'R'
-ORDER BY r.is_fixed_role DESC, r.name, m.name;";
+ORDER BY r.is_fixed_role DESC, r.name;";
 
             var allRoles = databaseContext.QueryService.ExecuteTable(query);
             
@@ -50,6 +46,33 @@ ORDER BY r.is_fixed_role DESC, r.name, m.name;";
             {
                 Logger.Warning("No database roles found in current database.");
                 return null;
+            }
+
+            // Add Members column
+            allRoles.Columns.Add("Members", typeof(string));
+
+            // Get members for each role
+            foreach (DataRow roleRow in allRoles.Rows)
+            {
+                string roleName = roleRow["RoleName"].ToString();
+                
+                string membersQuery = $@"
+                    SELECT m.name
+                    FROM sys.database_principals r
+                    INNER JOIN sys.database_role_members rm ON r.principal_id = rm.role_principal_id
+                    INNER JOIN sys.database_principals m ON rm.member_principal_id = m.principal_id
+                    WHERE r.name = '{roleName.Replace("'", "''")}'
+                    ORDER BY m.name;";
+
+                var membersTable = databaseContext.QueryService.ExecuteTable(membersQuery);
+                
+                var membersList = new List<string>();
+                foreach (DataRow memberRow in membersTable.Rows)
+                {
+                    membersList.Add(memberRow["name"].ToString());
+                }
+
+                roleRow["Members"] = membersList.Count > 0 ? string.Join(", ", membersList) : "No members";
             }
 
             // Separate fixed roles from custom roles
@@ -64,22 +87,25 @@ ORDER BY r.is_fixed_role DESC, r.name, m.name;";
             // Display Fixed Roles
             if (fixedRolesData.Any())
             {
-                DataTable fixedRolesTable = allRoles.Clone();
-                fixedRolesTable.Columns.Remove("IsFixedRole"); // Remove the flag column for display
+                DataTable fixedRolesTable = new DataTable();
+                fixedRolesTable.Columns.Add("RoleName", typeof(string));
+                fixedRolesTable.Columns.Add("RoleType", typeof(string));
+                fixedRolesTable.Columns.Add("CreateDate", typeof(DateTime));
+                fixedRolesTable.Columns.Add("ModifyDate", typeof(DateTime));
+                fixedRolesTable.Columns.Add("Members", typeof(string));
                 
                 foreach (var row in fixedRolesData)
                 {
-                    var newRow = fixedRolesTable.NewRow();
-                    newRow["RoleName"] = row["RoleName"];
-                    newRow["RoleType"] = row["RoleType"];
-                    newRow["CreateDate"] = row["CreateDate"];
-                    newRow["ModifyDate"] = row["ModifyDate"];
-                    newRow["MemberName"] = string.IsNullOrEmpty(row["MemberName"].ToString()) ? "No members" : row["MemberName"];
-                    newRow["MemberType"] = row["MemberType"];
-                    fixedRolesTable.Rows.Add(newRow);
+                    fixedRolesTable.Rows.Add(
+                        row["RoleName"],
+                        row["RoleType"],
+                        row["CreateDate"],
+                        row["ModifyDate"],
+                        row["Members"]
+                    );
                 }
 
-                Logger.Success($"Fixed Database Roles ({fixedRolesData.Count} entries)");
+                Logger.Success($"Fixed Database Roles ({fixedRolesData.Count} roles)");
                 Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(fixedRolesTable));
                 Console.WriteLine();
             }
@@ -87,22 +113,25 @@ ORDER BY r.is_fixed_role DESC, r.name, m.name;";
             // Display Custom Roles
             if (customRolesData.Any())
             {
-                DataTable customRolesTable = allRoles.Clone();
-                customRolesTable.Columns.Remove("IsFixedRole"); // Remove the flag column for display
+                DataTable customRolesTable = new DataTable();
+                customRolesTable.Columns.Add("RoleName", typeof(string));
+                customRolesTable.Columns.Add("RoleType", typeof(string));
+                customRolesTable.Columns.Add("CreateDate", typeof(DateTime));
+                customRolesTable.Columns.Add("ModifyDate", typeof(DateTime));
+                customRolesTable.Columns.Add("Members", typeof(string));
                 
                 foreach (var row in customRolesData)
                 {
-                    var newRow = customRolesTable.NewRow();
-                    newRow["RoleName"] = row["RoleName"];
-                    newRow["RoleType"] = row["RoleType"];
-                    newRow["CreateDate"] = row["CreateDate"];
-                    newRow["ModifyDate"] = row["ModifyDate"];
-                    newRow["MemberName"] = string.IsNullOrEmpty(row["MemberName"].ToString()) ? "No members" : row["MemberName"];
-                    newRow["MemberType"] = row["MemberType"];
-                    customRolesTable.Rows.Add(newRow);
+                    customRolesTable.Rows.Add(
+                        row["RoleName"],
+                        row["RoleType"],
+                        row["CreateDate"],
+                        row["ModifyDate"],
+                        row["Members"]
+                    );
                 }
 
-                Logger.Success($"Custom Database Roles ({customRolesData.Count} entries)");
+                Logger.Success($"Custom Database Roles ({customRolesData.Count} roles)");
                 Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(customRolesTable));
             }
             else
