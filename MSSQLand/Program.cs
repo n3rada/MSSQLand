@@ -99,19 +99,18 @@ namespace MSSQLand
                 databaseContext.Server.SystemUser = systemUser;
 
                 Logger.Info($"Logged in on {databaseContext.Server.Hostname} as {systemUser}");
-                Logger.InfoNested($"Mapped to the user {userName} ");
+                Logger.InfoNested($"Mapped to the user {userName}");
 
                 // Check if user is mapped to themselves and is a domain user (implies group-based access)
                 if (userName.Equals(systemUser, StringComparison.OrdinalIgnoreCase) && 
                     databaseContext.UserService.IsDomainUser)
                 {
-                    Logger.InfoNested("Access granted through Active Directory group membership (no direct login)");
-                    
-                    // Try to identify the AD groups
+                    // Try to identify the AD groups that grant access
                     var adGroups = databaseContext.UserService.GetUserAdGroups();
                     if (adGroups.Count > 0)
                     {
-                        Logger.InfoNested($"Member of {adGroups.Count} AD group(s): {string.Join(", ", adGroups)}");
+                        Logger.InfoNested("Access granted through Active Directory group membership (no direct login)");
+                        Logger.InfoNested($"Authorized via {adGroups.Count} AD group(s): {string.Join(", ", adGroups)}");
                     }
                 }
 
@@ -125,18 +124,17 @@ namespace MSSQLand
                     (userName, systemUser) = databaseContext.UserService.GetInfo();
 
                     Logger.Info($"Logged in on {databaseContext.QueryService.ExecutionServer} as {systemUser}");
-                    Logger.InfoNested($"Mapped to the user {userName} ");
+                    Logger.InfoNested($"Mapped to the user {userName}");
 
                     // Check for group-based access on linked server as well
                     if (userName.Equals(systemUser, StringComparison.OrdinalIgnoreCase) && 
                         databaseContext.UserService.IsDomainUser)
                     {
-                        Logger.InfoNested("Access granted through Active Directory group membership (no direct login)");
-                        
                         var adGroups = databaseContext.UserService.GetUserAdGroups();
                         if (adGroups.Count > 0)
                         {
-                            Logger.InfoNested($"Member of {adGroups.Count} AD group(s): {string.Join(", ", adGroups)}");
+                            Logger.InfoNested("Access granted through Active Directory group membership (no direct login)");
+                            Logger.InfoNested($"Authorized via {adGroups.Count} AD group(s): {string.Join(", ", adGroups)}");
                         }
                     }
                 }
