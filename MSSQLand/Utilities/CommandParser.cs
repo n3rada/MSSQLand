@@ -86,9 +86,6 @@ namespace MSSQLand.Utilities
                             // Otherwise show general help
                             Helper.Show();
                             return (ParseResultType.ShowHelp, null);
-                        case "/printhelp":
-                            Helper.SaveCommandsToFile();
-                            return (ParseResultType.ShowHelp, null);
                         case "/findsql":
                             // Standalone utility - find SQL Servers in Active Directory
                             Logger.Info("FindSQLServers utility mode - no database connection required");

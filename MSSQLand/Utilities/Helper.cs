@@ -1,110 +1,12 @@
 ﻿using System;
 using System.Data;
 using System.Linq;
-using System.IO;
-using System.Text;
 using System.Collections.Generic;
 
 namespace MSSQLand.Utilities
 {
     internal class Helper
     {
-        /// <summary>
-        /// Saves the command-line help details to a Markdown file.
-        /// </summary>
-        public static void SaveCommandsToFile(string filePath = "COMMANDS.md")
-        {
-            StringBuilder markdownContent = new();
-
-            markdownContent.AppendLine("# MSSQLand Command Reference");
-            markdownContent.AppendLine();
-            markdownContent.AppendLine("## 📌 Command-Line Arguments");
-            markdownContent.AppendLine();
-            markdownContent.AppendLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(getArguments()));
-
-            markdownContent.AppendLine();
-            markdownContent.AppendLine("## 🔑 Credential Types");
-            markdownContent.AppendLine();
-            markdownContent.AppendLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(getCredentialTypes()));
-
-            markdownContent.AppendLine();
-            markdownContent.AppendLine("## 🛠 Available Actions");
-            markdownContent.AppendLine();
-
-            // Get all actions and group them by namespace (category)
-            var actions = ActionFactory.GetAvailableActions();
-            
-            // Group actions by their namespace/category
-            var groupedActions = new Dictionary<string, List<(string ActionName, string Description, List<string> Arguments)>>
-            {
-                { "Administration", new List<(string, string, List<string>)>() },
-                { "Database", new List<(string, string, List<string>)>() },
-                { "Domain", new List<(string, string, List<string>)>() },
-                { "Execution", new List<(string, string, List<string>)>() },
-                { "FileSystem", new List<(string, string, List<string>)>() },
-                { "Network", new List<(string, string, List<string>)>() }
-            };
-
-            // Categorize each action based on the action type's namespace
-            foreach (var action in actions)
-            {
-                // Get the action instance to determine its namespace
-                var actionType = ActionFactory.GetActionType(action.ActionName);
-                string category = DetermineCategory(actionType);
-                
-                if (groupedActions.ContainsKey(category))
-                {
-                    groupedActions[category].Add(action);
-                }
-            }
-
-            // Output each category in order
-            string[] categoryOrder = { "Administration", "Database", "Domain", "Execution", "FileSystem", "Network" };
-            
-            foreach (string category in categoryOrder)
-            {
-                if (groupedActions[category].Count == 0) continue;
-
-                markdownContent.AppendLine($"### {category} Actions");
-                markdownContent.AppendLine();
-
-                foreach ((string ActionName, string Description, List<string> Arguments) in groupedActions[category])
-                {
-                    markdownContent.AppendLine($"#### `{ActionName}`");
-                    markdownContent.AppendLine($"**Description:** {Description}");
-                    markdownContent.AppendLine();
-
-                    if (Arguments != null && Arguments.Any())
-                    {
-                        markdownContent.AppendLine("**Arguments:**");
-                        foreach (var arg in Arguments)
-                        {
-                            markdownContent.AppendLine($"- {arg}");
-                        }
-                    }
-                    else
-                    {
-                        markdownContent.AppendLine("**Arguments:** None");
-                    }
-                    
-                    markdownContent.AppendLine();
-                }
-            }
-
-            // Write to file
-            File.WriteAllText(filePath, markdownContent.ToString());
-            Logger.Success($"Command documentation saved to {filePath}");
-        }
-
-        /// <summary>
-        /// Determines the category of an action based on its namespace.
-        /// </summary>
-        private static string DetermineCategory(Type actionType)
-        {
-            string fullName = actionType.FullName ?? actionType.Name;
-            // Return last segment of namespace as category
-            return fullName.Split('.').Reverse().Skip(1).FirstOrDefault() ?? "Unknown";
-        }
 
         /// <summary>
         /// Displays help message filtered by a search term.
@@ -283,7 +185,6 @@ namespace MSSQLand.Utilities
             argumentsTable.Rows.Add("/debug", "Enable debug mode for detailed logs.");
             argumentsTable.Rows.Add("/help", "Display the helper.");
             argumentsTable.Rows.Add("/findsql <domain>", "Find SQL Servers in Active Directory (no database connection needed).");
-            argumentsTable.Rows.Add("/printhelp", "Save commands to COMMANDS.md file.");
 
             return argumentsTable;
         }
