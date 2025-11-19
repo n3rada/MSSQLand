@@ -73,7 +73,7 @@ ORDER BY r.is_fixed_role DESC, r.name;";
                     membersList.Add(memberRow["name"].ToString());
                 }
 
-                roleRow["Members"] = membersList.Count > 0 ? string.Join(", ", membersList) : "No members";
+                roleRow["Members"] = membersList.Count > 0 ? string.Join(", ", membersList) : "";
             }
 
             // Separate fixed roles from custom roles
