@@ -6,6 +6,16 @@ using System.Linq;
 
 namespace MSSQLand.Actions.Database
 {
+    /// <summary>
+    /// Enumerates database-level roles and their members in the current database.
+    /// 
+    /// Displays:
+    /// - Fixed database roles (db_owner, db_datareader, db_datawriter, etc.) and their members
+    /// - Custom database roles and their members
+    /// 
+    /// This provides a role-centric view showing which users belong to each database role.
+    /// For server-level logins and instance-wide privileges, use the 'users' action instead.
+    /// </summary>
     internal class Roles : BaseAction
     {
         public override void ValidateArguments(string additionalArguments)
@@ -15,7 +25,9 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.Info("Retrieving all database roles and their members");
+            Logger.Info("Enumerating database-level roles and their members in current database");
+            Logger.InfoNested("Note: Use 'users' action to see server-level logins and instance-wide privileges");
+            Logger.NewLine();
 
             string query = @"
 SELECT 

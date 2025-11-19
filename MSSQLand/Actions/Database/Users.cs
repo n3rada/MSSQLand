@@ -8,6 +8,15 @@ using System.Linq;
 
 namespace MSSQLand.Actions.Database
 {
+    /// <summary>
+    /// Enumerates server-level principals (logins) and database users.
+    /// 
+    /// Displays:
+    /// - Server logins with their instance-wide server roles (sysadmin, securityadmin, etc.)
+    /// - Database users in the current database context
+    /// 
+    /// For database-level role memberships, use the 'roles' action instead.
+    /// </summary>
     internal class Users : BaseAction
     {
         public override void ValidateArguments(string additionalArguments)
@@ -17,7 +26,9 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.Info("Server principals with role memberships");
+            Logger.Info("Enumerating server-level principals (logins) and their instance-wide server roles");
+            Logger.InfoNested("Note: Use 'roles' action to see database-level role memberships");
+            Logger.NewLine();
 
             string query = @"
                 SELECT r.name AS Name, r.type_desc AS Type, r.is_disabled, r.create_date, r.modify_date,
@@ -65,8 +76,9 @@ namespace MSSQLand.Actions.Database
             }
 
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(table));
+            Logger.NewLine();
 
-            Logger.Info("Database users");
+            Logger.Info("Database users in current database context");
 
             string databaseUsersQuery = @"
                 SELECT name AS username, create_date, modify_date, type_desc AS type, 
