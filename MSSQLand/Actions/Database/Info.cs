@@ -100,15 +100,35 @@ namespace MSSQLand.Actions.Database
                             : "NULL";
 
                         // Special handling for Azure Max Database Size
-                        if (key == "Azure Max Database Size" && long.TryParse(result, out long bytes))
+                        if (key == "Azure Max Database Size")
                         {
-                            result = $"{bytes / (1024.0 * 1024.0 * 1024.0):F2} GB";
+                            if (long.TryParse(result, out long bytes) && bytes > 0)
+                            {
+                                result = $"{bytes / (1024.0 * 1024.0 * 1024.0):F2} GB";
+                            }
+                            else
+                            {
+                                result = "Unlimited or default";
+                            }
                         }
 
                         // Special handling for Azure Engine Edition
                         if (key == "Azure Engine Edition")
                         {
-                            result = result + " (5 = Azure SQL Database)";
+                            string description = result switch
+                            {
+                                "1" => "Personal or Desktop Engine",
+                                "2" => "Standard",
+                                "3" => "Enterprise",
+                                "4" => "Express",
+                                "5" => "Azure SQL Database",
+                                "6" => "Azure Synapse Analytics",
+                                "8" => "Azure SQL Managed Instance",
+                                "9" => "Azure SQL Edge",
+                                "11" => "Azure Synapse serverless SQL pool",
+                                _ => "Unknown"
+                            };
+                            result = $"{result} ({description})";
                         }
 
                         // Split Full Version String into multiple rows with meaningful labels
