@@ -163,7 +163,7 @@ namespace MSSQLand.Services
 
         /// <summary>
         /// Retrieves the list of AD groups the current user is a member of.
-        /// Uses IS_MEMBER() to check all Windows groups in SQL Server.
+        /// Uses xp_logininfo or IS_MEMBER() to check server-level Windows groups.
         /// Results are cached per execution server.
         /// </summary>
         /// <returns>List of AD group names the user belongs to, or empty list if none found.</returns>
@@ -217,7 +217,7 @@ namespace MSSQLand.Services
                     // xp_logininfo not available, fall through to IS_MEMBER approach
                 }
 
-                // Fallback: Use IS_MEMBER() to check all Windows groups
+                // Fallback: Use IS_MEMBER() to check all Windows groups (server-level)
                 string groupsQuery = @"
                     SELECT name
                     FROM master.sys.server_principals
@@ -256,6 +256,43 @@ namespace MSSQLand.Services
             // Cache the result
             _adGroupsCache[_queryService.ExecutionServer] = groups;
             return groups;
+        }
+
+        /// <summary>
+        /// Retrieves the list of database roles the current user is a member of.
+        /// Checks roles in the current database context.
+        /// </summary>
+        /// <returns>List of database role names the user belongs to, or empty list if none found.</returns>
+        public List<string> GetUserDatabaseRoles()
+        {
+            var roles = new List<string>();
+
+            try
+            {
+                // Get all database roles that the current user is a member of
+                string rolesQuery = @"
+                    SELECT r.name
+                    FROM sys.database_principals r
+                    INNER JOIN sys.database_role_members rm ON r.principal_id = rm.role_principal_id
+                    INNER JOIN sys.database_principals m ON rm.member_principal_id = m.principal_id
+                    WHERE m.name = USER_NAME()
+                    AND r.type = 'R'
+                    ORDER BY r.name;";
+
+                var rolesTable = _queryService.ExecuteTable(rolesQuery);
+
+                foreach (System.Data.DataRow row in rolesTable.Rows)
+                {
+                    string roleName = row["name"].ToString();
+                    roles.Add(roleName);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Error retrieving database roles: {ex.Message}");
+            }
+
+            return roles;
         }
 
         /// <summary>
