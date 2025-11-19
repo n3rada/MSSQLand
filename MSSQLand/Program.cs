@@ -107,7 +107,7 @@ namespace MSSQLand
                 {
                     Logger.InfoNested("Access granted through Active Directory group membership (no direct login)");
                     
-                    // Try to identify the group
+                    // Try to identify the AD groups
                     var adGroups = databaseContext.UserService.GetUserAdGroups();
                     if (adGroups.Count > 0)
                     {
