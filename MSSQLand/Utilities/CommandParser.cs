@@ -238,31 +238,9 @@ namespace MSSQLand.Utilities
                 // Check if action was provided or is empty
                 if (string.IsNullOrWhiteSpace(actionType))
                 {
-                    // Check if credentials are provided (user is trying to connect)
-                    if (!string.IsNullOrEmpty(parsedArgs.CredentialType))
-                    {
-                        // User has credentials but no action - show available actions
-                        Logger.Error("Missing required argument: /a or /action.");
-                        Logger.NewLine();
-                        Logger.Info("Available actions you can perform:");
-                        
-                        var actions = ActionFactory.GetAvailableActions();
-                        foreach (var (ActionName, Description, Arguments) in actions)
-                        {
-                            Logger.TaskNested($"{ActionName} - {Description}");
-                        }
-                        
-                        Logger.NewLine();
-                        Logger.Info("Example: /a:whoami");
-                    }
-                    else
-                    {
-                        // No credentials and no action - show full help
-                        Logger.Error("Missing required argument: /a or /action.");
-                        Logger.NewLine();
-                        Helper.Show();
-                    }
-                    return (ParseResultType.InvalidInput, null);
+                    // User wants to see all available actions
+                    Helper.ShowAllActions();
+                    return (ParseResultType.ShowHelp, null);
                 }
 
                 // Get the action from the factory

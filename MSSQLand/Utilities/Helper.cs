@@ -147,14 +147,18 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
-        /// Displays the help message with available actions, credentials, and argument usage.
+        /// Displays basic help message with CLI arguments and credential types.
         /// </summary>
         public static void Show()
         {
-
             // Usage instruction
             Console.WriteLine("Usage: MSSQLand.exe /h:localhost /c:token /a:whoami\n");
-            Console.WriteLine("       MSSQLand.exe /help <searchterm>  - Filter actions by keyword\n");
+            Console.WriteLine("Quick Help:");
+            Console.WriteLine("  /help                - Show this basic help");
+            Console.WriteLine("  /help <keyword>      - Search for actions matching keyword");
+            Console.WriteLine("  /a: or /a            - List all available actions");
+            Console.WriteLine("  /a:actionname        - Execute specific action");
+            Console.WriteLine("  /printhelp           - Generate COMMANDS.md file\n");
 
             // Provide a quick reference of top-level arguments or usage
             Console.WriteLine("CLI arguments:");
@@ -165,19 +169,28 @@ namespace MSSQLand.Utilities
             Console.WriteLine("Credential types:");
             Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(getCredentialTypes()));
 
-            // Provide actions
+            // Add Utilities Section
             Console.WriteLine();
-            Console.WriteLine("Available Actions:");
+            Console.WriteLine("Standalones (no database connection needed):");
+            Console.WriteLine("  findsql <domain>     - Search for MS SQL Servers in Active Directory.");
             Console.WriteLine();
+            Console.WriteLine("For a complete list of actions, use: /a: or /a");
+            Console.WriteLine();
+        } 
+
+        /// <summary>
+        /// Displays all available actions grouped by category.
+        /// </summary>
+        public static void ShowAllActions()
+        {
+            Console.WriteLine("Available Actions:\n");
 
             var actions = ActionFactory.GetAvailableActions();
 
             foreach ((string ActionName, string Description, List<string> Arguments) in actions)
             {
-                // Print the main line: "actionName - description"
                 Console.WriteLine($"{ActionName} - {Description}");
 
-                // Display arguments directly from the list
                 if (Arguments != null && Arguments.Any())
                 {
                     foreach (var arg in Arguments)
@@ -186,18 +199,9 @@ namespace MSSQLand.Utilities
                     }
                 }
 
-                // Blank line after each action to visually separate them
                 Console.WriteLine();
             }
-
-
-            // Add Utilities Section
-            Console.WriteLine();
-            Console.WriteLine("Standalones (no database connection needed):");
-            Console.WriteLine();
-            Console.WriteLine("  findsql <domain>     - Search for MS SQL Servers in Active Directory.");
-            Console.WriteLine();
-        } 
+        }
 
         /// <summary>
         /// Displays help for a specific action.
