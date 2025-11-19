@@ -30,7 +30,6 @@ namespace MSSQLand.Utilities
             CommandArgs parsedArgs = new();
 
             string username = null, password = null, domain = null;
-            int? port = null;
             int? connectionTimeout = null;
             string actionType = null;
             StringBuilder additionalArgumentsBuilder = new StringBuilder();
@@ -129,19 +128,6 @@ namespace MSSQLand.Utilities
                             return (ParseResultType.ShowHelp, null);
                         }
                     }
-                    else if (arg.StartsWith("/port:", StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (port.HasValue)
-                        {
-                            Logger.Warning($"/port: specified multiple times. Using last value.");
-                        }
-                        string portValue = ExtractValue(arg, "/port:");
-                        if (!int.TryParse(portValue, out int parsedPort) || parsedPort <= 0 || parsedPort > 65535)
-                        {
-                            throw new ArgumentException($"Invalid port number: {portValue}. Port must be between 1 and 65535.");
-                        }
-                        port = parsedPort;
-                    }
                     else if (arg.StartsWith("/o:", StringComparison.OrdinalIgnoreCase) ||
                              arg.StartsWith("/output:", StringComparison.OrdinalIgnoreCase))
                     {
@@ -208,12 +194,6 @@ namespace MSSQLand.Utilities
                 {
                     Logger.Error("Missing required argument: /h or /host.");
                     return (ParseResultType.InvalidInput, null);
-                }
-
-
-                if (port.HasValue)
-                {
-                    parsedArgs.Host.Port = port.Value;
                 }
 
                 if (connectionTimeout.HasValue)

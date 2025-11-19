@@ -16,44 +16,54 @@ MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikiped
 
 ## 🚀 Quick Start
 
-Format: `server:user@database`
+Format: `server,port:user@database`
 - `server` (required) - The SQL Server hostname or IP
+- `,port` (optional) - Port number (default: 1433, also common: 1434, 14333, 2433)
 - `:user` (optional) - User to impersonate on this server
 - `@database` (optional) - Database context (defaults to 'master' if not specified)
 
 All combinations are supported:
-- `server` - Connect to server using default database (master)
+- `server` - Connect to server using default port and database
+- `server,1434` - Connect to server on custom port
 - `server@database` - Connect to server and use specific database
 - `server:user` - Connect to server, impersonate user, use default database
-- `server:user@database` - Connect to server, impersonate user, use specific database
+- `server,1434:user@database` - Full format with all options
 
 ```shell
 MSSQLand.exe /h:localhost /c:token /a:info
+MSSQLand.exe /h:localhost,1434 /c:token /a:info
 ```
 
 **Common options:**
-- `/port:1433` - Specify custom port (default: 1433, also common: 1434, 14333, 2433)
 - `/timeout:30` - Connection timeout in seconds (default: 15)
-- `/l:SERVER1:user1,SERVER2:user2` - Chain through linked servers
+- `/l:SERVER1:user1,SERVER2:user2` - Chain through linked servers (uses configured linked server names)
+
+> **Note:** Port specification (`,port`) only applies to the initial `/h:` connection. Linked server chains (`/l:`) use the linked server names as configured in `sys.servers`, not hostname:port combinations.
 
 **Format examples:**
 ```shell
 # Simple: connect to SQL01 using master database
 /h:SQL01
 
+# Custom port: connect to SQL01 on port 1434
+/h:SQL01,1434
+
 # Impersonate user: connect to SQL01, impersonate webapp01, use master database
 /h:SQL01:webapp01
+
+# Port with impersonation: connect to SQL01:1434, impersonate webapp01
+/h:SQL01,1434:webapp01
 
 # Specify database: connect to SQL01, use myapp database (no impersonation)
 /h:SQL01@myapp
 
-# Full format: connect to SQL01, impersonate webapp01, use myapp database
-/h:SQL01:webapp01@myapp
+# Full format: connect to SQL01:1434, impersonate webapp01, use myapp database
+/h:SQL01,1434:webapp01@myapp
 
-# Linked servers with databases
+# Linked servers (using configured linked server names, not hostname:port)
 /l:SQL02:webapp02@appdb,SQL03:webapp03@analytics,SQL04@proddb
 
-# Mixed (some with database, some without)
+# Mixed linked servers (some with database, some without)
 /l:SQL02:webapp02,SQL03:webapp03@mydb,SQL04@reporting
 ```
 

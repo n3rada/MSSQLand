@@ -184,8 +184,7 @@ namespace MSSQLand.Utilities
             argumentsTable.Columns.Add("Argument", typeof(string));
             argumentsTable.Columns.Add("Description", typeof(string));
 
-            argumentsTable.Rows.Add("/h or /host", "Specify the target SQL Server hostname. Format: SQL01:user01");
-            argumentsTable.Rows.Add("/port", "Specify the SQL Server port (default: 1433).");
+            argumentsTable.Rows.Add("/h or /host", "Specify the target SQL Server. Format: server,port:user@database (port defaults to 1433).");
             argumentsTable.Rows.Add("/timeout", "Specify the connection timeout in seconds (default: 15).");
             argumentsTable.Rows.Add("/c or /credentials", "Specify the credential type (mandatory).");
             argumentsTable.Rows.Add("/u or /username", "Provide the username (if required by credential type).");

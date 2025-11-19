@@ -84,8 +84,23 @@ namespace MSSQLand.Models
 
             Server server = new();
 
-            // Parse server part (may contain @database)
+            // Parse server part (may contain @database or ,port)
             string serverPart = parts[0];
+            
+            // Check for port specification with comma
+            if (serverPart.Contains(","))
+            {
+                var serverPortParts = serverPart.Split(',');
+                if (serverPortParts.Length != 2 || string.IsNullOrWhiteSpace(serverPortParts[0]))
+                    throw new ArgumentException($"Invalid server,port format: {serverPart}");
+                
+                serverPart = serverPortParts[0];
+                if (!int.TryParse(serverPortParts[1], out int port) || port <= 0 || port > 65535)
+                    throw new ArgumentException($"Invalid port number: {serverPortParts[1]}. Port must be between 1 and 65535.");
+                
+                server.Port = port;
+            }
+            
             if (serverPart.Contains("@"))
             {
                 var serverDbParts = serverPart.Split('@');
