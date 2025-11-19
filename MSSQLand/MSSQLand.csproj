@@ -146,7 +146,6 @@
     <Compile Include="Services\Authentication\Credentials\WindowsIdentityImpersonation.cs" />
     <Compile Include="Services\Authentication\Credentials\TokenCredentials.cs" />
     <Compile Include="Utilities\Logger.cs" />
-    <Compile Include="Utilities\MarkdownFormater.cs" />
     <Compile Include="Utilities\Formatters\IOutputFormatter.cs" />
     <Compile Include="Utilities\Formatters\MarkdownFormatter.cs" />
     <Compile Include="Utilities\Formatters\CsvFormatter.cs" />
