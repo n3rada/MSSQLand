@@ -2,8 +2,6 @@
 using System.Data;
 using System.Linq;
 using System.Collections.Generic;
-using MSSQLand.Utilities.Formatters;
-
 
 namespace MSSQLand.Utilities
 {
@@ -66,12 +64,12 @@ namespace MSSQLand.Utilities
             // Provide a quick reference of top-level arguments or usage
             Console.WriteLine();
             Console.WriteLine("CLI arguments:");
-            Console.WriteLine(OutputFormatter.ConvertDataTable(getArguments()));
+            Console.WriteLine(MarkdownFormater.ConvertDataTableToMarkdownTable(getArguments()));
 
             // Provide credential types
             Console.WriteLine();
             Console.WriteLine("Credential types:");
-            Console.WriteLine(OutputFormatter.ConvertDataTable(getCredentialTypes()));
+            Console.WriteLine(MarkdownFormater.ConvertDataTableToMarkdownTable(getCredentialTypes()));
 
             // Add Utilities Section
             Console.WriteLine();
