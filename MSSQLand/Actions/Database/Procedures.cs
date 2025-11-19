@@ -110,7 +110,7 @@ namespace MSSQLand.Actions.Database
                     create_date,
                     modify_date
                 FROM sys.procedures
-                ORDER BY modify_date DESC;";
+                ORDER BY schema_name ASC, procedure_name ASC;";
 
             DataTable procedures = databaseContext.QueryService.ExecuteTable(query);
 
