@@ -358,12 +358,12 @@ namespace MSSQLand.Services
                     
                     if (isManagedInstance)
                     {
-                        Logger.Info($"Detected Azure SQL Managed Instance on {ExecutionServer} - full feature set");
+                        Logger.Info($"Detected Azure SQL Managed Instance on {ExecutionServer}");
                         return false; // Managed Instance has full features
                     }
                     else
                     {
-                        Logger.Info($"Detected Azure SQL Database (PaaS) on {ExecutionServer} - limited feature set");
+                        Logger.Info($"Detected Azure SQL Database (PaaS) on {ExecutionServer}");
                         return true; // PaaS has limitations
                     }
                 }
