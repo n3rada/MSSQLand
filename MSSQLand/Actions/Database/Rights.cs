@@ -6,6 +6,16 @@ using System.Data;
 
 namespace MSSQLand.Actions.Database
 {
+    /// <summary>
+    /// Checks and displays security-sensitive SQL Server configuration options.
+    /// 
+    /// This action enumerates various server-level configuration options that impact security,
+    /// showing which are currently enabled or disabled. These options control features like
+    /// command execution (xp_cmdshell), OLE automation, CLR assemblies, and more.
+    /// 
+    /// Note: This checks server-wide configuration options. For user/role permissions,
+    /// use the 'permissions' action instead.
+    /// </summary>
     internal class Configs : BaseAction
     {
         /// <summary>
@@ -21,14 +31,15 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Checking security-sensitive configuration options");
+            Logger.Info("Checking server-wide security-sensitive configuration options");
+            Logger.InfoNested("Note: Use 'permissions' action to see user/role-level permissions");
+            Logger.NewLine();
 
             var results = CheckConfigurationOptions(databaseContext);
 
             // Display results
             if (results.Count > 0)
             {
-                Logger.NewLine();
                 DisplayResults(results);
                 return results;
             }
@@ -70,8 +81,7 @@ namespace MSSQLand.Actions.Database
                         results.Add(new Dictionary<string, object>
                         {
                             { "Feature", option.Key },
-                            { "Type", "Configuration" },
-                            { "Activated", status == 1 ? "True" : "False" },
+                            { "Enabled", status == 1 ? "Yes" : "No" },
                             { "Description", option.Value }
                         });
                     }
@@ -90,28 +100,61 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private void DisplayResults(List<Dictionary<string, object>> results)
         {
-            // Convert to DataTable for formatting
-            DataTable dt = new();
-            dt.Columns.Add("Option", typeof(string));
-            dt.Columns.Add("Activated", typeof(string));
-            dt.Columns.Add("Description", typeof(string));
+            // Separate enabled and disabled options
+            var enabledOptions = new List<Dictionary<string, object>>();
+            var disabledOptions = new List<Dictionary<string, object>>();
 
             foreach (var result in results)
             {
-                dt.Rows.Add(
-                    result["Feature"],
-                    result["Activated"],
-                    result["Description"]
-                );
+                if (result["Enabled"].ToString() == "Yes")
+                {
+                    enabledOptions.Add(result);
+                }
+                else
+                {
+                    disabledOptions.Add(result);
+                }
             }
 
-            // Display as markdown table
-            Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(dt));
+            // Display enabled options first (security concern)
+            if (enabledOptions.Count > 0)
+            {
+                Logger.Warning($"Enabled Configuration Options ({enabledOptions.Count})");
+                DataTable enabledTable = new();
+                enabledTable.Columns.Add("Option", typeof(string));
+                enabledTable.Columns.Add("Description", typeof(string));
 
-            // Summary
-            Logger.NewLine();
-            int activatedCount = results.FindAll(r => r["Activated"].ToString() == "True").Count;
-            Logger.Info($"Total: {results.Count} configuration options checked, {activatedCount} enabled");
+                foreach (var result in enabledOptions)
+                {
+                    enabledTable.Rows.Add(
+                        result["Feature"],
+                        result["Description"]
+                    );
+                }
+
+                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(enabledTable));
+                Logger.NewLine();
+            }
+
+            // Display disabled options
+            if (disabledOptions.Count > 0)
+            {
+                Logger.Success($"Disabled Configuration Options ({disabledOptions.Count})");
+                DataTable disabledTable = new();
+                disabledTable.Columns.Add("Option", typeof(string));
+                disabledTable.Columns.Add("Description", typeof(string));
+
+                foreach (var result in disabledOptions)
+                {
+                    disabledTable.Rows.Add(
+                        result["Feature"],
+                        result["Description"]
+                    );
+                }
+
+                Console.WriteLine(MarkdownFormatter.ConvertDataTableToMarkdownTable(disabledTable));
+                Logger.NewLine();
+            }
         }
     }
 }
