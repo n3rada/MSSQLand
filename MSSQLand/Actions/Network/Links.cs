@@ -27,9 +27,9 @@ namespace MSSQLand.Actions.Network
             if (databaseContext.QueryService.IsAzureSQL())
             {
                 Logger.Warning("Linked servers aren't available in Azure SQL Database (PaaS).");
-                Logger.InfoNested("Linked servers are supported in Azure SQL Managed Instance.");
-                Logger.InfoNested("For Azure SQL Database, use /a:extsources to check External Data Sources.");
-                Logger.NestedWarning("https://learn.microsoft.com/en-us/sql/relational-databases/linked-servers/linked-servers-database-engine");
+                Logger.WarningNested("Linked servers are supported in Azure SQL Managed Instance.");
+                Logger.WarningNested("https://learn.microsoft.com/en-us/sql/relational-databases/linked-servers/linked-servers-database-engine");
+                Logger.WarningNested("For Azure SQL Database, use /a:extsources to check External Data Sources.");
                 Logger.NewLine();
                 return null;
             }
