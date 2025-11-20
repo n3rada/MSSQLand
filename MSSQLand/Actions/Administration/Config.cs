@@ -5,28 +5,83 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace MSSQLand.Actions.Database
+namespace MSSQLand.Actions.Administration
 {
-    internal class Configs : BaseAction
+    internal class Config : BaseAction
     {
-        /// <summary>
-        /// Validates the arguments passed to the Configs action.
-        /// </summary>
+        [ArgumentMetadata(Position = 0, ShortName = "o", LongName = "option", Required = false, Description = "Configuration option name (omit to list all)")]
+        private string _optionName;
+
+        [ArgumentMetadata(Position = 1, ShortName = "v", LongName = "value", Required = false, Description = "Value to set (0=disable, 1=enable)")]
+        private int _value = -1;
+
         public override void ValidateArguments(string additionalArguments)
         {
-            // No additional arguments required
+            // No arguments = list all configurations
+            if (string.IsNullOrWhiteSpace(additionalArguments))
+            {
+                _optionName = null;
+                _value = -1;
+                return;
+            }
+
+            // Split the additional argument into parts
+            string[] parts = SplitArguments(additionalArguments);
+
+            // One argument = list specific option
+            if (parts.Length == 1)
+            {
+                _optionName = parts[0];
+                _value = -1;
+                return;
+            }
+
+            // Two arguments = set option value
+            if (parts.Length == 2)
+            {
+                _optionName = parts[0];
+
+                // Validate and parse the value (1 or 0)
+                if (!int.TryParse(parts[1], out _value) || (_value != 0 && _value != 1))
+                {
+                    throw new ArgumentException("Invalid value. Use 1 to enable or 0 to disable.");
+                }
+                return;
+            }
+
+            throw new ArgumentException("Invalid arguments. Usage: [option] [value]\n  No args: list all\n  One arg: show status of option\n  Two args: set option value (0 or 1)");
         }
 
-        /// <summary>
-        /// Lists security-sensitive configuration options with their activation status.
-        /// </summary>
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Checking security-sensitive configuration options");
+            // Mode 1: Set configuration option
+            if (_value >= 0 && !string.IsNullOrEmpty(_optionName))
+            {
+                Logger.TaskNested($"Setting {_optionName} to {_value}");
+                databaseContext.ConfigService.SetConfigurationOption(_optionName, _value);
+                return null;
+            }
 
+            // Mode 2: Show specific option status
+            if (!string.IsNullOrEmpty(_optionName) && _value < 0)
+            {
+                Logger.Task($"Checking status of '{_optionName}'");
+                int status = databaseContext.ConfigService.GetConfigurationStatus(_optionName);
+                
+                if (status < 0)
+                {
+                    Logger.Warning($"Configuration '{_optionName}' not found or inaccessible");
+                    return null;
+                }
+
+                Logger.Info($"{_optionName}: {(status == 1 ? "Enabled" : "Disabled")}");
+                return status;
+            }
+
+            // Mode 3: List all security-sensitive configurations
+            Logger.Task("Checking security-sensitive configuration options");
             var results = CheckConfigurationOptions(databaseContext);
 
-            // Display results
             if (results.Count > 0)
             {
                 Logger.NewLine();

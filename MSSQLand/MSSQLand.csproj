@@ -73,7 +73,7 @@
   <ItemGroup>
     <Compile Include="Actions\ActionFactory.cs" />
     <Compile Include="Actions\Administration\AdsiManager.cs" />
-    <Compile Include="Actions\Administration\Configure.cs" />
+    <Compile Include="Actions\Administration\Config.cs" />
     <Compile Include="Actions\Administration\CreateUser.cs" />
     <Compile Include="Actions\Administration\Kill.cs" />
     <Compile Include="Actions\Administration\Monitor.cs" />
@@ -94,7 +94,6 @@
     <Compile Include="Actions\Network\ExternalTables.cs" />
     <Compile Include="Actions\Database\OleDbProvidersInfo.cs" />
     <Compile Include="Actions\Database\Procedures.cs" />
-    <Compile Include="Actions\Database\Configs.cs" />
     <Compile Include="Actions\Database\Search.cs" />
     <Compile Include="Actions\Database\Whoami.cs" />
     <Compile Include="Actions\ExcludeFromArgumentsAttribute.cs" />
