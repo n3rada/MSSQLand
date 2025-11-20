@@ -41,7 +41,7 @@ namespace MSSQLand.Services
                 else
                 {
                     ExecutionServer = GetServerName();
-                    ExecutionDatabase = Connection.Database ?? "master";
+                    ExecutionDatabase = Connection.Database;
                 }
             }
         }
@@ -50,7 +50,7 @@ namespace MSSQLand.Services
         {
             Connection = connection;
             ExecutionServer = GetServerName();
-            ExecutionDatabase = connection.Database ?? "master";
+            ExecutionDatabase = connection.Database;
         }
 
         private string GetServerName()
