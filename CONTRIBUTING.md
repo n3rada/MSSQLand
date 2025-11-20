@@ -10,6 +10,10 @@ git checkout -b feature/add-new-feature
 3. Test Your Changes: Verify that your changes work as intended and don’t introduce issues.
 4. Submit a Pull Request: Push your branch and create a PR with a clear description of your changes and their purpose.
 
+## Codebase
+
+- For an overview of the project structure, refer to [STRUCTURE.md](./STRUCTURE.md).
+- Learn how to add new actions in [DEVELOPERS.md](./DEVELOPERS.md).
 
 ## Signing Your Commits 🗝️
 To ensure accountability and transparency in contributions, always sign your commits. This helps verify the authenticity of the commit and ensures a clear history of who contributed what.
