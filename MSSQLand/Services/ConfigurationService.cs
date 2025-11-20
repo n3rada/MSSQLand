@@ -26,7 +26,7 @@ namespace MSSQLand.Services
         {
             try
             {
-                var result = _queryService.ExecuteScalar($"SELECT value_in_use FROM master.sys.configurations WHERE name = '{optionName}';");
+                var result = _queryService.ExecuteScalar($"SELECT value_in_use FROM sys.configurations WHERE name = '{optionName}';");
                 return result != null ? Convert.ToInt32(result) : -1;
             }
             catch
@@ -37,14 +37,14 @@ namespace MSSQLand.Services
 
         public bool CheckAssembly(string assemblyName)
         {
-            string query = $"SELECT name FROM master.sys.assemblies WHERE name='{assemblyName}';";
+            string query = $"SELECT name FROM sys.assemblies WHERE name='{assemblyName}';";
 
             return _queryService.ExecuteScalar(query)?.ToString() == assemblyName;
         }
 
         public bool CheckAssemblyModules(string assemblyName)
         {
-            string query = $"SELECT * FROM master.sys.assembly_modules;";
+            string query = $"SELECT * FROM sys.assembly_modules;";
 
             string result = OutputFormatter.ConvertDataTable(_queryService.ExecuteTable(query)).ToLower();
 
@@ -61,7 +61,7 @@ namespace MSSQLand.Services
             try
             {
                 // Query to retrieve all trusted assemblies
-                string query = "SELECT description FROM master.sys.trusted_assemblies;";
+                string query = "SELECT description FROM sys.trusted_assemblies;";
                 DataTable trustedAssembliesTable = _queryService.ExecuteTable(query);
 
                 if (trustedAssembliesTable.Rows.Count == 0)
@@ -157,7 +157,7 @@ namespace MSSQLand.Services
             try
             {
                 // Check other module status via sys.configurations
-                var configValue = _queryService.ExecuteScalar($"SELECT value FROM master.sys.configurations WHERE name = '{optionName}';");
+                var configValue = _queryService.ExecuteScalar($"SELECT value FROM sys.configurations WHERE name = '{optionName}';");
                 if (configValue == null)
                 {
                     Logger.Warning($"Configuration '{optionName}' not found or inaccessible");
@@ -180,7 +180,7 @@ namespace MSSQLand.Services
             {
                 // Update the configuration option
                 Logger.Info($"Updating configuration option '{optionName}' to {value}.");
-                _queryService.ExecuteNonProcessing($"EXEC master..sp_configure '{optionName}', {value}; RECONFIGURE;");
+                _queryService.ExecuteNonProcessing($"EXEC .sp_configure '{optionName}', {value}; RECONFIGURE;");
                 return true;
             }
             catch (Exception ex)
@@ -207,7 +207,7 @@ namespace MSSQLand.Services
             try
             {
                 // Check if the hash already exists
-                string checkHash = _queryService.ExecuteScalar($"SELECT * FROM master.sys.trusted_assemblies WHERE hash = 0x{assemblyHash};")?.ToString()?.ToLower();
+                string checkHash = _queryService.ExecuteScalar($"SELECT * FROM sys.trusted_assemblies WHERE hash = 0x{assemblyHash};")?.ToString()?.ToLower();
 
                 if (checkHash?.Contains("permission was denied") == true)
                 {
@@ -220,7 +220,7 @@ namespace MSSQLand.Services
                     Logger.Warning("Hash already exists in sys.trusted_assemblies");
 
                     // Attempt to remove the existing hash
-                    string deletionQuery = _queryService.ExecuteScalar($"EXEC master..sp_drop_trusted_assembly 0x{assemblyHash};")?.ToString()?.ToLower();
+                    string deletionQuery = _queryService.ExecuteScalar($"EXEC .sp_drop_trusted_assembly 0x{assemblyHash};")?.ToString()?.ToLower();
 
                     if (deletionQuery?.Contains("permission was denied") == true)
                     {
@@ -233,7 +233,7 @@ namespace MSSQLand.Services
 
                 // Add the new hash to the trusted assemblies
                 _queryService.ExecuteNonProcessing($@"
-                    EXEC master..sp_add_trusted_assembly
+                    EXEC .sp_add_trusted_assembly
                     0x{assemblyHash},
                     N'{assemblyDescription}, version=0.0.0.0, culture=neutral, publickeytoken=null, processorarchitecture=msil';
                 ");
@@ -265,7 +265,7 @@ namespace MSSQLand.Services
             Logger.Task("Ensuring advanced options are enabled");
 
 
-            var advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM master.sys.configurations WHERE name = 'show advanced options';");
+            var advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM sys.configurations WHERE name = 'show advanced options';");
 
             if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
             {
@@ -275,7 +275,7 @@ namespace MSSQLand.Services
 
             Logger.Info("Enabling advanced options...");
 
-            string query = "EXEC master..sp_configure 'show advanced options', 1; RECONFIGURE;";
+            string query = "EXEC .sp_configure 'show advanced options', 1; RECONFIGURE;";
 
             try
             {
@@ -288,7 +288,7 @@ namespace MSSQLand.Services
                     
 
             // Verify the change
-            advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM master.sys.configurations WHERE name = 'show advanced options';");
+            advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM sys.configurations WHERE name = 'show advanced options';");
 
             if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
             {
@@ -310,7 +310,7 @@ namespace MSSQLand.Services
             Logger.Task($"Enabling data access on server '{serverName}'");
             try
             {
-                string query = $"EXEC master..sp_serveroption '{serverName}', 'DATA ACCESS', TRUE;";
+                string query = $"EXEC .sp_serveroption '{serverName}', 'DATA ACCESS', TRUE;";
                 _queryService.ExecuteNonProcessing(query);
 
                 // Verify if data access is enabled
@@ -338,7 +338,7 @@ namespace MSSQLand.Services
             Logger.Task($"Disabling data access on server '{serverName}'");
             try
             {
-                string query = $"EXEC master..sp_serveroption '{serverName}', 'DATA ACCESS', FALSE;";
+                string query = $"EXEC .sp_serveroption '{serverName}', 'DATA ACCESS', FALSE;";
                 _queryService.ExecuteNonProcessing(query);
 
                 // Verify if data access is disabled
@@ -366,7 +366,7 @@ namespace MSSQLand.Services
             Logger.Task($"Checking data access status for server '{serverName}'");
             try
             {
-                string query = $"SELECT CAST(is_data_access_enabled AS INT) AS IsEnabled FROM master.sys.servers WHERE name = '{serverName}';";
+                string query = $"SELECT CAST(is_data_access_enabled AS INT) AS IsEnabled FROM sys.servers WHERE name = '{serverName}';";
                 object result = _queryService.ExecuteScalar(query);
 
                 if (result == null)
@@ -392,11 +392,11 @@ namespace MSSQLand.Services
 
                 string query = $@"
             SELECT o.type_desc, o.name 
-            FROM master.sys.assembly_modules am
-            JOIN master.sys.objects o ON am.object_id = o.object_id
+            FROM sys.assembly_modules am
+            JOIN sys.objects o ON am.object_id = o.object_id
             WHERE am.assembly_id = (
                 SELECT assembly_id 
-                FROM master.sys.assemblies 
+                FROM sys.assemblies 
                 WHERE name = '{assemblyName}'
             );";
 
