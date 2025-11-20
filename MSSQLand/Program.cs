@@ -146,7 +146,7 @@ namespace MSSQLand
                 {
                     try
                     {
-                        string actualDatabase = databaseContext.QueryService.ExecuteScalar("SELECT DB_NAME();")?.ToString();
+                        string actualDatabase = databaseContext.QueryService.ExecuteScalar<string>("SELECT DB_NAME();");
                         if (!string.IsNullOrEmpty(actualDatabase))
                         {
                             databaseContext.QueryService.ExecutionDatabase = actualDatabase;

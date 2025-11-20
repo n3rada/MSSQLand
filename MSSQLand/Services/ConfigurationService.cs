@@ -26,7 +26,7 @@ namespace MSSQLand.Services
         {
             try
             {
-                var result = _queryService.ExecuteScalar($"SELECT value_in_use FROM master.sys.configurations WHERE name = '{optionName}';");
+                var result = _queryService.ExecuteScalar<int>($"SELECT value_in_use FROM master.sys.configurations WHERE name = '{optionName}';");
                 return result != null ? Convert.ToInt32(result) : -1;
             }
             catch
@@ -39,7 +39,7 @@ namespace MSSQLand.Services
         {
             string query = $"SELECT name FROM master.sys.assemblies WHERE name='{assemblyName}';";
 
-            return _queryService.ExecuteScalar(query)?.ToString() == assemblyName;
+            return _queryService.ExecuteScalar<string>(query) == assemblyName;
         }
 
         public bool CheckAssemblyModules(string assemblyName)
@@ -157,7 +157,7 @@ namespace MSSQLand.Services
             try
             {
                 // Check other module status via sys.configurations
-                var configValue = _queryService.ExecuteScalar($"SELECT value FROM master.sys.configurations WHERE name = '{optionName}';");
+                var configValue = _queryService.ExecuteScalar<int>($"SELECT value FROM master.sys.configurations WHERE name = '{optionName}';");
                 if (configValue == null)
                 {
                     Logger.Warning($"Configuration '{optionName}' not found or inaccessible");
@@ -207,7 +207,7 @@ namespace MSSQLand.Services
             try
             {
                 // Check if the hash already exists
-                string checkHash = _queryService.ExecuteScalar($"SELECT * FROM master.sys.trusted_assemblies WHERE hash = 0x{assemblyHash};")?.ToString()?.ToLower();
+                string checkHash = _queryService.ExecuteScalar<string>($"SELECT * FROM master.sys.trusted_assemblies WHERE hash = 0x{assemblyHash};")?.ToLower();
 
                 if (checkHash?.Contains("permission was denied") == true)
                 {
@@ -220,7 +220,7 @@ namespace MSSQLand.Services
                     Logger.Warning("Hash already exists in sys.trusted_assemblies");
 
                     // Attempt to remove the existing hash
-                    string deletionQuery = _queryService.ExecuteScalar($"EXEC master..sp_drop_trusted_assembly 0x{assemblyHash};")?.ToString()?.ToLower();
+                    string deletionQuery = _queryService.ExecuteScalar<string>($"EXEC master..sp_drop_trusted_assembly 0x{assemblyHash};")?.ToLower();
 
                     if (deletionQuery?.Contains("permission was denied") == true)
                     {
@@ -265,7 +265,7 @@ namespace MSSQLand.Services
             Logger.Task("Ensuring advanced options are enabled");
 
 
-            var advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM master.sys.configurations WHERE name = 'show advanced options';");
+            var advancedOptionsEnabled = _queryService.ExecuteScalar<int>("SELECT value_in_use FROM master.sys.configurations WHERE name = 'show advanced options';");
 
             if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
             {
@@ -288,7 +288,7 @@ namespace MSSQLand.Services
                     
 
             // Verify the change
-            advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM master.sys.configurations WHERE name = 'show advanced options';");
+            advancedOptionsEnabled = _queryService.ExecuteScalar<int>("SELECT value_in_use FROM master.sys.configurations WHERE name = 'show advanced options';");
 
             if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
             {
@@ -367,7 +367,7 @@ namespace MSSQLand.Services
             try
             {
                 string query = $"SELECT CAST(is_data_access_enabled AS INT) AS IsEnabled FROM master.sys.servers WHERE name = '{serverName}';";
-                object result = _queryService.ExecuteScalar(query);
+                object result = _queryService.ExecuteScalar<object>(query);
 
                 if (result == null)
                 {

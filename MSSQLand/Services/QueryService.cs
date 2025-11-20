@@ -59,7 +59,7 @@ namespace MSSQLand.Services
         {
             // SELECT SERVERPROPERTY('MachineName')
             // SELECT @@SERVERNAME
-            string serverName = ExecuteScalar("SELECT @@SERVERNAME").ToString();
+            string serverName = ExecuteScalar<string>("SELECT @@SERVERNAME");
 
             if (serverName != null)
             {
@@ -297,7 +297,7 @@ namespace MSSQLand.Services
         {
             try
             {
-                string version = ExecuteScalar("SELECT @@VERSION")?.ToString();
+                string version = ExecuteScalar<string>("SELECT @@VERSION");
                 
                 if (string.IsNullOrEmpty(version))
                 {
