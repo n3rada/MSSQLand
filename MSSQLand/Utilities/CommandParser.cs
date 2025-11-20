@@ -90,10 +90,8 @@ namespace MSSQLand.Utilities
                             // Show version information
                             var assembly = System.Reflection.Assembly.GetExecutingAssembly();
                             var version = assembly.GetName().Version;
-                            var compileDate = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(version.Build - 1).Date;
-                            
-                            Logger.Info($"MSSQLand Version: {version}");
-                            Logger.Info($"Compile Date: {compileDate:yyyy-MM-dd}");
+        
+                            Console.WriteLine(version);
                             return (ParseResultType.ShowHelp, null);
                         case "/debug":
                             Logger.IsDebugEnabled = true;

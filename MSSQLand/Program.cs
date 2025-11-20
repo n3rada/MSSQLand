@@ -13,10 +13,6 @@ namespace MSSQLand
     internal class Program
     {
 
-        public static readonly Version currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
-        public static readonly DateTime compileDate = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(currentVersion.Build - 1).Date; // Strips the time portion
-
-
         [STAThread]
         static int Main(string[] args)
         {
