@@ -36,27 +36,6 @@ namespace MSSQLand.Actions.Network
         public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Retrieving External Data Sources");
-            
-            // Check if sys.external_data_sources exists
-            string checkQuery = @"
-                SELECT COUNT(*) 
-                FROM sys.all_objects 
-                WHERE object_id = OBJECT_ID('sys.external_data_sources') 
-                AND type = 'V'";
-            
-            int viewExists = Convert.ToInt32(databaseContext.QueryService.ExecuteScalar(checkQuery));
-            
-            if (viewExists == 0)
-            {
-                Logger.Warning("External Data Sources are not available on this SQL Server instance.");
-                Logger.InfoNested("This feature requires:");
-                Logger.InfoNested("  - Azure SQL Database");
-                Logger.InfoNested("  - Azure SQL Managed Instance");
-                Logger.InfoNested("  - Azure Synapse Analytics");
-                Logger.InfoNested("  - SQL Server with PolyBase installed");
-                Logger.NewLine();
-                return null;
-            }
 
             DataTable resultTable = GetExternalDataSources(databaseContext);
 
@@ -83,19 +62,65 @@ namespace MSSQLand.Actions.Network
         /// </summary>
         private static DataTable GetExternalDataSources(DatabaseContext databaseContext)
         {
-            string query = @"
-                SELECT
-                    eds.name AS [Name],
-                    eds.type_desc AS [Type],
-                    eds.location AS [Location],
-                    eds.database_name AS [Database Name],
-                    eds.credential_name AS [Credential],
-                    eds.connection_options AS [Connection Options],
-                    eds.pushdown_enabled AS [Pushdown Enabled]
-                FROM sys.external_data_sources eds
-                ORDER BY eds.name;";
+            // Select all columns - different SQL Server versions have different column sets
+            string query = "SELECT * FROM sys.external_data_sources ORDER BY name;";
 
-            return databaseContext.QueryService.ExecuteTable(query);
+            DataTable rawTable = databaseContext.QueryService.ExecuteTable(query);
+
+            if (rawTable == null || rawTable.Rows.Count == 0)
+            {
+                return rawTable;
+            }
+
+            // Create formatted output table with common columns
+            DataTable result = new DataTable();
+            result.Columns.Add("Name", typeof(string));
+            result.Columns.Add("Type", typeof(string));
+            result.Columns.Add("Location", typeof(string));
+            result.Columns.Add("Database Name", typeof(string));
+            result.Columns.Add("Credential", typeof(string));
+            result.Columns.Add("Connection Options", typeof(string));
+            result.Columns.Add("Pushdown", typeof(string));
+
+            foreach (DataRow row in rawTable.Rows)
+            {
+                DataRow newRow = result.NewRow();
+
+                // Essential columns (always present)
+                newRow["Name"] = row["name"]?.ToString() ?? "";
+                newRow["Type"] = row["type_desc"]?.ToString() ?? "";
+                newRow["Location"] = row["location"]?.ToString() ?? "";
+
+                // Database name (RDBMS, SHARD_MAP_MANAGER)
+                newRow["Database Name"] = rawTable.Columns.Contains("database_name") 
+                    ? (row["database_name"]?.ToString() ?? "") 
+                    : "";
+
+                // Credential - handle both credential_id (actual column) and credential_name
+                if (rawTable.Columns.Contains("credential_id") && row["credential_id"] != DBNull.Value)
+                {
+                    int credId = Convert.ToInt32(row["credential_id"]);
+                    newRow["Credential"] = credId > 0 ? $"ID: {credId}" : "";
+                }
+                else
+                {
+                    newRow["Credential"] = "";
+                }
+
+                // Connection options (SQL Server 2019+)
+                newRow["Connection Options"] = rawTable.Columns.Contains("connection_options") 
+                    ? (row["connection_options"]?.ToString() ?? "") 
+                    : "";
+
+                // Pushdown (SQL Server 2019+) - column name is "pushdown" not "pushdown_enabled"
+                newRow["Pushdown"] = rawTable.Columns.Contains("pushdown") 
+                    ? (row["pushdown"]?.ToString() ?? "") 
+                    : "";
+
+                result.Rows.Add(newRow);
+            }
+
+            return result;
         }
     }
 }

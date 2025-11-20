@@ -38,23 +38,6 @@ namespace MSSQLand.Actions.Network
         public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Retrieving Database-Scoped Credentials");
-            
-            // Check if sys.database_scoped_credentials exists
-            string checkQuery = @"
-                SELECT COUNT(*) 
-                FROM sys.all_objects 
-                WHERE object_id = OBJECT_ID('sys.database_scoped_credentials') 
-                AND type = 'V'";
-            
-            int viewExists = Convert.ToInt32(databaseContext.QueryService.ExecuteScalar(checkQuery));
-            
-            if (viewExists == 0)
-            {
-                Logger.Warning("Database-scoped credentials are not available on this SQL Server instance.");
-                Logger.InfoNested("This feature requires SQL Server 2016+ or Azure SQL Database.");
-                Logger.NewLine();
-                return null;
-            }
 
             DataTable resultTable = GetDatabaseScopedCredentials(databaseContext);
 
@@ -81,25 +64,67 @@ namespace MSSQLand.Actions.Network
         /// </summary>
         private static DataTable GetDatabaseScopedCredentials(DatabaseContext databaseContext)
         {
-            string query = @"
-                SELECT
-                    dsc.credential_id AS [ID],
-                    dsc.name AS [Credential Name],
-                    dsc.credential_identity AS [Identity],
-                    dsc.create_date AS [Created],
-                    dsc.modify_date AS [Modified],
-                    CASE 
-                        WHEN EXISTS (
-                            SELECT 1 
-                            FROM sys.external_data_sources eds 
-                            WHERE eds.credential_name = dsc.name
-                        ) THEN 'Yes'
-                        ELSE 'No'
-                    END AS [In Use]
-                FROM sys.database_scoped_credentials dsc
-                ORDER BY dsc.create_date DESC;";
+            // Select all columns - different SQL Server versions may have different column sets
+            string credQuery = "SELECT * FROM sys.database_scoped_credentials ORDER BY create_date DESC;";
+            DataTable rawCreds = databaseContext.QueryService.ExecuteTable(credQuery);
 
-            return databaseContext.QueryService.ExecuteTable(query);
+            if (rawCreds == null || rawCreds.Rows.Count == 0)
+            {
+                return rawCreds;
+            }
+
+            // Get external data sources to check credential usage
+            string edsQuery = "SELECT credential_id FROM sys.external_data_sources WHERE credential_id IS NOT NULL;";
+            DataTable usedCreds = null;
+            System.Collections.Generic.HashSet<int> usedCredIds = new System.Collections.Generic.HashSet<int>();
+
+            try
+            {
+                usedCreds = databaseContext.QueryService.ExecuteTable(edsQuery);
+                if (usedCreds != null)
+                {
+                    foreach (DataRow row in usedCreds.Rows)
+                    {
+                        if (row["credential_id"] != DBNull.Value)
+                        {
+                            usedCredIds.Add(Convert.ToInt32(row["credential_id"]));
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // sys.external_data_sources may not exist on older versions
+            }
+
+            // Create formatted output table
+            DataTable result = new DataTable();
+            result.Columns.Add("ID", typeof(int));
+            result.Columns.Add("Credential Name", typeof(string));
+            result.Columns.Add("Identity", typeof(string));
+            result.Columns.Add("Created", typeof(DateTime));
+            result.Columns.Add("Modified", typeof(DateTime));
+            result.Columns.Add("In Use", typeof(string));
+
+            foreach (DataRow row in rawCreds.Rows)
+            {
+                DataRow newRow = result.NewRow();
+
+                // Essential columns (always present)
+                newRow["ID"] = Convert.ToInt32(row["credential_id"]);
+                newRow["Credential Name"] = row["name"]?.ToString() ?? "";
+                newRow["Identity"] = row["credential_identity"]?.ToString() ?? "";
+                newRow["Created"] = row["create_date"];
+                newRow["Modified"] = row["modify_date"];
+
+                // Check if credential is in use by external data sources
+                int credId = Convert.ToInt32(row["credential_id"]);
+                newRow["In Use"] = usedCredIds.Contains(credId) ? "Yes" : "No";
+
+                result.Rows.Add(newRow);
+            }
+
+            return result;
         }
     }
 }
