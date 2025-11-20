@@ -18,7 +18,7 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             // ADMINISTRATION ACTIONS (MSSQLand.Actions.Administration)
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "config", (typeof(Configure), "Enable or disable SQL Server configuration options using sp_configure.") },
+            { "config", (typeof(Config), "List security-sensitive configuration options or set their values using sp_configure.") },
             { "kill", (typeof(Kill), "Terminate SQL Server sessions by session ID or kill all running sessions.") },
             { "createuser", (typeof(CreateUser), "Create a SQL login with specified server role privileges (default: sysadmin).") },
             { "sessions", (typeof(Sessions), "Display active SQL Server sessions with login and connection information.") },
@@ -39,7 +39,6 @@ namespace MSSQLand.Utilities
             { "roles", (typeof(Roles), "List all database roles and their members in the current database.") },
             { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).") },
             { "permissions", (typeof(Permissions), "Enumerate user and role permissions.") },
-            { "configs", (typeof(Configs), "List security-sensitive configuration options with their activation status.") },
             { "search", (typeof(Search), "Search for keywords in column names and data across databases.") },
             { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.") },
             { "monitor", (typeof(Monitor), "Display currently running SQL commands and active sessions.") },
