@@ -36,14 +36,35 @@ namespace MSSQLand.Services
                 if (_linkedServers.ServerNames.Length > 0)
                 {
                     ExecutionServer = _linkedServers.ServerNames.Last();
-                    ExecutionDatabase = _linkedServers.ServerChain.Last().Database ?? "master";
+                    
+                    // Smart database detection
+                    var lastServer = _linkedServers.ServerChain.Last();
+                    if (!string.IsNullOrEmpty(lastServer.Database))
+                    {
+                        // Use explicitly specified database from chain
+                        ExecutionDatabase = lastServer.Database;
+                    }
+                    else
+                    {
+                        // No explicit database: query to detect actual database
+                        try
+                        {
+                            ExecutionDatabase = ExecuteScalar<string>("SELECT DB_NAME();");
+                        }
+                        catch
+                        {
+                            // If detection fails, keep default
+                            ExecutionDatabase = "master";
+                        }
+                    }
+                    
                     Logger.Debug($"Execution server set to: {ExecutionServer}");
                     Logger.Debug($"Execution database set to: {ExecutionDatabase}");
                 }
                 else
                 {
                     ExecutionServer = GetServerName();
-                    ExecutionDatabase = "master";
+                    ExecutionDatabase = Connection.Database ?? "master";
                 }
             }
         }

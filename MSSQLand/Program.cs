@@ -137,27 +137,9 @@ namespace MSSQLand
                             Logger.InfoNested($"Authorized via {adGroups.Count} AD group(s): {string.Join(", ", adGroups)}");
                         }
                     }
-                    
-  
                 }
 
-                // Detect ExecutionDatabase
-                if (string.IsNullOrEmpty(databaseContext.QueryService.ExecutionDatabase) || databaseContext.QueryService.ExecutionDatabase == "master")
-                {
-                    try
-                    {
-                        string actualDatabase = databaseContext.QueryService.ExecuteScalar<string>("SELECT DB_NAME();");
-                        if (!string.IsNullOrEmpty(actualDatabase))
-                        {
-                            databaseContext.QueryService.ExecutionDatabase = actualDatabase;
-                            Logger.Info($"Execution database: {actualDatabase}");
-                        }
-                    }
-                    catch
-                    {
-                        // If detection fails, keep default
-                    }
-                }
+                Logger.Info($"Execution database: {databaseContext.QueryService.ExecutionDatabase}");
 
                 // Detect Azure SQL on the final execution server
                 databaseContext.QueryService.IsAzureSQL();
