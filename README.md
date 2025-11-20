@@ -9,7 +9,7 @@ Land gracefully in your target Microsoft SQL Server (MS SQL) DBMS, as if arrivin
 MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikipedia.org/wiki/Microsoft_SQL_Server) database management system (DBMS) during your red team activities or any security audit. Designed **for constrained environments** where operations must be executed directly through your beacons, **using assembly execution** it allows you to pave your way across multiple linked servers and impersonate whoever you can along the way, emerging from the last hop with any desired action.
 
 > [!TIP]
-> If you need to connect using Kerberos ticket or NT/LM hashes, go with [mssqlclient-ng](https://github.com/n3rada/mssqlclient-ng), the `Python3` version built with external access from Unix in mind.
+> MSSQLand is built using `.NET Framework 4.8`, with assembly execution in mind. If you need to connect using Kerberos ticket or NT/LM hashes, go with [mssqlclient-ng](https://github.com/n3rada/mssqlclient-ng), the `Python3` version built with external access from Unix in mind.
 
 > [!NOTE]
 > Do not forget the basics. During a security assessment, it is sometimes easier to use [SQL Server Management Studio (SSMS)](https://learn.microsoft.com/en-us/ssms/).
@@ -27,12 +27,15 @@ MSSQLand.exe /h:localhost /c:token /a:info
 MSSQLand.exe /h:localhost,1434 /c:token /a:info
 ```
 
+> [!IMPORTANT]
+> The action argument `/a:` must be the **last global argument**. Everything after `/a:` is treated as action-specific arguments. For example: `/h:localhost /c:token /a:createuser /p:p@ssword!` - here `/p:` belongs to the action, not the global arguments.
+
 **Common options:**
 - `/timeout:30` - Connection timeout in seconds (default: 15)
 - `/l:SERVER1:user1,SERVER2:user2` - Chain through linked servers (uses configured linked server names)
 
 > [!NOTE]
-> Port specification (`,port`) only applies to the initial `/h:` connection. Linked server chains (`/l:`) use the linked server names as configured in `sys.servers`, not `hostname:port` combinations.
+> Port specification (`,port`) only applies to the initial `/h:` connection. Linked server chains (`/l:`) use the linked server names as configured in `sys.servers`, not hostname:port combinations.
 
 **Format examples:**
 ```shell
@@ -61,22 +64,11 @@ MSSQLand.exe /h:localhost,1434 /c:token /a:info
 /l:SQL02:webapp02,SQL03:webapp03@mydb,SQL04@reporting
 ```
 
-**Getting help:**
+## 🫤 Help
+
 - `/help` - Show all available actions
 - `/help search_term` - Filter actions (e.g., `/help adsi` shows all ADSI-related actions)
 - `/a:createuser /help` - Show detailed help for a specific action
-
-## 📃 Documentation
-
-MSSQLand is built using `.NET Framework 4.8`, with assembly execution in mind.
-
-- For a full list of commands, arguments, and actions, check out [COMMANDS.md](./COMMANDS.md).
-- For an overview of the project structure, refer to [STRUCTURE.md](./STRUCTURE.md).
-- Learn how to add new actions in [DEVELOPERS.md](./DEVELOPERS.md).
-
-> [!IMPORTANT]
-> The action argument `/a:` must be the **last global argument**. Everything after `/a:` is treated as action-specific arguments. For example: `/h:localhost /c:token /a:createuser /p:p@ssword!` - here `/p:` belongs to the action, not the global arguments.
-
 
 ## 📸 Clean Output for Clean Reports
 
@@ -194,6 +186,9 @@ Open-source thrives on collaboration and recognition. Contributions, large or sm
 Here, no one will be erased from Git history. No fear to have here. No one will copy-paste your code without adhering to the collaborative ethos of open-source.
 
 Please see the [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines on how to get started.
+
+- For an overview of the project structure, refer to [STRUCTURE.md](./STRUCTURE.md).
+- Learn how to add new actions in [DEVELOPERS.md](./DEVELOPERS.md).
 
 ## 🥚 Origin
 
