@@ -187,9 +187,6 @@ Here, no one will be erased from Git history. No fear to have here. No one will 
 
 Please see the [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines on how to get started.
 
-- For an overview of the project structure, refer to [STRUCTURE.md](./STRUCTURE.md).
-- Learn how to add new actions in [DEVELOPERS.md](./DEVELOPERS.md).
-
 ## 🥚 Origin
 
 MSSQLand was born from real-world needs and hard-earned lessons.
