@@ -65,7 +65,7 @@ namespace MSSQLand
                 if (!authService.Authenticate(
                     credentialsType: arguments.CredentialType,
                     sqlServer: $"{arguments.Host.Hostname},{arguments.Host.Port}",
-                    database: arguments.Host.Database,
+                    database: arguments.Host.Database ?? "master",
                     username: arguments.Username,
                     password: arguments.Password,
                     domain: arguments.Domain,

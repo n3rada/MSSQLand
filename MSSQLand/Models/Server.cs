@@ -47,7 +47,7 @@ namespace MSSQLand.Models
 
         public int Port { get; set; } = 1433; // Default SQL Server port
 
-        public string Database { get; set; } = "master";
+        public string Database { get; set; } = null;
 
         /// <summary>
         /// The user to impersonate on this server (optional).
