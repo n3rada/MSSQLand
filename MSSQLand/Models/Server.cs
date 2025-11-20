@@ -70,68 +70,74 @@ namespace MSSQLand.Models
 
             return int.TryParse(versionParts[0], out int majorVersion) ? majorVersion : 0;
         }
-
+        
+        /// <summary>
+        /// Parses a server input string into a Server object.
+        /// Format: server[,port][:user][@database]
+        /// Order is flexible - server is always first, port after comma, user after colon, database after @.
+        /// Examples:
+        /// - server
+        /// - server,1434
+        /// - server:user
+        /// - server,1434:user
+        /// - server@database
+        /// - server,1434@database
+        /// - server:user@database
+        /// - server,1434:user@database
+        /// </summary>
         public static Server ParseServer(string serverInput)
         {
             if (string.IsNullOrWhiteSpace(serverInput))
                 throw new ArgumentException("Server input cannot be null or empty.");
 
-            // Split by colon to separate server from user@database
-            var parts = serverInput.Split(':');
-
-            if (parts.Length < 1 || parts.Length > 2)
-                throw new ArgumentException($"Invalid target format: {serverInput}");
-
             Server server = new();
 
-            // Parse server part (may contain @database or ,port)
-            string serverPart = parts[0];
-            
-            // Check for port specification with comma
-            if (serverPart.Contains(","))
+            // Extract database (everything after @, rightmost @)
+            if (serverInput.Contains("@"))
             {
-                var serverPortParts = serverPart.Split(',');
-                if (serverPortParts.Length != 2 || string.IsNullOrWhiteSpace(serverPortParts[0]))
-                    throw new ArgumentException($"Invalid server,port format: {serverPart}");
-                
-                serverPart = serverPortParts[0];
-                if (!int.TryParse(serverPortParts[1], out int port) || port <= 0 || port > 65535)
-                    throw new ArgumentException($"Invalid port number: {serverPortParts[1]}. Port must be between 1 and 65535.");
-                
-                server.Port = port;
+                int lastAtIndex = serverInput.LastIndexOf('@');
+                string database = serverInput.Substring(lastAtIndex + 1);
+                if (string.IsNullOrWhiteSpace(database))
+                    throw new ArgumentException("Database cannot be empty after @");
+                server.Database = database;
+                serverInput = serverInput.Substring(0, lastAtIndex);
             }
-            
-            if (serverPart.Contains("@"))
+
+            // Extract impersonation user (everything after :, rightmost :)
+            if (serverInput.Contains(":"))
             {
-                var serverDbParts = serverPart.Split('@');
-                if (serverDbParts.Length != 2 || string.IsNullOrWhiteSpace(serverDbParts[0]))
-                    throw new ArgumentException($"Invalid server@database format: {serverPart}");
+                int lastColonIndex = serverInput.LastIndexOf(':');
+                string user = serverInput.Substring(lastColonIndex + 1);
+                if (string.IsNullOrWhiteSpace(user))
+                    throw new ArgumentException("Impersonation user cannot be empty after :");
+                server.ImpersonationUser = user;
+                serverInput = serverInput.Substring(0, lastColonIndex);
+            }
+
+            // Extract port (everything after ,)
+            if (serverInput.Contains(","))
+            {
+                int commaIndex = serverInput.IndexOf(',');
+                string hostname = serverInput.Substring(0, commaIndex);
+                string portString = serverInput.Substring(commaIndex + 1);
                 
-                server.Hostname = serverDbParts[0];
-                server.Database = serverDbParts[1];
+                if (string.IsNullOrWhiteSpace(hostname))
+                    throw new ArgumentException("Server hostname cannot be empty");
+                if (string.IsNullOrWhiteSpace(portString))
+                    throw new ArgumentException("Port cannot be empty after ,");
+                    
+                if (!int.TryParse(portString, out int port) || port <= 0 || port > 65535)
+                    throw new ArgumentException($"Invalid port number: {portString}. Port must be between 1 and 65535.");
+                
+                server.Hostname = hostname;
+                server.Port = port;
             }
             else
             {
-                server.Hostname = serverPart;
-            }
-
-            // Parse user@database part (if present after colon)
-            if (parts.Length > 1)
-            {
-                string userPart = parts[1];
-                if (userPart.Contains("@"))
-                {
-                    var userDbParts = userPart.Split('@');
-                    if (userDbParts.Length != 2 || string.IsNullOrWhiteSpace(userDbParts[0]))
-                        throw new ArgumentException($"Invalid user@database format: {userPart}");
-                    
-                    server.ImpersonationUser = userDbParts[0];
-                    server.Database = userDbParts[1];
-                }
-                else
-                {
-                    server.ImpersonationUser = userPart;
-                }
+                // Just hostname
+                if (string.IsNullOrWhiteSpace(serverInput))
+                    throw new ArgumentException("Server hostname cannot be empty");
+                server.Hostname = serverInput;
             }
 
             return server;
