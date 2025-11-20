@@ -86,8 +86,8 @@ All output tables are Markdown-friendly and can be copied and pasted directly in
 
 ![Searching pass](./media/example.png)
 
-> [!INFO]
-> You can also have `.csv` compatible output by using the `/o:csv` option.
+> [!TIP]
+> You can also have `.csv` compatible output by using the `/o:csv` option: `/o:csv /a:procedures > procedures.csv`
 
 ## 👑 Show Time
 
