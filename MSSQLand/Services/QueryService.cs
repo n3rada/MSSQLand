@@ -213,28 +213,19 @@ namespace MSSQLand.Services
         /// <summary>
         /// Executes a SQL query against the database and returns a single scalar value.
         /// </summary>
-        /// <typeparam name="T">The type to convert the result to.</typeparam>
         /// <param name="query">The SQL query to execute.</param>
-        /// <returns>The scalar value resulting from the query, or default(T) if no rows are returned.</returns>
-        public T ExecuteScalar<T>(string query)
+        /// <returns>The scalar value resulting from the query, or null if no rows are returned.</returns>
+        public object ExecuteScalar(string query)
         {
             // Ensure the reader is disposed.
             using SqlDataReader sqlDataReader = Execute(query);
 
             if (sqlDataReader != null && sqlDataReader.Read()) // Check if there are rows and move to the first one.
             {
-                object value = sqlDataReader.IsDBNull(0) ? null : sqlDataReader.GetValue(0);
-                
-                if (value == null)
-                {
-                    return default(T);
-                }
-                
-                // Convert to the requested type
-                return (T)Convert.ChangeType(value, typeof(T));
+                return sqlDataReader.IsDBNull(0) ? null : sqlDataReader.GetValue(0); // Return the first column value in its original type.
             }
 
-            return default(T);
+            return null;
         }
 
         /// <summary>
