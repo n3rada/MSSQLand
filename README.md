@@ -32,7 +32,7 @@ MSSQLand.exe /h:localhost,1434 /c:token /a:info
 - `/l:SERVER1:user1,SERVER2:user2` - Chain through linked servers (uses configured linked server names)
 
 > [!NOTE]
-> Port specification (`,port`) only applies to the initial `/h:` connection. Linked server chains (`/l:`) use the linked server names as configured in `sys.servers`, not hostname:port combinations.
+> Port specification (`,port`) only applies to the initial `/h:` connection. Linked server chains (`/l:`) use the linked server names as configured in `sys.servers`, not `hostname:port` combinations.
 
 **Format examples:**
 ```shell
