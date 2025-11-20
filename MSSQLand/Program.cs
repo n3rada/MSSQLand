@@ -57,8 +57,6 @@ namespace MSSQLand
 
 
                 // Show banner only when executing an action
-                Logger.Banner($"Version: {currentVersion}\nCompile date: {compileDate:yyyy-MM-dd}", borderChar: '*');
-                Logger.NewLine();
                 int bannerWidth = Logger.Banner($"Executing from: {Environment.MachineName}\nTime Zone ID: {timeZoneId}\nLocal Time: {localTime:HH:mm:ss}, UTC Offset: {formattedOffset}");
                 Logger.NewLine();
 
