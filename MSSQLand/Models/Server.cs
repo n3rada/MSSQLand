@@ -74,16 +74,18 @@ namespace MSSQLand.Models
         /// <summary>
         /// Parses a server input string into a Server object.
         /// Format: server[,port][:user][@database]
-        /// Order is flexible - server is always first, port after comma, user after colon, database after @.
+        /// Order is completely flexible - components can appear in any order after the hostname.
+        /// The hostname is always the part before any delimiter (,, :, @).
         /// Examples:
         /// - server
         /// - server,1434
         /// - server:user
-        /// - server,1434:user
         /// - server@database
-        /// - server,1434@database
-        /// - server:user@database
         /// - server,1434:user@database
+        /// - server:user@database,1434
+        /// - server@database,1434:user
+        /// - server:user,1434@database
+        /// Any combination works!
         /// </summary>
         public static Server ParseServer(string serverInput)
         {
@@ -91,53 +93,83 @@ namespace MSSQLand.Models
                 throw new ArgumentException("Server input cannot be null or empty.");
 
             Server server = new();
+            string remaining = serverInput;
 
-            // Extract database (everything after @, rightmost @)
-            if (serverInput.Contains("@"))
-            {
-                int lastAtIndex = serverInput.LastIndexOf('@');
-                string database = serverInput.Substring(lastAtIndex + 1);
-                if (string.IsNullOrWhiteSpace(database))
-                    throw new ArgumentException("Database cannot be empty after @");
-                server.Database = database;
-                serverInput = serverInput.Substring(0, lastAtIndex);
-            }
+            // Extract hostname (everything before the first delimiter)
+            int firstDelimiterIndex = remaining.Length;
+            char firstDelimiter = '\0';
 
-            // Extract impersonation user (everything after :, rightmost :)
-            if (serverInput.Contains(":"))
-            {
-                int lastColonIndex = serverInput.LastIndexOf(':');
-                string user = serverInput.Substring(lastColonIndex + 1);
-                if (string.IsNullOrWhiteSpace(user))
-                    throw new ArgumentException("Impersonation user cannot be empty after :");
-                server.ImpersonationUser = user;
-                serverInput = serverInput.Substring(0, lastColonIndex);
-            }
+            int commaIndex = remaining.IndexOf(',');
+            int colonIndex = remaining.IndexOf(':');
+            int atIndex = remaining.IndexOf('@');
 
-            // Extract port (everything after ,)
-            if (serverInput.Contains(","))
+            if (commaIndex >= 0 && commaIndex < firstDelimiterIndex) { firstDelimiterIndex = commaIndex; firstDelimiter = ','; }
+            if (colonIndex >= 0 && colonIndex < firstDelimiterIndex) { firstDelimiterIndex = colonIndex; firstDelimiter = ':'; }
+            if (atIndex >= 0 && atIndex < firstDelimiterIndex) { firstDelimiterIndex = atIndex; firstDelimiter = '@'; }
+
+            if (firstDelimiterIndex == remaining.Length)
             {
-                int commaIndex = serverInput.IndexOf(',');
-                string hostname = serverInput.Substring(0, commaIndex);
-                string portString = serverInput.Substring(commaIndex + 1);
-                
-                if (string.IsNullOrWhiteSpace(hostname))
+                // No delimiters, just hostname
+                if (string.IsNullOrWhiteSpace(remaining))
                     throw new ArgumentException("Server hostname cannot be empty");
-                if (string.IsNullOrWhiteSpace(portString))
-                    throw new ArgumentException("Port cannot be empty after ,");
-                    
-                if (!int.TryParse(portString, out int port) || port <= 0 || port > 65535)
-                    throw new ArgumentException($"Invalid port number: {portString}. Port must be between 1 and 65535.");
-                
-                server.Hostname = hostname;
-                server.Port = port;
+                server.Hostname = remaining;
+                return server;
             }
-            else
+
+            server.Hostname = remaining.Substring(0, firstDelimiterIndex);
+            if (string.IsNullOrWhiteSpace(server.Hostname))
+                throw new ArgumentException("Server hostname cannot be empty");
+
+            remaining = remaining.Substring(firstDelimiterIndex + 1);
+
+            // Extract all components from remaining string
+            while (!string.IsNullOrWhiteSpace(remaining))
             {
-                // Just hostname
-                if (string.IsNullOrWhiteSpace(serverInput))
-                    throw new ArgumentException("Server hostname cannot be empty");
-                server.Hostname = serverInput;
+                // Find next delimiter and what it is
+                commaIndex = remaining.IndexOf(',');
+                colonIndex = remaining.IndexOf(':');
+                atIndex = remaining.IndexOf('@');
+
+                int nextDelimiterIndex = remaining.Length;
+                char nextDelimiter = '\0';
+
+                if (commaIndex >= 0 && commaIndex < nextDelimiterIndex) { nextDelimiterIndex = commaIndex; nextDelimiter = ','; }
+                if (colonIndex >= 0 && colonIndex < nextDelimiterIndex) { nextDelimiterIndex = colonIndex; nextDelimiter = ':'; }
+                if (atIndex >= 0 && atIndex < nextDelimiterIndex) { nextDelimiterIndex = atIndex; nextDelimiter = '@'; }
+
+                string component = remaining.Substring(0, nextDelimiterIndex);
+
+                if (string.IsNullOrWhiteSpace(component))
+                {
+                    if (firstDelimiter == ',')
+                        throw new ArgumentException("Port cannot be empty after ,");
+                    else if (firstDelimiter == ':')
+                        throw new ArgumentException("Impersonation user cannot be empty after :");
+                    else
+                        throw new ArgumentException("Database cannot be empty after @");
+                }
+
+                // Determine what component this is based on what delimiter preceded it
+                if (firstDelimiter == ',')
+                {
+                    if (!int.TryParse(component, out int port) || port <= 0 || port > 65535)
+                        throw new ArgumentException($"Invalid port number: {component}. Port must be between 1 and 65535.");
+                    server.Port = port;
+                }
+                else if (firstDelimiter == ':')
+                {
+                    server.ImpersonationUser = component;
+                }
+                else if (firstDelimiter == '@')
+                {
+                    server.Database = component;
+                }
+
+                if (nextDelimiterIndex == remaining.Length)
+                    break;
+
+                firstDelimiter = nextDelimiter;
+                remaining = remaining.Substring(nextDelimiterIndex + 1);
             }
 
             return server;
