@@ -81,7 +81,7 @@ namespace MSSQLand.Services
         {
             try
             {
-                return _queryService.ExecuteScalar<int>($"SELECT IS_SRVROLEMEMBER('{role}');") == 1;
+                return Convert.ToInt32(_queryService.ExecuteScalar($"SELECT IS_SRVROLEMEMBER('{role}');")) == 1;
             }
             catch (Exception ex)
             {
@@ -142,7 +142,7 @@ namespace MSSQLand.Services
             {
                 // Check if this is a SQL login (not Windows authentication)
                 string checkQuery = $"SELECT type_desc FROM master.sys.server_principals WHERE name = '{SystemUser.Replace("'", "''")}';";
-                object result = _queryService.ExecuteScalar<object>(checkQuery);
+                object result = _queryService.ExecuteScalar(checkQuery);
                 
                 if (result != null && result != DBNull.Value)
                 {
@@ -235,7 +235,7 @@ namespace MSSQLand.Services
                     try
                     {
                         string memberCheckQuery = $"SELECT IS_MEMBER('{groupName.Replace("'", "''")}');";
-                        object result = _queryService.ExecuteScalar<object>(memberCheckQuery);
+                        object result = _queryService.ExecuteScalar(memberCheckQuery);
 
                         if (result != null && result != DBNull.Value && Convert.ToInt32(result) == 1)
                         {
@@ -313,7 +313,7 @@ namespace MSSQLand.Services
 
             try
             {
-                return _queryService.ExecuteScalar<int>(query) == 1;
+                return Convert.ToInt32(_queryService.ExecuteScalar(query)) == 1;
             }
             catch (Exception ex)
             {

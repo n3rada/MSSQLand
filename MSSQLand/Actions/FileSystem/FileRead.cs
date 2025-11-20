@@ -33,7 +33,7 @@ namespace MSSQLand.Actions.FileSystem
 
             string query = $@"SELECT A FROM OPENROWSET(BULK '{_filePath.Replace("'", "''")}', SINGLE_CLOB) AS R(A);";
 
-            string fileContent = databaseContext.QueryService.ExecuteScalar<string>(query);
+            string fileContent = databaseContext.QueryService.ExecuteScalar(query).ToString();
 
             Logger.NewLine();
 
