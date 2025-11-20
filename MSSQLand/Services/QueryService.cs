@@ -345,7 +345,7 @@ namespace MSSQLand.Services
                     // No explicit database: query to detect actual database where the link landed us
                     try
                     {
-                        ExecutionDatabase = ExecuteScalar<string>("SELECT DB_NAME();");
+                        ExecutionDatabase = ExecuteScalar("SELECT DB_NAME();")?.ToString();
                         Logger.Debug($"Detected execution database: {ExecutionDatabase}");
                     }
                     catch (Exception ex)

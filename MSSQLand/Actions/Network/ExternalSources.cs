@@ -44,7 +44,7 @@ namespace MSSQLand.Actions.Network
                 WHERE object_id = OBJECT_ID('sys.external_data_sources') 
                 AND type = 'V'";
             
-            int viewExists = databaseContext.QueryService.ExecuteScalar<int>(checkQuery);
+            int viewExists = Convert.ToInt32(databaseContext.QueryService.ExecuteScalar(checkQuery));
             
             if (viewExists == 0)
             {
