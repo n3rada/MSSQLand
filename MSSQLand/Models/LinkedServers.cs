@@ -273,11 +273,6 @@ namespace MSSQLand.Models
                 baseQuery.Append(currentQuery.TrimEnd(';'));
                 baseQuery.Append(";");
 
-                if (!string.IsNullOrEmpty(login))
-                {
-                    baseQuery.Append(" REVERT;");
-                }
-
                 currentQuery = baseQuery.ToString().Replace("'", thicksRepr);
 
                 return currentQuery;
@@ -320,12 +315,6 @@ namespace MSSQLand.Models
              );
 
             stringBuilder.Append(recursiveCall);
-
-            // Add REVERT if impersonation was applied
-            if (!string.IsNullOrEmpty(login))
-            {
-                stringBuilder.Append(" REVERT;");
-            }
 
             // Closing the remote request
             stringBuilder.Append(thicksRepr);
@@ -388,15 +377,6 @@ namespace MSSQLand.Models
 
                 queryBuilder.Append(currentQuery.TrimEnd(';'));
                 queryBuilder.Append(";");
-
-                if (linkedImpersonation != null && linkedImpersonation.Length > 0)
-                {
-                    string login = linkedImpersonation[i-1];
-                    if (!string.IsNullOrEmpty(login))
-                    {
-                        queryBuilder.Append(" REVERT;");
-                    }
-                }
                     
                 // Double single quotes to escape them in the SQL string
                 currentQuery = $"EXEC ('{queryBuilder.ToString().Replace("'", "''")} ') AT [{server}]";
