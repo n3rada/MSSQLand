@@ -108,6 +108,7 @@ namespace MSSQLand.Actions.Database
                 SELECT 
                     SCHEMA_NAME(schema_id) AS schema_name,
                     name AS procedure_name,
+                    USER_NAME(OBJECTPROPERTY(object_id, 'OwnerId')) AS owner,
                     create_date,
                     modify_date
                 FROM sys.procedures
