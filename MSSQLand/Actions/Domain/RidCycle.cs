@@ -65,9 +65,6 @@ namespace MSSQLand.Actions.Domain
         public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Starting RID cycling (max RID: {_maxRid})");
-            Logger.Info("Note: This enumerates domain objects (users and groups), not group membership.");
-            Logger.Info("Use 'AdMembers DOMAIN\\GroupName' to see members of a specific group.");
-            Logger.NewLine();
             
             var results = new List<Dictionary<string, object>>();
 
@@ -88,11 +85,10 @@ namespace MSSQLand.Actions.Domain
                 string domain = domainInfo["Domain"];
                 string AdDomainPrefix = domainInfo["Domain SID"];
                 
-                Logger.Info($"Target domain: {domain}");
-                Logger.Info($"Domain SID prefix: {AdDomainPrefix}");
-                Logger.NewLine();
+                Logger.TaskNested($"Target domain: {domain}");
+                Logger.TaskNested($"Domain SID prefix: {AdDomainPrefix}");
 
-                // Iterate in batches - use semicolon-separated queries like Python
+                // Iterate in batches
                 int foundCount = 0;
                 for (int start = 0; start <= _maxRid; start += BatchSize)
                 {
@@ -159,7 +155,6 @@ namespace MSSQLand.Actions.Domain
                     }
                 }
 
-                Logger.NewLine();
                 Logger.Success($"RID cycling completed. Found {foundCount} domain accounts.");
 
                 // Print results as table if any found
@@ -208,13 +203,6 @@ namespace MSSQLand.Actions.Domain
                         }
                         
                         Console.WriteLine("}");
-                        Console.WriteLine();
-                        Console.WriteLine("# Usage example:");
-                        Console.WriteLine("# for rid, username in rid_users.items():");
-                        Console.WriteLine("#     print(f\"RID: {rid} - User: {username}\")");
-                        Console.WriteLine("#");
-                        Console.WriteLine("# # Direct lookup:");
-                        Console.WriteLine("# print(f\"User with RID 1001: {rid_users.get(1001, 'Not found')}\")");
                     }
                     else
                     {
