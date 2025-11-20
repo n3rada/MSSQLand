@@ -26,8 +26,7 @@ namespace MSSQLand.Services
         {
             try
             {
-                var result = _queryService.ExecuteScalar<int>($"SELECT value_in_use FROM master.sys.configurations WHERE name = '{optionName}';");
-                return result != null ? Convert.ToInt32(result) : -1;
+                return _queryService.ExecuteScalar<int>($"SELECT value_in_use FROM master.sys.configurations WHERE name = '{optionName}';");
             }
             catch
             {
@@ -157,14 +156,14 @@ namespace MSSQLand.Services
             try
             {
                 // Check other module status via sys.configurations
-                var configValue = _queryService.ExecuteScalar<int>($"SELECT value FROM master.sys.configurations WHERE name = '{optionName}';");
-                if (configValue == null)
+                int? configValue = _queryService.ExecuteScalar<int?>($"SELECT value FROM master.sys.configurations WHERE name = '{optionName}';");
+                if (!configValue.HasValue)
                 {
                     Logger.Warning($"Configuration '{optionName}' not found or inaccessible");
                     return false;
                 }
 
-                if (Convert.ToInt32(configValue) == value)
+                if (configValue.Value == value)
                 {
                     Logger.Info($"Configuration option '{optionName}' is already set to {value}");
                     return true;
@@ -265,9 +264,9 @@ namespace MSSQLand.Services
             Logger.Task("Ensuring advanced options are enabled");
 
 
-            var advancedOptionsEnabled = _queryService.ExecuteScalar<int>("SELECT value_in_use FROM master.sys.configurations WHERE name = 'show advanced options';");
+            int? advancedOptionsEnabled = _queryService.ExecuteScalar<int?>("SELECT value_in_use FROM master.sys.configurations WHERE name = 'show advanced options';");
 
-            if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
+            if (advancedOptionsEnabled.HasValue && advancedOptionsEnabled.Value == 1)
             {
                 Logger.Info("Advanced options already enabled");
                 return true;
@@ -288,9 +287,9 @@ namespace MSSQLand.Services
                     
 
             // Verify the change
-            advancedOptionsEnabled = _queryService.ExecuteScalar<int>("SELECT value_in_use FROM master.sys.configurations WHERE name = 'show advanced options';");
+            advancedOptionsEnabled = _queryService.ExecuteScalar<int?>("SELECT value_in_use FROM master.sys.configurations WHERE name = 'show advanced options';");
 
-            if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
+            if (advancedOptionsEnabled.HasValue && advancedOptionsEnabled.Value == 1)
             {
                 Logger.Success("Advanced options successfully enabled");
                 return true;
