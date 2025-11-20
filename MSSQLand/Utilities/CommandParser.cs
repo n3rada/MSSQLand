@@ -220,6 +220,10 @@ namespace MSSQLand.Utilities
                     else
                     {
                         // Everything after the action goes to additional arguments
+                        if (Logger.IsDebugEnabled)
+                        {
+                            Logger.DebugNested($"Action argument: {arg}");
+                        }
                         additionalArgumentsBuilder.Append(arg).Append(CommandParser.AdditionalArgumentsSeparator);
                     }
 
@@ -253,8 +257,6 @@ namespace MSSQLand.Utilities
                 {
                     Logger.Error("Missing required argument: /c or /credentials.");
                     Logger.NewLine();
-                    Logger.Info("Available credential types:");
-                    
                     DataTable credentialsTable = new();
                     credentialsTable.Columns.Add("Type", typeof(string));
                     credentialsTable.Columns.Add("Description", typeof(string));
@@ -311,7 +313,18 @@ namespace MSSQLand.Utilities
                     
                     if (!string.IsNullOrEmpty(parsedArgs.AdditionalArguments))
                     {
-                        Logger.DebugNested($"Additional Arguments: {parsedArgs.AdditionalArguments}");
+                        Logger.DebugNested($"Action Arguments (raw): {parsedArgs.AdditionalArguments}");
+                        
+                        // Show parsed action arguments
+                        string[] actionArgs = parsedArgs.AdditionalArguments.Split(new[] { AdditionalArgumentsSeparator }, StringSplitOptions.RemoveEmptyEntries);
+                        if (actionArgs.Length > 0)
+                        {
+                            Logger.DebugNested("Action Arguments (parsed):");
+                            for (int i = 0; i < actionArgs.Length; i++)
+                            {
+                                Logger.DebugNested($"[{i}] {actionArgs[i]}", 1, "-");
+                            }
+                        }
                     }
 
                     Logger.NewLine();
