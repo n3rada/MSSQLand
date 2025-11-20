@@ -133,6 +133,8 @@ namespace MSSQLand
                     }
                 }
 
+                // Compute and display the final execution context
+                databaseContext.QueryService.ComputeExecutionDatabase();
                 Logger.Info($"Execution database: {databaseContext.QueryService.ExecutionDatabase}");
 
                 // Detect Azure SQL on the final execution server

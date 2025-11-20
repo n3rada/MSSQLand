@@ -36,30 +36,7 @@ namespace MSSQLand.Services
                 if (_linkedServers.ServerNames.Length > 0)
                 {
                     ExecutionServer = _linkedServers.ServerNames.Last();
-                    
-                    // Smart database detection
-                    var lastServer = _linkedServers.ServerChain.Last();
-                    if (!string.IsNullOrEmpty(lastServer.Database))
-                    {
-                        // Use explicitly specified database from chain
-                        ExecutionDatabase = lastServer.Database;
-                    }
-                    else
-                    {
-                        // No explicit database: query to detect actual database
-                        try
-                        {
-                            ExecutionDatabase = ExecuteScalar<string>("SELECT DB_NAME();");
-                        }
-                        catch
-                        {
-                            // If detection fails, keep default
-                            ExecutionDatabase = "master";
-                        }
-                    }
-                    
                     Logger.Debug($"Execution server set to: {ExecutionServer}");
-                    Logger.Debug($"Execution database set to: {ExecutionDatabase}");
                 }
                 else
                 {
@@ -355,6 +332,40 @@ namespace MSSQLand.Services
                 // If detection fails, assume it's not Azure SQL
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Computes the execution database based on the linked server chain.
+        /// Should be called after the entire linked server setup is complete.
+        /// </summary>
+        public void ComputeExecutionDatabase()
+        {
+            if (!_linkedServers.IsEmpty)
+            {
+                var lastServer = _linkedServers.ServerChain.Last();
+                if (!string.IsNullOrEmpty(lastServer.Database))
+                {
+                    // Use explicitly specified database from chain
+                    ExecutionDatabase = lastServer.Database;
+                    Logger.Debug($"Using explicitly specified database: {ExecutionDatabase}");
+                }
+                else
+                {
+                    // No explicit database: query to detect actual database
+                    try
+                    {
+                        ExecutionDatabase = ExecuteScalar<string>("SELECT DB_NAME();");
+                        Logger.Debug($"Detected execution database: {ExecutionDatabase}");
+                    }
+                    catch
+                    {
+                        // If detection fails, keep default
+                        ExecutionDatabase = "master";
+                        Logger.Debug("Database detection failed, defaulting to 'master'");
+                    }
+                }
+            }
+            // If no linked servers, ExecutionDatabase is already set from Connection.Database
         }
     }
 }
