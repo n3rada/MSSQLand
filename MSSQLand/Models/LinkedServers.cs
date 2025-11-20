@@ -129,7 +129,7 @@ namespace MSSQLand.Models
                 StringBuilder part = new StringBuilder(serverName);
 
                 // Add user@database or just @database
-                if (!string.IsNullOrEmpty(impersonationUser) && !string.IsNullOrEmpty(database) && database != "master")
+                if (!string.IsNullOrEmpty(impersonationUser) && !string.IsNullOrEmpty(database))
                 {
                     part.Append($":{impersonationUser}@{database}");
                 }
@@ -137,7 +137,7 @@ namespace MSSQLand.Models
                 {
                     part.Append($":{impersonationUser}");
                 }
-                else if (!string.IsNullOrEmpty(database) && database != "master")
+                else if (!string.IsNullOrEmpty(database))
                 {
                     part.Append($"@{database}");
                 }
@@ -170,7 +170,7 @@ namespace MSSQLand.Models
             { 
                 Hostname = newServer, 
                 ImpersonationUser = impersonationUser,
-                Database = database ?? "master"
+                Database = database
             });
 
             ServerChain = updatedChain.ToArray();
@@ -265,7 +265,7 @@ namespace MSSQLand.Models
                     baseQuery.Append($"EXECUTE AS LOGIN = '{login}'; ");
                 }
 
-                if (!string.IsNullOrEmpty(database) && database != "master")
+                if (!string.IsNullOrEmpty(database))
                 {
                     baseQuery.Append($"USE [{database}]; ");
                 }
@@ -298,7 +298,7 @@ namespace MSSQLand.Models
             }
 
             // Add database context if applicable
-            if (!string.IsNullOrEmpty(database) && database != "master")
+            if (!string.IsNullOrEmpty(database))
             {
                 string useQuery = $"USE [{database}]; ";
                 stringBuilder.Append(useQuery.Replace("'", new('\'', (int)Math.Pow(2, thicksCounter + 1))));
@@ -369,7 +369,7 @@ namespace MSSQLand.Models
                 if (linkedDatabases != null && linkedDatabases.Length > 0)
                 {
                     string database = linkedDatabases[i-1];
-                    if (!string.IsNullOrEmpty(database) && database != "master")
+                    if (!string.IsNullOrEmpty(database))
                     {
                         queryBuilder.Append($"USE [{database}]; ");
                     }
@@ -403,7 +403,7 @@ namespace MSSQLand.Models
                 ComputableServerNames[i + 1] = ServerChain[i].Hostname;
                 ServerNames[i] = ServerChain[i].Hostname;
                 ComputableImpersonationNames[i] = ServerChain[i].ImpersonationUser ?? "";
-                ComputableDatabaseNames[i] = ServerChain[i].Database ?? "master";
+                ComputableDatabaseNames[i] = ServerChain[i].Database ?? "";
             }
         }
 

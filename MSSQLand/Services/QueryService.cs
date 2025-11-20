@@ -351,17 +351,17 @@ namespace MSSQLand.Services
                 }
                 else
                 {
-                    // No explicit database: query to detect actual database
+                    // No explicit database: query to detect actual database where the link landed us
                     try
                     {
                         ExecutionDatabase = ExecuteScalar<string>("SELECT DB_NAME();");
                         Logger.Debug($"Detected execution database: {ExecutionDatabase}");
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // If detection fails, keep default
-                        ExecutionDatabase = "master";
-                        Logger.Debug("Database detection failed, defaulting to 'master'");
+                        // If detection fails, database remains unknown
+                        ExecutionDatabase = null;
+                        Logger.Debug($"Database detection failed: {ex.Message}");
                     }
                 }
             }
