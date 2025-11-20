@@ -69,6 +69,7 @@ namespace MSSQLand.Models
             ComputableServerNames[0] = "0";
 
             ComputableImpersonationNames = new string[ServerChain.Length];
+            ComputableDatabaseNames = new string[ServerChain.Length];
             ServerNames = new string[ServerChain.Length];
 
             for (int i = 0; i < ServerChain.Length; i++)
@@ -76,6 +77,7 @@ namespace MSSQLand.Models
                 ComputableServerNames[i + 1] = ServerChain[i].Hostname;
                 ServerNames[i] = ServerChain[i].Hostname;
                 ComputableImpersonationNames[i] = ServerChain[i].ImpersonationUser ?? "";
+                ComputableDatabaseNames[i] = ServerChain[i].Database ?? "";
             }
         }
 

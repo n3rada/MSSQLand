@@ -167,6 +167,7 @@ namespace MSSQLand.Utilities
                         }
                         else if (IsGlobalArgument(arg, "links"))
                         {
+                            // Creating linked servers from argument
                             parsedArgs.LinkedServers = new LinkedServers(ExtractValue(arg, "/l:", "/links:"));
                         }
                         else if (IsGlobalArgument(arg, "output"))
