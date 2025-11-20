@@ -99,23 +99,9 @@ namespace MSSQLand.Utilities
                     }
 
                     
-                    if (arg.StartsWith("/c:", StringComparison.OrdinalIgnoreCase) ||
-                             arg.StartsWith("/credentials:", StringComparison.OrdinalIgnoreCase))
-                    {
-                        parsedArgs.CredentialType = ExtractValue(arg, "/c:", "/credentials:");
-                    }
-                    else if (arg.StartsWith("/h:", StringComparison.OrdinalIgnoreCase) ||
-                             arg.StartsWith("/host:", StringComparison.OrdinalIgnoreCase))
-                    {
-                        parsedArgs.Host = Server.ParseServer(ExtractValue(arg, "/h:", "/host:"));
-                    }
-                    else if (arg.StartsWith("/l:", StringComparison.OrdinalIgnoreCase) ||
-                             arg.StartsWith("/links:", StringComparison.OrdinalIgnoreCase))
-                    {
-                        parsedArgs.LinkedServers = new LinkedServers(ExtractValue(arg, "/l:", "/links:"));
-                    }
-                    else if (arg.StartsWith("/a:", StringComparison.OrdinalIgnoreCase) ||
-                             arg.StartsWith("/action:", StringComparison.OrdinalIgnoreCase))
+                    // Check if this is the action argument
+                    if (arg.StartsWith("/a:", StringComparison.OrdinalIgnoreCase) ||
+                        arg.StartsWith("/action:", StringComparison.OrdinalIgnoreCase))
                     {
                         actionType = ExtractValue(arg, "/a:", "/action:");
                         actionFound = true; // Mark that action has been found
@@ -128,59 +114,76 @@ namespace MSSQLand.Utilities
                             return (ParseResultType.ShowHelp, null);
                         }
                     }
-                    else if (arg.StartsWith("/o:", StringComparison.OrdinalIgnoreCase) ||
-                             arg.StartsWith("/output:", StringComparison.OrdinalIgnoreCase))
+                    // Process global/connection arguments (before action)
+                    else if (!actionFound)
                     {
-                        string outputFormat = ExtractValue(arg, "/o:", "/output:");
-                        try
+                        if (arg.StartsWith("/c:", StringComparison.OrdinalIgnoreCase) ||
+                            arg.StartsWith("/credentials:", StringComparison.OrdinalIgnoreCase))
                         {
-                            OutputFormatter.SetFormat(outputFormat);
+                            parsedArgs.CredentialType = ExtractValue(arg, "/c:", "/credentials:");
                         }
-                        catch (ArgumentException ex)
+                        else if (arg.StartsWith("/h:", StringComparison.OrdinalIgnoreCase) ||
+                                 arg.StartsWith("/host:", StringComparison.OrdinalIgnoreCase))
                         {
-                            var availableFormats = string.Join(", ", OutputFormatter.GetAvailableFormats());
-                            throw new ArgumentException($"{ex.Message}. Available formats: {availableFormats}");
+                            parsedArgs.Host = Server.ParseServer(ExtractValue(arg, "/h:", "/host:"));
                         }
-                    }
-                    else if (arg.StartsWith("/timeout:", StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (connectionTimeout.HasValue)
+                        else if (arg.StartsWith("/l:", StringComparison.OrdinalIgnoreCase) ||
+                                 arg.StartsWith("/links:", StringComparison.OrdinalIgnoreCase))
                         {
-                            Logger.Warning($"/timeout: specified multiple times. Using last value.");
+                            parsedArgs.LinkedServers = new LinkedServers(ExtractValue(arg, "/l:", "/links:"));
                         }
-                        string timeoutValue = ExtractValue(arg, "/timeout:");
-                        if (!int.TryParse(timeoutValue, out int parsedTimeout) || parsedTimeout <= 0)
+                        else if (arg.StartsWith("/o:", StringComparison.OrdinalIgnoreCase) ||
+                                 arg.StartsWith("/output:", StringComparison.OrdinalIgnoreCase))
                         {
-                            throw new ArgumentException($"Invalid timeout value: {timeoutValue}. Timeout must be a positive integer (seconds).");
+                            string outputFormat = ExtractValue(arg, "/o:", "/output:");
+                            try
+                            {
+                                OutputFormatter.SetFormat(outputFormat);
+                            }
+                            catch (ArgumentException ex)
+                            {
+                                var availableFormats = string.Join(", ", OutputFormatter.GetAvailableFormats());
+                                throw new ArgumentException($"{ex.Message}. Available formats: {availableFormats}");
+                            }
                         }
-                        connectionTimeout = parsedTimeout;
+                        else if (arg.StartsWith("/timeout:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (connectionTimeout.HasValue)
+                            {
+                                Logger.Warning($"/timeout: specified multiple times. Using last value.");
+                            }
+                            string timeoutValue = ExtractValue(arg, "/timeout:");
+                            if (!int.TryParse(timeoutValue, out int parsedTimeout) || parsedTimeout <= 0)
+                            {
+                                throw new ArgumentException($"Invalid timeout value: {timeoutValue}. Timeout must be a positive integer (seconds).");
+                            }
+                            connectionTimeout = parsedTimeout;
+                        }
+                        else if ((arg.StartsWith("/u:", StringComparison.OrdinalIgnoreCase) ||
+                                  arg.StartsWith("/username:", StringComparison.OrdinalIgnoreCase)) && username == null)
+                        {
+                            username = ExtractValue(arg, "/u:", "/username:");
+                        }
+                        else if ((arg.StartsWith("/p:", StringComparison.OrdinalIgnoreCase) ||
+                                  arg.StartsWith("/password:", StringComparison.OrdinalIgnoreCase)) && password == null)
+                        {
+                            password = ExtractValue(arg, "/p:", "/password:");
+                        }
+                        else if ((arg.StartsWith("/d:", StringComparison.OrdinalIgnoreCase) ||
+                                  arg.StartsWith("/domain:", StringComparison.OrdinalIgnoreCase)) && domain == null)
+                        {
+                            domain = ExtractValue(arg, "/d:", "/domain:");
+                        }
+                        else
+                        {
+                            // Unknown argument before action
+                            throw new ArgumentException($"Unknown global argument: {arg}");
+                        }
                     }
-                    else if (!actionFound && (arg.StartsWith("/u:", StringComparison.OrdinalIgnoreCase) ||
-                             arg.StartsWith("/username:", StringComparison.OrdinalIgnoreCase)) && username == null)
-                    {
-                        // Only set global username if action hasn't been found yet and not already set
-                        username = ExtractValue(arg, "/u:", "/username:");
-                    }
-                    else if (!actionFound && (arg.StartsWith("/p:", StringComparison.OrdinalIgnoreCase) ||
-                             arg.StartsWith("/password:", StringComparison.OrdinalIgnoreCase)) && password == null)
-                    {
-                        // Only set global password if action hasn't been found yet and not already set
-                        password = ExtractValue(arg, "/p:", "/password:");
-                    }
-                    else if (!actionFound && (arg.StartsWith("/d:", StringComparison.OrdinalIgnoreCase) ||
-                             arg.StartsWith("/domain:", StringComparison.OrdinalIgnoreCase)) && domain == null)
-                    {
-                        // Only set global domain if action hasn't been found yet and not already set
-                        domain = ExtractValue(arg, "/d:", "/domain:");
-                    }
-                    else if (!arg.StartsWith("/"))
-                    {
-                        // Positional argument (doesn't start with /)
-                        additionalArgumentsBuilder.Append(arg).Append(CommandParser.AdditionalArgumentsSeparator);
-                    }
+                    // Process action-specific arguments (after action found)
                     else
                     {
-                        // Unknown argument starting with / OR arguments after action - pass to action
+                        // Everything after the action goes to additional arguments
                         additionalArgumentsBuilder.Append(arg).Append(CommandParser.AdditionalArgumentsSeparator);
                     }
 

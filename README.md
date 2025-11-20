@@ -16,18 +16,11 @@ MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikiped
 
 ## 🚀 Quick Start
 
-Format: `server,port:user@database`
+Format: `server,port:user@database` or any combination `server:user@database,port`.
 - `server` (required) - The SQL Server hostname or IP
 - `,port` (optional) - Port number (default: 1433, also common: 1434, 14333, 2433)
 - `:user` (optional) - User to impersonate on this server
 - `@database` (optional) - Database context (defaults to 'master' if not specified)
-
-All combinations are supported:
-- `server` - Connect to server using default port and database
-- `server,1434` - Connect to server on custom port
-- `server@database` - Connect to server and use specific database
-- `server:user` - Connect to server, impersonate user, use default database
-- `server,1434:user@database` - Full format with all options
 
 ```shell
 MSSQLand.exe /h:localhost /c:token /a:info
@@ -38,7 +31,8 @@ MSSQLand.exe /h:localhost,1434 /c:token /a:info
 - `/timeout:30` - Connection timeout in seconds (default: 15)
 - `/l:SERVER1:user1,SERVER2:user2` - Chain through linked servers (uses configured linked server names)
 
-> **Note:** Port specification (`,port`) only applies to the initial `/h:` connection. Linked server chains (`/l:`) use the linked server names as configured in `sys.servers`, not hostname:port combinations.
+> [!NOTE]
+> Port specification (`,port`) only applies to the initial `/h:` connection. Linked server chains (`/l:`) use the linked server names as configured in `sys.servers`, not hostname:port combinations.
 
 **Format examples:**
 ```shell
