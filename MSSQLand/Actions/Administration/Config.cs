@@ -79,7 +79,7 @@ namespace MSSQLand.Actions.Administration
             }
 
             // Mode 3: List all security-sensitive configurations
-            Logger.Task("Checking security-sensitive configuration options");
+            Logger.Task("Listing all configuration options");
             var results = CheckConfigurationOptions(databaseContext);
 
             if (results.Count > 0)
@@ -100,37 +100,23 @@ namespace MSSQLand.Actions.Administration
         {
             var results = new List<Dictionary<string, object>>();
 
-            // List of security-sensitive configuration options with descriptions
-            var configOptions = new Dictionary<string, string>
-            {
-                { "xp_cmdshell", "Execute operating system commands" },
-                { "Ole Automation Procedures", "Use OLE Automation objects" },
-                { "clr enabled", "Execute CLR assemblies" },
-                { "Agent XPs", "SQL Server Agent extended procedures" },
-                { "Ad Hoc Distributed Queries", "OPENROWSET/OPENDATASOURCE queries" },
-                { "show advanced options", "Access advanced configuration options" },
-                { "remote access", "Allow remote server access" },
-                { "remote admin connections", "Dedicated Admin Connection (DAC)" },
-                { "Database Mail XPs", "Send emails via Database Mail" },
-                { "SMO and DMO XPs", "SQL Server Management Objects" }
-            };
-
             try
             {
-                foreach (var option in configOptions)
+                // Fetch all configurations at once
+                string query = "SELECT name, value_in_use FROM sys.configurations ORDER BY name;";
+                DataTable configsTable = databaseContext.QueryService.ExecuteTable(query);
+                
+                foreach (DataRow row in configsTable.Rows)
                 {
-                    int status = databaseContext.ConfigService.GetConfigurationStatus(option.Key);
+                    string name = row["name"].ToString();
+                    int status = Convert.ToInt32(row["value_in_use"]);
                     
-                    if (status >= 0)
+                    results.Add(new Dictionary<string, object>
                     {
-                        results.Add(new Dictionary<string, object>
-                        {
-                            { "Feature", option.Key },
-                            { "Type", "Configuration" },
-                            { "Activated", status == 1 ? "True" : "False" },
-                            { "Description", option.Value }
-                        });
-                    }
+                        { "Feature", name },
+                        { "Activated", status == 1 ? "True" : "False" },
+                        { "Value", status }
+                    });
                 }
             }
             catch (Exception ex)
@@ -149,25 +135,19 @@ namespace MSSQLand.Actions.Administration
             // Convert to DataTable for formatting
             DataTable dt = new();
             dt.Columns.Add("Option", typeof(string));
-            dt.Columns.Add("Activated", typeof(string));
-            dt.Columns.Add("Description", typeof(string));
+            dt.Columns.Add("Value", typeof(string));
+            dt.Columns.Add("Enabled", typeof(string));
 
             foreach (var result in results)
             {
                 dt.Rows.Add(
                     result["Feature"],
-                    result["Activated"],
-                    result["Description"]
+                    result["Value"],
+                    result["Activated"]
                 );
             }
 
-            // Display as markdown table
             Console.WriteLine(OutputFormatter.ConvertDataTable(dt));
-
-            // Summary
-            Logger.NewLine();
-            int activatedCount = results.FindAll(r => r["Activated"].ToString() == "True").Count;
-            Logger.Info($"Total: {results.Count} configuration options checked, {activatedCount} enabled");
         }
     }
 }
