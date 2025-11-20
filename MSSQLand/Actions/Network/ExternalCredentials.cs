@@ -44,15 +44,11 @@ namespace MSSQLand.Actions.Network
             if (resultTable.Rows.Count == 0)
             {
                 Logger.Warning("No database-scoped credentials found in the current database.");
-                Logger.InfoNested("Database-scoped credentials are used by External Data Sources for authentication.");
+                Logger.WarningNested("Database-scoped credentials are used by External Data Sources for authentication.");
             }
             else
             {
                 Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
-                Logger.NewLine();
-                Logger.Info("Security Note:");
-                Logger.InfoNested("Credential secrets are not visible, but names and identities reveal authentication targets.");
-                Logger.InfoNested("With CREATE EXTERNAL DATA SOURCE permission, these can be leveraged for attacks.");
             }
 
             return resultTable;
