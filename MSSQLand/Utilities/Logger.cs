@@ -84,7 +84,7 @@ namespace MSSQLand.Utilities
         public static void Success(string message)
         {
             if (IsSilentModeEnabled) return;
-            Console.ForegroundColor = ConsoleColor.Green;
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.Error.WriteLine($"[+] {message}");
             Console.ResetColor();
         }
@@ -92,7 +92,7 @@ namespace MSSQLand.Utilities
         public static void Debug(string message)
         {
             if (IsSilentModeEnabled || !IsDebugEnabled) return;
-            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Error.WriteLine($"[*] {message}");
             Console.ResetColor();
         }
@@ -108,7 +108,7 @@ namespace MSSQLand.Utilities
         public static void Error(string message)
         {
             if (IsSilentModeEnabled) return;
-            Console.ForegroundColor = ConsoleColor.Red;
+            Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.Error.WriteLine($"[-] {message}");
             Console.ResetColor();
         }
@@ -144,7 +144,7 @@ namespace MSSQLand.Utilities
         {
             if (IsSilentModeEnabled || !IsDebugEnabled) return;
             string indent = new(' ', indentLevel * 4);
-            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Error.WriteLine($"{indent}{symbol} {message}");
             Console.ResetColor();
         }
@@ -153,7 +153,7 @@ namespace MSSQLand.Utilities
         {
             if (IsSilentModeEnabled) return;
             string indent = new(' ', indentLevel * 4);
-            Console.ForegroundColor = ConsoleColor.Red;
+            Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.Error.WriteLine($"{indent}{symbol} {message}");
             Console.ResetColor();
         }
