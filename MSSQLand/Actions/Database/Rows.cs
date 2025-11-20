@@ -15,7 +15,7 @@ namespace MSSQLand.Actions.Database
         private string _database;
         
         [ExcludeFromArguments]
-        private string _schema = "dbo"; // Default schema
+        private string _schema = null; // Let SQL Server use user's default schema
         
         [ExcludeFromArguments]
         private string _table;
@@ -33,7 +33,7 @@ namespace MSSQLand.Actions.Database
             if (parts.Length == 3) // Format: database.schema.table
             {
                 _database = parts[0];
-                _schema = string.IsNullOrEmpty(parts[1]) ? _schema : parts[1];
+                _schema = parts[1];
                 _table = parts[2];
             }
             else if (parts.Length == 2) // Format: schema.table
@@ -45,7 +45,7 @@ namespace MSSQLand.Actions.Database
             else if (parts.Length == 1) // Format: table
             {
                 _database = null; // Use the current database
-                _schema = "dbo"; // Default schema
+                _schema = null; // Use user's default schema
                 _table = parts[0];
             }
             else
@@ -67,7 +67,18 @@ namespace MSSQLand.Actions.Database
                 _database = databaseContext.QueryService.ExecutionDatabase;
             }
 
-            string targetTable = $"[{_database}].[{_schema}].[{_table}]";
+            // Build the target table name based on what was specified
+            string targetTable;
+            if (!string.IsNullOrEmpty(_schema))
+            {
+                targetTable = $"[{_database}].[{_schema}].[{_table}]";
+            }
+            else
+            {
+                // No schema specified - let SQL Server use the user's default schema
+                targetTable = $"[{_database}]..[{_table}]";
+            }
+            
             Logger.TaskNested($"Retrieving rows from {targetTable}");
 
             DataTable rows = databaseContext.QueryService.ExecuteTable($"SELECT * FROM {targetTable};");
