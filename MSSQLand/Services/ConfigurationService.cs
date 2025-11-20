@@ -164,7 +164,7 @@ namespace MSSQLand.Services
                     return false;
                 }
 
-                if (configValue.Value == value)
+                if (Convert.ToInt32(configValue) == value)
                 {
                     Logger.Info($"Configuration option '{optionName}' is already set to {value}");
                     return true;
@@ -267,7 +267,7 @@ namespace MSSQLand.Services
 
             var advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM master.sys.configurations WHERE name = 'show advanced options';");
 
-            if (advancedOptionsEnabled.HasValue && advancedOptionsEnabled.Value == 1)
+            if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
             {
                 Logger.Info("Advanced options already enabled");
                 return true;
@@ -290,7 +290,7 @@ namespace MSSQLand.Services
             // Verify the change
             advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM master.sys.configurations WHERE name = 'show advanced options';");
 
-            if (advancedOptionsEnabled.HasValue && advancedOptionsEnabled.Value == 1)
+            if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
             {
                 Logger.Success("Advanced options successfully enabled");
                 return true;
