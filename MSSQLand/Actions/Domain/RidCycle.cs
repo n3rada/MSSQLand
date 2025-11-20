@@ -23,6 +23,9 @@ namespace MSSQLand.Actions.Domain
         
         [ExcludeFromArguments]
         private bool _pythonOutput = false;
+        
+        [ExcludeFromArguments]
+        private bool _tableOutput = false;
 
         public override void ValidateArguments(string additionalArguments)
         {
@@ -45,20 +48,25 @@ namespace MSSQLand.Actions.Domain
                 {
                     _pythonOutput = true;
                 }
+                else if (arg.Equals("table", StringComparison.OrdinalIgnoreCase))
+                {
+                    _tableOutput = true;
+                }
                 else if (int.TryParse(arg, out int maxRid) && maxRid > 0)
                 {
                     _maxRid = maxRid;
                 }
                 else
                 {
-                    throw new ArgumentException($"Invalid argument: {arg}. Use a positive integer for max RID, 'bash' for bash output, or 'python'/'py' for Python output.");
+                    throw new ArgumentException($"Invalid argument: {arg}. Use a positive integer for max RID, 'bash' for bash output, 'python'/'py' for Python output, or 'table' for detailed table view.");
                 }
             }
 
-            // Both cannot be enabled at the same time
-            if (_bashOutput && _pythonOutput)
+            // Only one output format can be enabled at a time
+            int formatCount = (_bashOutput ? 1 : 0) + (_pythonOutput ? 1 : 0) + (_tableOutput ? 1 : 0);
+            if (formatCount > 1)
             {
-                throw new ArgumentException("Cannot use both 'bash' and 'python' output formats simultaneously. Choose one.");
+                throw new ArgumentException("Cannot use multiple output formats simultaneously. Choose one: bash, python, or table.");
             }
         }
 
@@ -157,7 +165,7 @@ namespace MSSQLand.Actions.Domain
 
                 Logger.Success($"RID cycling completed. Found {foundCount} domain accounts.");
 
-                // Print results as table if any found
+                // Print results if any found
                 if (results.Count > 0)
                 {
                     if (_bashOutput)
@@ -177,11 +185,6 @@ namespace MSSQLand.Actions.Domain
                         }
                         
                         Console.WriteLine(")");
-                        Console.WriteLine();
-                        Console.WriteLine("# Usage example:");
-                        Console.WriteLine("# for rid in \"${!rid_users[@]}\"; do");
-                        Console.WriteLine("#   echo \"RID: $rid - User: ${rid_users[$rid]}\"");
-                        Console.WriteLine("# done");
                     }
                     else if (_pythonOutput)
                     {
@@ -204,9 +207,9 @@ namespace MSSQLand.Actions.Domain
                         
                         Console.WriteLine("}");
                     }
-                    else
+                    else if (_tableOutput)
                     {
-                        // Standard markdown table output
+                        // Detailed table output
                         DataTable resultTable = new();
                         resultTable.Columns.Add("RID", typeof(int));
                         resultTable.Columns.Add("Domain", typeof(string));
@@ -224,6 +227,14 @@ namespace MSSQLand.Actions.Domain
                         }
 
                         Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
+                    }
+                    else
+                    {
+                        // Default: simple line-by-line username output (pipe-friendly)
+                        foreach (var entry in results)
+                        {
+                            Console.WriteLine(entry["Username"].ToString());
+                        }
                     }
                 }
             }
