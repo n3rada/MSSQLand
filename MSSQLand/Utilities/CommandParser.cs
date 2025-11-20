@@ -25,6 +25,39 @@ namespace MSSQLand.Utilities
         // Compiled regex patterns for better performance
         private static readonly Regex TrailingSeparatorRegex = new Regex($"{Regex.Escape(AdditionalArgumentsSeparator)}$", RegexOptions.Compiled);
 
+        // Global arguments dictionary: Key = long name, Value = (short name, description)
+        private static readonly Dictionary<string, (string Short, string Description)> GlobalArguments = new()
+        {
+            { "credentials", ("c", "Credential type for authentication") },
+            { "host", ("h", "Target SQL Server hostname") },
+            { "links", ("l", "Linked server chain") },
+            { "output", ("o", "Output format (table, csv, json, markdown)") },
+            { "timeout", (null, "Connection timeout in seconds") },
+            { "username", ("u", "Username for authentication") },
+            { "password", ("p", "Password for authentication") },
+            { "domain", ("d", "Domain for authentication") },
+            { "action", ("a", "Action to execute") }
+        };
+
+        /// <summary>
+        /// Checks if an argument matches a global argument (by short or long name).
+        /// Automatically looks up the short name from the GlobalArguments dictionary.
+        /// </summary>
+        private static bool IsGlobalArgument(string arg, string longName)
+        {
+            if (arg.StartsWith($"/{longName}:", StringComparison.OrdinalIgnoreCase))
+                return true;
+            
+            // Look up short name from dictionary
+            if (GlobalArguments.TryGetValue(longName, out var metadata) && metadata.Short != null)
+            {
+                if (arg.StartsWith($"/{metadata.Short}:", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            
+            return false;
+        }
+
         public (ParseResultType, CommandArgs?) Parse(string[] args)
         {
             CommandArgs parsedArgs = new();
@@ -117,23 +150,19 @@ namespace MSSQLand.Utilities
                     // Process global/connection arguments (before action)
                     else if (!actionFound)
                     {
-                        if (arg.StartsWith("/c:", StringComparison.OrdinalIgnoreCase) ||
-                            arg.StartsWith("/credentials:", StringComparison.OrdinalIgnoreCase))
+                        if (IsGlobalArgument(arg, "credentials"))
                         {
                             parsedArgs.CredentialType = ExtractValue(arg, "/c:", "/credentials:");
                         }
-                        else if (arg.StartsWith("/h:", StringComparison.OrdinalIgnoreCase) ||
-                                 arg.StartsWith("/host:", StringComparison.OrdinalIgnoreCase))
+                        else if (IsGlobalArgument(arg, "host"))
                         {
                             parsedArgs.Host = Server.ParseServer(ExtractValue(arg, "/h:", "/host:"));
                         }
-                        else if (arg.StartsWith("/l:", StringComparison.OrdinalIgnoreCase) ||
-                                 arg.StartsWith("/links:", StringComparison.OrdinalIgnoreCase))
+                        else if (IsGlobalArgument(arg, "links"))
                         {
                             parsedArgs.LinkedServers = new LinkedServers(ExtractValue(arg, "/l:", "/links:"));
                         }
-                        else if (arg.StartsWith("/o:", StringComparison.OrdinalIgnoreCase) ||
-                                 arg.StartsWith("/output:", StringComparison.OrdinalIgnoreCase))
+                        else if (IsGlobalArgument(arg, "output"))
                         {
                             string outputFormat = ExtractValue(arg, "/o:", "/output:");
                             try
@@ -146,7 +175,7 @@ namespace MSSQLand.Utilities
                                 throw new ArgumentException($"{ex.Message}. Available formats: {availableFormats}");
                             }
                         }
-                        else if (arg.StartsWith("/timeout:", StringComparison.OrdinalIgnoreCase))
+                        else if (IsGlobalArgument(arg, "timeout"))
                         {
                             if (connectionTimeout.HasValue)
                             {
@@ -159,24 +188,31 @@ namespace MSSQLand.Utilities
                             }
                             connectionTimeout = parsedTimeout;
                         }
-                        else if ((arg.StartsWith("/u:", StringComparison.OrdinalIgnoreCase) ||
-                                  arg.StartsWith("/username:", StringComparison.OrdinalIgnoreCase)) && username == null)
+                        else if (IsGlobalArgument(arg, "username") && username == null)
                         {
                             username = ExtractValue(arg, "/u:", "/username:");
                         }
-                        else if ((arg.StartsWith("/p:", StringComparison.OrdinalIgnoreCase) ||
-                                  arg.StartsWith("/password:", StringComparison.OrdinalIgnoreCase)) && password == null)
+                        else if (IsGlobalArgument(arg, "password") && password == null)
                         {
                             password = ExtractValue(arg, "/p:", "/password:");
                         }
-                        else if ((arg.StartsWith("/d:", StringComparison.OrdinalIgnoreCase) ||
-                                  arg.StartsWith("/domain:", StringComparison.OrdinalIgnoreCase)) && domain == null)
+                        else if (IsGlobalArgument(arg, "domain") && domain == null)
                         {
                             domain = ExtractValue(arg, "/d:", "/domain:");
                         }
                         else
                         {
-                            // Unknown argument before action
+                            // Unknown argument before action - show available global arguments
+                            Logger.Error($"Unknown global argument: {arg}");
+                            Logger.NewLine();
+                            Logger.Info("Available global arguments:");
+                            foreach (var globalArg in GlobalArguments)
+                            {
+                                string shortForm = globalArg.Value.Short != null ? $"/{globalArg.Value.Short}:" : "";
+                                string longForm = $"/{globalArg.Key}:";
+                                string aliases = globalArg.Value.Short != null ? $"{shortForm} or {longForm}" : longForm;
+                                Logger.InfoNested($"{aliases} - {globalArg.Value.Description}");
+                            }
                             throw new ArgumentException($"Unknown global argument: {arg}");
                         }
                     }
