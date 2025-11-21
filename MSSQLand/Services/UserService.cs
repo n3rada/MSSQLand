@@ -103,26 +103,29 @@ namespace MSSQLand.Services
             string mappedUser = "";
             string systemUser = "";
 
-            using var reader = _queryService.Execute(query);
-
-            if (reader.Read())
+            // Close the reader before executing subsequent queries
+            using (var reader = _queryService.Execute(query))
             {
-                mappedUser = reader["U"]?.ToString() ?? "Unknown";
-                systemUser = reader["S"]?.ToString() ?? "Unknown";
-            }
+                if (reader.Read())
+                {
+                    mappedUser = reader["U"]?.ToString() ?? "Unknown";
+                    systemUser = reader["S"]?.ToString() ?? "Unknown";
+                }
+            } // DataReader is closed here
 
             // Update the properties
             this.MappedUser = mappedUser;
             this.SystemUser = systemUser;
             
             // Compute effective user (handles group-based access)
+            // Safe to call now since DataReader is closed
             this.EffectiveUser = GetEffectiveDatabaseUser();
 
             return (mappedUser, systemUser);
         }
 
         /// <summary>
-        /// Gets the effective database user by checking AD group mappings.
+        /// The SQL user that SQL Server resolved me to in this database context.
         /// This handles cases where access is granted through AD group membership
         /// rather than direct login mapping (e.g., DOMAIN\User -> AD Group -> Database User).
         /// Must be called per database context as mappings differ between databases.
@@ -132,37 +135,22 @@ namespace MSSQLand.Services
         {
             try
             {
-                // Check for guest user access (special case)
-                if (MappedUser.Equals("guest", StringComparison.OrdinalIgnoreCase))
-                {
-                    return "guest";
-                }
-
                 // If there's a direct mapping (MappedUser != SystemUser), use it
-                // BUT if MappedUser == SystemUser for domain users, check AD group mappings
+                // This includes guest, dbo, or any other direct mapping
                 if (!MappedUser.Equals(SystemUser, StringComparison.OrdinalIgnoreCase))
                 {
                     return MappedUser;
                 }
 
-                // For domain users where MappedUser == SystemUser, check AD group mappings
-                if (!IsDomainUser)
-                {
-                    return MappedUser;
-                }
-
+                // For users where MappedUser == SystemUser, check effective user via sys.user_token
+                // This shows the actual security token, which includes group-based access
                 string effectiveUserQuery = @"
-                    SELECT TOP 1 dp.name AS EffectiveUser
-                    FROM sys.database_principals dp
-                    WHERE dp.sid IN (
-                        SELECT sp.sid 
-                        FROM master.sys.server_principals sp
-                        WHERE sp.type = 'G' 
-                        AND IS_MEMBER(sp.name) = 1
-                    )
-                    AND dp.type IN ('U', 'S', 'G')
-                    AND dp.name NOT IN ('guest', 'public')
-                    ORDER BY dp.name;";
+                    SELECT TOP 1 name
+                    FROM sys.user_token
+                    WHERE name NOT IN ('public')
+                    AND type NOT IN ('ROLE', 'SERVER ROLE')
+                    AND principal_id > 0
+                    ORDER BY principal_id;";
 
                 object result = _queryService.ExecuteScalar(effectiveUserQuery);
                 
@@ -171,7 +159,7 @@ namespace MSSQLand.Services
                     return result.ToString();
                 }
 
-                // No group mapping found, return the mapped user
+                // No token entry found, return the mapped user
                 return MappedUser;
             }
             catch (Exception ex)
