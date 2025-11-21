@@ -65,6 +65,28 @@ namespace MSSQLand.Actions.Execution
                 Logger.Warning("The command executed but returned no results.");
                 return outputLines;
             }
+            catch (SqlException ex)
+            {
+                // Handle specific xp_cmdshell proxy account error
+                if (ex.Message.Contains("xp_cmdshell_proxy_account") || ex.Message.Contains("proxy account"))
+                {
+                    Logger.Error("xp_cmdshell proxy account is not configured or invalid.");
+                    Logger.NewLine();
+                    Logger.Info("This error occurs when:");
+                    Logger.InfoNested("1. SQL Server service account lacks permissions to execute the command");
+                    Logger.InfoNested("2. No xp_cmdshell proxy credential is configured");
+                    Logger.NewLine();
+                    Logger.Info("To fix this, a sysadmin must configure a proxy account:");
+                    Logger.InfoNested("EXEC sp_xp_cmdshell_proxy_account 'DOMAIN\\User', 'Password';");
+                    Logger.NewLine();
+                    Logger.Info("Or grant the SQL Server service account appropriate Windows permissions.");
+                }
+                else
+                {
+                    Logger.Error($"SQL Error executing xp_cmdshell: {ex.Message}");
+                }
+                return null;
+            }
             catch (Exception ex)
             {
                 Logger.Error($"Error executing xp_cmdshell: {ex.Message}");
