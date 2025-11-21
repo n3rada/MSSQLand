@@ -11,6 +11,12 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(Position = 0, ShortName = "t", LongName = "table", Required = true, Description = "Table name or FQTN (database.schema.table)")]
         private string _fqtn; // Store the full qualified table name argument
 
+        [ArgumentMetadata(Position = 1, Description = "Maximum number of rows to retrieve (positional or use /l)")]
+        private int _limit = 0; // 0 = no limit
+
+        [ArgumentMetadata(Position = 2, ShortName = "o", LongName = "offset", Description = "Number of rows to skip (default: 0)")]
+        private int _offset = 0;
+
         [ExcludeFromArguments]
         private string _database;
         
@@ -80,14 +86,43 @@ namespace MSSQLand.Actions.Database
             }
             
             Logger.TaskNested($"Retrieving rows from {targetTable}");
+            
+            if (_offset > 0 || _limit > 0)
+            {
+                if (_offset > 0)
+                    Logger.TaskNested($"Skipping {_offset} row(s)");
+                if (_limit > 0)
+                    Logger.TaskNested($"Limiting to {_limit} row(s)");
+            }
 
-            DataTable rows = databaseContext.QueryService.ExecuteTable($"SELECT * FROM {targetTable};");
+            // Build query with optional TOP and OFFSET/FETCH
+            string query = $"SELECT";
+            
+            if (_limit > 0 && _offset == 0)
+            {
+                // Use TOP when no offset
+                query += $" TOP ({_limit})";
+            }
+            
+            query += $" * FROM {targetTable}";
+            
+            if (_offset > 0)
+            {
+                // Use OFFSET/FETCH when offset is specified
+                query += " ORDER BY (SELECT NULL)"; // Dummy ORDER BY to enable OFFSET/FETCH
+                query += $" OFFSET {_offset} ROWS";
+                
+                if (_limit > 0)
+                    query += $" FETCH NEXT {_limit} ROWS ONLY";
+            }
 
+            query += ";";
+
+            DataTable rows = databaseContext.QueryService.ExecuteTable(query);
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(rows));
 
             return rows;
-
         }
     }
 }
