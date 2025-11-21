@@ -30,6 +30,7 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             { "info", (typeof(Info), "Retrieve detailed information about the SQL Server instance.") },
             { "whoami", (typeof(Whoami), "Display current user context, roles, and accessible databases.") },
+            { "authtoken", (typeof(AuthToken), "Display all groups from the Windows authentication token (AD, BUILTIN, NT AUTHORITY, etc.).") },
             { "databases", (typeof(Databases), "List all available databases.") },
             { "tables", (typeof(Tables), "List all tables in a specified database.") },
             { "rows", (typeof(Rows), "Retrieve and display rows from a specified table.") },
@@ -52,7 +53,7 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             { "ad-domain", (typeof(AdDomain), "Retrieve the domain SID using DEFAULT_DOMAIN() and SUSER_SID().") },
             { "ad-sid", (typeof(AdSid), "Retrieve the current user's SID using SUSER_SID().") },
-            { "ad-groups", (typeof(AdGroups), "Retrieve Active Directory group memberships for the current user using xp_logininfo.") },
+            { "ad-groups", (typeof(AdGroups), "Retrieve Active Directory domain groups with SQL Server principals that the user is a member of.") },
             { "ridcycle", (typeof(RidCycle), "Enumerate domain users by RID cycling using SUSER_SNAME().") },
             { "ad-members", (typeof(AdMembers), "Retrieve members of an Active Directory group (e.g., DOMAIN\\Domain Admins).") },
             

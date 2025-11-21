@@ -8,7 +8,9 @@ using System.Data;
 namespace MSSQLand.Actions.Domain
 {
     /// <summary>
-    /// Retrieves Active Directory group memberships for the current user using xp_logininfo.
+    /// Retrieves Active Directory group memberships that have SQL Server principals.
+    /// Uses IS_MEMBER to check membership, works on both direct connections and linked servers.
+    /// For all Windows token groups (including non-AD), use the AuthToken action instead.
     /// </summary>
     internal class AdGroups : BaseAction
     {
@@ -19,7 +21,7 @@ namespace MSSQLand.Actions.Domain
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Retrieving Active Directory group memberships");
+            Logger.Task("Retrieving Active Directory groups with SQL Server access");
 
             try
             {
@@ -32,70 +34,49 @@ namespace MSSQLand.Actions.Domain
 
                 var groupNames = new List<string>();
 
-                // Try sys.login_token first (direct connections)
-                try
+                // Query all AD groups from server principals and check membership with IS_MEMBER
+                Logger.Info("Checking Active Directory group memberships via IS_MEMBER");
+                Logger.InfoNested("Only showing AD domain groups that exist as SQL Server principals");
+                Logger.InfoNested("For all Windows token groups (BUILTIN, NT AUTHORITY, etc.), use 'authtoken' action");
+                
+                string groupsQuery = @"
+                    SELECT name
+                    FROM master.sys.server_principals
+                    WHERE type = 'G'
+                    AND name LIKE '%\%'
+                    AND name NOT LIKE 'BUILTIN\%'
+                    AND name NOT LIKE 'NT AUTHORITY\%'
+                    AND name NOT LIKE 'NT SERVICE\%'
+                    AND name NOT LIKE '##%'
+                    ORDER BY name;";
+
+                var serverGroups = databaseContext.QueryService.ExecuteTable(groupsQuery);
+
+                foreach (System.Data.DataRow row in serverGroups.Rows)
                 {
-                    string tokenQuery = @"
-                        SELECT DISTINCT name
-                        FROM sys.login_token
-                        WHERE type = 'WINDOWS GROUP'
-                        ORDER BY name;";
+                    string groupName = row["name"].ToString();
 
-                    var tokenTable = databaseContext.QueryService.ExecuteTable(tokenQuery);
-
-                    if (tokenTable.Rows.Count > 0)
+                    try
                     {
-                        Logger.Info("Retrieving groups from Windows Authentication Token");
-                        Logger.InfoNested("These are ALL groups in your Windows token (including those without SQL Server access)");
-                        
-                        foreach (System.Data.DataRow row in tokenTable.Rows)
+                        string memberCheckQuery = $"SELECT IS_MEMBER('{groupName.Replace("'", "''")}');";
+                        object result = databaseContext.QueryService.ExecuteScalar(memberCheckQuery);
+
+                        if (result != null && result != DBNull.Value && Convert.ToInt32(result) == 1)
                         {
-                            string groupName = row["name"].ToString();
                             groupNames.Add(groupName);
                         }
                     }
-                    else
+                    catch
                     {
-                        // Linked server or token unavailable - fall back to IS_MEMBER
-                        Logger.Info("Retrieving groups via IS_MEMBER (linked server or token unavailable)");
-                        Logger.InfoNested("Only groups with SQL Server principals will be shown");
-                        
-                        string groupsQuery = @"
-                            SELECT name
-                            FROM master.sys.server_principals
-                            WHERE type = 'G'
-                            AND name LIKE '%\%'
-                            AND name NOT LIKE '##%'
-                            ORDER BY name;";
-
-                        var serverGroups = databaseContext.QueryService.ExecuteTable(groupsQuery);
-
-                        foreach (System.Data.DataRow row in serverGroups.Rows)
-                        {
-                            string groupName = row["name"].ToString();
-
-                            try
-                            {
-                                string memberCheckQuery = $"SELECT IS_MEMBER('{groupName.Replace("'", "''")}');";
-                                object result = databaseContext.QueryService.ExecuteScalar(memberCheckQuery);
-
-                                if (result != null && result != DBNull.Value && Convert.ToInt32(result) == 1)
-                                {
-                                    groupNames.Add(groupName);
-                                }
-                            }
-                            catch
-                            {
-                                // IS_MEMBER might fail for some groups
-                            }
-                        }
+                        // IS_MEMBER might fail for some groups, skip silently
                     }
                 }
-                catch (Exception ex)
-                {
-                    Logger.Error($"Error retrieving AD groups: {ex.Message}");
-                    return null;
-                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error retrieving AD groups: {ex.Message}");
+                return null;
+            }
 
                 if (groupNames.Count == 0)
                 {
