@@ -84,7 +84,7 @@
     <Compile Include="Actions\Database\RoleMembers.cs" />
     <Compile Include="Actions\Domain\AdGroups.cs" />
     <Compile Include="Actions\Domain\AdDomain.cs" />
-    <Compile Include="Actions\Domain\LoginMap.cs" />
+    <Compile Include="Actions\Database\LoginMap.cs" />
     <Compile Include="Actions\Domain\AdSid.cs" />
     <Compile Include="Actions\Domain\AdMembers.cs" />
     <Compile Include="Actions\Domain\RidCycle.cs" />
