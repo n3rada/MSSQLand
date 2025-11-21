@@ -47,21 +47,16 @@ namespace MSSQLand.Actions.Database
                 return null;
             }
 
-            string filterInfo = string.IsNullOrWhiteSpace(LoginFilter) 
-                ? "all logins" 
-                : $"login '{LoginFilter}'";
-            Logger.Task($"Mapping server logins to database users across all accessible databases ({filterInfo})");
+            Logger.Task("Mapping server logins to database users across all accessible databases");
             Logger.NewLine();
 
             string query = @"
-                DECLARE @loginFilter NVARCHAR(128) = " + (string.IsNullOrWhiteSpace(LoginFilter) ? "NULL" : $"'{LoginFilter.Replace("'", "''")}'") + @";
                 DECLARE @mapping TABLE (
                     [Database] NVARCHAR(128),
                     [Server Login] NVARCHAR(128),
                     [Login Type] NVARCHAR(60),
                     [Database User] NVARCHAR(128),
                     [User Type] NVARCHAR(60),
-                    [Has DB Access] BIT,
                     [Orphaned] BIT
                 );
 
@@ -79,27 +74,25 @@ namespace MSSQLand.Actions.Database
 
                 WHILE @@FETCH_STATUS = 0
                 BEGIN
-                    SET @sql = N'USE [' + @dbname + N'];
-                    INSERT INTO @mapping
+                    SET @sql = N'
                     SELECT 
                         ''' + @dbname + ''' AS [Database],
-                        sp.name AS [Server Login],
-                        sp.type_desc AS [Login Type],
+                        ISNULL(sp.name, ''<Orphaned>'') AS [Server Login],
+                        ISNULL(sp.type_desc, ''N/A'') AS [Login Type],
                         dp.name AS [Database User],
                         dp.type_desc AS [User Type],
-                        HAS_DBACCESS(''' + @dbname + ''') AS [Has DB Access],
                         CASE 
                             WHEN sp.sid IS NULL THEN 1
                             ELSE 0
                         END AS [Orphaned]
-                    FROM sys.database_principals dp
+                    FROM [' + @dbname + '].sys.database_principals dp
                     LEFT JOIN master.sys.server_principals sp ON dp.sid = sp.sid
                     WHERE dp.type IN (''S'', ''U'', ''G'', ''E'', ''X'')
                     AND dp.name NOT LIKE ''##%''
-                    AND dp.name NOT IN (''guest'', ''INFORMATION_SCHEMA'', ''sys'')
-                    AND (@loginFilter IS NULL OR sp.name = @loginFilter OR dp.name = @loginFilter)';  -- Filter by login or user name
+                    AND dp.name NOT IN (''guest'', ''INFORMATION_SCHEMA'', ''sys'')';
                     
                     BEGIN TRY
+                        INSERT INTO @mapping
                         EXEC sp_executesql @sql;
                     END TRY
                     BEGIN CATCH
@@ -121,15 +114,32 @@ namespace MSSQLand.Actions.Database
 
                 if (results.Rows.Count == 0)
                 {
-                    string msg = string.IsNullOrWhiteSpace(LoginFilter)
-                        ? "No login-to-user mappings found"
-                        : $"No mappings found for login '{LoginFilter}'";
-                    Logger.Warning(msg);
+                    Logger.Warning("No login-to-user mappings found");
                     return null;
                 }
 
-                // Sort by security importance: orphaned users first, then by login privilege
-                var sortedRows = results.AsEnumerable()
+                // Apply C# filtering if login filter specified
+                var filteredRows = results.AsEnumerable();
+                
+                if (!string.IsNullOrWhiteSpace(LoginFilter))
+                {
+                    filteredRows = filteredRows.Where(row => 
+                        row["Server Login"].ToString().Equals(LoginFilter, StringComparison.OrdinalIgnoreCase) ||
+                        row["Database User"].ToString().Equals(LoginFilter, StringComparison.OrdinalIgnoreCase)
+                    );
+                    
+                    if (!filteredRows.Any())
+                    {
+                        Logger.Warning($"No mappings found for login '{LoginFilter}'");
+                        return null;
+                    }
+                    
+                    Logger.Info($"Filtered for login: '{LoginFilter}'");
+                    Logger.NewLine();
+                }
+
+                // Sort by security importance: orphaned users first, then by database
+                var sortedRows = filteredRows
                     .OrderByDescending(row => Convert.ToBoolean(row["Orphaned"]))
                     .ThenBy(row => row["Database"].ToString())
                     .ThenBy(row => row["Server Login"].ToString());
@@ -141,7 +151,8 @@ namespace MSSQLand.Actions.Database
                 int orphanedUsers = sortedResults.AsEnumerable().Count(r => Convert.ToBoolean(r["Orphaned"]));
                 int mismatchedNames = sortedResults.AsEnumerable()
                     .Count(r => !Convert.ToBoolean(r["Orphaned"]) && 
-                                r["Server Login"].ToString() != r["Database User"].ToString());
+                                r["Server Login"].ToString() != r["Database User"].ToString() &&
+                                r["Server Login"].ToString() != "<Orphaned>");
 
                 Console.WriteLine(OutputFormatter.ConvertDataTable(sortedResults));
 
