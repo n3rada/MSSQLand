@@ -107,13 +107,18 @@ namespace MSSQLand.Actions.Database
 
             string query = @"
                 SELECT 
-                    SCHEMA_NAME(schema_id) AS schema_name,
-                    name AS procedure_name,
-                    USER_NAME(OBJECTPROPERTY(object_id, 'OwnerId')) AS owner,
-                    create_date,
-                    modify_date
-                FROM sys.procedures
-                ORDER BY schema_name ASC, procedure_name ASC, modify_date DESC;";
+                    SCHEMA_NAME(p.schema_id) AS schema_name,
+                    p.name AS procedure_name,
+                    USER_NAME(OBJECTPROPERTY(p.object_id, 'OwnerId')) AS owner,
+                    CASE 
+                        WHEN m.execute_as_principal_id IS NULL THEN 'CALLER'
+                        WHEN m.execute_as_principal_id = -2 THEN 'OWNER'
+                        ELSE COALESCE(USER_NAME(m.execute_as_principal_id), 'CALLER')
+                    END AS execution_context,
+                    p.create_date,
+                    p.modify_date
+                FROM sys.procedures p
+                INNER JOIN sys.sql_modules m ON p.object_id = m.object_id;";
 
             DataTable procedures = databaseContext.QueryService.ExecuteTable(query);
 
@@ -122,6 +127,19 @@ namespace MSSQLand.Actions.Database
                 Logger.Warning("No stored procedures found.");
                 return procedures;
             }
+
+            // Sort in C#: specific users first, then CALLER/OWNER, then by schema/name
+            var sortedRows = procedures.AsEnumerable()
+                .OrderBy(row => 
+                {
+                    string execContext = row["execution_context"].ToString();
+                    return (execContext == "CALLER" || execContext == "OWNER") ? 1 : 0;
+                })
+                .ThenBy(row => row["schema_name"].ToString())
+                .ThenBy(row => row["procedure_name"].ToString())
+                .ThenByDescending(row => row["modify_date"]);
+
+            DataTable sortedProcedures = sortedRows.CopyToDataTable();
 
             // Get all permissions in a single query
             string allPermissionsQuery = @"
@@ -152,10 +170,10 @@ namespace MSSQLand.Actions.Database
             }
 
             // Add a column for permissions
-            procedures.Columns.Add("Permissions", typeof(string));
+            sortedProcedures.Columns.Add("Permissions", typeof(string));
 
             // Map permissions to procedures
-            foreach (DataRow row in procedures.Rows)
+            foreach (DataRow row in sortedProcedures.Rows)
             {
                 string schemaName = row["schema_name"].ToString();
                 string procedureName = row["procedure_name"].ToString();
@@ -171,12 +189,12 @@ namespace MSSQLand.Actions.Database
                 }
             }
 
-            Console.WriteLine(OutputFormatter.ConvertDataTable(procedures));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(sortedProcedures));
 
             Logger.NewLine();
-            Logger.Info($"Total: {procedures.Rows.Count} stored procedure(s) found");
+            Logger.Info($"Total: {sortedProcedures.Rows.Count} stored procedure(s) found");
 
-            return procedures;
+            return sortedProcedures;
         }
 
         /// <summary>
