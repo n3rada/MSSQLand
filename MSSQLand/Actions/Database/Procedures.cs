@@ -94,7 +94,7 @@ namespace MSSQLand.Actions.Database
             }
 
             Logger.Warning("Execution context: stored procedures run under CALLER by default (unless created WITH EXECUTE AS).");
-            Logger.WarningNested("https://learn.microsoft.com/en-us/sql/t-sql/language-elements/execute-transact-sql")
+            Logger.WarningNested("https://learn.microsoft.com/en-us/sql/t-sql/language-elements/execute-transact-sql");
         }
 
         /// <summary>
