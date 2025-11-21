@@ -120,7 +120,7 @@ namespace MSSQLand
                     Logger.InfoNested($"Mapped to the user {userName}");
                     
                     effectiveUser = databaseContext.UserService.EffectiveUser;
-                    string sourcePrincipal = databaseContext.UserService.SourcePrincipal;
+                    sourcePrincipal = databaseContext.UserService.SourcePrincipal;
                     
                     if (!effectiveUser.Equals(userName, StringComparison.OrdinalIgnoreCase))
                     {
