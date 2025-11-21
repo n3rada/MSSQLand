@@ -80,7 +80,9 @@ namespace MSSQLand.Actions.Network
             {
                 Logger.NewLine();
                 string remoteServer = row["Link"].ToString();
-                string localLogin = row["Local Login"].ToString();
+                string localLogin = row["Local Login"] == DBNull.Value || string.IsNullOrEmpty(row["Local Login"].ToString()) 
+                    ? "<Current Context>" 
+                    : row["Local Login"].ToString();
 
                 Guid chainId = Guid.NewGuid();
                 _serverMapping[chainId] = new List<Dictionary<string, string>>();
@@ -114,19 +116,37 @@ namespace MSSQLand.Actions.Network
             {
                 List<Dictionary<string, string>> chainMapping = chainEntry.Value;
                 List<string> formattedLines = new() { initialServerEntry };
+                List<string> chainParts = new();
 
                 foreach (var entry in chainMapping)
                 {
                     string serverName = entry["ServerName"];
                     string loggedIn = entry["LoggedIn"];
                     string mapped = entry["Mapped"];
-                    string impersonatedUser = entry["ImpersonatedUser"];
+                    string impersonatedUser = entry["ImpersonatedUser"].Trim();
 
                     formattedLines.Add($"-{impersonatedUser}-> {serverName} ({loggedIn} [{mapped}])");
+                    
+                    // Build chain command
+                    if (impersonatedUser != "-")
+                    {
+                        chainParts.Add($"{serverName}:{impersonatedUser}");
+                    }
+                    else
+                    {
+                        chainParts.Add(serverName);
+                    }
                 }
 
                 Console.WriteLine();
                 Console.WriteLine(string.Join(" ", formattedLines));
+                
+                // Show command to reproduce this chain
+                if (chainParts.Count > 0)
+                {
+                    string chainCommand = $"/l:{string.Join(",", chainParts)}";
+                    Logger.Info($"To use this chain: {chainCommand}");
+                }
             }
 
             return _serverMapping;
@@ -164,7 +184,8 @@ namespace MSSQLand.Actions.Network
 
                 string impersonatedUser = null;
 
-                if (systemUser != expectedLocalLogin)
+                // Only attempt impersonation if expected login is not current context and doesn't match current user
+                if (expectedLocalLogin != "<Current Context>" && systemUser != expectedLocalLogin)
                 {
                     Logger.TaskNested($"Current user '{systemUser}' does not match expected local login '{expectedLocalLogin}'");
                     Logger.TaskNested("Attempting impersonation");
@@ -185,14 +206,19 @@ namespace MSSQLand.Actions.Network
                         return;
                     }
                 }
+                else if (expectedLocalLogin == "<Current Context>")
+                {
+                    Logger.TaskNested("Linked server uses current security context (no explicit login mapping)");
+                }
 
                 // Update the linked server chain
                 databaseContext.QueryService.LinkedServers.AddToChain(targetServer);
                 databaseContext.QueryService.ExecutionServer = targetServer;
 
+                // Query user info THROUGH the linked server chain
                 var (mappedUser, remoteLoggedInUser) = databaseContext.UserService.GetInfo();
 
-                // Create ServerExecutionState for loop detection
+                // Create ServerExecutionState for loop detection - this now queries through the chain
                 ServerExecutionState currentState = ServerExecutionState.FromContext(
                     targetServer, 
                     databaseContext.UserService
@@ -326,7 +352,7 @@ namespace MSSQLand.Actions.Network
             string query = @"
         SELECT 
             srv.name AS [Link], 
-            COALESCE(prin.name, 'N/A') AS [Local Login],
+            prin.name AS [Local Login],
             ll.remote_name AS [Remote Login]
         FROM master.sys.servers srv
         LEFT JOIN master.sys.linked_logins ll 
