@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(Position = 0, Description = "Mode: list, exec, read, search, or sqli (default: list)")]
         private Mode _mode = Mode.List;
         
-        [ArgumentMetadata(Position = 1, Description = "Stored procedure name (required for exec/read) or search keyword (required for search)")]
+        [ArgumentMetadata(Position = 1, Description = "Stored procedure name as schema.procedure (required for exec/read) or search keyword (required for search)")]
         private string? _procedureName;
         
         [ArgumentMetadata(Position = 2, Description = "Procedure arguments (optional for exec)")]
@@ -42,20 +42,22 @@ namespace MSSQLand.Actions.Database
                 case "exec":
                     if (parts.Length < 2)
                     {
-                        throw new ArgumentException("Missing procedure name. Example: /a:procedures exec sp_GetUsers 'param1, param2'");
+                        throw new ArgumentException("Missing procedure name. Example: /a:procedures exec dbo.sp_GetUsers 'param1, param2'");
                     }
                     _mode = Mode.Exec;
                     _procedureName = parts[1];
+                    ValidateProcedureFormat(_procedureName);
                     _procedureArgs = parts.Length > 2 ? parts[2] : "";  // Store arguments if provided
                     break;
 
                 case "read":
                     if (parts.Length < 2)
                     {
-                        throw new ArgumentException("Missing procedure name for reading definition.");
+                        throw new ArgumentException("Missing procedure name for reading definition. Example: /a:procedures read dbo.sp_GetUsers");
                     }
                     _mode = Mode.Read;
                     _procedureName = parts[1];
+                    ValidateProcedureFormat(_procedureName);
                     break;
 
                 case "search":
@@ -73,6 +75,17 @@ namespace MSSQLand.Actions.Database
 
                 default:
                     throw new ArgumentException("Invalid mode. Use 'list', 'exec <StoredProcedureName>', 'read <StoredProcedureName>', 'search <keyword>', or 'sqli'");
+            }
+        }
+
+        /// <summary>
+        /// Validates that procedure name is in schema.procedure format.
+        /// </summary>
+        private void ValidateProcedureFormat(string procedureName)
+        {
+            if (string.IsNullOrEmpty(procedureName) || !procedureName.Contains("."))
+            {
+                throw new ArgumentException($"Procedure name must be in 'schema.procedure' format. Got: '{procedureName}'");
             }
         }
 
@@ -211,9 +224,11 @@ namespace MSSQLand.Actions.Database
         private DataTable ExecuteProcedure(DatabaseContext databaseContext, string procedureName, string procedureArgs)
         {
             Logger.Task($"Executing stored procedure: {procedureName}");
-            Logger.TaskNested($"With arguments: {procedureArgs}");
+            if (!string.IsNullOrEmpty(procedureArgs))
+                Logger.TaskNested($"With arguments: {procedureArgs}");
 
-            string query = $"EXEC {procedureName} {procedureArgs};";
+            // Use schema-qualified name in EXEC
+            string query = $"EXEC [{procedureName.Replace(".", "].["}] {procedureArgs};";
 
             try
             {
@@ -239,12 +254,20 @@ namespace MSSQLand.Actions.Database
             Logger.NewLine();
             Logger.Task($"Retrieving definition of stored procedure: {procedureName}");
 
+            // Parse schema.procedure format
+            string[] parts = procedureName.Split('.');
+            string schema = parts[0];
+            string procedure = parts[1];
+
             string query = $@"
                 SELECT 
                     m.definition
                 FROM sys.sql_modules AS m
                 INNER JOIN sys.objects AS o ON m.object_id = o.object_id
-                WHERE o.type = 'P' AND o.name = '{procedureName}';";
+                INNER JOIN sys.schemas AS s ON o.schema_id = s.schema_id
+                WHERE o.type = 'P' 
+                AND o.name = '{procedure.Replace("'", "''")}'
+                AND s.name = '{schema.Replace("'", "''")}'";
 
             try
             {
