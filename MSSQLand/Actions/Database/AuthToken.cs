@@ -35,13 +35,15 @@ namespace MSSQLand.Actions.Database
                 // Query sys.login_token for all groups
                 string tokenQuery = @"
                     SELECT DISTINCT 
-                        name,
-                        type_desc,
-                        usage_desc,
-                        principal_id
-                    FROM sys.login_token
-                    WHERE type = 'WINDOWS GROUP'
-                    ORDER BY name;";
+                        lt.name,
+                        lt.type_desc,
+                        lt.usage_desc,
+                        lt.principal_id,
+                        sp.name AS sql_principal_name
+                    FROM sys.login_token lt
+                    LEFT JOIN master.sys.server_principals sp ON lt.principal_id = sp.principal_id
+                    WHERE lt.type = 'WINDOWS GROUP'
+                    ORDER BY lt.name;";
 
                 var tokenTable = databaseContext.QueryService.ExecuteTable(tokenQuery);
 
@@ -63,13 +65,16 @@ namespace MSSQLand.Actions.Database
                     // Determine group category
                     string category = DetermineGroupCategory(groupName);
 
+                    // Get SQL Server principal name from the joined query
+                    string sqlPrincipal = row["sql_principal_name"] == DBNull.Value ? "-" : row["sql_principal_name"].ToString();
+
                     groups.Add(new Dictionary<string, string>
                     {
                         { "Group Name", groupName },
                         { "Category", category },
                         { "Type", typeDesc },
                         { "Usage", usageDesc },
-                        { "Has SQL Principal", principalId > 0 ? "Yes" : "No" }
+                        { "SQL Principal", sqlPrincipal }
                     });
                 }
 
@@ -79,7 +84,7 @@ namespace MSSQLand.Actions.Database
                 resultTable.Columns.Add("Category", typeof(string));
                 resultTable.Columns.Add("Type", typeof(string));
                 resultTable.Columns.Add("Usage", typeof(string));
-                resultTable.Columns.Add("Has SQL Principal", typeof(string));
+                resultTable.Columns.Add("SQL Principal", typeof(string));
 
                 foreach (var group in groups)
                 {
@@ -88,7 +93,7 @@ namespace MSSQLand.Actions.Database
                         group["Category"],
                         group["Type"],
                         group["Usage"],
-                        group["Has SQL Principal"]
+                        group["SQL Principal"]
                     );
                 }
 
