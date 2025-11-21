@@ -228,10 +228,9 @@ namespace MSSQLand.Services
             {
                 // Try sys.login_token first (works for direct connections)
                 string tokenQuery = @"
-                    SELECT name
+                    SELECT DISTINCT name
                     FROM sys.login_token
                     WHERE type = 'WINDOWS GROUP'
-                    AND principal_id > 0
                     ORDER BY name;";
 
                 var tokenTable = _queryService.ExecuteTable(tokenQuery);
