@@ -29,13 +29,13 @@ namespace MSSQLand.Actions.Database
         {
             bool isAzureSQL = databaseContext.QueryService.IsAzureSQL();
             string databaseUsersQuery;
-
+            
+            Logger.NewLine();
             if (isAzureSQL)
             {
                 // Azure SQL Database: Only show database users (no server-level principals access)
                 Logger.Info("Enumerating database users in current database context");
                 Logger.InfoNested("Note: Server-level principals not accessible on Azure SQL Database");
-                Logger.NewLine();
 
                 databaseUsersQuery = @"
                     SELECT name AS username, create_date, modify_date, type_desc AS type, 
@@ -50,11 +50,10 @@ namespace MSSQLand.Actions.Database
                 return null;
             }
 
+
             // On-premises SQL Server: Show server logins and database users
             Logger.Info("Enumerating server-level principals (logins) and their instance-wide server roles");
             Logger.InfoNested("Note: Use 'roles' action to see database-level role memberships");
-            Logger.NewLine();
-
             string query = @"
                 SELECT 
                     sp.name AS Name, 
@@ -73,7 +72,6 @@ namespace MSSQLand.Actions.Database
             DataTable rawTable = databaseContext.QueryService.ExecuteTable(query);
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(rawTable));
-            Logger.NewLine();
 
             Logger.Info("Database users in current database context");
 
