@@ -143,18 +143,6 @@ namespace MSSQLand
                             Logger.InfoNested($"Access granted via: {sourcePrincipal}");
                         }
                     }
-
-                    // Check for group-based access on linked server as well
-                    if (userName.Equals(systemUser, StringComparison.OrdinalIgnoreCase) && 
-                        databaseContext.UserService.IsDomainUser)
-                    {
-                        var adGroups = databaseContext.UserService.GetUserAdGroups();
-                        if (adGroups.Count > 0)
-                        {
-                            Logger.InfoNested("Access granted through Active Directory group membership (no direct login)");
-                            Logger.InfoNested($"Authorized via {adGroups.Count} AD group(s): {string.Join(", ", adGroups)}");
-                        }
-                    }
                 }
 
                 // Compute and display the final execution context
