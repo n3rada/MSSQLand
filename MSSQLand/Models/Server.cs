@@ -6,7 +6,9 @@ using System;
 namespace MSSQLand.Models
 {
     /// <summary>
-    /// Represents a SQL Server with optional impersonation user.
+    /// Represents a SQL Server connection configuration.
+    /// This class contains static connection information (hostname, port, database, etc.)
+    /// For runtime execution state (users, privileges), see ServerExecutionState.
     /// </summary>
     public class Server
     {
@@ -54,7 +56,14 @@ namespace MSSQLand.Models
         /// </summary>
         public string ImpersonationUser { get; set; }
 
+        /// <summary>
+        /// The mapped database user (runtime state, populated by UserService).
+        /// </summary>
         public string MappedUser { get; set; }
+        
+        /// <summary>
+        /// The system login user (runtime state, populated by UserService).
+        /// </summary>
         public string SystemUser { get; set; }
 
         /// <summary>

@@ -125,6 +125,7 @@
     <Compile Include="Models\CommandArgs.cs" />
     <Compile Include="Models\LinkedServers.cs" />
     <Compile Include="Models\Server.cs" />
+    <Compile Include="Models\ServerExecutionState.cs" />
     <Compile Include="Services\Authentication\AuthenticationService.cs" />
     <Compile Include="Services\ConfigurationService.cs" />
     <Compile Include="Services\DatabaseContext.cs" />
