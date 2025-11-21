@@ -118,7 +118,6 @@ namespace MSSQLand.Services
             this.SystemUser = systemUser;
             
             // Compute effective user (handles group-based access)
-            // Safe to call now since DataReader is closed
             this.EffectiveUser = GetEffectiveDatabaseUser();
 
             return (mappedUser, systemUser);
@@ -128,43 +127,46 @@ namespace MSSQLand.Services
         /// The SQL user that SQL Server resolved me to in this database context.
         /// This handles cases where access is granted through AD group membership
         /// rather than direct login mapping (e.g., DOMAIN\User -> AD Group -> Database User).
-        /// Must be called per database context as mappings differ between databases.
+        /// This is the authorization identity.
         /// </summary>
-        /// <returns>The effective database user name, or the mapped user if no group mapping found.</returns>
         private string GetEffectiveDatabaseUser()
         {
             try
             {
-                // If there's a direct mapping (MappedUser != SystemUser), use it
-                // This includes guest, dbo, or any other direct mapping
-                if (!MappedUser.Equals(SystemUser, StringComparison.OrdinalIgnoreCase))
-                {
-                    return MappedUser;
-                }
-
-                // For users where MappedUser == SystemUser, check effective user via sys.user_token
-                // This shows the actual security token, which includes group-based access
-                string effectiveUserQuery = @"
-                    SELECT TOP 1 name
+                // Retrieve all user_token entries
+                string query = @"
+                    SELECT principal_id, name, type
                     FROM sys.user_token
-                    WHERE name NOT IN ('public')
+                    WHERE name <> 'public'
                     AND type NOT IN ('ROLE', 'SERVER ROLE')
                     AND principal_id > 0
-                    ORDER BY principal_id;";
+                    ORDER BY principal_id;
+                ";
 
-                object result = _queryService.ExecuteScalar(effectiveUserQuery);
-                
-                if (result != null && result != DBNull.Value)
+                var table = _queryService.ExecuteTable(query);
+
+                if (table == null || table.Rows.Count == 0)
+                    return MappedUser; // fallback
+
+                // First viable entry = effective user
+                foreach (DataRow row in table.Rows)
                 {
-                    return result.ToString();
+                    string name = row["name"].ToString();
+                    string type = row["type"].ToString();
+
+                    if (!string.IsNullOrEmpty(name) &&
+                        (type == "WINDOWS GROUP" || type == "WINDOWS LOGIN" || type == "SQL_USER"))
+                    {
+                        return name;
+                    }
                 }
 
-                // No token entry found, return the mapped user
+                // Fallback if no identity found
                 return MappedUser;
             }
             catch (Exception ex)
             {
-                Logger.Warning($"Error determining effective database user: {ex.Message}");
+                Logger.Warning($"Error determining effective user: {ex.Message}");
                 return MappedUser;
             }
         }
