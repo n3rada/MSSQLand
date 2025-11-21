@@ -211,6 +211,7 @@ namespace MSSQLand.Actions.Database
         private DataTable ExecuteProcedure(DatabaseContext databaseContext, string procedureName, string procedureArgs)
         {
             Logger.Task($"Executing stored procedure: {procedureName}");
+            Logger.TaskNested($"With arguments: {procedureArgs}");
 
             string query = $"EXEC {procedureName} {procedureArgs};";
 
