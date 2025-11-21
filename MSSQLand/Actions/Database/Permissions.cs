@@ -144,24 +144,37 @@ namespace MSSQLand.Actions.Database
                 if (permission == "CONTROL SERVER" || permission == "CONTROL") return 0;
                 
                 // Tier 1: Dangerous execution/impersonation
-                if (permission.Contains("IMPERSONATE") || permission == "EXECUTE") return 1;
+                if (permission.Contains("IMPERSONATE")) return 1;
+                if (permission == "EXECUTE") return 2;
                 
-                // Tier 2: Modification capabilities
-                if (permission == "ALTER" || permission == "ALTER ANY") return 2;
-                if (permission.Contains("ALTER")) return 3;
+                // Tier 2: High-level modification (ALTER is more powerful than CREATE)
+                if (permission == "ALTER ANY DATABASE" || permission == "ALTER ANY USER" || 
+                    permission == "ALTER ANY ROLE" || permission == "ALTER ANY LOGIN") return 3;
+                if (permission.StartsWith("ALTER ANY")) return 4;
+                if (permission == "ALTER") return 5;
+                if (permission.StartsWith("ALTER ")) return 6;
                 
-                // Tier 3: Write operations
-                if (permission == "INSERT" || permission == "UPDATE" || permission == "DELETE") return 4;
-                if (permission.Contains("CREATE")) return 5;
+                // Tier 3: Write operations on data
+                if (permission == "INSERT" || permission == "UPDATE" || permission == "DELETE") return 7;
                 
-                // Tier 4: Read operations
-                if (permission == "SELECT" || permission.Contains("VIEW")) return 6;
+                // Tier 4: Object creation
+                if (permission.StartsWith("CREATE ")) return 8;
                 
-                // Tier 5: References and connections
-                if (permission == "REFERENCES" || permission == "CONNECT") return 7;
+                // Tier 5: Read operations
+                if (permission == "SELECT") return 9;
+                if (permission.Contains("VIEW DEFINITION") || permission.Contains("VIEW DATABASE STATE")) return 10;
+                if (permission.Contains("VIEW")) return 11;
                 
-                // Tier 6: Everything else
-                return 8;
+                // Tier 6: Connection and basic access
+                if (permission == "CONNECT" || permission == "CONNECT SQL") return 12;
+                if (permission.StartsWith("CONNECT ")) return 13;
+                
+                // Tier 7: References and other
+                if (permission == "REFERENCES") return 14;
+                if (permission.Contains("BACKUP")) return 15;
+                
+                // Tier 8: Everything else
+                return 16;
             }
 
             var sortedRows = permissionsTable.AsEnumerable()
