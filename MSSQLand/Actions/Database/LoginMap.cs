@@ -89,7 +89,7 @@ namespace MSSQLand.Actions.Database
                     LEFT JOIN master.sys.server_principals sp ON dp.sid = sp.sid
                     WHERE dp.type IN (''S'', ''U'', ''G'', ''E'', ''X'')
                     AND dp.name NOT LIKE ''##%''
-                    AND dp.name NOT IN (''guest'', ''INFORMATION_SCHEMA'', ''sys'')';
+                    AND dp.name NOT IN (''INFORMATION_SCHEMA'', ''sys'')';
                     
                     BEGIN TRY
                         INSERT INTO @mapping
