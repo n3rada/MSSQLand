@@ -78,6 +78,9 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
+            Logger.Warning("Execution context: stored procedures run under CALLER by default (unless created WITH EXECUTE AS).");
+            Logger.WarningNested("https://learn.microsoft.com/en-us/sql/t-sql/language-elements/execute-transact-sql");
+
             switch (_mode)
             {
                 case Mode.List:
@@ -92,9 +95,6 @@ namespace MSSQLand.Actions.Database
                     Logger.Error("Unknown execution mode.");
                     return null;
             }
-
-            Logger.Warning("Execution context: stored procedures run under CALLER by default (unless created WITH EXECUTE AS).");
-            Logger.WarningNested("https://learn.microsoft.com/en-us/sql/t-sql/language-elements/execute-transact-sql");
         }
 
         /// <summary>
