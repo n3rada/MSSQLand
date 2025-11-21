@@ -15,13 +15,13 @@ namespace MSSQLand.Actions.FileSystem
     /// to enumerate directories and files on the SQL Server filesystem. The output is
     /// formatted to match the Linux 'tree' command style.
     /// 
-    /// The tree representation uses ASCII characters by default for maximum compatibility:
-    /// - |-- for intermediate items
-    /// - \-- for the last item in a directory
-    /// - |   for vertical lines continuing to subdirectories
+    /// The tree representation uses Unicode box-drawing characters by default:
+    /// - ├── for intermediate items
+    /// - └── for the last item in a directory
+    /// - │   for vertical lines continuing to subdirectories
     /// - Indentation to show hierarchy levels
     /// 
-    /// Use /unicode:1 flag to enable Unicode box-drawing characters (?, ?, ?)
+    /// Use /unicode:0 or /u:false flag to fall back to ASCII characters (|, \, |) for legacy terminals
     /// </summary>
     internal class Tree : BaseAction
     {
@@ -34,8 +34,8 @@ namespace MSSQLand.Actions.FileSystem
         [ArgumentMetadata(Position = 2, ShortName = "f", LongName = "files", Description = "Show files (1|0 or true|false)")]
         private bool _showFiles = true;
 
-        [ArgumentMetadata(Position = 3, ShortName = "u", LongName = "unicode", Description = "Use Unicode box-drawing characters instead of ASCII")]
-        private bool _useUnicode = false;
+        [ArgumentMetadata(Position = 3, ShortName = "u", LongName = "unicode", Description = "Use Unicode box-drawing characters (default: true, set to false for ASCII)")]
+        private bool _useUnicode = true;
 
         /// <summary>
         /// Validates the arguments passed to the Tree action.
@@ -87,7 +87,7 @@ namespace MSSQLand.Actions.FileSystem
             // Get Unicode mode flag from named argument or positional argument
             string unicodeStr = GetNamedArgument(namedArgs, "unicode", 
                                 GetNamedArgument(namedArgs, "u", 
-                                GetPositionalArgument(positionalArgs, 3, "false")));
+                                GetPositionalArgument(positionalArgs, 3, "true")));
 
             _useUnicode = unicodeStr.Trim().ToLower() switch
             {
@@ -97,7 +97,7 @@ namespace MSSQLand.Actions.FileSystem
                 "false" => false,
                 "yes" => true,
                 "no" => false,
-                _ => false
+                _ => true
             };
         }
 
@@ -308,21 +308,21 @@ DROP TABLE #TreeResults;
 
                 if (_useUnicode)
                 {
-                    // Unicode box-drawing characters
+                    // Unicode box-drawing characters (default)
                     if (isLastNode)
                     {
-                        connector = "??? ";
+                        connector = "└── ";
                         newPrefix = prefix + "    ";
                     }
                     else
                     {
-                        connector = "??? ";
-                        newPrefix = prefix + "?   ";
+                        connector = "├── ";
+                        newPrefix = prefix + "│   ";
                     }
                 }
                 else
                 {
-                    // ASCII-compatible characters (default for beacon compatibility)
+                    // ASCII-compatible characters (fallback for legacy terminals)
                     if (isLastNode)
                     {
                         connector = "\\-- ";
