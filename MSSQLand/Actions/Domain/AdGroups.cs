@@ -23,7 +23,6 @@ namespace MSSQLand.Actions.Domain
 
             try
             {
-
                 // Check if it's a domain user
                 if (!databaseContext.UserService.IsDomainUser)
                 {
@@ -31,12 +30,76 @@ namespace MSSQLand.Actions.Domain
                     return null;
                 }
 
-                // Use the centralized method from UserService
-                var groupNames = databaseContext.UserService.GetUserAdGroups();
+                var groupNames = new List<string>();
+
+                // Try sys.login_token first (direct connections)
+                try
+                {
+                    string tokenQuery = @"
+                        SELECT DISTINCT name
+                        FROM sys.login_token
+                        WHERE type = 'WINDOWS GROUP'
+                        ORDER BY name;";
+
+                    var tokenTable = databaseContext.QueryService.ExecuteTable(tokenQuery);
+
+                    if (tokenTable.Rows.Count > 0)
+                    {
+                        Logger.Info("Retrieving groups from Windows Authentication Token");
+                        Logger.InfoNested("These are ALL groups in your Windows token (including those without SQL Server access)");
+                        
+                        foreach (System.Data.DataRow row in tokenTable.Rows)
+                        {
+                            string groupName = row["name"].ToString();
+                            groupNames.Add(groupName);
+                        }
+                    }
+                    else
+                    {
+                        // Linked server or token unavailable - fall back to IS_MEMBER
+                        Logger.Info("Retrieving groups via IS_MEMBER (linked server or token unavailable)");
+                        Logger.InfoNested("Only groups with SQL Server principals will be shown");
+                        
+                        string groupsQuery = @"
+                            SELECT name
+                            FROM master.sys.server_principals
+                            WHERE type = 'G'
+                            AND name LIKE '%\%'
+                            AND name NOT LIKE '##%'
+                            ORDER BY name;";
+
+                        var serverGroups = databaseContext.QueryService.ExecuteTable(groupsQuery);
+
+                        foreach (System.Data.DataRow row in serverGroups.Rows)
+                        {
+                            string groupName = row["name"].ToString();
+
+                            try
+                            {
+                                string memberCheckQuery = $"SELECT IS_MEMBER('{groupName.Replace("'", "''")}');";
+                                object result = databaseContext.QueryService.ExecuteScalar(memberCheckQuery);
+
+                                if (result != null && result != DBNull.Value && Convert.ToInt32(result) == 1)
+                                {
+                                    groupNames.Add(groupName);
+                                }
+                            }
+                            catch
+                            {
+                                // IS_MEMBER might fail for some groups
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Error retrieving AD groups: {ex.Message}");
+                    return null;
+                }
 
                 if (groupNames.Count == 0)
                 {
-                    Logger.Warning("User is not a member of any domain groups in SQL Server.");
+                    Logger.Warning("User is not a member of any domain groups.");
                     return null;
                 }
 

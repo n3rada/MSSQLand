@@ -20,10 +20,7 @@ namespace MSSQLand.Services
         /// </summary>
         private readonly ConcurrentDictionary<string, bool> _isDomainUserCache = new();
         
-        /// <summary>
-        /// Dictionary to cache AD group memberships for each execution server.
-        /// </summary>
-        private readonly ConcurrentDictionary<string, List<string>> _adGroupsCache = new();
+
 
         public string MappedUser { get; private set; }
         public string SystemUser { get; private set; }
@@ -126,9 +123,10 @@ namespace MSSQLand.Services
 
         /// <summary>
         /// Gets the effective database user and the source principal (AD group or login) that granted access.
-        /// This handles cases where access is granted through AD group membership
+        /// This handles cases where access is granted through AD group membership.
         /// rather than direct login mapping (e.g., DOMAIN\User -> AD Group -> Database User).
-        /// This is the authorization identity used by SQL Server.
+        /// This use the token from integrated Windows authentication.
+        /// https://learn.microsoft.com/fr-fr/sql/relational-databases/system-catalog-views/sys-login-token-transact-sql
         /// </summary>
         /// <returns>Tuple of (EffectiveUser, SourcePrincipal)</returns>
         private (string EffectiveUser, string SourcePrincipal) GetEffectiveUserAndSource()
@@ -143,16 +141,16 @@ namespace MSSQLand.Services
 
                 // Query user_token to find effective database user and login_token for source
                 string sql = @"
-                    SELECT TOP 1
-                        dp.name AS effective_user,
-                        lt.name AS source_principal
-                    FROM sys.user_token ut
-                    JOIN sys.database_principals dp ON dp.sid = ut.sid
-                    LEFT JOIN sys.login_token lt ON lt.sid = ut.sid
-                    WHERE ut.name <> 'public'
-                    AND ut.type NOT IN ('ROLE', 'SERVER ROLE')
-                    AND dp.principal_id > 0
-                    ORDER BY dp.principal_id;";
+SELECT TOP 1
+    dp.name AS effective_user,
+    lt.name AS source_principal
+FROM sys.user_token ut
+JOIN sys.database_principals dp ON dp.sid = ut.sid
+LEFT JOIN sys.login_token lt ON lt.sid = ut.sid
+WHERE ut.name <> 'public'
+AND ut.type NOT IN ('ROLE', 'SERVER ROLE')
+AND dp.principal_id > 0
+ORDER BY dp.principal_id;";
 
                 var dt = _queryService.ExecuteTable(sql);
 
@@ -197,95 +195,6 @@ namespace MSSQLand.Services
 
             // Username has domain format - it's a Windows user
             return true;
-        }
-
-        /// <summary>
-        /// Retrieves the list of AD groups the current user is a member of.
-        /// Uses sys.login_token which contains the Windows authentication token groups.
-        /// These are the groups authenticated by the domain controller at login time.
-        /// For linked server connections where sys.login_token is unavailable, falls back to
-        /// checking IS_MEMBER against server principals.
-        /// Results are cached per execution server.
-        /// </summary>
-        /// <returns>List of AD group names the user belongs to, or empty list if none found.</returns>
-        public List<string> GetUserAdGroups()
-        {
-            // Check if groups are already cached for the current ExecutionServer
-            if (_adGroupsCache.TryGetValue(_queryService.ExecutionServer, out List<string> cachedGroups))
-            {
-                return cachedGroups;
-            }
-
-            var groups = new List<string>();
-
-            if (string.IsNullOrEmpty(SystemUser) || !IsDomainUser)
-            {
-                _adGroupsCache[_queryService.ExecutionServer] = groups;
-                return groups;
-            }
-
-            try
-            {
-                // Try sys.login_token first (works for direct connections)
-                string tokenQuery = @"
-                    SELECT DISTINCT name
-                    FROM sys.login_token
-                    WHERE type = 'WINDOWS GROUP'
-                    ORDER BY name;";
-
-                var tokenTable = _queryService.ExecuteTable(tokenQuery);
-
-                if (tokenTable.Rows.Count > 0)
-                {
-                    Logger.Debug("Direct connection bound, retrieving AD groups from sys.login_token.");
-                    foreach (System.Data.DataRow row in tokenTable.Rows)
-                    {
-                        string groupName = row["name"].ToString();
-                        groups.Add(groupName);
-                    }
-                }
-                else
-                {
-                    // Linked server or token unavailable - fall back to IS_MEMBER
-                    string groupsQuery = @"
-                        SELECT name
-                        FROM master.sys.server_principals
-                        WHERE type = 'G'
-                        AND name LIKE '%\%'
-                        AND name NOT LIKE '##%'
-                        ORDER BY name;";
-
-                    var serverGroups = _queryService.ExecuteTable(groupsQuery);
-
-                    foreach (System.Data.DataRow row in serverGroups.Rows)
-                    {
-                        string groupName = row["name"].ToString();
-
-                        try
-                        {
-                            string memberCheckQuery = $"SELECT IS_MEMBER('{groupName.Replace("'", "''")}');";
-                            object result = _queryService.ExecuteScalar(memberCheckQuery);
-
-                            if (result != null && result != DBNull.Value && Convert.ToInt32(result) == 1)
-                            {
-                                groups.Add(groupName);
-                            }
-                        }
-                        catch
-                        {
-                            // IS_MEMBER might fail for some groups
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Warning($"Error retrieving AD groups: {ex.Message}");
-            }
-
-            // Cache the result
-            _adGroupsCache[_queryService.ExecutionServer] = groups;
-            return groups;
         }
 
 
