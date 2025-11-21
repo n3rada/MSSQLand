@@ -107,19 +107,6 @@ namespace MSSQLand
                     }
                 }
 
-                // Check if user is mapped to themselves and is a domain user (implies group-based access)
-                if (userName.Equals(systemUser, StringComparison.OrdinalIgnoreCase) && 
-                    databaseContext.UserService.IsDomainUser)
-                {
-                    // Try to identify the AD groups that grant access
-                    var adGroups = databaseContext.UserService.GetUserAdGroups();
-                    if (adGroups.Count > 0)
-                    {
-                        Logger.InfoNested("Access granted through Active Directory group membership (no direct login)");
-                        Logger.InfoNested($"Authorized via {adGroups.Count} AD group(s): {string.Join(", ", adGroups)}");
-                    }
-                }
-
                 // If LinkedServers variable exists and has valid server names
                 if (arguments.LinkedServers?.ServerNames != null && arguments.LinkedServers.ServerNames.Length > 0)
                 {
