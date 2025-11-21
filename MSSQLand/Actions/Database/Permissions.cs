@@ -2,6 +2,7 @@
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
+using System.Linq;
 
 namespace MSSQLand.Actions.Database
 {
