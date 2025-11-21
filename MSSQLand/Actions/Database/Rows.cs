@@ -33,8 +33,23 @@ namespace MSSQLand.Actions.Database
                 throw new ArgumentException("Rows action requires at least a Table Name as an argument or a Fully Qualified Table Name (FQTN) in the format 'database.schema.table'.");
             }
 
-            _fqtn = additionalArguments;
-            string[] parts = SplitArguments(additionalArguments, ".");
+            // Parse both positional and named arguments
+            var (namedArgs, positionalArgs) = ParseArguments(additionalArguments);
+
+            // Get table name from position 0 or /t: or /table:
+            string tableName = GetNamedArgument(namedArgs, "t") 
+                            ?? GetNamedArgument(namedArgs, "table")
+                            ?? GetPositionalArgument(positionalArgs, 0);
+
+            if (string.IsNullOrEmpty(tableName))
+            {
+                throw new ArgumentException("Rows action requires at least a Table Name as an argument or a Fully Qualified Table Name (FQTN) in the format 'database.schema.table'.");
+            }
+
+            _fqtn = tableName;
+
+            // Parse the table name to extract database, schema, and table
+            string[] parts = tableName.Split('.');
 
             if (parts.Length == 3) // Format: database.schema.table
             {
@@ -62,6 +77,31 @@ namespace MSSQLand.Actions.Database
             if (string.IsNullOrEmpty(_table))
             {
                 throw new ArgumentException("Table name cannot be empty.");
+            }
+
+            // Parse limit argument (position 1 or /l:)
+            string limitStr = GetNamedArgument(namedArgs, "l")
+                           ?? GetPositionalArgument(positionalArgs, 1);
+            
+            if (!string.IsNullOrEmpty(limitStr))
+            {
+                if (!int.TryParse(limitStr, out _limit) || _limit < 0)
+                {
+                    throw new ArgumentException($"Invalid limit value: {limitStr}. Limit must be a non-negative integer.");
+                }
+            }
+
+            // Parse offset argument (position 2 or /o: or /offset:)
+            string offsetStr = GetNamedArgument(namedArgs, "o")
+                            ?? GetNamedArgument(namedArgs, "offset")
+                            ?? GetPositionalArgument(positionalArgs, 2);
+            
+            if (!string.IsNullOrEmpty(offsetStr))
+            {
+                if (!int.TryParse(offsetStr, out _offset) || _offset < 0)
+                {
+                    throw new ArgumentException($"Invalid offset value: {offsetStr}. Offset must be a non-negative integer.");
+                }
             }
         }
 
