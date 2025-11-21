@@ -48,7 +48,6 @@ namespace MSSQLand.Actions.Database
             }
 
             Logger.Task("Mapping server logins to database users across all accessible databases");
-            Logger.NewLine();
 
             string query = @"
                 DECLARE @mapping TABLE (
