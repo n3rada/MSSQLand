@@ -58,7 +58,7 @@ namespace MSSQLand.Actions.Database
                 foreach (System.Data.DataRow row in tokenTable.Rows)
                 {
                     string groupName = row["name"].ToString();
-                    string typeDesc = row["type_desc"].ToString();
+                    string typeDesc = row["type"].ToString();
                     string usage = row["usage"].ToString();
                     int principalId = Convert.ToInt32(row["principal_id"]);
 
