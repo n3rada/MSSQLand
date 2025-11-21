@@ -12,13 +12,14 @@ namespace MSSQLand.Actions.FileSystem
     /// 2. xp_readerrorlog - Fallback using extended procedure, usually available to public role
     /// 
     /// Usage:
+    /// - /a:fileread (reads C:\Windows\win.ini by default)
     /// - /a:fileread C:\temp\file.txt
     /// - /a:fileread C:\temp\file.txt /m:xp_readerrorlog (force xp_readerrorlog method)
     /// </summary>
     internal class FileRead : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "Full path to the file to read")]
-        private string _filePath;
+        [ArgumentMetadata(Position = 0, Description = "Full path to the file to read (default: C:\\Windows\\win.ini)")]
+        private string _filePath = @"C:\Windows\win.ini";
 
         [ArgumentMetadata(Position = 1, ShortName = "m", LongName = "method", Description = "Read method: openrowset (default) or xp_readerrorlog")]
         private string _method = "openrowset";
@@ -29,20 +30,21 @@ namespace MSSQLand.Actions.FileSystem
         /// <param name="additionalArguments">The file path to read.</param>
         public override void ValidateArguments(string additionalArguments)
         {
+            // No arguments provided - use default file
             if (string.IsNullOrEmpty(additionalArguments))
             {
-                throw new ArgumentException("Read action requires a file path as an argument.");
+                return;
             }
 
             // Parse both positional and named arguments
             var (namedArgs, positionalArgs) = ParseArguments(additionalArguments);
 
             // Get file path from position 0
-            _filePath = GetPositionalArgument(positionalArgs, 0);
+            string filePath = GetPositionalArgument(positionalArgs, 0);
 
-            if (string.IsNullOrEmpty(_filePath))
+            if (!string.IsNullOrEmpty(filePath))
             {
-                throw new ArgumentException("Read action requires a file path as an argument.");
+                _filePath = filePath;
             }
 
             // Get method from position 1 or /m: or /method:
@@ -97,29 +99,6 @@ namespace MSSQLand.Actions.FileSystem
             catch (Exception ex)
             {
                 Logger.Error($"Failed to read file: {ex.Message}");
-                
-                if (_method == "openrowset")
-                {
-                    Logger.NewLine();
-                    Logger.Info("Both OPENROWSET and xp_readerrorlog methods failed.");
-                    Logger.Info("OPENROWSET requires one of:");
-                    Logger.InfoNested("- ADMINISTER BULK OPERATIONS (server-level)");
-                    Logger.InfoNested("- ADMINISTER DATABASE BULK OPERATIONS (database-level)");
-                    Logger.NewLine();
-                    Logger.Info("xp_readerrorlog failure can be caused by:");
-                    Logger.InfoNested("- File doesn't exist or path is incorrect");
-                    Logger.InfoNested("- File is not a text file or has encoding issues");
-                    Logger.InfoNested("- SQL Server service account lacks read permissions");
-                }
-                else if (_method == "xp_readerrorlog")
-                {
-                    Logger.NewLine();
-                    Logger.Info("xp_readerrorlog method failed. This can happen if:");
-                    Logger.InfoNested("- File doesn't exist or path is incorrect");
-                    Logger.InfoNested("- File is not a text file or has encoding issues");
-                    Logger.InfoNested("- SQL Server service account lacks read permissions");
-                }
-                
                 return null;
             }
         }
