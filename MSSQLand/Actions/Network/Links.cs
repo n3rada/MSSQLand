@@ -63,7 +63,7 @@ namespace MSSQLand.Actions.Network
                     srv.product AS [Product],
                     srv.provider AS [Provider],
                     srv.data_source AS [Data Source],
-                    COALESCE(prin.name, 'N/A') AS [Local Login],
+                    prin.name AS [Local Login],
                     ll.remote_name AS [Remote Login],
                     srv.is_rpc_out_enabled AS [RPC Out],
                     srv.is_data_access_enabled AS [OPENQUERY],
