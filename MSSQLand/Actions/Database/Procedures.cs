@@ -111,10 +111,10 @@ namespace MSSQLand.Actions.Database
                     p.name AS procedure_name,
                     USER_NAME(OBJECTPROPERTY(p.object_id, 'OwnerId')) AS owner,
                     CASE 
-                        WHEN m.execute_as_principal_id IS NULL THEN 'CALLER'
+                        WHEN m.execute_as_principal_id IS NULL THEN ''
                         WHEN m.execute_as_principal_id = -2 THEN 'OWNER'
-                        ELSE COALESCE(USER_NAME(m.execute_as_principal_id), 'CALLER')
-                    END AS execution_context,
+                        ELSE USER_NAME(m.execute_as_principal_id)
+                    END AS execute_as,
                     p.create_date,
                     p.modify_date
                 FROM sys.procedures p
