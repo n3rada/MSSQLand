@@ -121,16 +121,16 @@ namespace MSSQLand.Actions.Database
 
             string query = $@"
                 SELECT 
-                    SCHEMA_NAME(p.schema_id) AS schema_name,
-                    p.name AS procedure_name,
-                    USER_NAME(OBJECTPROPERTY(p.object_id, 'OwnerId')) AS owner,
+                    SCHEMA_NAME(p.schema_id) AS Schema,
+                    p.name AS Name,
+                    USER_NAME(OBJECTPROPERTY(p.object_id, 'OwnerId')) AS Owner,
                     CASE 
                         WHEN m.execute_as_principal_id IS NULL THEN ''
                         WHEN m.execute_as_principal_id = -2 THEN 'OWNER'
                         ELSE USER_NAME(m.execute_as_principal_id)
-                    END AS execute_as,
-                    p.create_date,
-                    p.modify_date
+                    END AS ExecuteAsContext,
+                    p.create_date AS Created,
+                    p.modify_date AS Modified
                 FROM sys.procedures p
                 INNER JOIN sys.sql_modules m ON p.object_id = m.object_id;";
 
@@ -160,7 +160,7 @@ namespace MSSQLand.Actions.Database
             
             foreach (DataRow permRow in allPermissions.Rows)
             {
-                string key = $"{permRow["schema_name"]}.{permRow["object_name"]}";
+                string key = $"{permRow["Schema"]}.{permRow["Name"]}";
                 string permission = permRow["permission_name"].ToString();
 
                 if (!permissionsDict.ContainsKey(key))
@@ -176,8 +176,8 @@ namespace MSSQLand.Actions.Database
             // Map permissions to procedures
             foreach (DataRow row in procedures.Rows)
             {
-                string schemaName = row["schema_name"].ToString();
-                string procedureName = row["procedure_name"].ToString();
+                string schemaName = row["Schema"].ToString();
+                string procedureName = row["Name"].ToString();
                 string key = $"{schemaName}.{procedureName}";
 
                 if (permissionsDict.TryGetValue(key, out var permissions))
@@ -194,7 +194,7 @@ namespace MSSQLand.Actions.Database
             var sortedRows = procedures.AsEnumerable()
                 .OrderBy(row => 
                 {
-                    string execContext = row["execution_context"].ToString();
+                    string execContext = row["ExecuteAsContext"].ToString();
                     return (execContext == "CALLER" || execContext == "OWNER") ? 1 : 0;
                 })
                 .ThenBy(row =>
@@ -205,9 +205,9 @@ namespace MSSQLand.Actions.Database
                     if (perms.Contains("ALTER")) return 2;
                     return 3;
                 })
-                .ThenBy(row => row["schema_name"].ToString())
-                .ThenBy(row => row["procedure_name"].ToString())
-                .ThenByDescending(row => row["modify_date"]);
+                .ThenBy(row => row["Schema"].ToString())
+                .ThenBy(row => row["Name"].ToString())
+                .ThenByDescending(row => row["Modified"]);
 
             DataTable sortedProcedures = sortedRows.CopyToDataTable();
 
