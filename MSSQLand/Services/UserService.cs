@@ -238,7 +238,7 @@ namespace MSSQLand.Services
 
                 if (tokenTable.Rows.Count > 0)
                 {
-                    // Direct connection - we have the login token
+                    Logger.Debug("Direct connection bound, retrieving AD groups from sys.login_token.");
                     foreach (System.Data.DataRow row in tokenTable.Rows)
                     {
                         string groupName = row["name"].ToString();
