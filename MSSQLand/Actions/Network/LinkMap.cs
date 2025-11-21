@@ -170,7 +170,7 @@ namespace MSSQLand.Actions.Network
                 return;
             }
 
-            Logger.Task($"Accessing linked server: {targetServer} (depth: {currentDepth})");
+            Logger.Debug($"Accessing linked server: {targetServer} (depth: {currentDepth})");
 
             // Save current state for restoration
             LinkedServers previousLinkedServers = new LinkedServers(databaseContext.QueryService.LinkedServers);
@@ -180,15 +180,15 @@ namespace MSSQLand.Actions.Network
             {
                 // Check if we are already logged in with the correct user
                 var (currentUser, systemUser) = databaseContext.UserService.GetInfo();
-                Logger.TaskNested($"[{databaseContext.QueryService.ExecutionServer}] LoggedIn: {systemUser}, Mapped: {currentUser}");
+                Logger.DebugNested($"[{databaseContext.QueryService.ExecutionServer}] LoggedIn: {systemUser}, Mapped: {currentUser}");
 
                 string impersonatedUser = null;
 
                 // Only attempt impersonation if expected login is not current context and doesn't match current user
                 if (expectedLocalLogin != "<Current Context>" && systemUser != expectedLocalLogin)
                 {
-                    Logger.TaskNested($"Current user '{systemUser}' does not match expected local login '{expectedLocalLogin}'");
-                    Logger.TaskNested("Attempting impersonation");
+                    Logger.DebugNested($"Current user '{systemUser}' does not match expected local login '{expectedLocalLogin}'");
+                    Logger.DebugNested("Attempting impersonation");
 
                     if (databaseContext.UserService.CanImpersonate(expectedLocalLogin))
                     {
@@ -198,7 +198,7 @@ namespace MSSQLand.Actions.Network
                         // Track impersonation in stack for proper LIFO reversion
                         _impersonationStack[chainId].Push(expectedLocalLogin);
                         
-                        Logger.TaskNested($"[{databaseContext.QueryService.ExecutionServer}] Impersonated '{expectedLocalLogin}' to access {targetServer}.");
+                        Logger.DebugNested($"[{databaseContext.QueryService.ExecutionServer}] Impersonated '{expectedLocalLogin}' to access {targetServer}.");
                     }
                     else
                     {
@@ -208,7 +208,7 @@ namespace MSSQLand.Actions.Network
                 }
                 else if (expectedLocalLogin == "<Current Context>")
                 {
-                    Logger.TaskNested("Linked server uses current security context (no explicit login mapping)");
+                    Logger.DebugNested("Linked server uses current security context (no explicit login mapping)");
                 }
 
                 // Update the linked server chain
@@ -252,7 +252,7 @@ namespace MSSQLand.Actions.Network
                     { "ImpersonatedUser", !string.IsNullOrEmpty(impersonatedUser) ? $" {impersonatedUser} " : "-" }
                 });
 
-                Logger.TaskNested($"[{databaseContext.QueryService.ExecutionServer}] LoggedIn: {remoteLoggedInUser}, Mapped: {mappedUser}");
+                Logger.DebugNested($"[{databaseContext.QueryService.ExecutionServer}] LoggedIn: {remoteLoggedInUser}, Mapped: {mappedUser}");
 
                 // Retrieve linked servers from remote server
                 DataTable remoteLinkedServers = GetLinkedServersWithTimeout(databaseContext, targetServer);
