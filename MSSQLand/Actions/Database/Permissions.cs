@@ -72,11 +72,15 @@ namespace MSSQLand.Actions.Database
                 Logger.NewLine();
                 Logger.Info("Server permissions");
 
-                Console.WriteLine(OutputFormatter.ConvertDataTable(databaseContext.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'SERVER');")));
+                var serverPerms = databaseContext.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'SERVER');");
+                var sortedServerPerms = SortPermissionsByImportance(serverPerms);
+                Console.WriteLine(OutputFormatter.ConvertDataTable(sortedServerPerms));
 
                 Logger.Info("Database permissions");
 
-                Console.WriteLine(OutputFormatter.ConvertDataTable(databaseContext.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'DATABASE');")));
+                var dbPerms = databaseContext.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'DATABASE');");
+                var sortedDbPerms = SortPermissionsByImportance(dbPerms);
+                Console.WriteLine(OutputFormatter.ConvertDataTable(sortedDbPerms));
 
                 Logger.Info("Database access");
 
@@ -115,9 +119,56 @@ namespace MSSQLand.Actions.Database
             ";
 
             var dataTable = databaseContext.QueryService.ExecuteTable(query);
+            var sortedTable = SortPermissionsByImportance(dataTable);
 
-            Console.WriteLine(OutputFormatter.ConvertDataTable(dataTable));
+            Console.WriteLine(OutputFormatter.ConvertDataTable(sortedTable));
             return null;
+        }
+
+        /// <summary>
+        /// Sorts permissions by exploitation value - most interesting permissions first.
+        /// </summary>
+        private System.Data.DataTable SortPermissionsByImportance(System.Data.DataTable permissionsTable)
+        {
+            if (permissionsTable.Rows.Count == 0)
+            {
+                return permissionsTable;
+            }
+
+            // Define permission priority (lower = more important)
+            int GetPermissionPriority(string permission)
+            {
+                permission = permission.ToUpper();
+                
+                // Tier 0: God mode
+                if (permission == "CONTROL SERVER" || permission == "CONTROL") return 0;
+                
+                // Tier 1: Dangerous execution/impersonation
+                if (permission.Contains("IMPERSONATE") || permission == "EXECUTE") return 1;
+                
+                // Tier 2: Modification capabilities
+                if (permission == "ALTER" || permission == "ALTER ANY") return 2;
+                if (permission.Contains("ALTER")) return 3;
+                
+                // Tier 3: Write operations
+                if (permission == "INSERT" || permission == "UPDATE" || permission == "DELETE") return 4;
+                if (permission.Contains("CREATE")) return 5;
+                
+                // Tier 4: Read operations
+                if (permission == "SELECT" || permission.Contains("VIEW")) return 6;
+                
+                // Tier 5: References and connections
+                if (permission == "REFERENCES" || permission == "CONNECT") return 7;
+                
+                // Tier 6: Everything else
+                return 8;
+            }
+
+            var sortedRows = permissionsTable.AsEnumerable()
+                .OrderBy(row => GetPermissionPriority(row["Permission"].ToString()))
+                .ThenBy(row => row["Permission"].ToString());
+
+            return sortedRows.CopyToDataTable();
         }
     }
 }
