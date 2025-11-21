@@ -26,7 +26,7 @@ namespace MSSQLand.Actions.Database
     internal class LoginMap : BaseAction
     {
         [ArgumentMetadata(Position = 0, Description = "Optional: Server login name to filter mappings")]
-        private string? LoginFilter { get; set; }
+        private string? LoginFilter;
 
         public override void ValidateArguments(string additionalArguments)
         {
