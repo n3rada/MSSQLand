@@ -71,12 +71,6 @@ namespace MSSQLand.Actions.Domain
                         // IS_MEMBER might fail for some groups, skip silently
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Error retrieving AD groups: {ex.Message}");
-                return null;
-            }
 
                 if (groupNames.Count == 0)
                 {
