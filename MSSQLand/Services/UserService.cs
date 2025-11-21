@@ -176,8 +176,8 @@ namespace MSSQLand.Services
 
         /// <summary>
         /// Checks if the current system user is a Windows domain user.
-        /// Logic: If the username contains a backslash AND is not a SQL_LOGIN, it's a domain user.
-        /// This handles both direct logins and group-based access.
+        /// Uses username format (DOMAIN\username) as primary check.
+        /// Linked server connections don't have sys.login_token, so format check is more reliable.
         /// </summary>
         /// <returns>True if the user is a Windows domain user; otherwise, false.</returns>
         private bool CheckIfDomainUser()
@@ -195,27 +195,98 @@ namespace MSSQLand.Services
                 return false;
             }
 
+            // Username has domain format - it's a Windows user
+            return true;
+        }
+
+        /// <summary>
+        /// Retrieves the list of AD groups the current user is a member of.
+        /// Uses sys.login_token which contains the Windows authentication token groups.
+        /// These are the groups authenticated by the domain controller at login time.
+        /// For linked server connections where sys.login_token is unavailable, falls back to
+        /// checking IS_MEMBER against server principals.
+        /// Results are cached per execution server.
+        /// </summary>
+        /// <returns>List of AD group names the user belongs to, or empty list if none found.</returns>
+        public List<string> GetUserAdGroups()
+        {
+            // Check if groups are already cached for the current ExecutionServer
+            if (_adGroupsCache.TryGetValue(_queryService.ExecutionServer, out List<string> cachedGroups))
+            {
+                return cachedGroups;
+            }
+
+            var groups = new List<string>();
+
+            if (string.IsNullOrEmpty(SystemUser) || !IsDomainUser)
+            {
+                _adGroupsCache[_queryService.ExecutionServer] = groups;
+                return groups;
+            }
+
             try
             {
-                // Check if this is a SQL login (not Windows authentication)
-                string checkQuery = $"SELECT type_desc FROM master.sys.server_principals WHERE name = '{SystemUser.Replace("'", "''")}';";
-                object result = _queryService.ExecuteScalar(checkQuery);
-                
-                if (result != null && result != DBNull.Value)
+                // Try sys.login_token first (works for direct connections)
+                string tokenQuery = @"
+                    SELECT name
+                    FROM sys.login_token
+                    WHERE type = 'WINDOWS GROUP'
+                    AND principal_id > 0
+                    ORDER BY name;";
+
+                var tokenTable = _queryService.ExecuteTable(tokenQuery);
+
+                if (tokenTable.Rows.Count > 0)
                 {
-                    string typeDesc = result.ToString();
-                    // If it's a SQL_LOGIN, then it's NOT a domain user (even if it has a backslash)
-                    return !typeDesc.Equals("SQL_LOGIN", StringComparison.OrdinalIgnoreCase);
+                    // Direct connection - we have the login token
+                    foreach (System.Data.DataRow row in tokenTable.Rows)
+                    {
+                        string groupName = row["name"].ToString();
+                        groups.Add(groupName);
+                    }
                 }
-                
-                // User not found in sys.server_principals (group-based access) - it's a domain user
-                return true;
+                else
+                {
+                    // Linked server or token unavailable - fall back to IS_MEMBER
+                    string groupsQuery = @"
+                        SELECT name
+                        FROM master.sys.server_principals
+                        WHERE type = 'G'
+                        AND name LIKE '%\%'
+                        AND name NOT LIKE '##%'
+                        ORDER BY name;";
+
+                    var serverGroups = _queryService.ExecuteTable(groupsQuery);
+
+                    foreach (System.Data.DataRow row in serverGroups.Rows)
+                    {
+                        string groupName = row["name"].ToString();
+
+                        try
+                        {
+                            string memberCheckQuery = $"SELECT IS_MEMBER('{groupName.Replace("'", "''")}');";
+                            object result = _queryService.ExecuteScalar(memberCheckQuery);
+
+                            if (result != null && result != DBNull.Value && Convert.ToInt32(result) == 1)
+                            {
+                                groups.Add(groupName);
+                            }
+                        }
+                        catch
+                        {
+                            // IS_MEMBER might fail for some groups
+                        }
+                    }
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                // If query fails, assume backslash means domain user
-                return true;
+                Logger.Warning($"Error retrieving AD groups: {ex.Message}");
             }
+
+            // Cache the result
+            _adGroupsCache[_queryService.ExecutionServer] = groups;
+            return groups;
         }
 
 

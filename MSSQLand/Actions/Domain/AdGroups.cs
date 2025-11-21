@@ -23,16 +23,6 @@ namespace MSSQLand.Actions.Domain
 
             try
             {
-                // Get the current system user
-                (string userName, string systemUser) = databaseContext.UserService.GetInfo();
-
-                if (string.IsNullOrEmpty(systemUser))
-                {
-                    Logger.Error("Could not determine current system user.");
-                    return null;
-                }
-
-                Logger.Info($"System User: {systemUser}");
 
                 // Check if it's a domain user
                 if (!databaseContext.UserService.IsDomainUser)
