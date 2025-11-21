@@ -50,7 +50,35 @@ namespace MSSQLand.Actions.Database
             {
                 throw new ArgumentException("Keyword is required. Usage: /a:search <keyword> [/c] [/a] [/t:table]");
             }
-            _keyword = additionalArguments.Trim();
+
+            // Parse both positional and named arguments
+            var (namedArgs, positionalArgs) = ParseArguments(additionalArguments);
+
+            // Get keyword from position 0 or /k: or /keyword:
+            _keyword = GetNamedArgument(namedArgs, "k")
+                    ?? GetNamedArgument(namedArgs, "keyword")
+                    ?? GetPositionalArgument(positionalArgs, 0);
+
+            if (string.IsNullOrEmpty(_keyword))
+            {
+                throw new ArgumentException("Keyword is required. Usage: /a:search <keyword> [/c] [/a] [/t:table]");
+            }
+
+            // Check for columns-only flag
+            if (namedArgs.ContainsKey("c") || namedArgs.ContainsKey("columns-only"))
+            {
+                _columnsOnly = true;
+            }
+
+            // Check for all databases flag
+            if (namedArgs.ContainsKey("a") || namedArgs.ContainsKey("all"))
+            {
+                _allDatabases = true;
+            }
+
+            // Get target table if specified
+            _targetTable = GetNamedArgument(namedArgs, "t")
+                        ?? GetNamedArgument(namedArgs, "table");
         }
 
         public override object? Execute(DatabaseContext databaseContext)

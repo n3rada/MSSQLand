@@ -58,8 +58,21 @@ namespace MSSQLand.Actions.Database
                 return;
             }
 
-            _fqtn = additionalArguments;
-            string[] parts = SplitArguments(additionalArguments, ".");
+            // Parse both positional and named arguments
+            var (namedArgs, positionalArgs) = ParseArguments(additionalArguments);
+
+            // Get table name from position 0
+            string tableName = GetPositionalArgument(positionalArgs, 0);
+
+            if (string.IsNullOrEmpty(tableName))
+            {
+                throw new ArgumentException("Invalid format for the argument. Expected 'database.schema.table', 'schema.table', or nothing to return current server permissions.");
+            }
+
+            _fqtn = tableName;
+
+            // Parse the table name to extract database, schema, and table
+            string[] parts = tableName.Split('.');
 
             if (parts.Length == 3) // Format: database.schema.table
             {

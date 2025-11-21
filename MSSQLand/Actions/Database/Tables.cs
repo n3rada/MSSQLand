@@ -14,8 +14,19 @@ namespace MSSQLand.Actions.Database
 
         public override void ValidateArguments(string additionalArguments)
         {
+            if (string.IsNullOrWhiteSpace(additionalArguments))
+            {
+                // No database specified - will use current database
+                return;
+            }
 
-            _database = additionalArguments;
+            // Parse both positional and named arguments
+            var (namedArgs, positionalArgs) = ParseArguments(additionalArguments);
+
+            // Get database name from position 0 or /db: or /database:
+            _database = GetNamedArgument(namedArgs, "db")
+                     ?? GetNamedArgument(namedArgs, "database")
+                     ?? GetPositionalArgument(positionalArgs, 0);
         }
 
         public override object? Execute(DatabaseContext databaseContext)

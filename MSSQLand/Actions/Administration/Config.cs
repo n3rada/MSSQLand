@@ -25,31 +25,31 @@ namespace MSSQLand.Actions.Administration
                 return;
             }
 
-            // Split the additional argument into parts
-            string[] parts = SplitArguments(additionalArguments);
+            // Parse both positional and named arguments
+            var (namedArgs, positionalArgs) = ParseArguments(additionalArguments);
 
-            // One argument = list specific option
-            if (parts.Length == 1)
+            // Get option name from position 0 or /o: or /option:
+            _optionName = GetNamedArgument(namedArgs, "o")
+                       ?? GetNamedArgument(namedArgs, "option")
+                       ?? GetPositionalArgument(positionalArgs, 0);
+
+            // Get value from position 1 or /v: or /value:
+            string valueStr = GetNamedArgument(namedArgs, "v")
+                           ?? GetNamedArgument(namedArgs, "value")
+                           ?? GetPositionalArgument(positionalArgs, 1);
+
+            if (!string.IsNullOrEmpty(valueStr))
             {
-                _optionName = parts[0];
-                _value = -1;
-                return;
-            }
-
-            // Two arguments = set option value
-            if (parts.Length == 2)
-            {
-                _optionName = parts[0];
-
                 // Validate and parse the value (1 or 0)
-                if (!int.TryParse(parts[1], out _value) || (_value != 0 && _value != 1))
+                if (!int.TryParse(valueStr, out _value) || (_value != 0 && _value != 1))
                 {
                     throw new ArgumentException("Invalid value. Use 1 to enable or 0 to disable.");
                 }
-                return;
             }
-
-            throw new ArgumentException("Invalid arguments. Usage: [option] [value]\n  No args: list all\n  One arg: show status of option\n  Two args: set option value (0 or 1)");
+            else
+            {
+                _value = -1; // No value specified = list mode
+            }
         }
 
         public override object? Execute(DatabaseContext databaseContext)
