@@ -27,6 +27,7 @@ namespace MSSQLand.Services
 
         public string MappedUser { get; private set; }
         public string SystemUser { get; private set; }
+        public string EffectiveUser { get; private set; }
         
         public bool IsDomainUser 
         { 
@@ -113,8 +114,71 @@ namespace MSSQLand.Services
             // Update the properties
             this.MappedUser = mappedUser;
             this.SystemUser = systemUser;
+            
+            // Compute effective user (handles group-based access)
+            this.EffectiveUser = GetEffectiveDatabaseUser();
 
             return (mappedUser, systemUser);
+        }
+
+        /// <summary>
+        /// Gets the effective database user by checking AD group mappings.
+        /// This handles cases where access is granted through AD group membership
+        /// rather than direct login mapping (e.g., DOMAIN\User -> AD Group -> Database User).
+        /// Must be called per database context as mappings differ between databases.
+        /// </summary>
+        /// <returns>The effective database user name, or the mapped user if no group mapping found.</returns>
+        private string GetEffectiveDatabaseUser()
+        {
+            try
+            {
+                // Check for guest user access (special case)
+                if (MappedUser.Equals("guest", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "guest";
+                }
+
+                // If there's a direct mapping (MappedUser != SystemUser), use it
+                // BUT if MappedUser == SystemUser for domain users, check AD group mappings
+                if (!MappedUser.Equals(SystemUser, StringComparison.OrdinalIgnoreCase))
+                {
+                    return MappedUser;
+                }
+
+                // For domain users where MappedUser == SystemUser, check AD group mappings
+                if (!IsDomainUser)
+                {
+                    return MappedUser;
+                }
+
+                string effectiveUserQuery = @"
+                    SELECT TOP 1 dp.name AS EffectiveUser
+                    FROM sys.database_principals dp
+                    WHERE dp.sid IN (
+                        SELECT sp.sid 
+                        FROM master.sys.server_principals sp
+                        WHERE sp.type = 'G' 
+                        AND IS_MEMBER(sp.name) = 1
+                    )
+                    AND dp.type IN ('U', 'S', 'G')
+                    AND dp.name NOT IN ('guest', 'public')
+                    ORDER BY dp.name;";
+
+                object result = _queryService.ExecuteScalar(effectiveUserQuery);
+                
+                if (result != null && result != DBNull.Value)
+                {
+                    return result.ToString();
+                }
+
+                // No group mapping found, return the mapped user
+                return MappedUser;
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Error determining effective database user: {ex.Message}");
+                return MappedUser;
+            }
         }
 
         /// <summary>

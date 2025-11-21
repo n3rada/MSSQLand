@@ -94,6 +94,12 @@ namespace MSSQLand
 
                 Logger.Info($"Logged in on {databaseContext.Server.Hostname} as {systemUser}");
                 Logger.InfoNested($"Mapped to the user {userName}");
+                
+                string effectiveUser = databaseContext.UserService.EffectiveUser;
+                if (!effectiveUser.Equals(userName, StringComparison.OrdinalIgnoreCase))
+                {
+                    Logger.InfoNested($"Effective database user: {effectiveUser}");
+                }
 
                 // Check if user is mapped to themselves and is a domain user (implies group-based access)
                 if (userName.Equals(systemUser, StringComparison.OrdinalIgnoreCase) && 
@@ -119,6 +125,12 @@ namespace MSSQLand
 
                     Logger.Info($"Logged in on {databaseContext.QueryService.ExecutionServer} as {systemUser}");
                     Logger.InfoNested($"Mapped to the user {userName}");
+                    
+                    effectiveUser = databaseContext.UserService.EffectiveUser;
+                    if (!effectiveUser.Equals(userName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Logger.InfoNested($"Effective database user: {effectiveUser}");
+                    }
 
                     // Check for group-based access on linked server as well
                     if (userName.Equals(systemUser, StringComparison.OrdinalIgnoreCase) && 
