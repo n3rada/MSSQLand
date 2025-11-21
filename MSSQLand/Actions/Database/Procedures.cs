@@ -20,9 +20,6 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(Position = 2, Description = "Procedure arguments (optional for exec)")]
         private string? _procedureArgs;
         
-        [ArgumentMetadata(ShortName = "d", LongName = "database", Description = "Database name (optional, default: current database)")]
-        private string? _targetDatabase;
-        
         [ExcludeFromArguments]
         private string? _searchKeyword;
 
@@ -94,9 +91,10 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.Warning("Execution context: stored procedures run under CALLER by default (unless created WITH EXECUTE AS).");
-            Logger.WarningNested("https://learn.microsoft.com/en-us/sql/t-sql/language-elements/execute-transact-sql");
-
+            Logger.Warning("Execution context depends on the statements used inside the stored procedure.");
+            Logger.WarningNested("Dynamic SQL executed with EXEC or sp_executesql runs under caller permissions by default.");
+            Logger.WarningNested("Static SQL inside a procedure uses ownership chaining, which may allow operations (e.g., SELECT) that the caller is not directly permitted to perform.");
+            
             switch (_mode)
             {
                 case Mode.List:
@@ -118,9 +116,8 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private DataTable ListProcedures(DatabaseContext databaseContext)
         {
-            string targetDb = _targetDatabase ?? databaseContext.QueryService.ExecutionDatabase;
             Logger.NewLine();
-            Logger.Task($"Retrieving all stored procedures in [{targetDb}]");
+            Logger.Task($"Retrieving all stored procedures in [{databaseContext.QueryService.ExecutionDatabase}]");
 
             string query = $@"
                 SELECT 
@@ -128,14 +125,14 @@ namespace MSSQLand.Actions.Database
                     p.name AS procedure_name,
                     USER_NAME(OBJECTPROPERTY(p.object_id, 'OwnerId')) AS owner,
                     CASE 
-                        WHEN m.execute_as_principal_id IS NULL THEN 'CALLER'
+                        WHEN m.execute_as_principal_id IS NULL THEN ''
                         WHEN m.execute_as_principal_id = -2 THEN 'OWNER'
                         ELSE USER_NAME(m.execute_as_principal_id)
                     END AS execute_as,
                     p.create_date,
                     p.modify_date
-                FROM [{targetDb}].sys.procedures p
-                INNER JOIN [{targetDb}].sys.sql_modules m ON p.object_id = m.object_id;";
+                FROM sys.procedures p
+                INNER JOIN sys.sql_modules m ON p.object_id = m.object_id;";
 
             DataTable procedures = databaseContext.QueryService.ExecuteTable(query);
 
@@ -146,12 +143,12 @@ namespace MSSQLand.Actions.Database
             }
 
             // Get all permissions in a single query
-            string allPermissionsQuery = $@"
+            string allPermissionsQuery = @"
                 SELECT 
                     SCHEMA_NAME(o.schema_id) AS schema_name,
                     o.name AS object_name,
                     p.permission_name
-                FROM [{targetDb}].sys.objects o
+                FROM sys.objects o
                 CROSS APPLY fn_my_permissions(QUOTENAME(SCHEMA_NAME(o.schema_id)) + '.' + QUOTENAME(o.name), 'OBJECT') p
                 WHERE o.type = 'P'
                 ORDER BY o.name, p.permission_name;";
@@ -227,13 +224,12 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private DataTable ExecuteProcedure(DatabaseContext databaseContext, string procedureName, string procedureArgs)
         {
-            string targetDb = _targetDatabase ?? databaseContext.QueryService.ExecutionDatabase;
-            Logger.Task($"Executing [{targetDb}].[{procedureName}]");
+            Logger.Task($"Executing [{databaseContext.QueryService.ExecutionDatabase}].[{procedureName}]");
             if (!string.IsNullOrEmpty(procedureArgs))
                 Logger.TaskNested($"With arguments: {procedureArgs}");
 
-            // Use fully qualified name with database context
-            string query = $"USE [{targetDb}]; EXEC [{procedureName.Replace(".", "].[")}] {procedureArgs};";
+            // Use schema-qualified name in EXEC
+            string query = $"EXEC [{procedureName.Replace(".", "].[")}] {procedureArgs};";
 
             try
             {
@@ -256,9 +252,8 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private object? ReadProcedureDefinition(DatabaseContext databaseContext, string procedureName)
         {
-            string targetDb = _targetDatabase ?? databaseContext.QueryService.ExecutionDatabase;
             Logger.NewLine();
-            Logger.Task($"Retrieving definition of [{targetDb}].[{procedureName}]");
+            Logger.Task($"Retrieving definition of [{databaseContext.QueryService.ExecutionDatabase}].[{procedureName}]");
 
             // Parse schema.procedure format
             string[] parts = procedureName.Split('.');
@@ -268,9 +263,9 @@ namespace MSSQLand.Actions.Database
             string query = $@"
                 SELECT 
                     m.definition
-                FROM [{targetDb}].sys.sql_modules AS m
-                INNER JOIN [{targetDb}].sys.objects AS o ON m.object_id = o.object_id
-                INNER JOIN [{targetDb}].sys.schemas AS s ON o.schema_id = s.schema_id
+                FROM sys.sql_modules AS m
+                INNER JOIN sys.objects AS o ON m.object_id = o.object_id
+                INNER JOIN sys.schemas AS s ON o.schema_id = s.schema_id
                 WHERE o.type = 'P' 
                 AND o.name = '{procedure.Replace("'", "''")}'
                 AND s.name = '{schema.Replace("'", "''")}'";
@@ -281,7 +276,7 @@ namespace MSSQLand.Actions.Database
 
                 if (result.Rows.Count == 0)
                 {
-                    Logger.Warning($"Stored procedure '[{targetDb}].[{procedureName}]' not found.");
+                    Logger.Warning($"Stored procedure '{procedureName}' not found.");
                     return null;
                 }
 
@@ -303,9 +298,8 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private DataTable SearchProcedures(DatabaseContext databaseContext, string keyword)
         {
-            string targetDb = _targetDatabase ?? databaseContext.QueryService.ExecutionDatabase;
             Logger.NewLine();
-            Logger.Info($"Searching for keyword '{keyword}' in [{targetDb}] procedures");
+            Logger.Info($"Searching for keyword '{keyword}' in [{databaseContext.QueryService.ExecutionDatabase}] procedures");
 
             string query = $@"
                 SELECT 
@@ -313,8 +307,8 @@ namespace MSSQLand.Actions.Database
                     o.name AS procedure_name,
                     o.create_date,
                     o.modify_date
-                FROM [{targetDb}].sys.sql_modules AS m
-                INNER JOIN [{targetDb}].sys.objects AS o ON m.object_id = o.object_id
+                FROM sys.sql_modules AS m
+                INNER JOIN sys.objects AS o ON m.object_id = o.object_id
                 WHERE o.type = 'P' 
                 AND m.definition LIKE '%{keyword.Replace("'", "''")}%'
                 ORDER BY o.modify_date DESC;";
