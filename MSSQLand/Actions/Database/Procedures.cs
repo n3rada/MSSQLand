@@ -128,19 +128,6 @@ namespace MSSQLand.Actions.Database
                 return procedures;
             }
 
-            // Sort in C#: specific users first, then CALLER/OWNER, then by schema/name
-            var sortedRows = procedures.AsEnumerable()
-                .OrderBy(row => 
-                {
-                    string execContext = row["execution_context"].ToString();
-                    return (execContext == "CALLER" || execContext == "OWNER") ? 1 : 0;
-                })
-                .ThenBy(row => row["schema_name"].ToString())
-                .ThenBy(row => row["procedure_name"].ToString())
-                .ThenByDescending(row => row["modify_date"]);
-
-            DataTable sortedProcedures = sortedRows.CopyToDataTable();
-
             // Get all permissions in a single query
             string allPermissionsQuery = @"
                 SELECT 
@@ -170,10 +157,10 @@ namespace MSSQLand.Actions.Database
             }
 
             // Add a column for permissions
-            sortedProcedures.Columns.Add("Permissions", typeof(string));
+            procedures.Columns.Add("Permissions", typeof(string));
 
             // Map permissions to procedures
-            foreach (DataRow row in sortedProcedures.Rows)
+            foreach (DataRow row in procedures.Rows)
             {
                 string schemaName = row["schema_name"].ToString();
                 string procedureName = row["procedure_name"].ToString();
@@ -188,6 +175,27 @@ namespace MSSQLand.Actions.Database
                     row["Permissions"] = "";
                 }
             }
+
+            // Sort in C#: execution context, then permissions, then schema/name
+            var sortedRows = procedures.AsEnumerable()
+                .OrderBy(row => 
+                {
+                    string execContext = row["execution_context"].ToString();
+                    return (execContext == "CALLER" || execContext == "OWNER") ? 1 : 0;
+                })
+                .ThenBy(row =>
+                {
+                    string perms = row["Permissions"].ToString();
+                    if (perms.Contains("EXECUTE")) return 0;
+                    if (perms.Contains("CONTROL")) return 1;
+                    if (perms.Contains("ALTER")) return 2;
+                    return 3;
+                })
+                .ThenBy(row => row["schema_name"].ToString())
+                .ThenBy(row => row["procedure_name"].ToString())
+                .ThenByDescending(row => row["modify_date"]);
+
+            DataTable sortedProcedures = sortedRows.CopyToDataTable();
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(sortedProcedures));
 
