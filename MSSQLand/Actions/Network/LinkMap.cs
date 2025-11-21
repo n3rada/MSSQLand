@@ -29,7 +29,7 @@ namespace MSSQLand.Actions.Network
     /// - State restoration: Restores LinkedServers chain and ExecutionServer after each recursion
     /// - Graceful degradation: Continues mapping accessible paths when servers are unreachable
     /// </summary>
-    internal class LinkedServerExplorer : BaseAction
+    internal class LinkMap : BaseAction
     {
         [ExcludeFromArguments]
         private readonly Dictionary<Guid, List<Dictionary<string, string>>> _serverMapping = new();
