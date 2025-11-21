@@ -45,9 +45,12 @@ namespace MSSQLand.Actions.Database
         private string? _targetSchema = null;
 
         public override void ValidateArguments(string additionalArguments)
-        {\n            if (string.IsNullOrEmpty(additionalArguments))
-            {\n                throw new ArgumentException("Keyword is required. Usage: /a:search <keyword> [/c] [/a] [/t:table]");
-            }\n\n            _keyword = additionalArguments.Trim();
+        {
+            if (string.IsNullOrEmpty(additionalArguments))
+            {
+                throw new ArgumentException("Keyword is required. Usage: /a:search <keyword> [/c] [/a] [/t:table]");
+            }
+            _keyword = additionalArguments.Trim();
         }
 
         public override object? Execute(DatabaseContext databaseContext)
