@@ -36,8 +36,8 @@ namespace MSSQLand.Actions.Database
                 string tokenQuery = @"
                     SELECT DISTINCT 
                         lt.name,
-                        lt.type_desc,
-                        lt.usage_desc,
+                        lt.type,
+                        lt.usage,
                         lt.principal_id,
                         sp.name AS sql_principal_name
                     FROM sys.login_token lt
@@ -59,7 +59,7 @@ namespace MSSQLand.Actions.Database
                 {
                     string groupName = row["name"].ToString();
                     string typeDesc = row["type_desc"].ToString();
-                    string usageDesc = row["usage_desc"].ToString();
+                    string usage = row["usage"].ToString();
                     int principalId = Convert.ToInt32(row["principal_id"]);
 
                     // Determine group category
@@ -73,7 +73,7 @@ namespace MSSQLand.Actions.Database
                         { "Group Name", groupName },
                         { "Category", category },
                         { "Type", typeDesc },
-                        { "Usage", usageDesc },
+                        { "Usage", usage },
                         { "SQL Principal", sqlPrincipal }
                     });
                 }
