@@ -30,7 +30,6 @@ namespace MSSQLand.Actions.Database
             bool isAzureSQL = databaseContext.QueryService.IsAzureSQL();
             string databaseUsersQuery;
             
-            Logger.NewLine();
             if (isAzureSQL)
             {
                 // Azure SQL Database: Only show database users (no server-level principals access)

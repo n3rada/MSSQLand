@@ -141,7 +141,7 @@ namespace MSSQLand
                 databaseContext.QueryService.IsAzureSQL();
 
                 Logger.Task($"Executing action '{arguments.Action.GetName()}' against {databaseContext.QueryService.ExecutionServer}");
-
+                Logger.NewLine();
                 arguments.Action.Execute(databaseContext);
 
                 stopwatch.Stop();
