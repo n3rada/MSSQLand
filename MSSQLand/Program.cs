@@ -96,9 +96,15 @@ namespace MSSQLand
                 Logger.InfoNested($"Mapped to the user {userName}");
                 
                 string effectiveUser = databaseContext.UserService.EffectiveUser;
+                string sourcePrincipal = databaseContext.UserService.SourcePrincipal;
+                
                 if (!effectiveUser.Equals(userName, StringComparison.OrdinalIgnoreCase))
                 {
                     Logger.InfoNested($"Effective database user: {effectiveUser}");
+                    if (!sourcePrincipal.Equals(systemUser, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Logger.InfoNested($"Access granted via: {sourcePrincipal}");
+                    }
                 }
 
                 // Check if user is mapped to themselves and is a domain user (implies group-based access)
@@ -127,9 +133,15 @@ namespace MSSQLand
                     Logger.InfoNested($"Mapped to the user {userName}");
                     
                     effectiveUser = databaseContext.UserService.EffectiveUser;
+                    string sourcePrincipal = databaseContext.UserService.SourcePrincipal;
+                    
                     if (!effectiveUser.Equals(userName, StringComparison.OrdinalIgnoreCase))
                     {
                         Logger.InfoNested($"Effective database user: {effectiveUser}");
+                        if (!sourcePrincipal.Equals(systemUser, StringComparison.OrdinalIgnoreCase))
+                        {
+                            Logger.InfoNested($"Access granted via: {sourcePrincipal}");
+                        }
                     }
 
                     // Check for group-based access on linked server as well

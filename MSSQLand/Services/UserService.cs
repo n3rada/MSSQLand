@@ -28,6 +28,7 @@ namespace MSSQLand.Services
         public string MappedUser { get; private set; }
         public string SystemUser { get; private set; }
         public string EffectiveUser { get; private set; }
+        public string SourcePrincipal { get; private set; }
         
         public bool IsDomainUser 
         { 
@@ -117,59 +118,61 @@ namespace MSSQLand.Services
             this.MappedUser = mappedUser;
             this.SystemUser = systemUser;
             
-            // Compute effective user (handles group-based access)
-            this.EffectiveUser = GetEffectiveDatabaseUser();
+            // Compute effective user and source principal (handles group-based access)
+            (this.EffectiveUser, this.SourcePrincipal) = GetEffectiveUserAndSource();
 
             return (mappedUser, systemUser);
         }
 
         /// <summary>
-        /// The SQL user that SQL Server resolved me to in this database context.
+        /// Gets the effective database user and the source principal (AD group or login) that granted access.
         /// This handles cases where access is granted through AD group membership
         /// rather than direct login mapping (e.g., DOMAIN\User -> AD Group -> Database User).
-        /// This is the authorization identity.
+        /// This is the authorization identity used by SQL Server.
         /// </summary>
-        private string GetEffectiveDatabaseUser()
+        /// <returns>Tuple of (EffectiveUser, SourcePrincipal)</returns>
+        private (string EffectiveUser, string SourcePrincipal) GetEffectiveUserAndSource()
         {
             try
             {
-                // Retrieve all user_token entries
-                string query = @"
-                    SELECT principal_id, name, type
-                    FROM sys.user_token
-                    WHERE name <> 'public'
-                    AND type NOT IN ('ROLE', 'SERVER ROLE')
-                    AND principal_id > 0
-                    ORDER BY principal_id;
-                ";
-
-                var table = _queryService.ExecuteTable(query);
-
-                if (table == null || table.Rows.Count == 0)
-                    return MappedUser; // fallback
-
-                // First viable entry = effective user
-                foreach (DataRow row in table.Rows)
+                // If there's a direct mapping (MappedUser != SystemUser), use it
+                if (!MappedUser.Equals(SystemUser, StringComparison.OrdinalIgnoreCase))
                 {
-                    string name = row["name"].ToString();
-                    string type = row["type"].ToString();
-
-                    if (!string.IsNullOrEmpty(name) &&
-                        (type == "WINDOWS GROUP" || type == "WINDOWS LOGIN" || type == "SQL_USER"))
-                    {
-                        return name;
-                    }
+                    return (MappedUser, SystemUser);
                 }
 
-                // Fallback if no identity found
-                return MappedUser;
+                // Query user_token to find effective database user and login_token for source
+                string sql = @"
+                    SELECT TOP 1
+                        dp.name AS effective_user,
+                        lt.name AS source_principal
+                    FROM sys.user_token ut
+                    JOIN sys.database_principals dp ON dp.sid = ut.sid
+                    LEFT JOIN sys.login_token lt ON lt.sid = ut.sid
+                    WHERE ut.name <> 'public'
+                    AND ut.type NOT IN ('ROLE', 'SERVER ROLE')
+                    AND dp.principal_id > 0
+                    ORDER BY dp.principal_id;";
+
+                var dt = _queryService.ExecuteTable(sql);
+
+                if (dt.Rows.Count == 0)
+                    return (MappedUser, SystemUser);
+
+                var row = dt.Rows[0];
+                string effective = row["effective_user"]?.ToString() ?? MappedUser;
+                string source = row["source_principal"]?.ToString() ?? effective;
+
+                return (effective, source);
             }
             catch (Exception ex)
             {
-                Logger.Warning($"Error determining effective user: {ex.Message}");
-                return MappedUser;
+                Logger.Warning($"Error determining effective user and source: {ex.Message}");
+                return (MappedUser, SystemUser);
             }
         }
+
+
 
         /// <summary>
         /// Checks if the current system user is a Windows domain user.
