@@ -71,92 +71,119 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Program Entry Point -->
+    <Compile Include="Program.cs" />
+    
+    <!-- Actions - Base Classes -->
     <Compile Include="Actions\ActionFactory.cs" />
+    <Compile Include="Actions\ArgumentMetadataAttribute.cs" />
+    <Compile Include="Actions\BaseAction.cs" />
+    <Compile Include="Actions\ExcludeFromArgumentsAttribute.cs" />
+    
+    <!-- Actions - Administration -->
     <Compile Include="Actions\Administration\AdsiManager.cs" />
     <Compile Include="Actions\Administration\Config.cs" />
     <Compile Include="Actions\Administration\CreateUser.cs" />
     <Compile Include="Actions\Administration\Kill.cs" />
     <Compile Include="Actions\Administration\Monitor.cs" />
     <Compile Include="Actions\Administration\Sessions.cs" />
-    <Compile Include="Actions\ArgumentMetadataAttribute.cs" />
-    <Compile Include="Actions\Database\ExtendedProcs.cs" />
-    <Compile Include="Actions\Database\Roles.cs" />
-    <Compile Include="Actions\Database\RoleMembers.cs" />
-    <Compile Include="Actions\Domain\AdGroups.cs" />
+    
+    <!-- Actions - Database -->
     <Compile Include="Actions\Database\AuthToken.cs" />
-    <Compile Include="Actions\Domain\AdDomain.cs" />
-    <Compile Include="Actions\Database\LoginMap.cs" />
-    <Compile Include="Actions\Domain\AdSid.cs" />
-    <Compile Include="Actions\Domain\AdMembers.cs" />
-    <Compile Include="Actions\Domain\RidCycle.cs" />
-    <Compile Include="Actions\Execution\QueryAll.cs" />
-    <Compile Include="Actions\Network\LinkMap.cs" />
-    <Compile Include="Actions\Network\ExternalSources.cs" />
-    <Compile Include="Actions\Network\ExternalCredentials.cs" />
-    <Compile Include="Actions\Network\ExternalTables.cs" />
-    <Compile Include="Actions\Database\OleDbProvidersInfo.cs" />
-    <Compile Include="Actions\Database\Procedures.cs" />
-    <Compile Include="Actions\Database\Search.cs" />
-    <Compile Include="Actions\Database\Whoami.cs" />
-    <Compile Include="Actions\ExcludeFromArgumentsAttribute.cs" />
-    <Compile Include="Actions\Execution\ClrExecution.cs" />
-    <Compile Include="Actions\Execution\Agents.cs" />
-    <Compile Include="Actions\Execution\ObjectLinkingEmbedding.cs" />
-    <Compile Include="Utilities\FindSQLServers.cs" />
-    <Compile Include="Actions\Network\AdsiCredentialExtractor.cs" />
-    <Compile Include="Actions\Network\AdsiQuery.cs" />
-    <Compile Include="Services\ActiveDirectoryService.cs" />
-    <Compile Include="Services\AdsiService.cs" />
-    <Compile Include="Utilities\Helper.cs" />
-    <Compile Include="Actions\BaseAction.cs" />
     <Compile Include="Actions\Database\Databases.cs" />
+    <Compile Include="Actions\Database\ExtendedProcs.cs" />
     <Compile Include="Actions\Database\Impersonation.cs" />
     <Compile Include="Actions\Database\Info.cs" />
-    <Compile Include="Actions\Network\Links.cs" />
+    <Compile Include="Actions\Database\LoginMap.cs" />
+    <Compile Include="Actions\Database\OleDbProvidersInfo.cs" />
     <Compile Include="Actions\Database\Permissions.cs" />
+    <Compile Include="Actions\Database\Procedures.cs" />
+    <Compile Include="Actions\Database\RoleMembers.cs" />
+    <Compile Include="Actions\Database\Roles.cs" />
+    <Compile Include="Actions\Database\Rows.cs" />
+    <Compile Include="Actions\Database\Search.cs" />
     <Compile Include="Actions\Database\Tables.cs" />
     <Compile Include="Actions\Database\Users.cs" />
+    <Compile Include="Actions\Database\Whoami.cs" />
+    
+    <!-- Actions - Domain -->
+    <Compile Include="Actions\Domain\AdDomain.cs" />
+    <Compile Include="Actions\Domain\AdGroups.cs" />
+    <Compile Include="Actions\Domain\AdMembers.cs" />
+    <Compile Include="Actions\Domain\AdSid.cs" />
+    <Compile Include="Actions\Domain\RidCycle.cs" />
+    
+    <!-- Actions - Execution -->
+    <Compile Include="Actions\Execution\Agents.cs" />
+    <Compile Include="Actions\Execution\ClrExecution.cs" />
+    <Compile Include="Actions\Execution\ObjectLinkingEmbedding.cs" />
+    <Compile Include="Actions\Execution\PowerShell.cs" />
+    <Compile Include="Actions\Execution\Query.cs" />
+    <Compile Include="Actions\Execution\QueryAll.cs" />
+    <Compile Include="Actions\Execution\RemotePowerShellExecutor.cs" />
+    <Compile Include="Actions\Execution\XpCmd.cs" />
+    
+    <!-- Actions - FileSystem -->
     <Compile Include="Actions\FileSystem\FileRead.cs" />
     <Compile Include="Actions\FileSystem\Tree.cs" />
-    <Compile Include="Actions\Execution\PowerShell.cs" />
-    <Compile Include="Actions\Execution\RemotePowerShellExecutor.cs" />
+    
+    <!-- Actions - Network -->
+    <Compile Include="Actions\Network\AdsiCredentialExtractor.cs" />
+    <Compile Include="Actions\Network\AdsiQuery.cs" />
+    <Compile Include="Actions\Network\ExternalCredentials.cs" />
+    <Compile Include="Actions\Network\ExternalSources.cs" />
+    <Compile Include="Actions\Network\ExternalTables.cs" />
+    <Compile Include="Actions\Network\LinkMap.cs" />
+    <Compile Include="Actions\Network\Links.cs" />
     <Compile Include="Actions\Network\RemoteProcedureCall.cs" />
-    <Compile Include="Actions\Database\Rows.cs" />
-    <Compile Include="Actions\Execution\XpCmd.cs" />
     <Compile Include="Actions\Network\SmbCoerce.cs" />
+    
+    <!-- Models -->
     <Compile Include="Models\CommandArgs.cs" />
     <Compile Include="Models\LinkedServers.cs" />
     <Compile Include="Models\Server.cs" />
     <Compile Include="Models\ServerExecutionState.cs" />
-    <Compile Include="Services\Authentication\AuthenticationService.cs" />
+    
+    <!-- Services - Core -->
+    <Compile Include="Services\ActiveDirectoryService.cs" />
+    <Compile Include="Services\AdsiService.cs" />
     <Compile Include="Services\ConfigurationService.cs" />
     <Compile Include="Services\DatabaseContext.cs" />
     <Compile Include="Services\QueryService.cs" />
     <Compile Include="Services\UserService.cs" />
+    
+    <!-- Services - Authentication -->
+    <Compile Include="Services\Authentication\AuthenticationService.cs" />
+    <Compile Include="Services\Authentication\Credentials\AzureCredentials.cs" />
+    <Compile Include="Services\Authentication\Credentials\BaseCredentials.cs" />
+    <Compile Include="Services\Authentication\Credentials\CredentialsFactory.cs" />
+    <Compile Include="Services\Authentication\Credentials\DomainCredentials.cs" />
+    <Compile Include="Services\Authentication\Credentials\EntraIDCredentials.cs" />
+    <Compile Include="Services\Authentication\Credentials\LocalCredentials.cs" />
+    <Compile Include="Services\Authentication\Credentials\TokenCredentials.cs" />
+    <Compile Include="Services\Authentication\Credentials\WindowsIdentityImpersonation.cs" />
+    
+    <!-- Utilities - Core -->
     <Compile Include="Utilities\CommandParser.cs" />
-    <Compile Include="Actions\Execution\Query.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="Utilities\FindSQLServers.cs" />
+    <Compile Include="Utilities\Helper.cs" />
+    <Compile Include="Utilities\Logger.cs" />
+    <Compile Include="Utilities\Misc.cs" />
+    <Compile Include="Utilities\SidParser.cs" />
+    
+    <!-- Utilities - Formatters -->
+    <Compile Include="Utilities\Formatters\CsvFormatter.cs" />
+    <Compile Include="Utilities\Formatters\IOutputFormatter.cs" />
+    <Compile Include="Utilities\Formatters\MarkdownFormatter.cs" />
+    <Compile Include="Utilities\Formatters\OutputFormatter.cs" />
+    
+    <!-- Properties -->
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="Services\Authentication\Credentials\AzureCredentials.cs" />
-    <Compile Include="Services\Authentication\Credentials\BaseCredentials.cs" />
-    <Compile Include="Services\Authentication\Credentials\CredentialsFactory.cs" />
-    <Compile Include="Services\Authentication\Credentials\EntraIDCredentials.cs" />
-    <Compile Include="Services\Authentication\Credentials\LocalCredentials.cs" />
-    <Compile Include="Services\Authentication\Credentials\DomainCredentials.cs" />
-    <Compile Include="Services\Authentication\Credentials\WindowsIdentityImpersonation.cs" />
-    <Compile Include="Services\Authentication\Credentials\TokenCredentials.cs" />
-    <Compile Include="Utilities\Logger.cs" />
-    <Compile Include="Utilities\Formatters\IOutputFormatter.cs" />
-    <Compile Include="Utilities\Formatters\MarkdownFormatter.cs" />
-    <Compile Include="Utilities\Formatters\CsvFormatter.cs" />
-    <Compile Include="Utilities\Formatters\OutputFormatter.cs" />
-    <Compile Include="Utilities\Misc.cs" />
-    <Compile Include="Utilities\SidParser.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
