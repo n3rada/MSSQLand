@@ -30,4 +30,5 @@ using System.Runtime.InteropServices;
 //
 // Using the wildcard (*) in AssemblyVersion allows the Build and Revision numbers 
 // to be automatically determined based on the machine's local time during compilation.
-[assembly: AssemblyVersion("1.4.1.*")]
+//
+[assembly: AssemblyVersion("2.0.0.*")]
