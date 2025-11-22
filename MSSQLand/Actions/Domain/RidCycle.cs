@@ -27,46 +27,53 @@ namespace MSSQLand.Actions.Domain
         [ExcludeFromArguments]
         private bool _tableOutput = false;
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrWhiteSpace(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 return;
             }
 
-            string[] parts = SplitArguments(additionalArguments);
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
 
-            foreach (var part in parts)
+            // Check for --format flag
+            if (namedArgs.ContainsKey("format"))
             {
-                string arg = part.Trim();
-                
-                if (arg.Equals("bash", StringComparison.OrdinalIgnoreCase))
+                string format = namedArgs["format"].ToLower();
+                if (format == "bash")
                 {
                     _bashOutput = true;
                 }
-                else if (arg.Equals("python", StringComparison.OrdinalIgnoreCase) || arg.Equals("py", StringComparison.OrdinalIgnoreCase))
+                else if (format == "python" || format == "py")
                 {
                     _pythonOutput = true;
                 }
-                else if (arg.Equals("table", StringComparison.OrdinalIgnoreCase))
+                else if (format == "table")
                 {
                     _tableOutput = true;
                 }
-                else if (int.TryParse(arg, out int maxRid) && maxRid > 0)
+                else
+                {
+                    throw new ArgumentException($"Invalid format: {format}. Use 'bash', 'python', or 'table'.");
+                }
+            }
+
+            // First positional argument is max RID
+            if (positionalArgs.Count > 0)
+            {
+                if (int.TryParse(positionalArgs[0], out int maxRid) && maxRid > 0)
                 {
                     _maxRid = maxRid;
                 }
                 else
                 {
-                    throw new ArgumentException($"Invalid argument: {arg}. Use a positive integer for max RID, 'bash' for bash output, 'python'/'py' for Python output, or 'table' for detailed table view.");
+                    throw new ArgumentException($"Invalid max RID: {positionalArgs[0]}. Must be a positive integer.");
                 }
             }
 
-            // Only one output format can be enabled at a time
-            int formatCount = (_bashOutput ? 1 : 0) + (_pythonOutput ? 1 : 0) + (_tableOutput ? 1 : 0);
-            if (formatCount > 1)
+            if (positionalArgs.Count > 1)
             {
-                throw new ArgumentException("Cannot use multiple output formats simultaneously. Choose one: bash, python, or table.");
+                throw new ArgumentException($"Too many positional arguments. Expected: [maxRid]. Use --format flag for output format.");
             }
         }
 
@@ -80,7 +87,7 @@ namespace MSSQLand.Actions.Domain
             {
                 // Use AdDomain action to get domain SID information
                 var AdDomainAction = new AdDomain();
-                AdDomainAction.ValidateArguments(null);
+                AdDomainAction.ValidateArguments(new string[0]);
                 
                 var domainInfo = AdDomainAction.Execute(databaseContext) as Dictionary<string, string>;
                 
