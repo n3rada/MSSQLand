@@ -39,7 +39,7 @@ namespace MSSQLand.Actions.Execution
             string powerShellCommand = $"powershell.exe -noni -NoLogo -e {base64EncodedScript}";
 
             // Set the crafted PowerShell command as the _command in the parent class
-            base.ValidateArguments(powerShellCommand);
+            base.ValidateArguments(new string[] { powerShellCommand });
 
             // Call the parent's Execute method to execute the command
             return base.Execute(databaseContext);
