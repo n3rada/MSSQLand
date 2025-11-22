@@ -21,16 +21,16 @@ namespace MSSQLand.Actions.FileSystem
         /// <summary>
         /// Validates the arguments passed to the Read action.
         /// </summary>
-        /// <param name="additionalArguments">The file path to read.</param>
-        public override void ValidateArguments(string additionalArguments)
+        /// <param name="args">The file path to read.</param>
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrEmpty(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 throw new ArgumentException("FileRead action requires a file path as an argument.");
             }
 
             // Parse both positional and named arguments
-            var (namedArgs, positionalArgs) = ParseArguments(additionalArguments);
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
 
             // Get file path from position 0
             _filePath = GetPositionalArgument(positionalArgs, 0);

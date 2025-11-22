@@ -12,16 +12,16 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(Position = 0, ShortName = "db", LongName = "database", Description = "Database name (uses current database if not specified)")]
         private string _database;
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrWhiteSpace(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 // No database specified - will use current database
                 return;
             }
 
             // Parse both positional and named arguments
-            var (namedArgs, positionalArgs) = ParseArguments(additionalArguments);
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
 
             // Get database name from position 0 or /db: or /database:
             _database = GetNamedArgument(namedArgs, "db")

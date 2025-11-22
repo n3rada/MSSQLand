@@ -17,10 +17,10 @@ namespace MSSQLand.Actions
     {
 
         /// <summary>
-        /// Validates the additional argument passed for the action.
+        /// Validates the action arguments passed as string array (argparse-style).
         /// </summary>
-        /// <param name="additionalArguments">The additional argument for the action.</param>
-        public abstract void ValidateArguments(string additionalArguments);
+        /// <param name="args">The action-specific arguments as string array.</param>
+        public abstract void ValidateArguments(string[] args);
 
 
         /// <summary>
@@ -30,9 +30,73 @@ namespace MSSQLand.Actions
         public abstract object? Execute(DatabaseContext databaseContext = null);
 
         /// <summary>
-        /// Splits arguments using the default separator.
+        /// Parse action arguments using modern CLI patterns (argparse-style).
+        /// Supports: positional args, -flag value, --long-flag value, -flag:value, --long-flag=value
         /// </summary>
-        protected string[] SplitArguments(string additionalArguments, string separator = CommandParser.AdditionalArgumentsSeparator)
+        /// <param name="args">The action arguments array.</param>
+        /// <returns>Dictionary of named arguments and list of positional arguments.</returns>
+        protected (Dictionary<string, string> Named, List<string> Positional) ParseActionArguments(string[] args)
+        {
+            var named = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var positional = new List<string>();
+
+            if (args == null || args.Length == 0)
+            {
+                return (named, positional);
+            }
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                string arg = args[i];
+
+                // Check if it's a flag (starts with - or --)
+                if (arg.StartsWith("-"))
+                {
+                    string flagName;
+                    string flagValue = null;
+
+                    // Check for inline value: -flag:value or --flag=value
+                    int separatorIndex = arg.IndexOfAny(new[] { ':', '=' });
+                    if (separatorIndex > 0)
+                    {
+                        flagName = arg.Substring(arg.StartsWith("--") ? 2 : 1, separatorIndex - (arg.StartsWith("--") ? 2 : 1));
+                        flagValue = arg.Substring(separatorIndex + 1);
+                    }
+                    else
+                    {
+                        // Flag without inline value: -flag value or --flag value
+                        flagName = arg.StartsWith("--") ? arg.Substring(2) : arg.Substring(1);
+                        
+                        // Check if next arg is the value (not another flag)
+                        if (i + 1 < args.Length && !args[i + 1].StartsWith("-"))
+                        {
+                            flagValue = args[++i];
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(flagName))
+                    {
+                        named[flagName] = flagValue ?? "true"; // Boolean flags default to "true"
+                        Logger.Debug($"Parsed flag: {flagName} = {named[flagName]}");
+                    }
+                }
+                else
+                {
+                    // Positional argument
+                    positional.Add(arg);
+                    Logger.Debug($"Parsed positional arg: {arg}");
+                }
+            }
+
+            return (named, positional);
+        }
+
+        /// <summary>
+        /// Legacy method for backward compatibility - splits string-based arguments.
+        /// DEPRECATED: Use ParseActionArguments(string[] args) instead.
+        /// </summary>
+        [Obsolete("Use ParseActionArguments(string[] args) for argparse-style parsing")]
+        protected string[] SplitArguments(string additionalArguments, string separator = "/|/")
         {
             if (string.IsNullOrWhiteSpace(additionalArguments))
             {
@@ -50,12 +114,9 @@ namespace MSSQLand.Actions
         }
 
         /// <summary>
-        /// Parses both positional and named arguments from the input string.
-        /// Named arguments can be in formats: /name:value or /name=value
-        /// Positional arguments are those without a name prefix.
+        /// Legacy method - DEPRECATED. Use ParseActionArguments instead.
         /// </summary>
-        /// <param name="additionalArguments">The raw argument string.</param>
-        /// <returns>A dictionary of named arguments and a list of positional arguments.</returns>
+        [Obsolete("Use ParseActionArguments(string[] args) for modern CLI parsing")]
         protected (Dictionary<string, string> Named, List<string> Positional) ParseArguments(string additionalArguments)
         {
             var named = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

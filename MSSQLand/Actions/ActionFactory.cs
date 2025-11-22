@@ -89,7 +89,7 @@ namespace MSSQLand.Utilities
         };
 
 
-        public static BaseAction GetAction(string actionType, string additionalArguments)
+        public static BaseAction GetAction(string actionType, string[] actionArguments)
         {
             try
             {
@@ -101,8 +101,8 @@ namespace MSSQLand.Utilities
                 // Create an instance of the action class
                 BaseAction action = (BaseAction)Activator.CreateInstance(metadata.ActionClass);
 
-                // Validate and initialize the action with the additional argument
-                action.ValidateArguments(additionalArguments);
+                // Validate and initialize the action with the action arguments
+                action.ValidateArguments(actionArguments);
                 return action;
             }
             catch (Exception ex)

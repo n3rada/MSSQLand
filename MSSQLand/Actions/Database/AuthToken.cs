@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.Database
     /// </summary>
     internal class AuthToken : BaseAction
     {
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
             // No additional arguments needed
         }

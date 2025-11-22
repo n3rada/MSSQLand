@@ -15,10 +15,10 @@ namespace MSSQLand.Actions.Execution
         [ArgumentMetadata(Position = 1, Description = "Function name to execute (default: Main)")]
         private string _function;
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
             // Split the additional argument into parts (dll URI and function)
-            string[] parts = SplitArguments(additionalArguments);
+            string[] parts = args;
 
             if (parts.Length == 1)
             {

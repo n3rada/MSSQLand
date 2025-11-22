@@ -12,15 +12,15 @@ namespace MSSQLand.Actions.Execution
         /// <summary>
         /// Validates the arguments passed to the PowerShellScriptDownloader action.
         /// </summary>
-        /// <param name="additionalArguments">The URL of the PowerShell script to download and execute.</param>
-        public override void ValidateArguments(string additionalArguments)
+        /// <param name="args">The URL of the PowerShell script to download and execute.</param>
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrEmpty(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 throw new ArgumentException("PowerShellScriptDownloader action requires a script URL.");
             }
 
-            _url = additionalArguments;
+            _url = string.Join(" ", args);
         }
 
         /// <summary>

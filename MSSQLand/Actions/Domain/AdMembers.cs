@@ -17,14 +17,14 @@ namespace MSSQLand.Actions.Domain
         [ExcludeFromArguments]
         private bool _useOpenQuery = false;
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrWhiteSpace(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 throw new ArgumentException("Group name is required. Example: DOMAIN\\IT or DOMAIN\\Domain Admins");
             }
 
-            string[] parts = SplitArguments(additionalArguments);
+            string[] parts = args;
             _groupName = parts[0].Trim();
 
             // Check for openquery flag

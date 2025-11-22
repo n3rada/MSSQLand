@@ -46,11 +46,11 @@ namespace MSSQLand.Actions.Network
         [ArgumentMetadata(Position = 0, Description = "Maximum recursion depth (default: 10, max: 50)")]
         private int _maxDepth = DEFAULT_MAX_DEPTH;
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
-            string[] parts = SplitArguments(additionalArguments);
+            string[] parts = args;
 
-            if (parts.Length > 0)
+            if (parts != null && parts.Length > 0)
             {
                 if (!int.TryParse(parts[0], out int maxDepth) || maxDepth < 1 || maxDepth > 50)
                 {

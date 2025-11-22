@@ -11,14 +11,14 @@ namespace MSSQLand.Actions.Administration
         [ArgumentMetadata(Position = 0, Required = true, Description = "Session ID to kill or 'all' for all sessions")]
         private string _target;
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrEmpty(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 throw new ArgumentException("Please specify a session ID or 'all' as an argument.");
             }
 
-            _target = additionalArguments.Trim();
+            _target = string.Join(" ", args).Trim();
 
             // Verify target is "all" or a valid integer
             if (_target.ToLower() != "all" && (!Int16.TryParse(_target, out Int16 sessionId) || sessionId <= 0))

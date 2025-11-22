@@ -8,7 +8,7 @@ namespace MSSQLand.Actions.Administration
     internal class Monitor : BaseAction
     {
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
             // No additional arguments needed
         }

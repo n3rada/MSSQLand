@@ -40,10 +40,10 @@ namespace MSSQLand.Actions.FileSystem
         /// <summary>
         /// Validates the arguments passed to the Tree action.
         /// </summary>
-        /// <param name="additionalArguments">Path and optional parameters.</param>
-        public override void ValidateArguments(string additionalArguments)
+        /// <param name="args">Path and optional parameters.</param>
+        public override void ValidateArguments(string[] args)
         {
-            var (namedArgs, positionalArgs) = ParseArguments(additionalArguments);
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
 
             // Get path from positional argument or throw error
             _path = GetPositionalArgument(positionalArgs, 0, null);

@@ -13,15 +13,15 @@ namespace MSSQLand.Actions.Network
         /// <summary>
         /// Validates the arguments passed to the SmbCoerce action.
         /// </summary>
-        /// <param name="additionalArguments">The UNC path for SMB coercion (e.g., \\\\172.16.118.218\\shared).</param>
-        public override void ValidateArguments(string additionalArguments)
+        /// <param name="args">The UNC path for SMB coercion (e.g., \\\\172.16.118.218\\shared).</param>
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrEmpty(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 throw new ArgumentException("SMB action requires targeted UNC path (e.g., \\\\172.16.118.218\\shared).");
             }
 
-            string path = additionalArguments.Trim();
+            string path = string.Join(" ", args).Trim();
 
             // Auto-prepend \\ if missing
             if (!path.StartsWith("\\\\"))

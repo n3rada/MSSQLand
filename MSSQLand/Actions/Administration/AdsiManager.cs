@@ -23,15 +23,15 @@ namespace MSSQLand.Actions.Administration
         [ArgumentMetadata(Position = 2, Description = "Data source for the ADSI linked server (default: localhost)")]
         private string _dataSource = "localhost";
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrWhiteSpace(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 _operation = Operation.List;
                 return;
             }
 
-            string[] parts = SplitArguments(additionalArguments);
+            string[] parts = args;
             string command = parts[0].ToLower();
 
             switch (command)

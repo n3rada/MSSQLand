@@ -15,10 +15,10 @@ namespace MSSQLand.Actions.Administration
         [ArgumentMetadata(Position = 1, ShortName = "v", LongName = "value", Required = false, Description = "Value to set (0=disable, 1=enable)")]
         private int _value = -1;
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
             // No arguments = list all configurations
-            if (string.IsNullOrWhiteSpace(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 _optionName = null;
                 _value = -1;
@@ -26,7 +26,7 @@ namespace MSSQLand.Actions.Administration
             }
 
             // Parse both positional and named arguments
-            var (namedArgs, positionalArgs) = ParseArguments(additionalArguments);
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
 
             // Get option name from position 0 or /o: or /option:
             _optionName = GetNamedArgument(namedArgs, "o")

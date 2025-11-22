@@ -8,7 +8,7 @@ namespace MSSQLand.Actions.Database
 {
     internal class OleDbProvidersInfo : BaseAction
     {
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
             // No additional arguments needed
         }

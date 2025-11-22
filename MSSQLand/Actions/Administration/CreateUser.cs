@@ -18,50 +18,47 @@ namespace MSSQLand.Actions.Administration
         [ArgumentMetadata(Position = 2, ShortName = "r", LongName = "role", Description = "Server role to assign")]
         private string _role = "sysadmin";
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrWhiteSpace(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 return;
             }
 
-            // Parse both named and positional arguments
-            var (named, positional) = ParseArguments(additionalArguments);
+            // Parse both named and positional arguments using modern argparse-style
+            var (named, positional) = ParseActionArguments(args);
 
             // Priority 1: Named arguments (most explicit)
-            _username = GetNamedArgument(named, "u", null) ?? 
-                       GetNamedArgument(named, "username", null) ?? 
-                       _username;
-            
-            _password = GetNamedArgument(named, "p", null) ?? 
-                       GetNamedArgument(named, "password", null) ?? 
-                       _password;
-            
-            _role = GetNamedArgument(named, "r", null) ?? 
-                   GetNamedArgument(named, "role", null) ?? 
-                   _role;
-
-            // Priority 2: Positional arguments (fallback)
-            // Only use positional args if named args weren't provided
-            if (!named.ContainsKey("u") && !named.ContainsKey("username"))
+            // Support both short (-u) and long (--username) forms
+            if (named.TryGetValue("u", out string username) || named.TryGetValue("username", out username))
             {
-                _username = GetPositionalArgument(positional, 0, _username);
+                _username = username;
+            }
+            
+            if (named.TryGetValue("p", out string password) || named.TryGetValue("password", out password))
+            {
+                _password = password;
+            }
+            
+            if (named.TryGetValue("r", out string role) || named.TryGetValue("role", out role))
+            {
+                _role = role;
             }
 
-            if (!named.ContainsKey("p") && !named.ContainsKey("password"))
+            // Priority 2: Positional arguments (fallback if no named args)
+            if (!named.ContainsKey("u") && !named.ContainsKey("username") && positional.Count > 0)
             {
-                if (positional.Count > 1)
-                {
-                    _password = GetPositionalArgument(positional, 1, _password);
-                }
+                _username = positional[0];
             }
 
-            if (!named.ContainsKey("r") && !named.ContainsKey("role"))
+            if (!named.ContainsKey("p") && !named.ContainsKey("password") && positional.Count > 1)
             {
-                if (positional.Count > 2)
-                {
-                    _role = GetPositionalArgument(positional, 2, _role);
-                }
+                _password = positional[1];
+            }
+
+            if (!named.ContainsKey("r") && !named.ContainsKey("role") && positional.Count > 2)
+            {
+                _role = positional[2];
             }
 
             // Validate inputs

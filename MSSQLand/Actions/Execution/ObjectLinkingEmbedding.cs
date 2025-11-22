@@ -16,15 +16,15 @@ namespace MSSQLand.Actions.Execution
         /// <summary>
         /// Validates the provided command argument.
         /// </summary>
-        /// <param name="additionalArguments">The command to be executed.</param>
-        public override void ValidateArguments(string additionalArguments)
+        /// <param name="args">The command to be executed.</param>
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrEmpty(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 throw new ArgumentException("A command must be provided for OLE execution. Usage: <command>");
             }
 
-            _command = additionalArguments;
+            _command = string.Join(" ", args);
         }
 
         public override object? Execute(DatabaseContext databaseContext)

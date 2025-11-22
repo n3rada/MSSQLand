@@ -22,16 +22,16 @@ namespace MSSQLand.Actions.Network
         private string? _targetServer;
 
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrWhiteSpace(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 // Default to self mode
                 _mode = Mode.Self;
                 return;
             }
 
-            string[] parts = SplitArguments(additionalArguments);
+            string[] parts = args;
             string command = parts[0].ToLower();
 
             switch (command)

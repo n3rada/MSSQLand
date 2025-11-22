@@ -10,14 +10,14 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(Position = 0, Required = true, Description = "Server role name (e.g., sysadmin, serveradmin)")]
         private string _roleName;
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrWhiteSpace(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 throw new ArgumentException("Role name is required. Example: sysadmin, serveradmin, securityadmin, etc.");
             }
 
-            _roleName = additionalArguments.Trim();
+            _roleName = string.Join(" ", args).Trim();
         }
 
         public override object? Execute(DatabaseContext databaseContext)

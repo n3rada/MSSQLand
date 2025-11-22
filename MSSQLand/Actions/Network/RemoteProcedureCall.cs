@@ -17,14 +17,12 @@ namespace MSSQLand.Actions.Network
         [ArgumentMetadata(Position = 1, Required = true, Description = "Linked server name")]
         private string _linkedServerName;
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrWhiteSpace(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 throw new ArgumentException("Remote Procedure Call (RPC) action requires two arguments: action ('add' or 'del') and linked server name.");
             }
-
-            string[] args = SplitArguments(additionalArguments);
 
             if (args.Length != 2)
             {

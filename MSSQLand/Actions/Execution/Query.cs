@@ -16,15 +16,15 @@ namespace MSSQLand.Actions.Execution
         /// <summary>
         /// Validates the additional argument provided for the query action.
         /// </summary>
-        /// <param name="additionalArguments">The SQL query to validate.</param>
-        public override void ValidateArguments(string additionalArguments)
+        /// <param name="args">The SQL query to validate.</param>
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrEmpty(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 throw new ArgumentException("Query action requires a valid SQL query as an additional argument.");
             }
 
-            _query = additionalArguments;
+            _query = string.Join(" ", args);
         }
 
 

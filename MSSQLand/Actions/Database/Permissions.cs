@@ -43,23 +43,23 @@ namespace MSSQLand.Actions.Database
         [ExcludeFromArguments]
         private bool ShowAllPermissions = false;
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrEmpty(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 // No arguments - will show server and database permissions
                 return;
             }
 
             // Check for 'all' mode
-            if (additionalArguments.Trim().Equals("all", StringComparison.OrdinalIgnoreCase))
+            if (string.Join(" ", args).Trim().Equals("all", StringComparison.OrdinalIgnoreCase))
             {
                 ShowAllPermissions = true;
                 return;
             }
 
             // Parse both positional and named arguments
-            var (namedArgs, positionalArgs) = ParseArguments(additionalArguments);
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
 
             // Get table name from position 0
             string tableName = GetPositionalArgument(positionalArgs, 0);

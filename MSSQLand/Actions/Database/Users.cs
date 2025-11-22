@@ -20,7 +20,7 @@ namespace MSSQLand.Actions.Database
     /// </summary>
     internal class Users : BaseAction
     {
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
             // No additional arguments needed
         }

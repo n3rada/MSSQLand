@@ -23,11 +23,11 @@ namespace MSSQLand.Actions.Database
         [ExcludeFromArguments]
         private string? _searchKeyword;
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
-            string[] parts = SplitArguments(additionalArguments);
+            string[] parts = args;
 
-            if (parts.Length == 0)
+            if (parts == null || parts.Length == 0)
             {
                 return; // Default to listing stored procedures
             }

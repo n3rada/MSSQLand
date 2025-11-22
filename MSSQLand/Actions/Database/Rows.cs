@@ -26,15 +26,15 @@ namespace MSSQLand.Actions.Database
         [ExcludeFromArguments]
         private string _table;
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrEmpty(additionalArguments))
+            if (args == null || args.Length == 0)
             {
                 throw new ArgumentException("Rows action requires at least a Table Name as an argument or a Fully Qualified Table Name (FQTN) in the format 'database.schema.table'.");
             }
 
             // Parse both positional and named arguments
-            var (namedArgs, positionalArgs) = ParseArguments(additionalArguments);
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
 
             // Get table name from position 0 or /t: or /table:
             string tableName = GetNamedArgument(namedArgs, "t") 

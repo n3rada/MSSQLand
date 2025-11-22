@@ -24,11 +24,11 @@ namespace MSSQLand.Actions.Execution
         [ArgumentMetadata(Position = 2, Description = "Subsystem: cmd, powershell, tsql, vbscript (default: powershell)")]
         private SubSystemMode _subSystem = SubSystemMode.PowerShell;
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
-            string[] parts = SplitArguments(additionalArguments);
+            string[] parts = args;
 
-            if (parts.Length == 0)
+            if (parts == null || parts.Length == 0)
             {
                 return;
             }

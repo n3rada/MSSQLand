@@ -27,7 +27,7 @@ namespace MSSQLand.Utilities
             if (matchedActions.Count == 0)
             {
                 Logger.Warning($"No actions found matching '{searchTerm}'");
-                Console.WriteLine("\nUse /help to see all available actions.");
+                Console.WriteLine("\nUse -h or --help to see all available actions.");
                 return;
             }
 
@@ -57,12 +57,14 @@ namespace MSSQLand.Utilities
             MarkdownFormatter formatter = new MarkdownFormatter();
 
             // Usage instruction
-            Console.WriteLine("Usage: /h:localhost /c:token /a:whoami\n");
-            Console.WriteLine("Quick Help:");
-            Console.WriteLine("  /help                - Show this basic help");
-            Console.WriteLine("  /help <keyword>      - Search for actions matching keyword");
-            Console.WriteLine("  /a: or /a            - List all available actions");
-            Console.WriteLine("  /a:actionname        - Execute specific action");
+            Console.WriteLine("Usage: <host> [options] <action> [action-options]\n");
+            Console.WriteLine("Examples:");
+            Console.WriteLine("  localhost -c token whoami");
+            Console.WriteLine("\nQuick Help:");
+            Console.WriteLine("  -h, --help           - Show this basic help");
+            Console.WriteLine("  -h <keyword>         - Search for actions matching keyword");
+            Console.WriteLine("  <host> <action> -h   - Show help for specific action");
+            Console.WriteLine("  (no action)          - List all available actions");
 
             // Provide a quick reference of top-level arguments or usage
             Console.WriteLine();
@@ -77,10 +79,10 @@ namespace MSSQLand.Utilities
             // Add Utilities Section
             Console.WriteLine();
             Console.WriteLine("Standalones (no database connection needed):");
-            Console.WriteLine("  findsql <domain>     - Search for MS SQL Servers in Active Directory.");
+            Console.WriteLine("  --findsql <domain>   - Search for MS SQL Servers in Active Directory.");
             Console.WriteLine();
-            Console.WriteLine("For a complete list of actions, use: /a: or /a");
-            Console.WriteLine("For detailed help on a specific action, use: /a:actionname /help");
+            Console.WriteLine("For a complete list of actions, run without specifying an action.");
+            Console.WriteLine("For detailed help on a specific action, use: <host> <action> -h");
             Console.WriteLine();
         } 
 
@@ -113,8 +115,8 @@ namespace MSSQLand.Utilities
             }
 
             Console.WriteLine();
-            Console.WriteLine("For detailed information about a specific action, use: /a:actionname /help");
-            Console.WriteLine("Example: /a:createuser /help");
+            Console.WriteLine("For detailed information about a specific action, use: <host> <action> -h");
+            Console.WriteLine("Example: localhost -c token createuser -h");
             Console.WriteLine();
         }
 
@@ -131,7 +133,7 @@ namespace MSSQLand.Utilities
             {
                 Logger.Error($"Action '{actionName}' not found.");
                 Console.WriteLine();
-                Console.WriteLine("Use /help to see all available actions.");
+                Console.WriteLine("Use -h or --help to see all available actions.");
                 return;
             }
 
@@ -184,20 +186,20 @@ namespace MSSQLand.Utilities
             argumentsTable.Columns.Add("Argument", typeof(string));
             argumentsTable.Columns.Add("Description", typeof(string));
 
-            argumentsTable.Rows.Add("/h or /host", "Specify the target SQL Server. Format: server,port:user@database (port defaults to 1433).");
-            argumentsTable.Rows.Add("/timeout", "Specify the connection timeout in seconds (default: 15).");
-            argumentsTable.Rows.Add("/c or /credentials", "Specify the credential type (mandatory).");
-            argumentsTable.Rows.Add("/u or /username", "Provide the username (if required by credential type).");
-            argumentsTable.Rows.Add("/p or /password", "Provide the password (if required by credential type).");
-            argumentsTable.Rows.Add("/d or /domain", "Provide the domain (if required by credential type).");
-            argumentsTable.Rows.Add("/db", "Specify the target database (default: master).");
-            argumentsTable.Rows.Add("/l or /links", "Specify linked server chain. Format: server1:user1,server2:user2,...");
-            argumentsTable.Rows.Add("/a or /action", "Specify the action to execute.");
-            argumentsTable.Rows.Add("/o or /output", "Specify output format: markdown (default), csv.");
-            argumentsTable.Rows.Add("/silent or /s", "Enable silent mode. No logging, only results.");
-            argumentsTable.Rows.Add("/debug", "Enable debug mode for detailed logs.");
-            argumentsTable.Rows.Add("/help", "Display the helper.");
-            argumentsTable.Rows.Add("/findsql <domain>", "Find SQL Servers in Active Directory (no database connection needed).");
+            argumentsTable.Rows.Add("<host>", "[Positional] Target SQL Server. Format: server,port (port defaults to 1433).");
+            argumentsTable.Rows.Add("<action>", "[Positional] Action to execute (see list below).");
+            argumentsTable.Rows.Add("-c, --credentials", "Credential type (mandatory). See credential types below.");
+            argumentsTable.Rows.Add("-u, --username", "Username (if required by credential type).");
+            argumentsTable.Rows.Add("-p, --password", "Password (if required by credential type).");
+            argumentsTable.Rows.Add("-d, --domain", "Domain (if required by credential type).");
+            argumentsTable.Rows.Add("-l, --links", "Linked server chain. Format: server1:user1,server2:user2,...");
+            argumentsTable.Rows.Add("-o, --output", "Output format: table (default), csv, json, markdown.");
+            argumentsTable.Rows.Add("--timeout", "Connection timeout in seconds (default: 15).");
+            argumentsTable.Rows.Add("-s, --silent", "Enable silent mode. No logging, only results.");
+            argumentsTable.Rows.Add("--debug", "Enable debug mode for detailed logs.");
+            argumentsTable.Rows.Add("-h, --help", "Display help. Use with action for action-specific help.");
+            argumentsTable.Rows.Add("--version", "Display version information.");
+            argumentsTable.Rows.Add("--findsql <domain>", "Find SQL Servers in Active Directory (standalone utility).");
 
             return argumentsTable;
         }
