@@ -381,10 +381,10 @@ namespace MSSQLand.Utilities
                 var credentials = CredentialsFactory.GetAvailableCredentials();
                 foreach (var credential in credentials.Values)
                 {
-                    string requiredArgs = credential.RequiredArguments.Count > 0
+                    string requiredArgsDisplay = credential.RequiredArguments.Count > 0
                         ? string.Join(", ", credential.RequiredArguments)
                         : "None";
-                    credentialsTable.Rows.Add(credential.Name, credential.Description, requiredArgs);
+                    credentialsTable.Rows.Add(credential.Name, credential.Description, requiredArgsDisplay);
                 }
                 
                 Console.WriteLine(OutputFormatter.ConvertDataTable(credentialsTable));
