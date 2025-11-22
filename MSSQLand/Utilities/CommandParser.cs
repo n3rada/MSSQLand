@@ -370,6 +370,25 @@ namespace MSSQLand.Utilities
             // Check if credential type exists using CredentialsFactory
             if (!CredentialsFactory.IsValidCredentialType(credentialType))
             {
+                Logger.Error($"Unknown credential type: {credentialType}");
+                Logger.NewLine();
+                
+                DataTable credentialsTable = new();
+                credentialsTable.Columns.Add("Type", typeof(string));
+                credentialsTable.Columns.Add("Description", typeof(string));
+                credentialsTable.Columns.Add("Required Arguments", typeof(string));
+
+                var credentials = CredentialsFactory.GetAvailableCredentials();
+                foreach (var credential in credentials.Values)
+                {
+                    string requiredArgs = credential.RequiredArguments.Count > 0
+                        ? string.Join(", ", credential.RequiredArguments)
+                        : "None";
+                    credentialsTable.Rows.Add(credential.Name, credential.Description, requiredArgs);
+                }
+                
+                Console.WriteLine(OutputFormatter.ConvertDataTable(credentialsTable));
+                
                 var availableTypes = string.Join(", ", CredentialsFactory.GetCredentialTypeNames());
                 throw new ArgumentException($"Unknown credential type: {credentialType}. Available types: {availableTypes}");
             }
