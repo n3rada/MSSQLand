@@ -95,19 +95,23 @@ namespace MSSQLand
                 Logger.Info($"Logged in on {databaseContext.Server.Hostname} as {systemUser}");
                 Logger.InfoNested($"Mapped to the user {userName}");
 
-                // Compute effective user and source principal (handles group-based access)
-                // Only works on direct connections, not through linked servers
-                databaseContext.UserService.ComputeEffectiveUserAndSource();
-                
-                string effectiveUser = databaseContext.UserService.EffectiveUser;
-                string sourcePrincipal = databaseContext.UserService.SourcePrincipal;
-                
-                if (!effectiveUser.Equals(userName, StringComparison.OrdinalIgnoreCase))
+                // Compute effective user and source principal (handles group-based access via AD groups)
+                // Only works for Windows Integrated authentication on on-premises SQL Server
+                // Does not work for: SQL auth, Azure AD auth, LocalDB, or linked servers
+                if (arguments.CredentialType == "windows" && databaseContext.UserService.IsDomainUser)
                 {
-                    Logger.InfoNested($"Effective database user: {effectiveUser}");
-                    if (!sourcePrincipal.Equals(systemUser, StringComparison.OrdinalIgnoreCase))
+                    databaseContext.UserService.ComputeEffectiveUserAndSource();
+                    
+                    string effectiveUser = databaseContext.UserService.EffectiveUser;
+                    string sourcePrincipal = databaseContext.UserService.SourcePrincipal;
+                    
+                    if (!effectiveUser.Equals(userName, StringComparison.OrdinalIgnoreCase))
                     {
-                        Logger.InfoNested($"Access granted via: {sourcePrincipal}");
+                        Logger.InfoNested($"Effective database user: {effectiveUser}");
+                        if (!sourcePrincipal.Equals(systemUser, StringComparison.OrdinalIgnoreCase))
+                        {
+                            Logger.InfoNested($"Access granted via: {sourcePrincipal}");
+                        }
                     }
                 }
 
