@@ -167,6 +167,8 @@ namespace MSSQLand.Actions.Database
                 {
                     Logger.Info($"Name mismatches (login ≠ user): {mismatchedNames}");
                 }
+                
+                Logger.Success("Login-to-user mapping completed");
 
                 return sortedResults;
             }

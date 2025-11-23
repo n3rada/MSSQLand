@@ -15,7 +15,7 @@ namespace MSSQLand.Actions.Administration
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.Info("Active SQL Server sessions");
+            Logger.TaskNested("Retrieving active SQL Server sessions");
 
             string sessionsQuery = @"
             SELECT 
@@ -28,8 +28,9 @@ namespace MSSQLand.Actions.Administration
             FROM master.sys.dm_exec_sessions
             ORDER BY login_time DESC;";
 
-            Console.WriteLine(OutputFormatter.ConvertSqlDataReader(databaseContext.QueryService.Execute(sessionsQuery)));
-
+            var result = databaseContext.QueryService.Execute(sessionsQuery);
+            Console.WriteLine(OutputFormatter.ConvertSqlDataReader(result));
+        
             return null;
         }
     }

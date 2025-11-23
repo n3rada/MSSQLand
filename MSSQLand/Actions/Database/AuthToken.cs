@@ -21,7 +21,7 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Retrieving Windows authentication token groups");
+            Logger.TaskNested("Retrieving Windows authentication token groups");
 
             try
             {
@@ -98,6 +98,8 @@ namespace MSSQLand.Actions.Database
                 }
 
                 Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
+                
+                Logger.Success($"Retrieved {groups.Count} group membership(s) from authentication token");
 
                 return groups;
             }

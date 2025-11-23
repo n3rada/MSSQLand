@@ -22,7 +22,7 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.Info($"Retrieving members of server role: {_roleName}");
+            Logger.TaskNested($"Retrieving members of server role: {_roleName}");
 
             string query = $@"
 SELECT 

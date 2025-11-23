@@ -19,6 +19,8 @@ namespace MSSQLand.Actions.Database
         /// <param name="databaseContext"></param>
         public override object? Execute(DatabaseContext databaseContext)
         {
+            Logger.TaskNested("Retrieving OLE DB providers information");
+            
             string query = @"
 			CREATE TABLE #Providers ([ProviderName] varchar(8000), 
             [ParseName] varchar(8000),
@@ -134,7 +136,10 @@ namespace MSSQLand.Actions.Database
             DROP TABLE #ProviderInformation";
 
 
-            Console.WriteLine(OutputFormatter.ConvertDataTable(databaseContext.QueryService.ExecuteTable(query)));
+            var result = databaseContext.QueryService.ExecuteTable(query);
+            Console.WriteLine(OutputFormatter.ConvertDataTable(result));
+            
+            Logger.Success($"Retrieved {result.Rows.Count} OLE DB provider(s)");
 
             return null;
 

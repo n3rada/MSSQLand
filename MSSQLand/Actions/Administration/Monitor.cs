@@ -15,9 +15,7 @@ namespace MSSQLand.Actions.Administration
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-
-            Logger.NewLine();
-            Logger.Info("Currently running SQL commands");
+            Logger.TaskNested("Monitoring currently running SQL commands");
 
             string currentCommandsQuery = @"
             SELECT 
@@ -40,8 +38,8 @@ namespace MSSQLand.Actions.Administration
             WHERE r.session_id != @@SPID
             ORDER BY r.start_time DESC;";
 
-            Console.WriteLine(OutputFormatter.ConvertSqlDataReader(databaseContext.QueryService.Execute(currentCommandsQuery)));
-
+            var result = databaseContext.QueryService.Execute(currentCommandsQuery);
+            Console.WriteLine(OutputFormatter.ConvertSqlDataReader(result));
             return null;
         }
     }

@@ -49,6 +49,7 @@ namespace MSSQLand.Actions.Network
             else
             {
                 Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
+                Logger.Success($"Retrieved {resultTable.Rows.Count} database-scoped credential(s)");
             }
 
             return resultTable;

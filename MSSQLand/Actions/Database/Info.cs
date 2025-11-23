@@ -67,6 +67,8 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
+            Logger.TaskNested("Retrieving SQL Server information");
+            
             var results = new Dictionary<string, string>();
             bool isAzureSQL = databaseContext.QueryService.IsAzureSQL();
 

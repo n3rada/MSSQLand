@@ -119,6 +119,8 @@ namespace MSSQLand.Actions.Database
 
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(tables));
+            
+            Logger.Success($"Retrieved {tables.Rows.Count} table(s) from [{_database}]");
 
             return tables;
         }

@@ -276,7 +276,7 @@ namespace MSSQLand.Actions.Database
                 Logger.Error($"Error querying database permissions: {ex.Message}");
                 Logger.WarningNested("You likely lack VIEW DEFINITION permissions in this database");
             }
-
+            
             return null;
         }
 

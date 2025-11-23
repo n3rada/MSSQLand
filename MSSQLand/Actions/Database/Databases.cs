@@ -16,6 +16,8 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
+            Logger.TaskNested("Enumerating databases");
+            
             bool isAzureSQL = databaseContext.QueryService.IsAzureSQL();
             DataTable allDatabases;
 
@@ -57,6 +59,8 @@ namespace MSSQLand.Actions.Database
 
             // Output the final table
             Console.WriteLine(OutputFormatter.ConvertDataTable(allDatabases));
+            
+            Logger.Success($"Retrieved {allDatabases.Rows.Count} database(s)");
 
             return allDatabases;
         }

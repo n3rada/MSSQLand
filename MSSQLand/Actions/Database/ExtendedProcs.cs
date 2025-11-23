@@ -79,7 +79,7 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.Info("Enumerating extended stored procedures...");
+            Logger.TaskNested("Enumerating extended stored procedures");
 
             // First check if user is sysadmin (can execute everything)
             bool isSysadmin = databaseContext.UserService.IsAdmin();

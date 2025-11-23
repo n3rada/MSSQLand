@@ -67,6 +67,8 @@ ORDER BY create_date DESC;";
             }
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(queryResult));
+            
+            Logger.Success($"Impersonation check completed for {queryResult.Rows.Count} login(s)");
 
             return queryResult;
         }

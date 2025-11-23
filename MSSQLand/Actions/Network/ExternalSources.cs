@@ -42,15 +42,11 @@ namespace MSSQLand.Actions.Network
             if (resultTable.Rows.Count == 0)
             {
                 Logger.Warning("No external data sources found in the current database.");
-                Logger.InfoNested("External Data Sources are used for:");
-                Logger.InfoNested("  - Elastic Query (Azure SQL Database)");
-                Logger.InfoNested("  - Cross-database queries");
-                Logger.InfoNested("  - Querying Azure Blob Storage, Data Lake, Hadoop");
-                Logger.InfoNested("  - PolyBase external tables");
             }
             else
             {
                 Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
+                Logger.Success($"Retrieved {resultTable.Rows.Count} external data source(s)");
             }
 
             return resultTable;

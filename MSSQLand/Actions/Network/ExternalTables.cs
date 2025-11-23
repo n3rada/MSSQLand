@@ -50,11 +50,7 @@ namespace MSSQLand.Actions.Network
             else
             {
                 Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
-                Logger.NewLine();
-                Logger.Info("Attack Vectors:");
-                Logger.InfoNested("- Query external tables to access remote data");
-                Logger.InfoNested("- Analyze schemas to understand external system structure");
-                Logger.InfoNested("- Use for data exfiltration if you have CREATE EXTERNAL TABLE permission");
+                Logger.Success($"Retrieved {resultTable.Rows.Count} external table(s)");
             }
 
             return resultTable;
