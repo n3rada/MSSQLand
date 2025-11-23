@@ -91,12 +91,6 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-
-            Logger.NewLine();
-            Logger.Warning("Execution context depends on the statements used inside the stored procedure.");
-            Logger.WarningNested("Dynamic SQL executed with EXEC or sp_executesql runs under caller permissions by default.");
-            Logger.WarningNested("Static SQL inside a procedure uses ownership chaining, which may allow operations (e.g., SELECT) that the caller is not directly permitted to perform.");
-            
             switch (_mode)
             {
                 case Mode.List:
@@ -118,7 +112,7 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private DataTable ListProcedures(DatabaseContext databaseContext)
         {
-            Logger.Task($"Retrieving all stored procedures in [{databaseContext.QueryService.ExecutionDatabase}]");
+            Logger.TaskNested($"Retrieving all stored procedures in [{databaseContext.QueryService.ExecutionDatabase}]");
 
             string query = $@"
                 SELECT 
@@ -214,8 +208,10 @@ namespace MSSQLand.Actions.Database
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(sortedProcedures));
 
-            Logger.NewLine();
             Logger.Info($"Total: {sortedProcedures.Rows.Count} stored procedure(s) found");
+            Logger.Warning("Execution context depends on the statements used inside the stored procedure.");
+            Logger.WarningNested("Dynamic SQL executed with EXEC or sp_executesql runs under caller permissions by default.");
+            Logger.WarningNested("Static SQL inside a procedure uses ownership chaining, which may allow operations (e.g., SELECT) that the caller is not directly permitted to perform.");
 
             return sortedProcedures;
         }
@@ -253,8 +249,7 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private object? ReadProcedureDefinition(DatabaseContext databaseContext, string procedureName)
         {
-            Logger.NewLine();
-            Logger.Task($"Retrieving definition of [{databaseContext.QueryService.ExecutionDatabase}].[{procedureName}]");
+            Logger.TaskNested($"Retrieving definition of [{databaseContext.QueryService.ExecutionDatabase}].[{procedureName}]");
 
             // Parse schema.procedure format
             string[] parts = procedureName.Split('.');
@@ -299,8 +294,7 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private DataTable SearchProcedures(DatabaseContext databaseContext, string keyword)
         {
-            Logger.NewLine();
-            Logger.Info($"Searching for keyword '{keyword}' in [{databaseContext.QueryService.ExecutionDatabase}] procedures");
+            Logger.TaskNested($"Searching for keyword '{keyword}' in [{databaseContext.QueryService.ExecutionDatabase}] procedures");
 
             string query = $@"
                 SELECT 
