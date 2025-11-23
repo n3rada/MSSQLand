@@ -67,7 +67,7 @@ namespace MSSQLand.Actions.Database
                 SELECT name FROM master.sys.databases 
                 WHERE HAS_DBACCESS(name) = 1 
                 AND state_desc = 'ONLINE'
-                AND name NOT IN ('tempdb');
+                AND name NOT IN ('tempdb', 'model');
 
                 OPEN db_cursor;
                 FETCH NEXT FROM db_cursor INTO @dbname;
