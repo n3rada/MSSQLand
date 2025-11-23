@@ -89,36 +89,7 @@ namespace MSSQLand.Actions.Database
                 }
             }
 
-            // Get database roles from sys.user_token (additional roles not detected by IS_ROLEMEMBER)
-            try
-            {
-                string userTokenQuery = @"
-                    SELECT DISTINCT name 
-                    FROM sys.user_token 
-                    WHERE type IN ('ROLE', 'DATABASE ROLE')
-                    ORDER BY name;";
-
-                DataTable userTokenTable = databaseContext.QueryService.ExecuteTable(userTokenQuery);
-                
-                if (userTokenTable.Rows.Count > 0)
-                {
-                    foreach (DataRow tokenRow in userTokenTable.Rows)
-                    {
-                        string roleName = tokenRow["name"].ToString();
-                        if (!userDbRoles.Contains(roleName))
-                        {
-                            userDbRoles.Add(roleName);
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // sys.user_token might not be available in all scenarios, ignore errors
-            }
-
             // Display the user information
-            Logger.NewLine();
             Logger.Info("User Details:");
             
             // Only show roles where user is a member
