@@ -167,9 +167,7 @@ namespace MSSQLand.Actions.Database
         {
             bool isAzureSQL = databaseContext.QueryService.IsAzureSQL();
 
-            Logger.Task("Enumerating all principals' permissions for privilege escalation analysis");
-            Logger.Warning("Note: Requires VIEW ANY DEFINITION or similar elevated permissions");
-            Logger.NewLine();
+            Logger.TaskNested("Enumerating all principals' permissions for privilege escalation analysis");
 
             // Server-level permissions
             if (!isAzureSQL)
