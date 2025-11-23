@@ -24,40 +24,18 @@ namespace MSSQLand.Actions.Database
                     { "Server Name", "SELECT @@SERVERNAME;" },
                     { "Instance Name", "SELECT ISNULL(SERVERPROPERTY('InstanceName'), 'DEFAULT');" },
                     { "Computer Name", "SELECT SERVERPROPERTY('ComputerNamePhysicalNetBIOS');" },
-                    { "Server Collation", "SELECT SERVERPROPERTY('Collation');" },
                     { "Default Domain", "SELECT DEFAULT_DOMAIN();" },
                     { "Current Database", "SELECT DB_NAME();" },
-                    { "Current Language", "SELECT @@LANGUAGE;" },
-                    { "Server Language", "SELECT SERVERPROPERTY('ServerCollation');" },
                     
                     // SQL Server Information
                     { "SQL Version", "SELECT SERVERPROPERTY('ProductVersion');" },
+                    { "SQL Major Version", "SELECT SERVERPROPERTY('ProductMajorVersion');" },
                     { "SQL Edition", "SELECT SERVERPROPERTY('Edition');" },
                     { "SQL Service Pack", "SELECT SERVERPROPERTY('ProductLevel');" },
-                    { "SQL Update Level", "SELECT SERVERPROPERTY('ProductUpdateLevel');" },
-                    { "Engine Edition", "SELECT CASE CAST(SERVERPROPERTY('EngineEdition') AS INT) WHEN 1 THEN 'Personal/Desktop' WHEN 2 THEN 'Standard' WHEN 3 THEN 'Enterprise' WHEN 4 THEN 'Express' WHEN 5 THEN 'Azure SQL Database' WHEN 6 THEN 'Azure Synapse' WHEN 8 THEN 'Azure SQL MI' WHEN 9 THEN 'Azure SQL Edge' WHEN 11 THEN 'Azure Synapse Serverless' ELSE 'Unknown' END;" },
-                    
-                    // Licensing & Features
-                    { "License Type", "SELECT SERVERPROPERTY('LicenseType');" },
-                    { "Number of Licenses", "SELECT SERVERPROPERTY('NumLicenses');" },
-                    { "FileStream Configured", "SELECT CASE SERVERPROPERTY('FilestreamConfiguredLevel') WHEN 0 THEN 'Disabled' WHEN 1 THEN 'T-SQL access only' WHEN 2 THEN 'T-SQL and file I/O access' WHEN 3 THEN 'Remote client access' ELSE 'Unknown' END;" },
-                    { "FileStream Effective Level", "SELECT CASE SERVERPROPERTY('FilestreamEffectiveLevel') WHEN 0 THEN 'Disabled' WHEN 1 THEN 'T-SQL access only' WHEN 2 THEN 'T-SQL and file I/O access' WHEN 3 THEN 'Remote client access' ELSE 'Unknown' END;" },
-                    { "FileStream Share Name", "SELECT SERVERPROPERTY('FilestreamShareName');" },
-                    { "Full-Text Installed", "SELECT CASE SERVERPROPERTY('IsFullTextInstalled') WHEN 1 THEN 'Yes' ELSE 'No' END;" },
-                    { "Is Single User", "SELECT CASE SERVERPROPERTY('IsSingleUser') WHEN 1 THEN 'Yes' ELSE 'No' END;" },
-                    { "Is Local DB", "SELECT CASE SERVERPROPERTY('IsLocalDB') WHEN 1 THEN 'Yes' ELSE 'No' END;" },
-                    { "Is PolyBase Installed", "SELECT CASE SERVERPROPERTY('IsPolyBaseInstalled') WHEN 1 THEN 'Yes' ELSE 'No' END;" },
                     
                     // Configuration
                     { "Authentication Mode", "SELECT CASE SERVERPROPERTY('IsIntegratedSecurityOnly') WHEN 1 THEN 'Windows Authentication only' ELSE 'Mixed mode (Windows + SQL)' END;" },
                     { "Clustered Server", "SELECT CASE SERVERPROPERTY('IsClustered') WHEN 0 THEN 'No' ELSE 'Yes' END;" },
-                    { "Resource Version", "SELECT SERVERPROPERTY('ResourceVersion');" },
-                    { "Resource Last Update", "SELECT SERVERPROPERTY('ResourceLastUpdateDateTime');" },
-                    { "Server Started", "SELECT sqlserver_start_time FROM sys.dm_os_sys_info;" },
-                    { "Server Uptime (Days)", "SELECT DATEDIFF(DAY, sqlserver_start_time, GETDATE()) FROM sys.dm_os_sys_info;" },
-                    { "CPU Count", "SELECT cpu_count FROM sys.dm_os_sys_info;" },
-                    { "Physical Memory (MB)", "SELECT physical_memory_kb / 1024 FROM sys.dm_os_sys_info;" },
-                    { "Virtual Memory (MB)", "SELECT virtual_memory_kb / 1024 FROM sys.dm_os_sys_info;" },
                     
                     // Full Version
                     { "Full Version String", "SELECT @@VERSION;" }
@@ -68,13 +46,8 @@ namespace MSSQLand.Actions.Database
                 {
                     { "Host Name", "SELECT SERVERPROPERTY('MachineName');" },
                     { "SQL Service Process ID", "SELECT SERVERPROPERTY('ProcessId');" },
-                    { "SQL Service Account", "SELECT service_account FROM sys.dm_server_services WHERE servicename LIKE 'SQL Server (%';" },
-                    { "SQL Service Start Mode", "SELECT startup_type_desc FROM sys.dm_server_services WHERE servicename LIKE 'SQL Server (%';" },
-                    { "SQL Agent Service Account", "SELECT service_account FROM sys.dm_server_services WHERE servicename LIKE 'SQL Server Agent%';" },
-                    { "SQL Agent Status", "SELECT status_desc FROM sys.dm_server_services WHERE servicename LIKE 'SQL Server Agent%';" },
                     { "Operating System Version", "SELECT TOP(1) windows_release + ISNULL(' ' + windows_service_pack_level, '') FROM master.sys.dm_os_windows_info;" },
-                    { "OS Language Version", "SELECT TOP(1) os_language_version FROM master.sys.dm_os_windows_info;" },
-                    { "OS Architecture", "SELECT CASE WHEN CAST(SERVERPROPERTY('Edition') AS NVARCHAR(128)) LIKE '%64%' THEN '64-bit' ELSE '32-bit' END;" },
+                    { "OS Architecture", "SELECT CASE WHEN CAST(SERVERPROPERTY('Edition') AS NVARCHAR(128)) LIKE '%64%' THEN '64-bit' ELSE '32-bit' END;" }
                 }
             },
             {
