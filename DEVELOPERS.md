@@ -19,43 +19,82 @@ Depending of your new feature, you will need to create a new action class inside
 ```csharp
 using MSSQLand.Services;
 using MSSQLand.Utilities;
+using MSSQLand.Utilities.Formatters;
 using System;
-
+using System.Data;
 
 namespace MSSQLand.Actions.Domain
 {
     internal class NewAction : BaseAction
     {
+        // Positional arguments with metadata
+        [ArgumentMetadata(Position = 0, ShortName = "a", LongName = "argument", Required = false, Description = "Describe what this argument does")]
+        private string _argument;
 
-        // Positional Argument
-        [ArgumentMetadata(Position = 0, Description = "Describe what is this argument")]
-        private string _pos0;
-
+        // Internal properties not exposed as arguments
         [ExcludeFromArguments]
-        private string _privateArgument;
+        private string _privateVariable;
 
-        public override void ValidateArguments(string additionalArguments)
+        public override void ValidateArguments(string[] args)
         {
-            if (string.IsNullOrEmpty(additionalArguments))
+            if (args == null || args.Length == 0)
             {
-                // No arguments
+                // No arguments provided - use defaults or throw exception if required
                 return;
             }
 
-            string[] parts = SplitArguments(additionalArguments);
+            // Parse both positional and named arguments
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
 
+            // Get argument from position 0 or /a: or /argument:
+            _argument = GetNamedArgument(namedArgs, "a")
+                     ?? GetNamedArgument(namedArgs, "argument")
+                     ?? GetPositionalArgument(positionalArgs, 0);
+
+            // Validate argument if needed
+            if (string.IsNullOrEmpty(_argument))
+            {
+                throw new ArgumentException("Argument is required. Example: /a:newaction myvalue");
+            }
         }
 
         public override object? Execute(DatabaseContext databaseContext)
         {
+            // Log the action being performed
+            Logger.TaskNested("Performing new action operation");
+
             // Your T-SQL query
-            string query = @"";
+            string query = @"
+                SELECT 
+                    column1,
+                    column2
+                FROM sys.some_table
+                WHERE condition = @param;";
 
-            DataTable answer = databaseContext.QueryService.ExecuteTable(query);
+            try
+            {
+                // Execute query and get results
+                DataTable result = databaseContext.QueryService.ExecuteTable(query);
 
-            Console.WriteLine(OutputFormatter.ConvertDataTable(answer));
+                if (result.Rows.Count == 0)
+                {
+                    Logger.Warning("No results found.");
+                    return null;
+                }
 
-            return answer;
+                // Display results
+                Console.WriteLine(OutputFormatter.ConvertDataTable(result));
+                
+                // Log success
+                Logger.Success($"Action completed successfully. Retrieved {result.Rows.Count} row(s).");
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error executing action: {ex.Message}");
+                return null;
+            }
         }
     }
 }
