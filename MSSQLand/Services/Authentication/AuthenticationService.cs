@@ -103,7 +103,7 @@ namespace MSSQLand.Services
         {
             if (Connection != null)
             {
-                Connection.Close();
+                // Just dispose - it automatically closes the connection
                 Connection.Dispose();
                 Connection = null;
             }
