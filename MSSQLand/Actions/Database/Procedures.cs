@@ -30,7 +30,27 @@ namespace MSSQLand.Actions.Database
             }
 
             // Parse arguments using the base class method
-            ParseActionArguments(args);
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
+
+            // Extract mode from position 0
+            string modeStr = GetPositionalArgument(positionalArgs, 0);
+            if (!string.IsNullOrEmpty(modeStr))
+            {
+                if (Enum.TryParse<Mode>(modeStr, true, out Mode parsedMode))
+                {
+                    _mode = parsedMode;
+                }
+                else
+                {
+                    throw new ArgumentException($"Invalid mode '{modeStr}'. Valid modes: list, exec, read, search, sqli");
+                }
+            }
+
+            // Extract procedure name from position 1
+            _procedureName = GetPositionalArgument(positionalArgs, 1);
+
+            // Extract procedure arguments from position 2
+            _procedureArgs = GetPositionalArgument(positionalArgs, 2);
 
             // Additional validation based on mode
             switch (_mode)
