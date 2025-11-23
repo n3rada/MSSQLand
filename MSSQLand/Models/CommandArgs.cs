@@ -37,15 +37,10 @@ namespace MSSQLand.Models
         /// </summary>
         public LinkedServers LinkedServers { get; set; }
 
-
-        public BaseAction Action { get; set; }
-
-        public string AdditionalArguments { get; set; }
-
         /// <summary>
-        /// The query string to execute (optional, for actions like "query").
+        /// The action to execute.
         /// </summary>
-        public string Query { get; set; }
+        public BaseAction Action { get; set; }
 
         /// <summary>
         /// The connection timeout in seconds (default: 15).

@@ -70,9 +70,9 @@ MSSQLand.exe SQL01 -c token -l SQL02:webapp02,SQL03:webapp03@mydb,SQL04@reportin
 
 ## 🫤 Help
 
-- `-help` or `--help` - Show all available actions
-- `-help search_term` - Filter actions (e.g., `-help adsi` shows all ADSI-related actions)
-- `localhost -c token createuser --help` - Show detailed help for a specific action
+- `-h` or `--help` - Show all available actions
+- `-h search_term` - Filter actions (e.g., `-h adsi` shows all ADSI-related actions)
+- `localhost -c token createuser -h` - Show detailed help for a specific action
 
 ## 📸 Clean Output for Clean Reports
 
