@@ -20,6 +20,9 @@ MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikiped
 MSSQLand.exe <host> [options] <action> [action-options]
 ```
 
+> [!TIP]
+> Avoid typing out all the **[RPC Out](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql)** or **[OPENQUERY](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql)** calls manually. Let the tool handle the heavy lifting with the `--link` argument, so you can focus on the big picture.
+
 Format: `server,port:user@database` or any combination `server:user@database,port`.
 - `server` (required) - The SQL Server hostname or IP
 - `,port` (optional) - Port number (default: 1433, also common: 1434, 14333, 2433)
@@ -67,9 +70,6 @@ MSSQLand.exe SQL01 -c token -l SQL02:webapp02@appdb,SQL03:webapp03@analytics,SQL
 # Mixed linked servers (some with database, some without)
 MSSQLand.exe SQL01 -c token -l SQL02:webapp02,SQL03:webapp03@mydb,SQL04@reporting links
 ```
-
-> [!IMPORTANT]
-> Avoid typing out all the **[RPC Out](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql)** or **[OPENQUERY](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql)** calls manually. Let the tool handle the heavy lifting with the `--link` argument, so you can focus on the big picture.
 
 ## 🫤 Help
 
