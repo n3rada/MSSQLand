@@ -154,7 +154,6 @@
     
     <!-- Services - Authentication -->
     <Compile Include="Services\Authentication\AuthenticationService.cs" />
-    <Compile Include="Services\Authentication\Credentials\AzureCredentials.cs" />
     <Compile Include="Services\Authentication\Credentials\BaseCredentials.cs" />
     <Compile Include="Services\Authentication\Credentials\CredentialsFactory.cs" />
     <Compile Include="Services\Authentication\Credentials\EntraIDCredentials.cs" />

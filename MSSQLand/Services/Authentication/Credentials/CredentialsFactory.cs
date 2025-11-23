@@ -36,7 +36,7 @@ namespace MSSQLand.Services.Credentials
                 "token",
                 new CredentialMetadata(
                     name: "token",
-                    description: "Windows Integrated Security using current process token (Kerberos/NTLM)",
+                    description: "Windows Integrated Security (current process token)",
                     requiredArguments: new List<string>(),
                     factory: () => new TokenCredentials()
                 )
@@ -45,7 +45,7 @@ namespace MSSQLand.Services.Credentials
                 "windows",
                 new CredentialMetadata(
                     name: "windows",
-                    description: "Windows Authentication with impersonation (use -d for domain, omit for local)",
+                    description: "Windows Authentication with impersonation (domain or local account)",
                     requiredArguments: new List<string> { "username", "password" },
                     factory: () => new WindowsCredentials(),
                     optionalArguments: new List<string> { "domain" }
@@ -55,7 +55,7 @@ namespace MSSQLand.Services.Credentials
                 "local",
                 new CredentialMetadata(
                     name: "local",
-                    description: "SQL Server authentication (SQL user/password)",
+                    description: "SQL Server authentication (on-premises and Azure SQL)",
                     requiredArguments: new List<string> { "username", "password" },
                     factory: () => new LocalCredentials()
                 )
@@ -64,18 +64,9 @@ namespace MSSQLand.Services.Credentials
                 "entraid",
                 new CredentialMetadata(
                     name: "entraid",
-                    description: "Entra ID (Azure Active Directory) authentication",
+                    description: "Azure Active Directory authentication (Azure SQL only)",
                     requiredArguments: new List<string> { "username", "password", "domain" },
                     factory: () => new EntraIDCredentials()
-                )
-            },
-            {
-                "azure",
-                new CredentialMetadata(
-                    name: "azure",
-                    description: "Azure SQL Database authentication",
-                    requiredArguments: new List<string> { "username", "password" },
-                    factory: () => new AzureCredentials()
                 )
             }
         };
