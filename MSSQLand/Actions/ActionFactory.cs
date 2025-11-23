@@ -16,21 +16,15 @@ namespace MSSQLand.Utilities
         new()
         {
             // ═══════════════════════════════════════════════════════════════════════════════
-            // ADMINISTRATION ACTIONS (MSSQLand.Actions.Administration)
-            // ═══════════════════════════════════════════════════════════════════════════════
-            { "config", (typeof(Config), "List security-sensitive configuration options or set their values using sp_configure.") },
-            { "kill", (typeof(Kill), "Terminate SQL Server sessions by session ID or kill all running sessions.") },
-            { "createuser", (typeof(CreateUser), "Create a SQL login with specified server role privileges (default: sysadmin).") },
-            { "sessions", (typeof(Sessions), "Display active SQL Server sessions with login and connection information.") },
-            { "adsi", (typeof(AdsiManager), "Manage ADSI linked servers: list, create, or delete ADSI providers.") },
-
-
-            // ═══════════════════════════════════════════════════════════════════════════════
-            // DATABASE ACTIONS (MSSQLand.Actions.Database)
+            // DATABASE ACTIONS - BASIC INFO & AUTHENTICATION
             // ═══════════════════════════════════════════════════════════════════════════════
             { "info", (typeof(Info), "Retrieve detailed information about the SQL Server instance.") },
             { "whoami", (typeof(Whoami), "Display current user context, roles, and accessible databases.") },
             { "authtoken", (typeof(AuthToken), "Display all groups from the Windows authentication token (AD, BUILTIN, NT AUTHORITY, etc.).") },
+
+            // ═══════════════════════════════════════════════════════════════════════════════
+            // DATABASE ACTIONS - ENUMERATION
+            // ═══════════════════════════════════════════════════════════════════════════════
             { "databases", (typeof(Databases), "List all available databases.") },
             { "tables", (typeof(Tables), "List all tables in a specified database.") },
             { "rows", (typeof(Rows), "Retrieve and display rows from a specified table.") },
@@ -41,24 +35,37 @@ namespace MSSQLand.Utilities
             { "roles", (typeof(Roles), "List all database roles and their members in the current database.") },
             { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).") },
             { "permissions", (typeof(Permissions), "Enumerate user and role permissions.") },
-            { "search", (typeof(Search), "Search for keywords in column names and data across databases.") },
             { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.") },
-            { "monitor", (typeof(Monitor), "Display currently running SQL commands and active sessions.") },
-            { "query", (typeof(Query), "Execute a custom T-SQL query.") },
             { "oledb-providers", (typeof(OleDbProvidersInfo), "Retrieve information about installed OLE DB providers and their configurations.") },
-            { "queryall", (typeof(QueryAll), "Execute a custom T-SQL query across all databases using sp_MSforeachdb.") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
-            // DOMAIN ACTIONS (MSSQLand.Actions.Domain)
+            // DATABASE ACTIONS - OPERATIONS
+            // ═══════════════════════════════════════════════════════════════════════════════
+            { "search", (typeof(Search), "Search for keywords in column names and data across databases.") },
+            { "query", (typeof(Query), "Execute a custom T-SQL query.") },
+            { "queryall", (typeof(QueryAll), "Execute a custom T-SQL query across all databases using sp_MSforeachdb.") },
+            { "monitor", (typeof(Monitor), "Display currently running SQL commands and active sessions.") },
+
+            // ═══════════════════════════════════════════════════════════════════════════════
+            // ADMINISTRATION ACTIONS
+            // ═══════════════════════════════════════════════════════════════════════════════
+            { "config", (typeof(Config), "List security-sensitive configuration options or set their values using sp_configure.") },
+            { "createuser", (typeof(CreateUser), "Create a SQL login with specified server role privileges (default: sysadmin).") },
+            { "sessions", (typeof(Sessions), "Display active SQL Server sessions with login and connection information.") },
+            { "kill", (typeof(Kill), "Terminate SQL Server sessions by session ID or kill all running sessions.") },
+            { "adsi", (typeof(AdsiManager), "Manage ADSI linked servers: list, create, or delete ADSI providers.") },
+
+            // ═══════════════════════════════════════════════════════════════════════════════
+            // DOMAIN ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
             { "ad-domain", (typeof(AdDomain), "Retrieve the domain SID using DEFAULT_DOMAIN() and SUSER_SID().") },
             { "ad-sid", (typeof(AdSid), "Retrieve the current user's SID using SUSER_SID().") },
             { "ad-groups", (typeof(AdGroups), "Retrieve Active Directory domain groups with SQL Server principals that the user is a member of.") },
-            { "ridcycle", (typeof(RidCycle), "Enumerate domain users by RID cycling using SUSER_SNAME().") },
             { "ad-members", (typeof(AdMembers), "Retrieve members of an Active Directory group (e.g., DOMAIN\\Domain Admins).") },
+            { "ridcycle", (typeof(RidCycle), "Enumerate domain users by RID cycling using SUSER_SNAME().") },
             
             // ═══════════════════════════════════════════════════════════════════════════════
-            // EXECUTION ACTIONS (MSSQLand.Actions.Execution)
+            // EXECUTION ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
             { "exec", (typeof(XpCmd), "Execute operating system commands using xp_cmdshell.") },
             { "pwsh", (typeof(PowerShell), "Execute PowerShell scripts via xp_cmdshell.") },
@@ -68,21 +75,20 @@ namespace MSSQLand.Utilities
             { "agents", (typeof(Agents), "Manage and interact with SQL Server Agent jobs.") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
-            // FILESYSTEM ACTIONS (MSSQLand.Actions.FileSystem)
+            // FILESYSTEM ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
             { "read", (typeof(FileRead), "Read file contents from the server's file system.") },
             { "tree", (typeof(Tree), "Display directory tree structure in Linux tree-style format.") },
 
-            
             // ═══════════════════════════════════════════════════════════════════════════════
-            // NETWORK ACTIONS (MSSQLand.Actions.Network)
+            // NETWORK ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
             { "links", (typeof(Links), "Enumerate linked servers and their configuration.") },
+            { "linkmap", (typeof(LinkMap), "Map all possible linked server chains and execution paths.") },
+            { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.") },
             { "extsources", (typeof(ExternalSources), "Enumerate External Data Sources (Azure SQL Database, Synapse, PolyBase).") },
             { "extcreds", (typeof(ExternalCredentials), "Enumerate database-scoped credentials used by External Data Sources.") },
             { "exttables", (typeof(ExternalTables), "Enumerate external tables and their remote data locations.") },
-            { "linkmap", (typeof(LinkMap), "Map all possible linked server chains and execution paths.") },
-            { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.") },
             { "adsiquery", (typeof(AdsiQuery), "Query Active Directory via ADSI using fully qualified domain name (auto-creates temp server if needed).") },
             { "adsicreds", (typeof(AdsiCredentialExtractor), "Extract credentials from ADSI linked servers by intercepting LDAP authentication.") },
             { "smbcoerce", (typeof(SmbCoerce), "Force SMB authentication to a specified UNC path to capture time-limited Net-NTLMv2 challenge/response.") }

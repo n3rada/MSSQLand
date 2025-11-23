@@ -95,18 +95,39 @@ namespace MSSQLand.Utilities
 
             var actions = ActionFactory.GetAvailableActions();
             
-            // Group actions by category
-            var groupedActions = actions.GroupBy(a => a.Category)
-                                       .OrderBy(g => g.Key);
+            // Group actions by category, preserving insertion order
+            var groupedActions = new List<(string Category, List<(string ActionName, string Description)>)>();
+            string currentCategory = null;
+            List<(string ActionName, string Description)> currentActions = null;
+
+            foreach (var action in actions)
+            {
+                if (action.Category != currentCategory)
+                {
+                    if (currentActions != null)
+                    {
+                        groupedActions.Add((currentCategory, currentActions));
+                    }
+                    currentCategory = action.Category;
+                    currentActions = new List<(string ActionName, string Description)>();
+                }
+                currentActions.Add((action.ActionName, action.Description));
+            }
+            
+            // Add the last group
+            if (currentActions != null && currentActions.Count > 0)
+            {
+                groupedActions.Add((currentCategory, currentActions));
+            }
 
             int totalCount = 0;
             foreach (var group in groupedActions)
             {
                 Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine($"[{group.Key}]");
+                Console.WriteLine($"[{group.Category}]");
                 Console.ResetColor();
                 
-                foreach (var action in group.OrderBy(a => a.ActionName))
+                foreach (var action in group.Item2)
                 {
                     Console.WriteLine($"  {action.ActionName}");
                     totalCount++;
