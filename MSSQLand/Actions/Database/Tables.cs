@@ -20,13 +20,8 @@ namespace MSSQLand.Actions.Database
                 return;
             }
 
-            // Parse both positional and named arguments
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-
-            // Get database name from position 0 or /db: or /database:
-            _database = GetNamedArgument(namedArgs, "db")
-                     ?? GetNamedArgument(namedArgs, "database")
-                     ?? GetPositionalArgument(positionalArgs, 0);
+            // Parse arguments using the base class method
+            ParseActionArguments(args);
         }
 
         public override object? Execute(DatabaseContext databaseContext)
