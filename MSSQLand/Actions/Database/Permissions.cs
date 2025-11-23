@@ -182,8 +182,8 @@ namespace MSSQLand.Actions.Database
                         pe.state_desc AS [State],
                         CASE 
                             WHEN pe.class_desc = 'SERVER' THEN 'SERVER'
-                            WHEN pe.class_desc = 'SERVER_PRINCIPAL' THEN 'LOGIN: ' + ISNULL(target.name, '<deleted>')
-                            WHEN pe.class_desc = 'ENDPOINT' THEN 'ENDPOINT: ' + ISNULL(ep.name, '<deleted>')
+                            WHEN pe.class_desc = 'SERVER_PRINCIPAL' THEN 'LOGIN: ' COLLATE DATABASE_DEFAULT + ISNULL(target.name, '<deleted>') COLLATE DATABASE_DEFAULT
+                            WHEN pe.class_desc = 'ENDPOINT' THEN 'ENDPOINT: ' COLLATE DATABASE_DEFAULT + ISNULL(ep.name, '<deleted>') COLLATE DATABASE_DEFAULT
                             ELSE pe.class_desc
                         END AS [Scope]
                     FROM sys.server_permissions pe
@@ -234,11 +234,11 @@ namespace MSSQLand.Actions.Database
                     pe.state_desc AS [State],
                     CASE 
                         WHEN pe.class_desc = 'DATABASE' THEN 'DATABASE'
-                        WHEN pe.class_desc = 'SCHEMA' THEN 'SCHEMA: ' + ISNULL(s.name, '<deleted>')
+                        WHEN pe.class_desc = 'SCHEMA' THEN 'SCHEMA: ' COLLATE DATABASE_DEFAULT + ISNULL(s.name, '<deleted>') COLLATE DATABASE_DEFAULT
                         WHEN pe.class_desc = 'OBJECT_OR_COLUMN' THEN 
-                            ISNULL(OBJECT_SCHEMA_NAME(pe.major_id), '<deleted>') + '.' + 
-                            ISNULL(OBJECT_NAME(pe.major_id), '<deleted>')
-                        WHEN pe.class_desc = 'DATABASE_PRINCIPAL' THEN 'USER: ' + ISNULL(target.name, '<deleted>')
+                            ISNULL(OBJECT_SCHEMA_NAME(pe.major_id), '<deleted>') COLLATE DATABASE_DEFAULT + '.' COLLATE DATABASE_DEFAULT + 
+                            ISNULL(OBJECT_NAME(pe.major_id), '<deleted>') COLLATE DATABASE_DEFAULT
+                        WHEN pe.class_desc = 'DATABASE_PRINCIPAL' THEN 'USER: ' COLLATE DATABASE_DEFAULT + ISNULL(target.name, '<deleted>') COLLATE DATABASE_DEFAULT
                         ELSE pe.class_desc
                     END AS [Scope]
                 FROM sys.database_permissions pe
