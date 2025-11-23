@@ -21,7 +21,7 @@ MSSQLand.exe <host> [options] <action> [action-options]
 ```
 
 > [!TIP]
-> Avoid typing out all the **[RPC Out](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql)** or **[OPENQUERY](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql)** calls manually. Let the tool handle the heavy lifting with the `--link` argument, so you can focus on the big picture.
+> Avoid typing out all the **[RPC Out](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql)** or **[OPENQUERY](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql)** calls manually. Let the tool handle any linked servers chain with the `-l` argument, so you can focus on the big picture.
 
 Format: `server,port:user@database` or any combination `server:user@database,port`.
 - `server` (required) - The SQL Server hostname or IP
