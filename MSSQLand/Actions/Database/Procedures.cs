@@ -24,56 +24,45 @@ namespace MSSQLand.Actions.Database
 
         public override void ValidateArguments(string[] args)
         {
-            string[] parts = args;
-
-            if (parts == null || parts.Length == 0)
+            if (args == null || args.Length == 0)
             {
                 return; // Default to listing stored procedures
             }
 
-            string command = parts[0].ToLower();
-            switch (command)
+            // Parse arguments using the base class method
+            ParseActionArguments(args);
+
+            // Additional validation based on mode
+            switch (_mode)
             {
-                case "list":
-                    _mode = Mode.List;
-                    break;
-
-                case "exec":
-                    if (parts.Length < 2)
+                case Mode.Exec:
+                    if (string.IsNullOrEmpty(_procedureName))
                     {
-                        throw new ArgumentException("Missing procedure name. Example: /a:procedures exec dbo.sp_GetUsers 'param1, param2'");
+                        throw new ArgumentException("Missing procedure name. Example: procedures exec schema.procedure 'param1, param2'");
                     }
-                    _mode = Mode.Exec;
-                    _procedureName = parts[1];
-                    ValidateProcedureFormat(_procedureName);
-                    _procedureArgs = parts.Length > 2 ? parts[2] : "";  // Store arguments if provided
-                    break;
-
-                case "read":
-                    if (parts.Length < 2)
-                    {
-                        throw new ArgumentException("Missing procedure name for reading definition. Example: /a:procedures read dbo.sp_GetUsers");
-                    }
-                    _mode = Mode.Read;
-                    _procedureName = parts[1];
                     ValidateProcedureFormat(_procedureName);
                     break;
 
-                case "search":
-                    if (parts.Length < 2)
+                case Mode.Read:
+                    if (string.IsNullOrEmpty(_procedureName))
                     {
-                        throw new ArgumentException("Missing search keyword. Example: /a:procedures search EXEC");
+                        throw new ArgumentException("Missing procedure name for reading definition. Example: procedures read schema.procedure");
                     }
-                    _mode = Mode.Search;
-                    _searchKeyword = parts[1];
+                    ValidateProcedureFormat(_procedureName);
                     break;
 
-                case "sqli":
-                    _mode = Mode.Sqli;
+                case Mode.Search:
+                    if (string.IsNullOrEmpty(_procedureName))
+                    {
+                        throw new ArgumentException("Missing search keyword. Example: procedures search EXEC");
+                    }
+                    _searchKeyword = _procedureName;
                     break;
 
-                default:
-                    throw new ArgumentException("Invalid mode. Use 'list', 'exec <StoredProcedureName>', 'read <StoredProcedureName>', 'search <keyword>', or 'sqli'");
+                case Mode.List:
+                case Mode.Sqli:
+                    // No additional validation needed
+                    break;
             }
         }
 
