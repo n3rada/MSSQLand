@@ -47,7 +47,7 @@ namespace MSSQLand.Actions.Database
                 return null;
             }
 
-            Logger.Task("Mapping server logins to database users across all accessible databases");
+            Logger.TaskNested("Mapping server logins to database users across all accessible databases");
 
             string query = @"
                 DECLARE @mapping TABLE (
@@ -81,6 +81,7 @@ namespace MSSQLand.Actions.Database
                         dp.name AS [Database User],
                         dp.type_desc AS [User Type],
                         CASE 
+                            WHEN dp.name = ''guest'' THEN 0
                             WHEN sp.sid IS NULL THEN 1
                             ELSE 0
                         END AS [Orphaned]
@@ -88,7 +89,7 @@ namespace MSSQLand.Actions.Database
                     LEFT JOIN master.sys.server_principals sp ON dp.sid = sp.sid
                     WHERE dp.type IN (''S'', ''U'', ''G'', ''E'', ''X'')
                     AND dp.name NOT LIKE ''##%''
-                    AND dp.name NOT IN (''INFORMATION_SCHEMA'', ''sys'')';
+                    AND dp.name NOT IN (''INFORMATION_SCHEMA'', ''sys'', ''guest'')';
                     
                     BEGIN TRY
                         INSERT INTO @mapping
