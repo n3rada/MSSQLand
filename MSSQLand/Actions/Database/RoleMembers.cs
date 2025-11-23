@@ -8,16 +8,16 @@ namespace MSSQLand.Actions.Database
     internal class RoleMembers : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "Server role name (e.g., sysadmin, serveradmin)")]
-        private string _roleName;
+        private string _roleName = string.Empty;
 
         public override void ValidateArguments(string[] args)
         {
-            if (args == null || args.Length == 0)
+            BindArgumentsToFields(args);
+
+            if (string.IsNullOrEmpty(_roleName))
             {
                 throw new ArgumentException("Role name is required. Example: sysadmin, serveradmin, securityadmin, etc.");
             }
-
-            _roleName = string.Join(" ", args).Trim();
         }
 
         public override object? Execute(DatabaseContext databaseContext)

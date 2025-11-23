@@ -26,34 +26,16 @@ namespace MSSQLand.Actions.Execution
 
         public override void ValidateArguments(string[] args)
         {
-            string[] parts = args;
+            // Automatic binding of positional/named args to fields
+            BindArgumentsToFields(args);
 
-            if (parts == null || parts.Length == 0)
-            {
-                return;
-            }
-
-            // Parse action mode
-            if (!Enum.TryParse(parts[0].Trim(), true, out _action))
-            {
-                string validActions = string.Join(", ", Enum.GetNames(typeof(ActionMode)).Select(a => a.ToLower()));
-                throw new ArgumentException($"Invalid action: {parts[0]}. Valid actions are: {validActions}.");
-            }
-
+            // Additional validation
+            // _action and _subSystem are enums and will be parsed by BindArgumentsToFields
             if (_action == ActionMode.Exec)
             {
-                if (parts.Length < 2)
+                if (string.IsNullOrEmpty(_command))
                 {
-                    throw new ArgumentException("Missing command to execute. Example: /a:agents exec 'whoami'");
-                }
-
-                _command = parts[1].Trim();
-
-                // Optional: Parse subsystem
-                if (parts.Length > 2 && !Enum.TryParse(parts[2].Trim(), true, out _subSystem))
-                {
-                    string validSubSystems = string.Join(", ", Enum.GetNames(typeof(SubSystemMode)).Select(s => s.ToLower()));
-                    throw new ArgumentException($"Invalid subsystem: {parts[2]}. Valid subsystems are: {validSubSystems}.");
+                    throw new ArgumentException("Missing command to execute. Example: agents exec 'whoami'");
                 }
             }
         }

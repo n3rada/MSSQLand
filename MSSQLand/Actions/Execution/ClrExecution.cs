@@ -10,35 +10,24 @@ namespace MSSQLand.Actions.Execution
     internal class ClrExecution : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "DLL URI (local path or HTTP/S URL)")]
-        private string _dllURI;
+        private string _dllURI = string.Empty;
         
         [ArgumentMetadata(Position = 1, Description = "Function name to execute (default: Main)")]
-        private string _function;
+        private string _function = "Main";
 
         public override void ValidateArguments(string[] args)
         {
-            // Split the additional argument into parts (dll URI and function)
-            string[] parts = args;
-
-            if (parts.Length == 1)
-            {
-                _dllURI = parts[0].Trim();
-                _function = "Main";
-            }
-            else if (parts.Length == 2)
-            {
-                _dllURI = parts[0].Trim();
-                _function = parts[1].Trim();
-            }
-
-            else
-            {
-                throw new ArgumentException("Invalid arguments. CLR execution usage: dllURI function or dllURI");
-            }
+            // Automatic binding
+            BindArgumentsToFields(args);
 
             if (string.IsNullOrEmpty(_dllURI))
             {
-                throw new ArgumentException("The dllURI cannot be empty.");
+                throw new ArgumentException("DLL URI is required. Usage: <dllURI> [function]");
+            }
+
+            if (string.IsNullOrEmpty(_function))
+            {
+                _function = "Main";
             }
         }
 
@@ -149,6 +138,9 @@ namespace MSSQLand.Actions.Execution
         /// <summary>
         /// Reads a .NET assembly (.dll) from the local filesystem, computes its SHA-512 hash,
         /// and converts its binary content into a SQL-compatible hexadecimal string format.
+        ///
+        /// This method uses the <c>File.ReadAllBytes</c> method to read the entire file content into memory.
+        /// For very large DLLs, consider using a streaming approach to avoid high memory usage.
         ///
         /// This method returns:
         /// <list type="number">

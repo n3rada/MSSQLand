@@ -26,14 +26,12 @@ namespace MSSQLand.Actions.Database
     internal class LoginMap : BaseAction
     {
         [ArgumentMetadata(Position = 0, Description = "Optional: Server login name to filter mappings")]
-        private string? LoginFilter;
+        private string? LoginFilter = null;
 
         public override void ValidateArguments(string[] args)
         {
-            if (args != null && args.Length > 0)
-            {
-                LoginFilter = string.Join(" ", args).Trim();
-            }
+            BindArgumentsToFields(args);
+            // If positional value wasn't used, leave LoginFilter null
         }
 
         public override object? Execute(DatabaseContext databaseContext)
@@ -162,29 +160,8 @@ namespace MSSQLand.Actions.Database
 
                 DataTable sortedResults = sortedRows.CopyToDataTable();
 
-                // Count statistics
-                int totalMappings = sortedResults.Rows.Count;
-                int orphanedUsers = sortedResults.AsEnumerable().Count(r => Convert.ToBoolean(r["Orphaned"]));
-                int mismatchedNames = sortedResults.AsEnumerable()
-                    .Count(r => !Convert.ToBoolean(r["Orphaned"]) && 
-                                r["Server Login"].ToString() != r["Database User"].ToString() &&
-                                r["Server Login"].ToString() != "<Orphaned>");
-
                 Console.WriteLine(OutputFormatter.ConvertDataTable(sortedResults));
 
-                Logger.NewLine();
-                Logger.Info($"Total mappings: {totalMappings}");
-                
-                if (orphanedUsers > 0)
-                {
-                    Logger.Warning($"Orphaned users (no login): {orphanedUsers}");
-                }
-                
-                if (mismatchedNames > 0)
-                {
-                    Logger.Info($"Name mismatches (login ≠ user): {mismatchedNames}");
-                }
-                
                 Logger.Success("Login-to-user mapping completed");
 
                 return sortedResults;

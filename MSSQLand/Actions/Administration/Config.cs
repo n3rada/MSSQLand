@@ -10,45 +10,25 @@ namespace MSSQLand.Actions.Administration
     internal class Config : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "o", LongName = "option", Required = false, Description = "Configuration option name (omit to list all)")]
-        private string _optionName;
+        private string _optionName = null;
 
         [ArgumentMetadata(Position = 1, ShortName = "v", LongName = "value", Required = false, Description = "Value to set (0=disable, 1=enable)")]
         private int _value = -1;
 
         public override void ValidateArguments(string[] args)
         {
-            // No arguments = list all configurations
-            if (args == null || args.Length == 0)
+            // Automatic binding handles positional and named args
+            BindArgumentsToFields(args);
+
+            // No further action required; _optionName may be null to list all options
+            if (_value < -1)
             {
-                _optionName = null;
-                _value = -1;
-                return;
+                throw new ArgumentException("Invalid value for configuration option");
             }
 
-            // Parse both positional and named arguments
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-
-            // Get option name from position 0 or /o: or /option:
-            _optionName = GetNamedArgument(namedArgs, "o")
-                       ?? GetNamedArgument(namedArgs, "option")
-                       ?? GetPositionalArgument(positionalArgs, 0);
-
-            // Get value from position 1 or /v: or /value:
-            string valueStr = GetNamedArgument(namedArgs, "v")
-                           ?? GetNamedArgument(namedArgs, "value")
-                           ?? GetPositionalArgument(positionalArgs, 1);
-
-            if (!string.IsNullOrEmpty(valueStr))
+            if (!string.IsNullOrEmpty(_optionName) && _value >= 0 && _value != 0 && _value != 1)
             {
-                // Validate and parse the value (1 or 0)
-                if (!int.TryParse(valueStr, out _value) || (_value != 0 && _value != 1))
-                {
-                    throw new ArgumentException("Invalid value. Use 1 to enable or 0 to disable.");
-                }
-            }
-            else
-            {
-                _value = -1; // No value specified = list mode
+                throw new ArgumentException("Invalid value. Use 1 to enable or 0 to disable.");
             }
         }
 

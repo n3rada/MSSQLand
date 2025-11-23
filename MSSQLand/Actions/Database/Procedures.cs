@@ -8,51 +8,26 @@ namespace MSSQLand.Actions.Database
 {
     internal class Procedures : BaseAction
     {
-        private enum Mode { List, Exec, Read, Search, Sqli }
-        
-        [ArgumentMetadata(Position = 0, Description = "Mode: list, exec, read, search, or sqli (default: list)")]
+        private enum Mode { List, Exec, Read, Search }
+
+        [ArgumentMetadata(Position = 0, Description = "Mode: list, exec, read, or search (default: list)")]
         private Mode _mode = Mode.List;
-        
+
         [ArgumentMetadata(Position = 1, Description = "Stored procedure name as schema.procedure (required for exec/read) or search keyword (required for search)")]
-        private string? _procedureName;
-        
+        private string? _procedureName = null;
+
         [ArgumentMetadata(Position = 2, Description = "Procedure arguments (optional for exec)")]
-        private string? _procedureArgs;
-        
+        private string? _procedureArgs = null;
+
         [ExcludeFromArguments]
-        private string? _searchKeyword;
+        private string? _searchKeyword = null;
 
         public override void ValidateArguments(string[] args)
         {
-            if (args == null || args.Length == 0)
-            {
-                return; // Default to listing stored procedures
-            }
+            // Use automatic binding for positional and named arguments
+            BindArgumentsToFields(args);
 
-            // Parse arguments using the base class method
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-
-            // Extract mode from position 0
-            string modeStr = GetPositionalArgument(positionalArgs, 0);
-            if (!string.IsNullOrEmpty(modeStr))
-            {
-                if (Enum.TryParse<Mode>(modeStr, true, out Mode parsedMode))
-                {
-                    _mode = parsedMode;
-                }
-                else
-                {
-                    throw new ArgumentException($"Invalid mode '{modeStr}'. Valid modes: list, exec, read, search, sqli");
-                }
-            }
-
-            // Extract procedure name from position 1
-            _procedureName = GetPositionalArgument(positionalArgs, 1);
-
-            // Extract procedure arguments from position 2
-            _procedureArgs = GetPositionalArgument(positionalArgs, 2);
-
-            // Additional validation based on mode
+            // Ensure enum parsing/defaults handled; do additional validation
             switch (_mode)
             {
                 case Mode.Exec:
@@ -80,7 +55,6 @@ namespace MSSQLand.Actions.Database
                     break;
 
                 case Mode.List:
-                case Mode.Sqli:
                     // No additional validation needed
                     break;
             }
@@ -329,7 +303,6 @@ namespace MSSQLand.Actions.Database
                 Logger.Success($"Found {result.Rows.Count} stored procedure(s) containing '{keyword}'.");
                 Console.WriteLine(OutputFormatter.ConvertDataTable(result));
 
-                Logger.NewLine();
                 Logger.Info($"Total: {result.Rows.Count} stored procedure(s) matching search criteria");
 
                 return result;

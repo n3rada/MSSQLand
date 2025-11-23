@@ -18,66 +18,15 @@ namespace MSSQLand.Actions.Administration
         private Operation _operation = Operation.List;
 
         [ArgumentMetadata(Position = 1, Description = "Server name for create/delete operations (optional for create - generates random name if omitted)")]
-        private string? _serverName;
+        private string? _serverName = null;
 
         [ArgumentMetadata(Position = 2, Description = "Data source for the ADSI linked server (default: localhost)")]
         private string _dataSource = "localhost";
 
         public override void ValidateArguments(string[] args)
         {
-            if (args == null || args.Length == 0)
-            {
-                _operation = Operation.List;
-                return;
-            }
-
-            string[] parts = args;
-            string command = parts[0].ToLower();
-
-            switch (command)
-            {
-                case "list":
-                    _operation = Operation.List;
-                    break;
-
-                case "create":
-                    _operation = Operation.Create;
-                    
-                    // If server name not provided, generate a random one
-                    if (parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1]))
-                    {
-                        _serverName = parts[1];
-                    }
-                    else
-                    {
-                        _serverName = $"ADSI-{Guid.NewGuid().ToString("N").Substring(0, 6)}";
-                        Logger.Info($"No server name provided. Generated random name: {_serverName}");
-                    }
-
-                    // Optional data source parameter
-                    if (parts.Length > 2 && !string.IsNullOrWhiteSpace(parts[2]))
-                    {
-                        _dataSource = parts[2];
-                    }
-                    break;
-
-                case "delete":
-                case "del":
-                case "remove":
-                case "rm":
-                    _operation = Operation.Delete;
-                    
-                    if (parts.Length < 2 || string.IsNullOrWhiteSpace(parts[1]))
-                    {
-                        throw new ArgumentException("Server name is required for delete operation. Example: /a:adsi delete SQL-02");
-                    }
-                    
-                    _serverName = parts[1];
-                    break;
-
-                default:
-                    throw new ArgumentException($"Invalid operation '{command}'. Use 'list', 'create', or 'delete'");
-            }
+            BindArgumentsToFields(args);
+            // Additional validations if necessary in future
         }
 
         public override object? Execute(DatabaseContext databaseContext)
