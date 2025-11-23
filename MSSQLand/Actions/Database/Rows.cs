@@ -8,13 +8,13 @@ namespace MSSQLand.Actions.Database
 {
     public class Rows : BaseAction
     {
-        [ArgumentMetadata(Position = 0, ShortName = "t", LongName = "table", Required = true, Description = "Table name or FQTN (database.schema.table)")]
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Table name or FQTN (database.schema.table)")]
         private string _fqtn; // Store the full qualified table name argument
 
-        [ArgumentMetadata(Position = 1, Description = "Maximum number of rows to retrieve (positional or use /l)")]
+        [ArgumentMetadata(ShortName = "l", LongName = "limit", Description = "Maximum number of rows to retrieve (default: no limit)")]
         private int _limit = 0; // 0 = no limit
 
-        [ArgumentMetadata(Position = 2, ShortName = "o", LongName = "offset", Description = "Number of rows to skip (default: 0)")]
+        [ArgumentMetadata(ShortName = "o", LongName = "offset", Description = "Number of rows to skip (default: 0)")]
         private int _offset = 0;
 
         [ExcludeFromArguments]
@@ -33,23 +33,16 @@ namespace MSSQLand.Actions.Database
                 throw new ArgumentException("Rows action requires at least a Table Name as an argument or a Fully Qualified Table Name (FQTN) in the format 'database.schema.table'.");
             }
 
-            // Parse both positional and named arguments
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
+            // Parse arguments using the base class method
+            ParseActionArguments(args);
 
-            // Get table name from position 0 or /t: or /table:
-            string tableName = GetNamedArgument(namedArgs, "t") 
-                            ?? GetNamedArgument(namedArgs, "table")
-                            ?? GetPositionalArgument(positionalArgs, 0);
-
-            if (string.IsNullOrEmpty(tableName))
+            if (string.IsNullOrEmpty(_fqtn))
             {
                 throw new ArgumentException("Rows action requires at least a Table Name as an argument or a Fully Qualified Table Name (FQTN) in the format 'database.schema.table'.");
             }
 
-            _fqtn = tableName;
-
             // Parse the table name to extract database, schema, and table
-            string[] parts = tableName.Split('.');
+            string[] parts = _fqtn.Split('.');
 
             if (parts.Length == 3) // Format: database.schema.table
             {
@@ -79,29 +72,15 @@ namespace MSSQLand.Actions.Database
                 throw new ArgumentException("Table name cannot be empty.");
             }
 
-            // Parse limit argument (position 1 or /l:)
-            string limitStr = GetNamedArgument(namedArgs, "l")
-                           ?? GetPositionalArgument(positionalArgs, 1);
-            
-            if (!string.IsNullOrEmpty(limitStr))
+            // Validate limit and offset
+            if (_limit < 0)
             {
-                if (!int.TryParse(limitStr, out _limit) || _limit < 0)
-                {
-                    throw new ArgumentException($"Invalid limit value: {limitStr}. Limit must be a non-negative integer.");
-                }
+                throw new ArgumentException($"Invalid limit value: {_limit}. Limit must be a non-negative integer.");
             }
 
-            // Parse offset argument (position 2 or /o: or /offset:)
-            string offsetStr = GetNamedArgument(namedArgs, "o")
-                            ?? GetNamedArgument(namedArgs, "offset")
-                            ?? GetPositionalArgument(positionalArgs, 2);
-            
-            if (!string.IsNullOrEmpty(offsetStr))
+            if (_offset < 0)
             {
-                if (!int.TryParse(offsetStr, out _offset) || _offset < 0)
-                {
-                    throw new ArgumentException($"Invalid offset value: {offsetStr}. Offset must be a non-negative integer.");
-                }
+                throw new ArgumentException($"Invalid offset value: {_offset}. Offset must be a non-negative integer.");
             }
         }
 
