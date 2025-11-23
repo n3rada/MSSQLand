@@ -27,11 +27,7 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Enumerating server-level and database-level roles with their members");
-            Logger.TaskNested("SERVER roles: sysadmin, serveradmin, setupadmin, etc. (instance-wide)");
-            Logger.TaskNested("DATABASE roles: db_owner, db_datareader, custom roles, etc. (current database)");
-            Logger.TaskNested("Members shown are direct members only (from sys.server_role_members / sys.database_role_members)");
-            Logger.NewLine();
+            Logger.TaskNested("Enumerating server-level and database-level roles with their members");
 
             // ========== SERVER-LEVEL ROLES ==========
 
