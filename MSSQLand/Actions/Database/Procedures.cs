@@ -91,6 +91,8 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
+
+            Logger.NewLine();
             Logger.Warning("Execution context depends on the statements used inside the stored procedure.");
             Logger.WarningNested("Dynamic SQL executed with EXEC or sp_executesql runs under caller permissions by default.");
             Logger.WarningNested("Static SQL inside a procedure uses ownership chaining, which may allow operations (e.g., SELECT) that the caller is not directly permitted to perform.");
@@ -116,21 +118,20 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private DataTable ListProcedures(DatabaseContext databaseContext)
         {
-            Logger.NewLine();
             Logger.Task($"Retrieving all stored procedures in [{databaseContext.QueryService.ExecutionDatabase}]");
 
             string query = $@"
                 SELECT 
-                    SCHEMA_NAME(p.schema_id) AS Schema,
-                    p.name AS Name,
-                    USER_NAME(OBJECTPROPERTY(p.object_id, 'OwnerId')) AS Owner,
+                    SCHEMA_NAME(p.schema_id) AS [Schema],
+                    p.name AS [Name],
+                    USER_NAME(OBJECTPROPERTY(p.object_id, 'OwnerId')) AS [Owner],
                     CASE 
                         WHEN m.execute_as_principal_id IS NULL THEN ''
                         WHEN m.execute_as_principal_id = -2 THEN 'OWNER'
                         ELSE USER_NAME(m.execute_as_principal_id)
-                    END AS ExecuteAsContext,
-                    p.create_date AS Created,
-                    p.modify_date AS Modified
+                    END AS [ExecuteAsContext],
+                    p.create_date AS [Created],
+                    p.modify_date AS [Modified]
                 FROM sys.procedures p
                 INNER JOIN sys.sql_modules m ON p.object_id = m.object_id;";
 
