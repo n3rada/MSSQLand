@@ -12,13 +12,15 @@ namespace MSSQLand.Services.Credentials
         public string Name { get; set; }
         public string Description { get; set; }
         public List<string> RequiredArguments { get; set; }
+        public List<string> OptionalArguments { get; set; }
         public Func<BaseCredentials> Factory { get; set; }
 
-        public CredentialMetadata(string name, string description, List<string> requiredArguments, Func<BaseCredentials> factory)
+        public CredentialMetadata(string name, string description, List<string> requiredArguments, Func<BaseCredentials> factory, List<string> optionalArguments = null)
         {
             Name = name;
             Description = description;
             RequiredArguments = requiredArguments ?? new List<string>();
+            OptionalArguments = optionalArguments ?? new List<string>();
             Factory = factory;
         }
     }
@@ -40,19 +42,20 @@ namespace MSSQLand.Services.Credentials
                 )
             },
             {
-                "domain",
+                "windows",
                 new CredentialMetadata(
-                    name: "domain",
-                    description: "Windows Authentication with explicit credentials (using impersonation)",
-                    requiredArguments: new List<string> { "username", "password", "domain" },
-                    factory: () => new DomainCredentials()
+                    name: "windows",
+                    description: "Windows Authentication with impersonation (use -d for domain, omit for local)",
+                    requiredArguments: new List<string> { "username", "password" },
+                    factory: () => new WindowsCredentials(),
+                    optionalArguments: new List<string> { "domain" }
                 )
             },
             {
                 "local",
                 new CredentialMetadata(
                     name: "local",
-                    description: "SQL Server local authentication (SQL user/password)",
+                    description: "SQL Server authentication (SQL user/password)",
                     requiredArguments: new List<string> { "username", "password" },
                     factory: () => new LocalCredentials()
                 )
@@ -62,7 +65,7 @@ namespace MSSQLand.Services.Credentials
                 new CredentialMetadata(
                     name: "entraid",
                     description: "Entra ID (Azure Active Directory) authentication",
-                    requiredArguments: new List<string> { "username", "password" },
+                    requiredArguments: new List<string> { "username", "password", "domain" },
                     factory: () => new EntraIDCredentials()
                 )
             },

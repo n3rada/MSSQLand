@@ -279,23 +279,27 @@ namespace MSSQLand.Utilities
                 // Check if credential type is provided
                 if (string.IsNullOrWhiteSpace(parsedArgs.CredentialType))
                 {
-                    Logger.Error("Missing required argument: -c or --credentials.");
-                    Logger.NewLine();
-                    DataTable credentialsTable = new();
-                    credentialsTable.Columns.Add("Type", typeof(string));
-                    credentialsTable.Columns.Add("Description", typeof(string));
-                    credentialsTable.Columns.Add("Required Arguments", typeof(string));
+                Logger.Error("Missing required argument: -c or --credentials.");
+                Logger.NewLine();
+                DataTable credentialsTable = new();
+                credentialsTable.Columns.Add("Type", typeof(string));
+                credentialsTable.Columns.Add("Description", typeof(string));
+                credentialsTable.Columns.Add("Required Arguments", typeof(string));
+                credentialsTable.Columns.Add("Optional Arguments", typeof(string));
 
-                    var credentials = CredentialsFactory.GetAvailableCredentials();
-                    foreach (var credential in credentials.Values)
-                    {
-                        string requiredArgs = credential.RequiredArguments.Count > 0
-                            ? string.Join(", ", credential.RequiredArguments)
-                            : "None";
-                        credentialsTable.Rows.Add(credential.Name, credential.Description, requiredArgs);
-                    }
+                var credentials = CredentialsFactory.GetAvailableCredentials();
+                foreach (var credential in credentials.Values)
+                {
+                    string requiredArgs = credential.RequiredArguments.Count > 0
+                        ? string.Join(", ", credential.RequiredArguments)
+                        : "None";
                     
-                    Console.WriteLine(OutputFormatter.ConvertDataTable(credentialsTable));
+                    string optionalArgs = credential.OptionalArguments.Count > 0
+                        ? string.Join(", ", credential.OptionalArguments)
+                        : "-";
+                    
+                    credentialsTable.Rows.Add(credential.Name, credential.Description, requiredArgs, optionalArgs);
+                }                    Console.WriteLine(OutputFormatter.ConvertDataTable(credentialsTable));
                     return (ParseResultType.InvalidInput, null);
                 }
 
@@ -377,6 +381,7 @@ namespace MSSQLand.Utilities
                 credentialsTable.Columns.Add("Type", typeof(string));
                 credentialsTable.Columns.Add("Description", typeof(string));
                 credentialsTable.Columns.Add("Required Arguments", typeof(string));
+                credentialsTable.Columns.Add("Optional Arguments", typeof(string));
 
                 var credentials = CredentialsFactory.GetAvailableCredentials();
                 foreach (var credential in credentials.Values)
@@ -384,7 +389,12 @@ namespace MSSQLand.Utilities
                     string requiredArgsDisplay = credential.RequiredArguments.Count > 0
                         ? string.Join(", ", credential.RequiredArguments)
                         : "None";
-                    credentialsTable.Rows.Add(credential.Name, credential.Description, requiredArgsDisplay);
+                    
+                    string optionalArgsDisplay = credential.OptionalArguments.Count > 0
+                        ? string.Join(", ", credential.OptionalArguments)
+                        : "-";
+                    
+                    credentialsTable.Rows.Add(credential.Name, credential.Description, requiredArgsDisplay, optionalArgsDisplay);
                 }
                 
                 Console.WriteLine(OutputFormatter.ConvertDataTable(credentialsTable));

@@ -164,6 +164,7 @@ namespace MSSQLand.Utilities
             credentialsTable.Columns.Add("Type", typeof(string));
             credentialsTable.Columns.Add("Description", typeof(string));
             credentialsTable.Columns.Add("Required Arguments", typeof(string));
+            credentialsTable.Columns.Add("Optional Arguments", typeof(string));
 
             // Use CredentialsFactory to get all available credentials
             var credentials = Services.Credentials.CredentialsFactory.GetAvailableCredentials();
@@ -172,7 +173,12 @@ namespace MSSQLand.Utilities
                 string requiredArgs = credential.RequiredArguments.Any()
                     ? string.Join(", ", credential.RequiredArguments)
                     : "None";
-                credentialsTable.Rows.Add(credential.Name, credential.Description, requiredArgs);
+                
+                string optionalArgs = credential.OptionalArguments.Any()
+                    ? string.Join(", ", credential.OptionalArguments)
+                    : "-";
+                
+                credentialsTable.Rows.Add(credential.Name, credential.Description, requiredArgs, optionalArgs);
             }
 
             return credentialsTable;
