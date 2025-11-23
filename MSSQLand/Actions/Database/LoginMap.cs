@@ -156,21 +156,6 @@ namespace MSSQLand.Actions.Database
 
                 Console.WriteLine(OutputFormatter.ConvertDataTable(sortedResults));
 
-                Logger.NewLine();
-                Logger.Info($"Total mappings: {totalMappings}");
-                
-                if (orphanedUsers > 0)
-                {
-                    Logger.Warning($"Orphaned users (no login): {orphanedUsers}");
-                }
-                
-                if (mismatchedNames > 0)
-                {
-                    Logger.Info($"Name mismatches (login ≠ user): {mismatchedNames}");
-                }
-                
-                Logger.Success("Login-to-user mapping completed");
-
                 return sortedResults;
             }
             catch (Exception ex)
