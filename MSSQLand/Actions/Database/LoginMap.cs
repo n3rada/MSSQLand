@@ -56,6 +56,7 @@ namespace MSSQLand.Actions.Database
                     [Login Type] NVARCHAR(60),
                     [Database User] NVARCHAR(128),
                     [User Type] NVARCHAR(60),
+                    [Effective Access Via] NVARCHAR(128),
                     [Orphaned] BIT
                 );
 
@@ -80,6 +81,21 @@ namespace MSSQLand.Actions.Database
                         ISNULL(sp.type_desc, ''N/A'') AS [Login Type],
                         dp.name AS [Database User],
                         dp.type_desc AS [User Type],
+                        CASE 
+                            -- Check if there''s a different login token entry that grants access
+                            WHEN sp.sid IS NOT NULL AND sp.name != dp.name 
+                                AND EXISTS (
+                                    SELECT 1 FROM master.sys.login_token lt
+                                    WHERE lt.sid = dp.sid AND lt.type = ''WINDOWS GROUP''
+                                )
+                            THEN (
+                                SELECT TOP 1 lt.name 
+                                FROM master.sys.login_token lt
+                                WHERE lt.sid = dp.sid AND lt.type = ''WINDOWS GROUP''
+                            )
+                            WHEN sp.sid IS NOT NULL THEN ''Direct''
+                            ELSE NULL
+                        END AS [Effective Access Via],
                         CASE 
                             WHEN dp.name = ''guest'' THEN 0
                             WHEN sp.sid IS NULL THEN 1
@@ -155,6 +171,21 @@ namespace MSSQLand.Actions.Database
                                 r["Server Login"].ToString() != "<Orphaned>");
 
                 Console.WriteLine(OutputFormatter.ConvertDataTable(sortedResults));
+
+                Logger.NewLine();
+                Logger.Info($"Total mappings: {totalMappings}");
+                
+                if (orphanedUsers > 0)
+                {
+                    Logger.Warning($"Orphaned users (no login): {orphanedUsers}");
+                }
+                
+                if (mismatchedNames > 0)
+                {
+                    Logger.Info($"Name mismatches (login ≠ user): {mismatchedNames}");
+                }
+                
+                Logger.Success("Login-to-user mapping completed");
 
                 return sortedResults;
             }
