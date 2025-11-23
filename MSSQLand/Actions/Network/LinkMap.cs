@@ -144,7 +144,7 @@ namespace MSSQLand.Actions.Network
                 // Show command to reproduce this chain
                 if (chainParts.Count > 0)
                 {
-                    string chainCommand = $"/l:{string.Join(",", chainParts)}";
+                    string chainCommand = $"-l {string.Join(",", chainParts)}";
                     Logger.Info($"To use this chain: {chainCommand}");
                 }
             }
