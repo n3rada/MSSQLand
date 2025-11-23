@@ -27,52 +27,34 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            bool isAzureSQL = databaseContext.QueryService.IsAzureSQL();
             string databaseUsersQuery;
-            
-            if (isAzureSQL)
+
+            if (!databaseContext.QueryService.IsAzureSQL())
             {
-                // Azure SQL Database: Only show database users (no server-level principals access)
-                Logger.Info("Enumerating database users in current database context");
-                Logger.InfoNested("Note: Server-level principals not accessible on Azure SQL Database");
+                // On-premises SQL Server: Show server logins and database users
+                Logger.TaskNested("Enumerating server-level principals (logins) and their instance-wide server roles");
+                Logger.TaskNested("Note: Use 'roles' action to see database-level role memberships");
+                string query = @"
+                    SELECT 
+                        sp.name AS Name, 
+                        sp.type_desc AS Type, 
+                        sp.is_disabled, 
+                        sp.create_date, 
+                        sp.modify_date,
+                        STRING_AGG(sr.name, ', ') AS groups
+                    FROM master.sys.server_principals sp
+                    LEFT JOIN master.sys.server_role_members srm ON sp.principal_id = srm.member_principal_id
+                    LEFT JOIN master.sys.server_principals sr ON srm.role_principal_id = sr.principal_id AND sr.type = 'R'
+                    WHERE sp.type IN ('G','U','E','S','X') AND sp.name NOT LIKE '##%'
+                    GROUP BY sp.name, sp.type_desc, sp.is_disabled, sp.create_date, sp.modify_date
+                    ORDER BY sp.modify_date DESC;";
 
-                databaseUsersQuery = @"
-                    SELECT name AS username, create_date, modify_date, type_desc AS type, 
-                           authentication_type_desc AS authentication_type 
-                    FROM sys.database_principals 
-                    WHERE type NOT IN ('R', 'A', 'X') AND sid IS NOT null AND name NOT LIKE '##%' 
-                    ORDER BY modify_date DESC;";
+                DataTable rawTable = databaseContext.QueryService.ExecuteTable(query);
 
-                Console.WriteLine(OutputFormatter.ConvertDataTable(
-                    databaseContext.QueryService.ExecuteTable(databaseUsersQuery)));
-
-                return null;
+                Console.WriteLine(OutputFormatter.ConvertDataTable(rawTable));
             }
 
-
-            // On-premises SQL Server: Show server logins and database users
-            Logger.Info("Enumerating server-level principals (logins) and their instance-wide server roles");
-            Logger.InfoNested("Note: Use 'roles' action to see database-level role memberships");
-            string query = @"
-                SELECT 
-                    sp.name AS Name, 
-                    sp.type_desc AS Type, 
-                    sp.is_disabled, 
-                    sp.create_date, 
-                    sp.modify_date,
-                    STRING_AGG(sr.name, ', ') AS groups
-                FROM master.sys.server_principals sp
-                LEFT JOIN master.sys.server_role_members srm ON sp.principal_id = srm.member_principal_id
-                LEFT JOIN master.sys.server_principals sr ON srm.role_principal_id = sr.principal_id AND sr.type = 'R'
-                WHERE sp.type IN ('G','U','E','S','X') AND sp.name NOT LIKE '##%'
-                GROUP BY sp.name, sp.type_desc, sp.is_disabled, sp.create_date, sp.modify_date
-                ORDER BY sp.modify_date DESC;";
-
-            DataTable rawTable = databaseContext.QueryService.ExecuteTable(query);
-
-            Console.WriteLine(OutputFormatter.ConvertDataTable(rawTable));
-
-            Logger.Info("Database users in current database context");
+            Logger.TaskNested("Database users in current database context");
 
             databaseUsersQuery = @"
                 SELECT name AS username, create_date, modify_date, type_desc AS type, 
