@@ -114,29 +114,32 @@ namespace MSSQLand.Services
             // Update the properties
             this.MappedUser = mappedUser;
             this.SystemUser = systemUser;
-            
-            // Compute effective user and source principal (handles group-based access)
-            (this.EffectiveUser, this.SourcePrincipal) = GetEffectiveUserAndSource();
 
             return (mappedUser, systemUser);
         }
 
         /// <summary>
         /// Gets the effective database user and the source principal (AD group or login) that granted access.
-        /// This handles cases where access is granted through AD group membership.
+        /// This handles cases where access is granted through AD group membership
         /// rather than direct login mapping (e.g., DOMAIN\User -> AD Group -> Database User).
-        /// This use the token from integrated Windows authentication.
+        /// Uses the token from integrated Windows authentication.
+        /// 
+        /// IMPORTANT: Only works on direct connections. Does NOT work through linked servers
+        /// as sys.login_token is not available in remote execution contexts.
+        /// 
         /// https://learn.microsoft.com/fr-fr/sql/relational-databases/system-catalog-views/sys-login-token-transact-sql
         /// </summary>
         /// <returns>Tuple of (EffectiveUser, SourcePrincipal)</returns>
-        private (string EffectiveUser, string SourcePrincipal) GetEffectiveUserAndSource()
+        public void ComputeEffectiveUserAndSource()
         {
             try
             {
                 // If there's a direct mapping (MappedUser != SystemUser), use it
                 if (!MappedUser.Equals(SystemUser, StringComparison.OrdinalIgnoreCase))
                 {
-                    return (MappedUser, SystemUser);
+                    this.EffectiveUser = MappedUser;
+                    this.SourcePrincipal = SystemUser;
+                    return;
                 }
 
                 // Query user_token to find effective database user and login_token for source
@@ -155,18 +158,21 @@ ORDER BY dp.principal_id;";
                 var dt = _queryService.ExecuteTable(sql);
 
                 if (dt.Rows.Count == 0)
-                    return (MappedUser, SystemUser);
+                {
+                    this.EffectiveUser = MappedUser;
+                    this.SourcePrincipal = SystemUser;
+                    return;
+                }
 
                 var row = dt.Rows[0];
-                string effective = row["effective_user"]?.ToString() ?? MappedUser;
-                string source = row["source_principal"]?.ToString() ?? effective;
-
-                return (effective, source);
+                this.EffectiveUser = row["effective_user"]?.ToString() ?? MappedUser;
+                this.SourcePrincipal = row["source_principal"]?.ToString() ?? this.EffectiveUser;
             }
             catch (Exception ex)
             {
                 Logger.Warning($"Error determining effective user and source: {ex.Message}");
-                return (MappedUser, SystemUser);
+                this.EffectiveUser = MappedUser;
+                this.SourcePrincipal = SystemUser;
             }
         }
 

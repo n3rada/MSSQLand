@@ -94,6 +94,10 @@ namespace MSSQLand
 
                 Logger.Info($"Logged in on {databaseContext.Server.Hostname} as {systemUser}");
                 Logger.InfoNested($"Mapped to the user {userName}");
+
+                // Compute effective user and source principal (handles group-based access)
+                // Only works on direct connections, not through linked servers
+                databaseContext.UserService.ComputeEffectiveUserAndSource();
                 
                 string effectiveUser = databaseContext.UserService.EffectiveUser;
                 string sourcePrincipal = databaseContext.UserService.SourcePrincipal;
@@ -118,18 +122,6 @@ namespace MSSQLand
 
                     Logger.Info($"Logged in on {databaseContext.QueryService.ExecutionServer} as {systemUser}");
                     Logger.InfoNested($"Mapped to the user {userName}");
-                    
-                    effectiveUser = databaseContext.UserService.EffectiveUser;
-                    sourcePrincipal = databaseContext.UserService.SourcePrincipal;
-                    
-                    if (!effectiveUser.Equals(userName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        Logger.InfoNested($"Effective database user: {effectiveUser}");
-                        if (!sourcePrincipal.Equals(systemUser, StringComparison.OrdinalIgnoreCase))
-                        {
-                            Logger.InfoNested($"Access granted via: {sourcePrincipal}");
-                        }
-                    }
                 }
 
                 // Compute and display the final execution context
