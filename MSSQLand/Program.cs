@@ -139,8 +139,8 @@ namespace MSSQLand
                 // Detect Azure SQL on the final execution server
                 databaseContext.QueryService.IsAzureSQL();
 
-                Logger.Task($"Executing action '{arguments.Action.GetName()}' against {databaseContext.QueryService.ExecutionServer}");
                 Logger.NewLine();
+                Logger.Task($"Executing action '{arguments.Action.GetName()}' against {databaseContext.QueryService.ExecutionServer}");
                 arguments.Action.Execute(databaseContext);
 
                 stopwatch.Stop();
