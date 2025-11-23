@@ -2,7 +2,6 @@
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
-using System.Collections.Generic;
 using System.Data;
 
 namespace MSSQLand.Actions.Database
