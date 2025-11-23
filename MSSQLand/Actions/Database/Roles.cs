@@ -27,15 +27,13 @@ namespace MSSQLand.Actions.Database
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.Info("Enumerating server-level and database-level roles with their members");
-            Logger.InfoNested("SERVER roles: sysadmin, serveradmin, setupadmin, etc. (instance-wide)");
-            Logger.InfoNested("DATABASE roles: db_owner, db_datareader, custom roles, etc. (current database)");
-            Logger.InfoNested("Members shown are direct members only (from sys.server_role_members / sys.database_role_members)");
+            Logger.Task("Enumerating server-level and database-level roles with their members");
+            Logger.TaskNested("SERVER roles: sysadmin, serveradmin, setupadmin, etc. (instance-wide)");
+            Logger.TaskNested("DATABASE roles: db_owner, db_datareader, custom roles, etc. (current database)");
+            Logger.TaskNested("Members shown are direct members only (from sys.server_role_members / sys.database_role_members)");
             Logger.NewLine();
 
             // ========== SERVER-LEVEL ROLES ==========
-            Logger.Info("Server-Level Roles");
-            Logger.NewLine();
 
             string serverRolesQuery = @"
                 SELECT 
@@ -129,7 +127,6 @@ namespace MSSQLand.Actions.Database
 
                     Logger.Success($"Fixed Server Roles ({fixedServerRoles.Count} roles)");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(fixedServerRolesTable));
-                    Console.WriteLine();
                 }
 
                 // Display Custom Server Roles
@@ -155,13 +152,10 @@ namespace MSSQLand.Actions.Database
 
                     Logger.Success($"Custom Server Roles ({customServerRoles.Count} roles)");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(customServerRolesTable));
-                    Console.WriteLine();
                 }
             }
 
             // ========== DATABASE-LEVEL ROLES ==========
-            Logger.Info($"Database-Level Roles ({databaseContext.QueryService.ExecutionDatabase})");
-            Logger.NewLine();
 
             // Query all database roles (both fixed and custom)
             // Fixed roles: db_owner, db_datareader, db_datawriter, db_securityadmin, etc.
@@ -265,7 +259,6 @@ ORDER BY r.is_fixed_role DESC, r.name;";
 
                 Logger.Success($"Fixed Database Roles ({fixedRolesData.Count} roles)");
                 Console.WriteLine(OutputFormatter.ConvertDataTable(fixedRolesTable));
-                Console.WriteLine();
             }
 
             // Display Custom Roles

@@ -195,7 +195,7 @@ namespace MSSQLand.Utilities
                     {
                         parsedArgs.LinkedServers = new LinkedServers(ExtractFlagValue(arg, args, ref currentIndex));
                     }
-                    else if (IsGlobalArgument(arg, "output", "o"))
+                    else if (IsGlobalArgument(arg, "output-format", "o"))
                     {
                         string outputFormat = ExtractFlagValue(arg, args, ref currentIndex);
                         try
@@ -252,7 +252,7 @@ namespace MSSQLand.Utilities
                         Logger.Info("Available global arguments:");
                         Logger.InfoNested("-c, --credentials: Credential type for authentication");
                         Logger.InfoNested("-l, --links: Linked server chain");
-                        Logger.InfoNested("-o, --output: Output format (table, csv, json, markdown)");
+                        Logger.InfoNested("-o, --output-format: Output format (table, csv, json, markdown)");
                         Logger.InfoNested("--timeout: Connection timeout in seconds");
                         Logger.InfoNested("-u, --username: Username for authentication");
                         Logger.InfoNested("-p, --password: Password for authentication");
