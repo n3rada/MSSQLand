@@ -34,7 +34,10 @@ namespace MSSQLand.Actions.Database
             }
 
             // Parse arguments using the base class method
-            ParseActionArguments(args);
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
+
+            // Get the FQTN from the first positional argument
+            _fqtn = GetPositionalArgument(positionalArgs, 0);
 
             if (string.IsNullOrEmpty(_fqtn))
             {
