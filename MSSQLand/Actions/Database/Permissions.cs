@@ -151,5 +151,54 @@ namespace MSSQLand.Actions.Database
 
             return sortedRows.CopyToDataTable();
         }
+
+        /// <summary>
+        /// Returns a priority value for a permission. Lower values = higher importance/exploitation value.
+        /// </summary>
+        private int GetPermissionPriority(string permission)
+        {
+            // Critical server-level permissions (most dangerous)
+            if (permission == "CONTROL SERVER") return 1;
+            if (permission == "ALTER ANY LOGIN") return 2;
+            if (permission == "ALTER ANY DATABASE") return 3;
+            if (permission == "CREATE ANY DATABASE") return 4;
+            
+            // Administrative permissions
+            if (permission == "CONTROL") return 10;
+            if (permission == "TAKE OWNERSHIP") return 11;
+            if (permission == "IMPERSONATE") return 12;
+            if (permission == "ALTER ANY USER") return 13;
+            if (permission == "ALTER ANY ROLE") return 14;
+            if (permission == "ALTER ANY SCHEMA") return 15;
+            
+            // Code execution permissions
+            if (permission == "EXECUTE") return 20;
+            if (permission == "ALTER") return 21;
+            if (permission == "CREATE PROCEDURE") return 22;
+            if (permission == "CREATE FUNCTION") return 23;
+            if (permission == "CREATE ASSEMBLY") return 24;
+            
+            // Data modification permissions
+            if (permission == "INSERT") return 30;
+            if (permission == "UPDATE") return 31;
+            if (permission == "DELETE") return 32;
+            
+            // Data access permissions
+            if (permission == "SELECT") return 40;
+            if (permission == "REFERENCES") return 41;
+            
+            // View/metadata permissions
+            if (permission == "VIEW DEFINITION") return 50;
+            if (permission == "VIEW ANY DATABASE") return 51;
+            if (permission == "VIEW SERVER STATE") return 52;
+            if (permission == "VIEW DATABASE STATE") return 53;
+            
+            // Connection permissions (least critical)
+            if (permission == "CONNECT") return 60;
+            if (permission == "CONNECT SQL") return 61;
+            
+            // Default for unknown permissions
+            return 100;
+        }
     }
 }
