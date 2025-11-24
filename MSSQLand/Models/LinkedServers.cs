@@ -267,10 +267,7 @@ namespace MSSQLand.Models
                     baseQuery.Append($"EXECUTE AS LOGIN = '{login}'; ");
                 }
 
-                if (!string.IsNullOrEmpty(database))
-                {
-                    baseQuery.Append($"USE [{database}]; ");
-                }
+                // No USE statement needed - we're already in the target database context
 
                 baseQuery.Append(currentQuery.TrimEnd(';'));
                 baseQuery.Append(";");
@@ -368,7 +365,8 @@ namespace MSSQLand.Models
                     }
                 }
 
-                if (linkedDatabases != null && linkedDatabases.Length > 0)
+                // Only add USE statement for servers beyond the first linked server
+                if (i < linkedServers.Length - 1 && linkedDatabases != null && linkedDatabases.Length > 0)
                 {
                     string database = linkedDatabases[i-1];
                     if (!string.IsNullOrEmpty(database))
