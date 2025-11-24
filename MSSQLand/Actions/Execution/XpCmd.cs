@@ -71,10 +71,8 @@ namespace MSSQLand.Actions.Execution
                 if (ex.Message.Contains("xp_cmdshell_proxy_account") || ex.Message.Contains("proxy account"))
                 {
                     Logger.Error("xp_cmdshell proxy account is not configured or invalid.");
-                    Logger.NewLine();
-                    Logger.Info("This error occurs when:");
-                    Logger.InfoNested("1. SQL Server service account lacks permissions to execute the command");
-                    Logger.InfoNested("2. No xp_cmdshell proxy credential is configured");
+                    Logger.ErrorNested("1. SQL Server service account lacks permissions to execute the command");
+                    Logger.ErrorNested("2. No xp_cmdshell proxy credential is configured");
                 }
                 else
                 {
