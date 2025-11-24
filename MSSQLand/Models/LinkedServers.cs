@@ -381,7 +381,7 @@ namespace MSSQLand.Models
                 queryBuilder.Append(";");
                     
                 // Double single quotes to escape them in the SQL string
-                currentQuery = $"EXEC ('{queryBuilder.ToString().Replace("'", "''")} ') AT [{server}]";
+                currentQuery = $"EXEC ('{queryBuilder.ToString().Replace("'", "''")}') AT [{server}]";
             }
 
             return currentQuery;
