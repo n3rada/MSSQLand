@@ -1,13 +1,13 @@
 {
     "name": "MSSQLand",
-    "version": "v1.0",
+    "version": "v2.0",
     "command_name": "mssqland",
     "original_author": "n3rada",
     "repo_url": "https://github.com/n3rada/MSSQLand",
     "help": "Effortlessly navigate and conquer linked Microsoft SQL Server (MS SQL) servers",
     "entrypoint": "Main",
     "allow_args": true,
-    "default_args": "/help",
+    "default_args": "",
     "is_reflective": false,
     "is_assembly": true,
     "files": [
