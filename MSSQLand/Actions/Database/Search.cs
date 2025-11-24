@@ -13,23 +13,23 @@ namespace MSSQLand.Actions.Database
     /// 
     /// Usage:
     /// - search <keyword>: Search current database for keyword in column names and row data
-    /// - search <keyword> *: Search all accessible databases
-    /// - search <keyword> schema.table: Search specific table only
-    /// - search <keyword> database.schema.table: Search specific table in specific database
-    /// - search <keyword> --columns-only: Search column names only (no row data)
+    /// - search <keyword> -a: Search all accessible databases
+    /// - search <keyword> -t schema.table: Search specific table only
+    /// - search <keyword> -t database.schema.table: Search specific table in specific database
+    /// - search <keyword> -c: Search column names only (no row data)
     /// 
     /// Examples:
-    /// - /a:search password: Search for 'password' in current database
-    /// - /a:search password *: Search for 'password' in all databases
-    /// - /a:search admin dbo.users: Search only in dbo.users table
-    /// - /a:search email --columns-only: Find columns containing 'email' (fast)
+    /// - search password: Search for 'password' in current database
+    /// - search password -a: Search for 'password' in all databases
+    /// - search admin -t dbo.users: Search only in dbo.users table
+    /// - search email -c: Find columns containing 'email' (fast)
     /// </summary>
     internal class Search : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "k", LongName = "keyword", Required = true, Description = "Keyword to search for")]
         private string _keyword;
 
-        [ArgumentMetadata(ShortName = "c", LongName = "columns-only", Description = "Search column names only (no row data)")]
+        [ArgumentMetadata(ShortName = "c", LongName = "columns", Description = "Search column names only (no row data)")]
         private bool _columnsOnly = false;
 
         [ArgumentMetadata(ShortName = "a", LongName = "all", Description = "Search across all accessible databases")]
@@ -48,24 +48,24 @@ namespace MSSQLand.Actions.Database
         {
             if (args == null || args.Length == 0)
             {
-                throw new ArgumentException("Keyword is required. Usage: /a:search <keyword> [/c] [/a] [/t:table]");
+                throw new ArgumentException("Keyword is required. Usage: search <keyword> [-c] [-a] [-t table]");
             }
 
             // Parse both positional and named arguments
             var (namedArgs, positionalArgs) = ParseActionArguments(args);
 
-            // Get keyword from position 0 or /k: or /keyword:
+            // Get keyword from position 0 or -k/--keyword
             _keyword = GetNamedArgument(namedArgs, "k")
                     ?? GetNamedArgument(namedArgs, "keyword")
                     ?? GetPositionalArgument(positionalArgs, 0);
 
             if (string.IsNullOrEmpty(_keyword))
             {
-                throw new ArgumentException("Keyword is required. Usage: /a:search <keyword> [/c] [/a] [/t:table]");
+                throw new ArgumentException("Keyword is required. Usage: search <keyword> [-c] [-a] [-t table]");
             }
 
             // Check for columns-only flag
-            if (namedArgs.ContainsKey("c") || namedArgs.ContainsKey("columns-only"))
+            if (namedArgs.ContainsKey("c") || namedArgs.ContainsKey("columns"))
             {
                 _columnsOnly = true;
             }
