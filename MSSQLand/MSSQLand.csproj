@@ -103,6 +103,7 @@
     <Compile Include="Actions\Database\Rows.cs" />
     <Compile Include="Actions\Database\Search.cs" />
     <Compile Include="Actions\Database\Tables.cs" />
+    <Compile Include="Actions\Database\Trustworthy.cs" />
     <Compile Include="Actions\Database\Users.cs" />
     <Compile Include="Actions\Database\Whoami.cs" />
     

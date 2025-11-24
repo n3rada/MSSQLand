@@ -36,6 +36,7 @@ namespace MSSQLand.Utilities
             { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).") },
             { "permissions", (typeof(Permissions), "Enumerate user and role permissions.") },
             { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.") },
+            { "trustworthy", (typeof(Trustworthy), "Detect and exploit privilege escalation via TRUSTWORTHY database setting (db_owner → sysadmin).") },
             { "oledb-providers", (typeof(OleDbProvidersInfo), "Retrieve information about installed OLE DB providers and their configurations.") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
@@ -93,7 +94,6 @@ namespace MSSQLand.Utilities
             { "adsicreds", (typeof(AdsiCredentialExtractor), "Extract credentials from ADSI linked servers by intercepting LDAP authentication.") },
             { "smbcoerce", (typeof(SmbCoerce), "Force SMB authentication to a specified UNC path to capture time-limited Net-NTLMv2 challenge/response.") }
         };
-
 
         public static BaseAction GetAction(string actionType, string[] actionArguments)
         {
