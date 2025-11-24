@@ -40,7 +40,7 @@ namespace MSSQLand.Utilities.Formatters
                 return "";
             }
 
-            StringBuilder sqlStringBuilder = new("\n");
+            StringBuilder sqlStringBuilder = new();
 
             if (dictionary.Count > 0)
             {
@@ -65,7 +65,7 @@ namespace MSSQLand.Utilities.Formatters
                 }
             }
 
-            return sqlStringBuilder.ToString();
+            return "\n" + sqlStringBuilder.ToString() + "\n";
         }
 
         public string ConvertSqlDataReader(SqlDataReader reader)
@@ -82,7 +82,7 @@ namespace MSSQLand.Utilities.Formatters
                     return "No data available.";
                 }
 
-                StringBuilder sqlStringBuilder = new("\n");
+                StringBuilder sqlStringBuilder = new();
                 var columnWidths = new List<int>();
                 var rows = new List<string[]>();
 
@@ -131,7 +131,7 @@ namespace MSSQLand.Utilities.Formatters
                     sqlStringBuilder.AppendLine("|");
                 }
 
-                return sqlStringBuilder.ToString();
+                return "\n" + sqlStringBuilder.ToString() + "\n";
             }
         }
 
@@ -142,7 +142,7 @@ namespace MSSQLand.Utilities.Formatters
                 return "";
             }
 
-            StringBuilder sqlStringBuilder = new("\n");
+            StringBuilder sqlStringBuilder = new();
             int columnWidth = Math.Max(columnName.Length, list.Max(item => item.Length));
 
             sqlStringBuilder.Append("| ").Append(columnName.PadRight(columnWidth)).Append(" |").AppendLine();
@@ -153,7 +153,7 @@ namespace MSSQLand.Utilities.Formatters
                 sqlStringBuilder.Append("| ").Append(item.PadRight(columnWidth)).Append(" |").AppendLine();
             }
 
-            return sqlStringBuilder.ToString();
+            return "\n" + sqlStringBuilder.ToString() + "\n";
         }
 
         public string ConvertDataTable(DataTable table)
@@ -163,7 +163,7 @@ namespace MSSQLand.Utilities.Formatters
                 return "";
             }
 
-            StringBuilder sqlStringBuilder = new("\n");
+            StringBuilder sqlStringBuilder = new();
             var columnWidths = new int[table.Columns.Count];
 
             for (int i = 0; i < table.Columns.Count; i++)
