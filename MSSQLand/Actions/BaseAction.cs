@@ -42,8 +42,6 @@ namespace MSSQLand.Actions
     ///        _mode = GetPositionalArgument(positionalArgs, 0);
     ///        _name = GetPositionalArgument(positionalArgs, 1);
     ///    }
-    /// 
-    /// See Actions/ACTION_ARGUMENT_GUIDE.md for complete documentation.
     /// </summary>
     
     [AttributeUsage(AttributeTargets.Field)]
