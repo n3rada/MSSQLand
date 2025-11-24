@@ -229,7 +229,7 @@ ORDER BY
             
             try
             {
-                if (databaseContext.UserService.IsSysadmin)
+                if (databaseContext.UserService.IsAdmin())
                 {
                     Logger.Success("Already sysadmin. No escalation needed.");
                     return true;
