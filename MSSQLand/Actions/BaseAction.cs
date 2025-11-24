@@ -290,76 +290,6 @@ namespace MSSQLand.Actions
         }
 
         /// <summary>
-        /// Legacy method for backward compatibility - splits string-based arguments.
-        /// DEPRECATED: Use ParseActionArguments(string[] args) instead.
-        /// </summary>
-        [Obsolete("Use ParseActionArguments(string[] args) for argparse-style parsing")]
-        protected string[] SplitArguments(string additionalArguments, string separator = "/|/")
-        {
-            if (string.IsNullOrWhiteSpace(additionalArguments))
-            {
-                Logger.Debug("No arguments provided.");
-                return Array.Empty<string>();
-            }
-
-            string[] splitted = Regex.Split(additionalArguments, $"({Regex.Escape(separator)})")
-                              .Where(arg => arg != separator)
-                              .ToArray();
-
-            Logger.Debug("Splitted arguments: {" + string.Join(",", splitted) + "}");
-
-            return splitted;
-        }
-
-        /// <summary>
-        /// Legacy method - DEPRECATED. Use ParseActionArguments instead.
-        /// </summary>
-        [Obsolete("Use ParseActionArguments(string[] args) for modern CLI parsing")]
-        protected (Dictionary<string, string> Named, List<string> Positional) ParseArguments(string additionalArguments)
-        {
-            var named = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            var positional = new List<string>();
-
-            if (string.IsNullOrWhiteSpace(additionalArguments))
-            {
-                return (named, positional);
-            }
-
-            string[] parts = SplitArguments(additionalArguments);
-
-            foreach (string part in parts)
-            {
-                string trimmed = part.Trim();
-                
-                // Check if it's a named argument (starts with / and contains : or =)
-                if (trimmed.StartsWith("/"))
-                {
-                    // Try to parse as /name:value or /name=value
-                    int separatorIndex = trimmed.IndexOfAny(new[] { ':', '=' });
-                    
-                    if (separatorIndex > 1)
-                    {
-                        string name = trimmed.Substring(1, separatorIndex - 1).Trim();
-                        string value = trimmed.Substring(separatorIndex + 1).Trim();
-                        
-                        if (!string.IsNullOrEmpty(name))
-                        {
-                            named[name] = value;
-                            Logger.Debug($"Parsed named argument: {name} = {value}");
-                            continue;
-                        }
-                    }
-                }
-
-                // It's a positional argument
-                positional.Add(trimmed);
-                Logger.Debug($"Parsed positional argument: {trimmed}");
-            }
-
-            return (named, positional);
-        }
-
-        /// <summary>
         /// Gets a named argument value or returns the default if not found.
         /// </summary>
         protected string GetNamedArgument(Dictionary<string, string> namedArgs, string name, string defaultValue = null)
@@ -432,11 +362,11 @@ namespace MSSQLand.Actions
                         var aliasList = new List<string>();
                         if (!string.IsNullOrEmpty(metadata.ShortName))
                         {
-                            aliasList.Add($"/{metadata.ShortName}:");
+                            aliasList.Add($"-{metadata.ShortName}");
                         }
                         if (!string.IsNullOrEmpty(metadata.LongName))
                         {
-                            aliasList.Add($"/{metadata.LongName}:");
+                            aliasList.Add($"--{metadata.LongName}");
                         }
                         if (aliasList.Any())
                         {
