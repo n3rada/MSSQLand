@@ -267,7 +267,11 @@ namespace MSSQLand.Models
                     baseQuery.Append($"EXECUTE AS LOGIN = '{login}';");
                 }
 
-                // No USE statement needed - we're already in the target database context
+                // Add USE statement for linked servers that specify a database
+                if (!string.IsNullOrEmpty(database))
+                {
+                    baseQuery.Append($"USE [{database}];");
+                }
 
                 baseQuery.Append(currentQuery.TrimEnd(';'));
                 baseQuery.Append(";");
@@ -365,13 +369,14 @@ namespace MSSQLand.Models
                     }
                 }
 
-                // Only add USE statement for servers beyond the first linked server
-                if (i < linkedServers.Length - 1 && linkedDatabases != null && linkedDatabases.Length > 0)
+                // Add USE statement for all linked servers (skip index 0 which is the direct connection)
+                // Index mapping: linkedDatabases[0] corresponds to linkedServers[1] (first linked server)
+                if (i > 1 && linkedDatabases != null && linkedDatabases.Length > 0)
                 {
                     string database = linkedDatabases[i-1];
                     if (!string.IsNullOrEmpty(database))
                     {
-                        queryBuilder.Append($"USE [{database}]; ");
+                        queryBuilder.Append($"USE [{database}];");
                     }
                 }
 
