@@ -56,8 +56,7 @@ namespace MSSQLand.Actions.Database
                     [Login Type] NVARCHAR(60),
                     [Database User] NVARCHAR(128),
                     [User Type] NVARCHAR(60),
-                    [Effective Access Via] NVARCHAR(128),
-                    [Orphaned] BIT
+                    [Effective Access Via] NVARCHAR(128)
                 );
 
                 DECLARE @dbname NVARCHAR(128);
@@ -77,13 +76,13 @@ namespace MSSQLand.Actions.Database
                     SET @sql = N'
                     SELECT 
                         ''' + @dbname + ''' AS [Database],
-                        ISNULL(sp.name, ''<Orphaned>'') AS [Server Login],
-                        ISNULL(sp.type_desc, ''N/A'') AS [Login Type],
+                        sp.name AS [Server Login],
+                        sp.type_desc AS [Login Type],
                         dp.name AS [Database User],
                         dp.type_desc AS [User Type],
                         CASE 
                             -- Check if there''s a different login token entry that grants access
-                            WHEN sp.sid IS NOT NULL AND sp.name != dp.name 
+                            WHEN sp.name != dp.name 
                                 AND EXISTS (
                                     SELECT 1 FROM master.sys.login_token lt
                                     WHERE lt.sid = dp.sid AND lt.type = ''WINDOWS GROUP''
@@ -93,16 +92,10 @@ namespace MSSQLand.Actions.Database
                                 FROM master.sys.login_token lt
                                 WHERE lt.sid = dp.sid AND lt.type = ''WINDOWS GROUP''
                             )
-                            WHEN sp.sid IS NOT NULL THEN ''Direct''
-                            ELSE NULL
-                        END AS [Effective Access Via],
-                        CASE 
-                            WHEN dp.name = ''guest'' THEN 0
-                            WHEN sp.sid IS NULL THEN 1
-                            ELSE 0
-                        END AS [Orphaned]
+                            ELSE ''Direct''
+                        END AS [Effective Access Via]
                     FROM [' + @dbname + '].sys.database_principals dp
-                    LEFT JOIN master.sys.server_principals sp ON dp.sid = sp.sid
+                    INNER JOIN master.sys.server_principals sp ON dp.sid = sp.sid
                     WHERE dp.type IN (''S'', ''U'', ''G'', ''E'', ''X'')
                     AND dp.name NOT LIKE ''##%''
                     AND dp.name NOT IN (''INFORMATION_SCHEMA'', ''sys'', ''guest'')';
@@ -122,7 +115,7 @@ namespace MSSQLand.Actions.Database
                 DEALLOCATE db_cursor;
 
                 SELECT * FROM @mapping
-                ORDER BY [Orphaned] DESC, [Database], [Server Login];";
+                ORDER BY [Database], [Server Login];";
 
             try
             {
@@ -154,10 +147,9 @@ namespace MSSQLand.Actions.Database
                     Logger.NewLine();
                 }
 
-                // Sort by security importance: orphaned users first, then by database
+                // Sort by database and server login
                 var sortedRows = filteredRows
-                    .OrderByDescending(row => Convert.ToBoolean(row["Orphaned"]))
-                    .ThenBy(row => row["Database"].ToString())
+                    .OrderBy(row => row["Database"].ToString())
                     .ThenBy(row => row["Server Login"].ToString());
 
                 DataTable sortedResults = sortedRows.CopyToDataTable();
