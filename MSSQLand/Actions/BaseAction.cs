@@ -8,6 +8,37 @@ using System.Text.RegularExpressions;
 
 namespace MSSQLand.Actions
 {
+    /// <summary>
+    /// Abstract base class for all actions, enforcing validation and execution logic.
+    /// 
+    /// ARGUMENT PARSING GUIDE:
+    /// =======================
+    /// 
+    /// All derived actions MUST properly parse and assign arguments.
+    /// 
+    /// STANDARD PATTERN:
+    /// -----------------
+    /// 1. Decorate fields with [ArgumentMetadata] for documentation:
+    ///    [ArgumentMetadata(Position = 0, Required = true, Description = "Table name")]
+    ///    private string _tableName;
+    /// 
+    /// 2. Parse and assign manually in ValidateArguments():
+    ///    public override void ValidateArguments(string[] args)
+    ///    {
+    ///        var (namedArgs, positionalArgs) = ParseActionArguments(args);
+    ///        
+    ///        // Extract positional arguments
+    ///        _tableName = GetPositionalArgument(positionalArgs, 0);
+    ///        
+    ///        // Extract named arguments
+    ///        string limitStr = GetNamedArgument(namedArgs, "limit", "0");
+    ///        _limit = int.Parse(limitStr);
+    ///        
+    ///        // Add validation
+    ///        if (string.IsNullOrEmpty(_tableName))
+    ///            throw new ArgumentException("Table name is required");
+    ///    }
+    /// </summary>
     
     [AttributeUsage(AttributeTargets.Field)]
     public abstract class BaseAction : Attribute

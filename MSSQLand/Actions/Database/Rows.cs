@@ -75,6 +75,20 @@ namespace MSSQLand.Actions.Database
                 throw new ArgumentException("Table name cannot be empty.");
             }
 
+            // Parse limit from named arguments
+            string limitStr = GetNamedArgument(namedArgs, "limit", GetNamedArgument(namedArgs, "l", "0"));
+            if (!int.TryParse(limitStr, out _limit))
+            {
+                throw new ArgumentException($"Invalid limit value: {limitStr}. Limit must be an integer.");
+            }
+
+            // Parse offset from named arguments
+            string offsetStr = GetNamedArgument(namedArgs, "offset", GetNamedArgument(namedArgs, "o", "0"));
+            if (!int.TryParse(offsetStr, out _offset))
+            {
+                throw new ArgumentException($"Invalid offset value: {offsetStr}. Offset must be an integer.");
+            }
+
             // Validate limit and offset
             if (_limit < 0)
             {

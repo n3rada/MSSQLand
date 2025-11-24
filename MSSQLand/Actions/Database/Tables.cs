@@ -14,14 +14,16 @@ namespace MSSQLand.Actions.Database
 
         public override void ValidateArguments(string[] args)
         {
-            if (args == null || args.Length == 0)
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
+            
+            // Get database from positional or named arguments
+            _database = GetPositionalArgument(positionalArgs, 0);
+            if (string.IsNullOrEmpty(_database))
             {
-                // No database specified - will use current database
-                return;
+                _database = GetNamedArgument(namedArgs, "database", GetNamedArgument(namedArgs, "db", null));
             }
-
-            // Parse arguments using the base class method
-            ParseActionArguments(args);
+            
+            // If still null, will use current database in Execute()
         }
 
         public override object? Execute(DatabaseContext databaseContext)
