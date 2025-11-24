@@ -14,9 +14,6 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(ShortName = "l", LongName = "limit", Description = "Maximum number of rows to retrieve (default: no limit)")]
         private int _limit = 0; // 0 = no limit
 
-        [ArgumentMetadata(ShortName = "o", LongName = "offset", Description = "Number of rows to skip (default: 0)")]
-        private int _offset = 0;
-
         [ExcludeFromArguments]
         private string _database;
         
@@ -82,22 +79,10 @@ namespace MSSQLand.Actions.Database
                 throw new ArgumentException($"Invalid limit value: {limitStr}. Limit must be an integer.");
             }
 
-            // Parse offset from named arguments
-            string offsetStr = GetNamedArgument(namedArgs, "offset", GetNamedArgument(namedArgs, "o", "0"));
-            if (!int.TryParse(offsetStr, out _offset))
-            {
-                throw new ArgumentException($"Invalid offset value: {offsetStr}. Offset must be an integer.");
-            }
-
-            // Validate limit and offset
+            // Validate limit
             if (_limit < 0)
             {
                 throw new ArgumentException($"Invalid limit value: {_limit}. Limit must be a non-negative integer.");
-            }
-
-            if (_offset < 0)
-            {
-                throw new ArgumentException($"Invalid offset value: {_offset}. Offset must be a non-negative integer.");
             }
         }
 
@@ -123,36 +108,20 @@ namespace MSSQLand.Actions.Database
             
             Logger.TaskNested($"Retrieving rows from {targetTable}");
             
-            if (_offset > 0 || _limit > 0)
+            if (_limit > 0)
             {
-                if (_offset > 0)
-                    Logger.TaskNested($"Skipping {_offset} row(s)");
-                if (_limit > 0)
-                    Logger.TaskNested($"Limiting to {_limit} row(s)");
+                Logger.TaskNested($"Limiting to {_limit} row(s)");
             }
 
-            // Build query with optional TOP and OFFSET/FETCH
+            // Build query with optional TOP
             string query = $"SELECT";
             
-            if (_limit > 0 && _offset == 0)
+            if (_limit > 0)
             {
-                // Use TOP when no offset
                 query += $" TOP ({_limit})";
             }
             
-            query += $" * FROM {targetTable}";
-            
-            if (_offset > 0)
-            {
-                // Use OFFSET/FETCH when offset is specified
-                query += " ORDER BY (SELECT NULL)"; // Dummy ORDER BY to enable OFFSET/FETCH
-                query += $" OFFSET {_offset} ROWS";
-                
-                if (_limit > 0)
-                    query += $" FETCH NEXT {_limit} ROWS ONLY";
-            }
-
-            query += ";";
+            query += $" * FROM {targetTable};";
 
             DataTable rows = databaseContext.QueryService.ExecuteTable(query);
 
