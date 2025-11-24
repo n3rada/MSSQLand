@@ -130,27 +130,27 @@ namespace MSSQLand.Utilities
                     return (ParseResultType.UtilityMode, null);
                 }
 
-                // Check for global flags (-debug, -silent)
-                while (currentIndex < args.Length)
+                // First pass: extract --debug and --silent flags from anywhere in the arguments
+                var filteredArgs = new List<string>();
+                for (int i = 0; i < args.Length; i++)
                 {
-                    string arg = args[currentIndex];
-
-                    if (arg == "--debug")
+                    if (args[i] == "--debug")
                     {
                         Logger.IsDebugEnabled = true;
-                        currentIndex++;
-                        continue;
                     }
-
-                    if (arg == "-s" || arg == "--silent")
+                    else if (args[i] == "-s" || args[i] == "--silent")
                     {
                         Logger.IsSilentModeEnabled = true;
-                        currentIndex++;
-                        continue;
                     }
-
-                    break; // Stop when we hit a non-global flag
+                    else
+                    {
+                        filteredArgs.Add(args[i]);
+                    }
                 }
+
+                // Continue parsing with filtered arguments (without --debug and --silent)
+                args = filteredArgs.ToArray();
+                currentIndex = 0;
 
                 // First positional argument: HOST (mandatory)
                 if (currentIndex >= args.Length || IsFlag(args[currentIndex]))
