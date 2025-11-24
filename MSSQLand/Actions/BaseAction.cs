@@ -8,41 +8,6 @@ using System.Text.RegularExpressions;
 
 namespace MSSQLand.Actions
 {
-    /// <summary>
-    /// Abstract base class for all actions, enforcing validation and execution logic.
-    /// 
-    /// ARGUMENT PARSING GUIDE:
-    /// =======================
-    /// 
-    /// All derived actions MUST properly parse and assign arguments to avoid CS0649 warnings.
-    /// 
-    /// RECOMMENDED PATTERN (Automatic Binding):
-    /// ----------------------------------------
-    /// 1. Decorate fields with [ArgumentMetadata]:
-    ///    [ArgumentMetadata(Position = 0, Required = true, Description = "Table name")]
-    ///    private string _tableName;
-    /// 
-    /// 2. Call BindArgumentsToFields() in ValidateArguments():
-    ///    public override void ValidateArguments(string[] args)
-    ///    {
-    ///        BindArgumentsToFields(args); // Automatic population
-    ///        // Add custom validation here
-    ///    }
-    /// 
-    /// MANUAL PATTERN (Custom Logic):
-    /// -------------------------------
-    /// 1. Decorate fields (for documentation):
-    ///    [ArgumentMetadata(Position = 0, Description = "Mode")]
-    ///    private Mode _mode;
-    /// 
-    /// 2. Parse and assign manually:
-    ///    public override void ValidateArguments(string[] args)
-    ///    {
-    ///        var (namedArgs, positionalArgs) = ParseActionArguments(args);
-    ///        _mode = GetPositionalArgument(positionalArgs, 0);
-    ///        _name = GetPositionalArgument(positionalArgs, 1);
-    ///    }
-    /// </summary>
     
     [AttributeUsage(AttributeTargets.Field)]
     public abstract class BaseAction : Attribute
@@ -65,17 +30,13 @@ namespace MSSQLand.Actions
         /// Parse action arguments using modern CLI patterns (argparse-style).
         /// Supports: positional args, -flag value, --long-flag value, -flag:value, --long-flag=value
         /// 
-        /// IMPORTANT: After calling this method, you MUST extract your fields manually:
-        /// 
         /// Example usage:
         /// <code>
         /// var (namedArgs, positionalArgs) = ParseActionArguments(args);
         /// _mode = GetPositionalArgument(positionalArgs, 0);
         /// _tableName = GetPositionalArgument(positionalArgs, 1);
-        /// _limit = GetNamedArgument(namedArgs, "limit", "0");
+        /// _limit = int.Parse(GetNamedArgument(namedArgs, "limit", "0"));
         /// </code>
-        /// 
-        /// OR use BindArgumentsToFields() for automatic binding (recommended).
         /// </summary>
         /// <param name="args">The action arguments array.</param>
         /// <returns>Dictionary of named arguments and list of positional arguments.</returns>
@@ -133,160 +94,6 @@ namespace MSSQLand.Actions
             }
 
             return (named, positional);
-        }
-
-        /// <summary>
-        /// Automatically binds parsed arguments to fields decorated with [ArgumentMetadata].
-        /// This method handles both positional and named arguments automatically.
-        /// 
-        /// Call this in ValidateArguments() for automatic field population:
-        /// <code>
-        /// public override void ValidateArguments(string[] args)
-        /// {
-        ///     BindArgumentsToFields(args);
-        ///     // Additional custom validation here if needed
-        /// }
-        /// </code>
-        /// </summary>
-        /// <param name="args">The action arguments array.</param>
-        /// <exception cref="ArgumentException">If required arguments are missing or type conversion fails.</exception>
-        protected void BindArgumentsToFields(string[] args)
-        {
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-
-            // Get all fields with ArgumentMetadata
-            var fields = GetType()
-                .GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public)
-                .Where(f => f.GetCustomAttribute<ArgumentMetadataAttribute>() != null)
-                .OrderBy(f => f.GetCustomAttribute<ArgumentMetadataAttribute>().Position)
-                .ToList();
-
-            foreach (var field in fields)
-            {
-                var metadata = field.GetCustomAttribute<ArgumentMetadataAttribute>();
-                string fieldName = field.Name.TrimStart('_');
-                string value = null;
-
-                // Try to get value from positional arguments first
-                if (metadata.Position >= 0 && metadata.Position < positionalArgs.Count)
-                {
-                    value = positionalArgs[metadata.Position];
-                    Logger.Debug($"Binding positional arg [{metadata.Position}] '{value}' to field '{fieldName}'");
-                }
-
-                // Try named arguments if no positional value found
-                if (value == null)
-                {
-                    // Check long name
-                    if (!string.IsNullOrEmpty(metadata.LongName) && namedArgs.TryGetValue(metadata.LongName, out var longValue))
-                    {
-                        value = longValue;
-                        Logger.Debug($"Binding named arg '--{metadata.LongName}' = '{value}' to field '{fieldName}'");
-                    }
-                    // Check short name
-                    else if (!string.IsNullOrEmpty(metadata.ShortName) && namedArgs.TryGetValue(metadata.ShortName, out var shortValue))
-                    {
-                        value = shortValue;
-                        Logger.Debug($"Binding named arg '-{metadata.ShortName}' = '{value}' to field '{fieldName}'");
-                    }
-                    // Check field name itself
-                    else if (namedArgs.TryGetValue(fieldName, out var fieldValue))
-                    {
-                        value = fieldValue;
-                        Logger.Debug($"Binding named arg '{fieldName}' = '{value}' to field '{fieldName}'");
-                    }
-                }
-
-                // Validate required fields
-                if (value == null && metadata.Required)
-                {
-                    string argDescription = metadata.Position >= 0 
-                        ? $"positional argument at position {metadata.Position}" 
-                        : $"named argument '{fieldName}'";
-                    
-                    if (!string.IsNullOrEmpty(metadata.Description))
-                    {
-                        throw new ArgumentException($"Missing required {argDescription}: {metadata.Description}");
-                    }
-                    throw new ArgumentException($"Missing required {argDescription}");
-                }
-
-                // Set the field value with type conversion
-                if (value != null)
-                {
-                    try
-                    {
-                        SetFieldValue(field, value);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new ArgumentException($"Failed to set field '{fieldName}' with value '{value}': {ex.Message}", ex);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Sets a field value with automatic type conversion.
-        /// Supports: string, int, bool, enum, nullable types.
-        /// </summary>
-        private void SetFieldValue(FieldInfo field, string value)
-        {
-            Type fieldType = field.FieldType;
-
-            // Handle nullable types
-            Type underlyingType = Nullable.GetUnderlyingType(fieldType);
-            if (underlyingType != null)
-            {
-                if (string.IsNullOrEmpty(value))
-                {
-                    field.SetValue(this, null);
-                    return;
-                }
-                fieldType = underlyingType;
-            }
-
-            // Handle enums
-            if (fieldType.IsEnum)
-            {
-                // Use the generic TryParse method for enums
-                var tryParseMethod = typeof(Enum).GetMethod("TryParse", new[] { typeof(Type), typeof(string), typeof(bool), typeof(object).MakeByRefType() });
-                object[] parameters = new object[] { fieldType, value, true, null };
-                
-                if ((bool)tryParseMethod.Invoke(null, parameters))
-                {
-                    field.SetValue(this, parameters[3]);
-                }
-                else
-                {
-                    var validValues = string.Join(", ", Enum.GetNames(fieldType));
-                    throw new ArgumentException($"Invalid value '{value}' for enum {fieldType.Name}. Valid values: {validValues}");
-                }
-                return;
-            }
-
-            // Handle primitive types
-            object convertedValue = fieldType.Name switch
-            {
-                "String" => value,
-                "Int32" => int.Parse(value),
-                "Int64" => long.Parse(value),
-                "Boolean" => ParseBoolean(value),
-                "Double" => double.Parse(value),
-                "Decimal" => decimal.Parse(value),
-                _ => Convert.ChangeType(value, fieldType)
-            };
-
-            field.SetValue(this, convertedValue);
-        }
-
-        private static bool ParseBoolean(string value)
-        {
-            if (string.IsNullOrEmpty(value)) return false;
-            string v = value.Trim().ToLower();
-            if (v == "1" || v == "true" || v == "yes" || v == "y") return true;
-            if (v == "0" || v == "false" || v == "no" || v == "n") return false;
-            return bool.Parse(value);
         }
 
         /// <summary>

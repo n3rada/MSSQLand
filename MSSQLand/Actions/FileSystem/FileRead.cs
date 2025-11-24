@@ -20,7 +20,14 @@ namespace MSSQLand.Actions.FileSystem
         /// <param name="args">The action arguments array.</param>
         public override void ValidateArguments(string[] args)
         {
-            BindArgumentsToFields(args); // Automatic binding
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
+            
+            _filePath = GetPositionalArgument(positionalArgs, 0);
+            
+            if (string.IsNullOrEmpty(_filePath))
+            {
+                throw new ArgumentException("File path is required. Example: fileread C:\\\\temp\\\\data.txt");
+            }
         }
 
         /// <summary>

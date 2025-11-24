@@ -30,8 +30,10 @@ namespace MSSQLand.Actions.Database
 
         public override void ValidateArguments(string[] args)
         {
-            BindArgumentsToFields(args);
-            // If positional value wasn't used, leave LoginFilter null
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
+            
+            // Optional: Get login filter from positional argument
+            LoginFilter = GetPositionalArgument(positionalArgs, 0, null);
         }
 
         public override object? Execute(DatabaseContext databaseContext)

@@ -26,11 +26,26 @@ namespace MSSQLand.Actions.Execution
 
         public override void ValidateArguments(string[] args)
         {
-            // Automatic binding of positional/named args to fields
-            BindArgumentsToFields(args);
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
+            
+            // Parse action mode (default: status)
+            string actionStr = GetPositionalArgument(positionalArgs, 0, "status");
+            if (!Enum.TryParse<ActionMode>(actionStr, true, out _action))
+            {
+                throw new ArgumentException($"Invalid action: {actionStr}. Valid actions: status, exec");
+            }
+            
+            // Parse command (required for exec mode)
+            _command = GetPositionalArgument(positionalArgs, 1, null);
+            
+            // Parse subsystem (default: powershell)
+            string subSystemStr = GetPositionalArgument(positionalArgs, 2, "powershell");
+            if (!Enum.TryParse<SubSystemMode>(subSystemStr, true, out _subSystem))
+            {
+                throw new ArgumentException($"Invalid subsystem: {subSystemStr}. Valid subsystems: cmd, powershell, tsql, vbscript");
+            }
 
             // Additional validation
-            // _action and _subSystem are enums and will be parsed by BindArgumentsToFields
             if (_action == ActionMode.Exec)
             {
                 if (string.IsNullOrEmpty(_command))

@@ -17,8 +17,13 @@ namespace MSSQLand.Actions.Execution
 
         public override void ValidateArguments(string[] args)
         {
-            // Automatic binding
-            BindArgumentsToFields(args);
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
+            
+            // Parse DLL URI (required)
+            _dllURI = GetPositionalArgument(positionalArgs, 0);
+            
+            // Parse function name (optional, default: Main)
+            _function = GetPositionalArgument(positionalArgs, 1, "Main");
 
             if (string.IsNullOrEmpty(_dllURI))
             {

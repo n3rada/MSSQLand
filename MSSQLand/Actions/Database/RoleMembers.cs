@@ -12,7 +12,9 @@ namespace MSSQLand.Actions.Database
 
         public override void ValidateArguments(string[] args)
         {
-            BindArgumentsToFields(args);
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
+            
+            _roleName = GetPositionalArgument(positionalArgs, 0);
 
             if (string.IsNullOrEmpty(_roleName))
             {

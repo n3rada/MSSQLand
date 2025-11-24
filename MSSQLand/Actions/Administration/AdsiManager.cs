@@ -25,8 +25,32 @@ namespace MSSQLand.Actions.Administration
 
         public override void ValidateArguments(string[] args)
         {
-            BindArgumentsToFields(args);
-            // Additional validations if necessary in future
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
+            
+            // Parse operation (default: list)
+            string opStr = GetPositionalArgument(positionalArgs, 0, "list");
+            if (!Enum.TryParse<Operation>(opStr, true, out _operation))
+            {
+                throw new ArgumentException($"Invalid operation: {opStr}. Valid operations: list, create, delete");
+            }
+            
+            // Parse server name (optional, used for create/delete)
+            _serverName = GetPositionalArgument(positionalArgs, 1, null);
+            
+            // Parse data source (default: localhost)
+            _dataSource = GetPositionalArgument(positionalArgs, 2, "localhost");
+            
+            // Validation
+            if ((_operation == Operation.Delete) && string.IsNullOrEmpty(_serverName))
+            {
+                throw new ArgumentException("Server name is required for delete operation");
+            }
+            
+            // Generate random name for create if not provided
+            if ((_operation == Operation.Create) && string.IsNullOrEmpty(_serverName))
+            {
+                _serverName = $"ADSI_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+            }
         }
 
         public override object? Execute(DatabaseContext databaseContext)

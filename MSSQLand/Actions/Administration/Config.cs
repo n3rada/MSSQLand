@@ -17,10 +17,28 @@ namespace MSSQLand.Actions.Administration
 
         public override void ValidateArguments(string[] args)
         {
-            // Automatic binding handles positional and named args
-            BindArgumentsToFields(args);
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
+            
+            // Parse option name (optional)
+            _optionName = GetPositionalArgument(positionalArgs, 0, null);
+            if (string.IsNullOrEmpty(_optionName))
+            {
+                _optionName = GetNamedArgument(namedArgs, "option", GetNamedArgument(namedArgs, "o", null));
+            }
+            
+            // Parse value (optional)
+            string valueStr = GetPositionalArgument(positionalArgs, 1, "-1");
+            if (valueStr == "-1")
+            {
+                valueStr = GetNamedArgument(namedArgs, "value", GetNamedArgument(namedArgs, "v", "-1"));
+            }
+            
+            if (!int.TryParse(valueStr, out _value))
+            {
+                throw new ArgumentException($"Invalid value: {valueStr}. Must be a number.");
+            }
 
-            // No further action required; _optionName may be null to list all options
+            // Validation
             if (_value < -1)
             {
                 throw new ArgumentException("Invalid value for configuration option");

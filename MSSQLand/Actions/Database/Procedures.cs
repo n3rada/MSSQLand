@@ -24,10 +24,22 @@ namespace MSSQLand.Actions.Database
 
         public override void ValidateArguments(string[] args)
         {
-            // Use automatic binding for positional and named arguments
-            BindArgumentsToFields(args);
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
+            
+            // Parse mode from positional argument
+            string modeStr = GetPositionalArgument(positionalArgs, 0, "list");
+            if (!Enum.TryParse<Mode>(modeStr, true, out _mode))
+            {
+                throw new ArgumentException($"Invalid mode: {modeStr}. Valid modes: list, exec, read, search");
+            }
+            
+            // Parse procedure name or search keyword
+            _procedureName = GetPositionalArgument(positionalArgs, 1);
+            
+            // Parse procedure arguments (for exec mode)
+            _procedureArgs = GetPositionalArgument(positionalArgs, 2);
 
-            // Ensure enum parsing/defaults handled; do additional validation
+            // Additional validation
             switch (_mode)
             {
                 case Mode.Exec:
