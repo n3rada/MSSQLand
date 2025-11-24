@@ -33,7 +33,6 @@ namespace MSSQLand.Actions.Database
             {
                 // On-premises SQL Server: Show server logins and database users
                 Logger.TaskNested("Enumerating server-level principals (logins) and their instance-wide server roles");
-                Logger.TaskNested("Note: Use 'roles' action to see database-level role memberships");
                 string query = @"
                     SELECT 
                         sp.name AS Name, 
