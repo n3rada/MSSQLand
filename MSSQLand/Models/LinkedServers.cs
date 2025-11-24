@@ -264,13 +264,12 @@ namespace MSSQLand.Models
 
                 if (!string.IsNullOrEmpty(login))
                 {
-                    baseQuery.Append($"EXECUTE AS LOGIN = '{login}';");
+                    baseQuery.Append($"EXECUTE AS LOGIN = '{login}'; ");
                 }
 
-                // Add USE statement for linked servers that specify a database
-                if (!string.IsNullOrEmpty(database))
+                if (!string.IsNullOrEmpty(database) && database != "master")
                 {
-                    baseQuery.Append($"USE [{database}];");
+                    baseQuery.Append($"USE [{database}]; ");
                 }
 
                 baseQuery.Append(currentQuery.TrimEnd(';'));
@@ -286,7 +285,7 @@ namespace MSSQLand.Models
             stringBuilder.Append("SELECT * FROM OPENQUERY(");
 
             // Taking the next server in the path.
-            stringBuilder.Append($"[{linkedServers[1]}],");
+            stringBuilder.Append($"[{linkedServers[1]}], ");
 
             
             stringBuilder.Append(thicksRepr);
@@ -296,14 +295,14 @@ namespace MSSQLand.Models
             // Add impersonation if applicable
             if (!string.IsNullOrEmpty(login))
             {
-                string impersonationQuery = $"EXECUTE AS LOGIN = '{login}';";
+                string impersonationQuery = $"EXECUTE AS LOGIN = '{login}'; ";
                 stringBuilder.Append(impersonationQuery.Replace("'", new('\'', (int)Math.Pow(2, thicksCounter + 1))));
             }
 
             // Add database context if applicable
-            if (!string.IsNullOrEmpty(database))
+            if (!string.IsNullOrEmpty(database) && database != "master")
             {
-                string useQuery = $"USE [{database}];";
+                string useQuery = $"USE [{database}]; ";
                 stringBuilder.Append(useQuery.Replace("'", new('\'', (int)Math.Pow(2, thicksCounter + 1))));
             }
 
@@ -365,18 +364,16 @@ namespace MSSQLand.Models
                     string login = linkedImpersonation[i-1];
                     if (!string.IsNullOrEmpty(login))
                     {
-                        queryBuilder.Append($"EXECUTE AS LOGIN = '{login}';");
+                        queryBuilder.Append($"EXECUTE AS LOGIN = '{login}'; ");
                     }
                 }
 
-                // Add USE statement for all linked servers (skip index 0 which is the direct connection)
-                // Index mapping: linkedDatabases[0] corresponds to linkedServers[1] (first linked server)
-                if (i > 1 && linkedDatabases != null && linkedDatabases.Length > 0)
+                if (linkedDatabases != null && linkedDatabases.Length > 0)
                 {
                     string database = linkedDatabases[i-1];
-                    if (!string.IsNullOrEmpty(database))
+                    if (!string.IsNullOrEmpty(database) && database != "master")
                     {
-                        queryBuilder.Append($"USE [{database}];");
+                        queryBuilder.Append($"USE [{database}]; ");
                     }
                 }
 
@@ -384,7 +381,7 @@ namespace MSSQLand.Models
                 queryBuilder.Append(";");
                     
                 // Double single quotes to escape them in the SQL string
-                currentQuery = $"EXEC ('{queryBuilder.ToString().Replace("'", "''")}') AT [{server}]";
+                currentQuery = $"EXEC ('{queryBuilder.ToString().Replace("'", "''")} ') AT [{server}]";
             }
 
             return currentQuery;
