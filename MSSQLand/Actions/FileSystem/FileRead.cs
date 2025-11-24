@@ -8,10 +8,6 @@ namespace MSSQLand.Actions.FileSystem
     /// Read file contents from the SQL Server filesystem using OPENROWSET BULK.
     /// 
     /// Requires ADMINISTER BULK OPERATIONS or ADMINISTER DATABASE BULK OPERATIONS permission.
-    /// 
-    /// Usage:
-    /// - /a:fileread C:\Windows\win.ini
-    /// - /a:fileread C:\temp\file.txt
     /// </summary>
     internal class FileRead : BaseAction
     {
@@ -19,26 +15,12 @@ namespace MSSQLand.Actions.FileSystem
         private string _filePath;
 
         /// <summary>
-        /// Validates the arguments passed to the Read action.
+        /// Validates and binds the arguments passed to the FileRead action.
         /// </summary>
-        /// <param name="args">The file path to read.</param>
+        /// <param name="args">The action arguments array.</param>
         public override void ValidateArguments(string[] args)
         {
-            if (args == null || args.Length == 0)
-            {
-                throw new ArgumentException("FileRead action requires a file path as an argument.");
-            }
-
-            // Parse both positional and named arguments
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-
-            // Get file path from position 0
-            _filePath = GetPositionalArgument(positionalArgs, 0);
-
-            if (string.IsNullOrEmpty(_filePath))
-            {
-                throw new ArgumentException("FileRead action requires a file path as an argument.");
-            }
+            BindArgumentsToFields(args); // Automatic binding
         }
 
         /// <summary>
@@ -54,7 +36,6 @@ namespace MSSQLand.Actions.FileSystem
                 string query = $@"SELECT A FROM OPENROWSET(BULK '{_filePath.Replace("'", "''")}', SINGLE_CLOB) AS R(A);";
                 string fileContent = databaseContext.QueryService.ExecuteScalar(query)?.ToString();
 
-                Logger.NewLine();
                 Console.WriteLine(fileContent);
 
                 return fileContent;
@@ -62,16 +43,6 @@ namespace MSSQLand.Actions.FileSystem
             catch (Exception ex)
             {
                 Logger.Error($"Failed to read file: {ex.Message}");
-                Logger.NewLine();
-                Logger.Info("OPENROWSET BULK requires one of:");
-                Logger.InfoNested("- ADMINISTER BULK OPERATIONS (server-level permission)");
-                Logger.InfoNested("- ADMINISTER DATABASE BULK OPERATIONS (database-level permission)");
-                Logger.NewLine();
-                Logger.Info("Verify that:");
-                Logger.InfoNested("- The file exists and path is correct");
-                Logger.InfoNested("- SQL Server service account has read access to the file");
-                Logger.InfoNested("- You have the required BULK OPERATIONS permissions");
-                
                 return null;
             }
         }
