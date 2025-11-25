@@ -119,9 +119,14 @@ namespace MSSQLand.Actions.Database
 
             Logger.TaskNested($"Listing permissions for {databaseContext.UserService.MappedUser} on [{_database}]{targetTable}");
 
+            // Build USE statement if specific database is different from current
+            string useStatement = string.IsNullOrEmpty(_database) || _database == databaseContext.QueryService.ExecutionDatabase
+                ? ""
+                : $"USE [{_database}];";
+
             // Query to get permissions
             string query = $@"
-            USE [{_database}];
+            {useStatement}
             SELECT DISTINCT
                 permission_name AS [Permission]
             FROM 
