@@ -29,26 +29,28 @@ namespace MSSQLand.Actions.Database
         public override object? Execute(DatabaseContext databaseContext)
         {
             // Use the execution database if no database is specified
-            if (string.IsNullOrEmpty(_database))
-            {
-                _database = databaseContext.QueryService.ExecutionDatabase;
-            }
+            string targetDatabase = string.IsNullOrEmpty(_database) 
+                ? databaseContext.QueryService.ExecutionDatabase 
+                : _database;
 
-            Logger.TaskNested($"Retrieving tables from [{_database}]");
+            Logger.TaskNested($"Retrieving tables from [{targetDatabase}]");
 
+            // Build USE statement if specific database is provided
+            string useStatement = string.IsNullOrEmpty(_database) ? "" : $"USE [{_database}];";
 
             string query = $@"
+                {useStatement}
                 SELECT 
                     s.name AS SchemaName,
                     t.name AS TableName,
                     t.type_desc AS TableType,
                     SUM(p.rows) AS Rows
                 FROM 
-                    [{_database}].sys.objects t
+                    sys.objects t
                 JOIN 
-                    [{_database}].sys.schemas s ON t.schema_id = s.schema_id
+                    sys.schemas s ON t.schema_id = s.schema_id
                 LEFT JOIN 
-                    [{_database}].sys.partitions p ON t.object_id = p.object_id
+                    sys.partitions p ON t.object_id = p.object_id
                 WHERE 
                     t.type IN ('U', 'V')
                     AND p.index_id IN (0, 1)
@@ -67,7 +69,7 @@ namespace MSSQLand.Actions.Database
 
             // Get all permissions in a single query
             string allPermissionsQuery = $@"
-                USE [{_database}];
+                {useStatement}
                 SELECT 
                     SCHEMA_NAME(o.schema_id) AS schema_name,
                     o.name AS object_name,
@@ -117,7 +119,7 @@ namespace MSSQLand.Actions.Database
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(tables));
             
-            Logger.Success($"Retrieved {tables.Rows.Count} table(s) from [{_database}]");
+            Logger.Success($"Retrieved {tables.Rows.Count} table(s) from [{targetDatabase}]");
 
             return tables;
         }
