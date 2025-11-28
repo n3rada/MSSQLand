@@ -8,24 +8,125 @@ using System.Linq;
 
 namespace MSSQLand.Services
 {
+    /// <summary>
+    /// Central query execution engine with automatic handling for:
+    ///
+    /// - RPC vs OPENQUERY routing
+    /// - Non-rowset OPENQUERY wrapping
+    /// - Timeout retries with exponential backoff
+    /// - Linked server chaining
+    /// - Execution context tracking
+    /// - Azure SQL detection
+    ///
+    /// Responsibilities:
+    /// - Decide whether a statement must execute using RPC
+    /// - Downgrade to OPENQUERY when RPC is unavailable
+    /// - Refuse server-scoped commands when only OPENQUERY is available
+    /// - Convert non-rowset statements into OPENQUERY-safe result queries
+    ///
+    /// Execution Model:
+    /// - If no linked servers are configured: execute query locally.
+    /// - If linked servers exist:
+    ///     - Prefer EXEC AT (RPC) when available.
+    ///     - Fallback to OPENQUERY if RPC is disabled or unavailable.
+    ///     - Reject server-level commands when only OPENQUERY is available.
+    /// </summary>
     public class QueryService
     {
+        /// <summary>
+        /// Underlying SQL Server connection used to execute all statements.
+        /// </summary>
         public readonly SqlConnection Connection;
+
+        /// <summary>
+        /// Final execution host after linked server resolution.
+        /// </summary>
         public string ExecutionServer { get; set; }
+
+        /// <summary>
+        /// Final execution database after chain resolution.
+        /// </summary>
         public string ExecutionDatabase { get; set; }
 
         private LinkedServers _linkedServers = new();
-        
         private const int MAX_RETRIES = 3;
 
         /// <summary>
-        /// Dictionary to cache Azure SQL detection for each execution server.
+        /// Per-server Azure SQL detection cache.
         /// </summary>
         private readonly ConcurrentDictionary<string, bool> _isAzureSQLCache = new();
 
+        #region Query Classification
 
         /// <summary>
-        /// LinkedServers property. When set, updates the ExecutionServer to the last server in the ServerNames array.
+        /// Determines if a SQL statement requires RPC execution because it modifies server-level state.
+        /// These commands cannot be executed over OPENQUERY.
+        /// </summary>
+        /// <param name="sql">Input SQL query.</param>
+        /// <returns>
+        /// True if execution requires RPC; otherwise false.
+        /// </returns>
+        static bool RequiresRPC(string sql)
+        {
+            string s = sql.ToUpperInvariant();
+
+            return s.Contains("CREATE LOGIN") ||
+                   s.Contains("ALTER LOGIN") ||
+                   s.Contains("DROP LOGIN") ||
+                   s.Contains("ALTER SERVER") ||
+                   s.Contains("SP_CONFIGURE") ||
+                   s.Contains("RECONFIGURE") ||
+                   s.Contains("XP_") ||
+                   s.Contains("CREATE ENDPOINT") ||
+                   s.Contains("SYS.SERVER_");
+        }
+
+        /// <summary>
+        /// Detects failure cases where OPENQUERY rejects a query because no rowset is returned.
+        /// </summary>
+        /// <param name="ex">Thrown exception.</param>
+        /// <returns>
+        /// True if the failure matches typical OPENQUERY rowset errors.
+        /// </returns>
+        static bool IsOpenQueryRowsetFailure(Exception ex)
+        {
+            string m = ex.Message;
+
+            return m.Contains("metadata") ||
+                   m.Contains("no columns") ||
+                   m.Contains("Deferred prepare");
+        }
+
+        /// <summary>
+        /// Wraps a non-rowset SQL statement into an OPENQUERY-compatible query by forcing
+        /// a resultset output.
+        /// </summary>
+        /// <param name="query">Raw SQL statement.</param>
+        /// <returns>Query wrapped as a SELECTable result.</returns>
+        static string WrapForOpenQuery(string query)
+        {
+            return $@"
+DECLARE @result NVARCHAR(MAX);
+DECLARE @error NVARCHAR(MAX);
+BEGIN TRY
+    {query.TrimEnd(';')};
+    SET @result = CAST(@@ROWCOUNT AS NVARCHAR(MAX));
+    SET @error = NULL;
+END TRY
+BEGIN CATCH
+    SET @result = NULL;
+    SET @error = ERROR_MESSAGE();
+END CATCH;
+SELECT @result AS Result, @error AS Error;";
+        }
+
+        #endregion
+
+        #region Linked Server Configuration
+
+        /// <summary>
+        /// Linked server chain configuration.
+        /// Automatically updates execution target when modified.
         /// </summary>
         public LinkedServers LinkedServers
         {
@@ -33,6 +134,7 @@ namespace MSSQLand.Services
             set
             {
                 _linkedServers = value ?? new LinkedServers();
+
                 if (_linkedServers.ServerNames.Length > 0)
                 {
                     ExecutionServer = _linkedServers.ServerNames.Last();
@@ -46,6 +148,14 @@ namespace MSSQLand.Services
             }
         }
 
+        #endregion
+
+        #region Initialization
+
+        /// <summary>
+        /// Initializes a QueryService bound to an existing SQL connection.
+        /// </summary>
+        /// <param name="connection">Active SQL connection.</param>
         public QueryService(SqlConnection connection)
         {
             Connection = connection;
@@ -53,364 +163,212 @@ namespace MSSQLand.Services
             ExecutionDatabase = connection.Database;
         }
 
+        /// <summary>
+        /// Gets the local SQL Server hostname (without instance name).
+        /// </summary>
+        /// <returns>Short hostname.</returns>
         private string GetServerName()
         {
-            // SELECT SERVERPROPERTY('MachineName')
-            // SELECT @@SERVERNAME
-            string serverName = ExecuteScalar("SELECT @@SERVERNAME").ToString();
-
-            if (serverName != null)
-            {
-                // Extract only the hostname before the backslash
-                return serverName.Contains("\\") ? serverName.Split('\\')[0] : serverName;
-            }
-
-            return "Unknown";
+            string serverName = ExecuteScalar("SELECT @@SERVERNAME")?.ToString();
+            return serverName?.Split('\\')[0] ?? "Unknown";
         }
 
+        #endregion
+
+        #region Execution API
 
         /// <summary>
-        /// Executes a SQL query against the database and returns a single scalar value.
+        /// Executes a query and returns a reader.
         /// </summary>
-        /// <param name="query">The SQL query to execute.</param>
-        /// <returns>The SqlDataReader resulting from the query.</returns>
         public SqlDataReader Execute(string query)
-        {
-            return ExecuteWithHandling(query, executeReader: true) as SqlDataReader;
-        }
-
+            => ExecuteWithHandling(query, executeReader: true) as SqlDataReader;
 
         /// <summary>
-        /// Executes a SQL query against the database without returning a result (e.g., for INSERT, UPDATE, DELETE).
+        /// Executes a non-query statement and returns affected rows.
         /// </summary>
-        /// <param name="query">The SQL query to execute.</param>
         public int ExecuteNonProcessing(string query)
         {
             var result = ExecuteWithHandling(query, executeReader: false);
-            if (result == null)
-            {
-                return -1; // Indicate an error
-            }
-            return (int)result;
+            return result == null ? -1 : (int)result;
         }
 
         /// <summary>
-        /// Shared execution logic for handling SQL queries, with error handling for both Execute and ExecuteNonProcessing.
+        /// Executes a query with retry, fallback, and wrapping logic.
+        /// Central execution pipeline.
         /// </summary>
-        /// <param name="query">The SQL query to execute.</param>
-        /// <param name="executeReader">True to use ExecuteReader, false to use ExecuteNonQuery.</param>
-        /// <param name="timeout">Initial timeout in seconds.</param>
-        /// <param name="retryCount">Current retry attempt (for exponential backoff).</param>
-        /// <returns>Result of ExecuteReader if executeReader is true; otherwise null.</returns>
         private object ExecuteWithHandling(string query, bool executeReader, int timeout = 120, int retryCount = 0)
         {
             if (string.IsNullOrEmpty(query))
-            {
                 throw new ArgumentException("Query cannot be null or empty.", nameof(query));
-            }
 
-            // Check if we've exceeded max retries
             if (retryCount > MAX_RETRIES)
             {
-                Logger.Error($"Maximum retry attempts ({MAX_RETRIES}) exceeded. Aborting query execution.");
+                Logger.Error("Maximum retry attempts exceeded.");
                 return null;
             }
-            
-            if (Connection == null || Connection.State != ConnectionState.Open)
-            {
+
+            if (Connection.State != ConnectionState.Open)
                 return null;
-            }
 
             string finalQuery = PrepareQuery(query);
 
             try
             {
-
                 using var command = new SqlCommand(finalQuery, Connection)
                 {
                     CommandType = CommandType.Text,
                     CommandTimeout = timeout
                 };
 
-                if (executeReader)
-                {
-                    SqlDataReader reader = command.ExecuteReader();
-
-                    return reader;
-                }
-                else
-                {
-                    return command.ExecuteNonQuery();
-                }
+                return executeReader
+                    ? command.ExecuteReader()
+                    : command.ExecuteNonQuery();
             }
             catch (SqlException ex) when (ex.Message.Contains("Timeout"))
             {
-                int newTimeout = timeout * 2; // Exponential backoff
-                Logger.Warning($"Query timed out after {timeout} seconds. Retrying with {newTimeout} seconds (attempt {retryCount + 1}/{MAX_RETRIES})");
-                return ExecuteWithHandling(query, executeReader, newTimeout, retryCount + 1);
+                Logger.Warning($"Timeout after {timeout}s. Retrying.");
+                return ExecuteWithHandling(query, executeReader, timeout * 2, retryCount + 1);
             }
             catch (Exception ex)
             {
-                Logger.Debug($"Query execution returned an error: {ex.Message}");
+                Logger.Debug($"Execution error: {ex.Message}");
 
                 if (ex.Message.Contains("not configured for RPC"))
                 {
-                    Logger.Warning("The targeted server is not configured for Remote Procedure Call (RPC)");
-                    Logger.WarningNested("Trying again with OPENQUERY");
+                    Logger.Warning("RPC unavailable. Switching to OPENQUERY.");
                     _linkedServers.UseRemoteProcedureCall = false;
-                    return ExecuteWithHandling(query, executeReader, timeout, MAX_RETRIES);
+                    return ExecuteWithHandling(query, executeReader, timeout, retryCount + 1);
                 }
 
-                if (ex.Message.Contains("The metadata could not be determined") || 
-                    ex.Message.Contains("Deferred prepare could not be completed") ||
-                    ex.Message.Contains("object has no columns"))
+                if (!_linkedServers.UseRemoteProcedureCall && IsOpenQueryRowsetFailure(ex))
                 {
-                    Logger.Debug("DDL statement detected - wrapping query to make it OPENQUERY-compatible");
-                    Logger.DebugNested("Retrying with wrapped query");
-                    
-                    // Wrap the query to return execution result or error message
-                    string wrappedQuery = $@"
-                        DECLARE @result NVARCHAR(MAX);
-                        DECLARE @error NVARCHAR(MAX);
-                        BEGIN TRY 
-                            {query.TrimEnd(';')}; 
-                            SET @result = CAST(@@ROWCOUNT AS NVARCHAR(MAX));
-                            SET @error = NULL;
-                        END TRY 
-                        BEGIN CATCH 
-                            SET @result = NULL;
-                            SET @error = ERROR_MESSAGE();
-                        END CATCH; 
-                        SELECT @result AS Result, @error AS Error;";
-                    
-                    
-                    // Execute the wrapped query and check the result
-                    using SqlDataReader reader = ExecuteWithHandling(wrappedQuery, executeReader: true, timeout, MAX_RETRIES) as SqlDataReader;
-                    
-                    Logger.DebugNested("Processing wrapped DDL execution result");
-                    if (reader != null && reader.Read())
-                    {
-                        string result = reader["Result"]?.ToString();
-                        string error = reader["Error"]?.ToString();
-                        
-                        Logger.DebugNested($"Wrapped DDL query result: {result}, error: {error}");
-                        
-
-                        if (!string.IsNullOrEmpty(error))
-                        {
-                            // There was an error, throw it
-                            throw new InvalidOperationException(error);
-                        }
-                        
-                        // Success - return the row count or 0
-                        if (executeReader)
-                        {
-                            // For reader mode, we can't return the reader since we already consumed it
-                            // This shouldn't happen in practice for DDL statements
-                            Logger.DebugNested($"Wrapped DDL query executed successfully (affected rows: {result ?? "0"})");
-                            return null;
-                        }
-                        else
-                        {
-                            Logger.DebugNested($"Wrapped DDL query executed successfully (affected rows: {result ?? "0"})");
-                            return int.TryParse(result, out int rowCount) ? rowCount : 0;
-                        }
-                    }
-                    
-                    throw new InvalidOperationException("DDL execution failed: No result returned");
+                    Logger.Debug("OPENQUERY returned no rowset. Wrapping query.");
+                    return ExecuteWithHandling(WrapForOpenQuery(query), executeReader, timeout, retryCount + 1);
                 }
 
-                if (ex.Message.Contains("is not supported") && ex.Message.Contains("master.") && query.Contains("master."))
-                {
-                    Logger.Warning("Database prefix 'master.' not supported on remote server");
-                    Logger.WarningNested("Retrying without database prefix");
-                    
-                    // Remove all master. prefixes from the query
-                    string queryWithoutPrefix = query.Replace("master.", "");
-                    
-                    return ExecuteWithHandling(queryWithoutPrefix, executeReader, timeout, MAX_RETRIES - 1);
-                }
-
-                // Log the error with appropriate level before rethrowing
-                if (ex is SqlException)
-                {
-                    Logger.Error(ex.Message);
-                }
-                
                 throw;
             }
         }
 
         /// <summary>
-        /// Executes a SQL query against the database and returns a DataTable with the results.
+        /// Builds the final executable SQL statement based on
+        /// the linked server configuration.
         /// </summary>
-        /// <param name="query">The SQL query to execute.</param>
-        /// <returns>A DataTable containing the query results.</returns>
-        public DataTable ExecuteTable(string query)
-        {
-            DataTable resultTable = new();
-
-            // Ensure the reader is disposed.
-            using SqlDataReader sqlDataReader = Execute(query);
-
-            if (sqlDataReader is null)
-            {
-                Logger.Warning("No rows returned");   
-                return resultTable;
-            }
-
-            resultTable.Load(sqlDataReader);
-
-            return resultTable;
-        }
-
-        /// <summary>
-        /// Executes a SQL query against the database and returns a single scalar value.
-        /// </summary>
-        /// <param name="query">The SQL query to execute.</param>
-        /// <returns>The scalar value resulting from the query, or null if no rows are returned.</returns>
-        public object ExecuteScalar(string query)
-        {
-            // Ensure the reader is disposed.
-            using SqlDataReader sqlDataReader = Execute(query);
-
-            if (sqlDataReader != null && sqlDataReader.Read()) // Check if there are rows and move to the first one.
-            {
-                return sqlDataReader.IsDBNull(0) ? null : sqlDataReader.GetValue(0); // Return the first column value in its original type.
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Prepares the final query by adding linked server logic if needed.
-        /// </summary>
-        /// <param name="query">The initial SQL query.</param>
-        /// <returns>The modified query, accounting for linked servers if applicable.</returns>
         private string PrepareQuery(string query)
         {
             Logger.Debug($"Query to execute: {query}");
-            string finalQuery = query;
 
-            if (!_linkedServers.IsEmpty)
+            if (_linkedServers.IsEmpty)
+                return query;
+
+            if (!_linkedServers.UseRemoteProcedureCall && RequiresRPC(query))
             {
-                finalQuery = _linkedServers.UseRemoteProcedureCall
-                    ? _linkedServers.BuildRemoteProcedureCallChain(query)
-                    : _linkedServers.BuildSelectOpenQueryChain(query);
-
-
-                Logger.DebugNested($"Linked query: {finalQuery}");
+                Logger.Warning("Server-level command rejected under OPENQUERY.");
+                throw new InvalidOperationException("This query requires RPC.");
             }
 
+            string finalQuery = _linkedServers.UseRemoteProcedureCall
+                ? _linkedServers.BuildRemoteProcedureCallChain(query)
+                : _linkedServers.BuildSelectOpenQueryChain(query);
+
+            Logger.DebugNested($"Linked query: {finalQuery}");
             return finalQuery;
         }
 
+        #endregion
+
+        #region Convenience Wrappers
+
         /// <summary>
-        /// Checks if the current execution server is Azure SQL Database.
-        /// Results are cached per server for performance.
+        /// Executes a query and loads result into a DataTable.
         /// </summary>
-        /// <returns>True if the server is Azure SQL, otherwise false.</returns>
-        public bool IsAzureSQL()
+        public DataTable ExecuteTable(string query)
         {
-            // Check if Azure SQL detection is already cached for the current ExecutionServer
-            if (_isAzureSQLCache.TryGetValue(ExecutionServer, out bool isAzure))
-            {
-                return isAzure;
-            }
-
-            // If not cached, detect and store the result
-            bool azureStatus = DetectAzureSQL();
-
-            // Cache the result for the current ExecutionServer
-            _isAzureSQLCache[ExecutionServer] = azureStatus;
-
-            if (azureStatus)
-            {
-                Logger.Debug($"Detected Azure SQL Database on {ExecutionServer}");
-            }
-
-            return azureStatus;
+            DataTable dt = new();
+            using SqlDataReader rdr = Execute(query);
+            dt.Load(rdr);
+            return dt;
         }
 
         /// <summary>
-        /// Detects if the current execution server is Azure SQL by checking @@VERSION.
+        /// Executes a query and returns the first column of the first row.
         /// </summary>
-        /// <returns>True if Azure SQL Database (PaaS) is detected, otherwise false.</returns>
+        public object ExecuteScalar(string query)
+        {
+            using SqlDataReader reader = Execute(query);
+            return reader != null && reader.Read()
+                ? reader.IsDBNull(0) ? null : reader.GetValue(0)
+                : null;
+        }
+
+        #endregion
+
+        #region Azure Detection
+
+        /// <summary>
+        /// Determines whether the final execution server is Azure SQL Database (PaaS).
+        /// Results are cached.
+        /// </summary>
+        public bool IsAzureSQL()
+        {
+            if (_isAzureSQLCache.TryGetValue(ExecutionServer, out bool cached))
+                return cached;
+
+            bool isAzure = DetectAzureSQL();
+            _isAzureSQLCache[ExecutionServer] = isAzure;
+            return isAzure;
+        }
+
+        /// <summary>
+        /// Detects Azure SQL by inspecting @@VERSION output.
+        /// </summary>
         private bool DetectAzureSQL()
         {
             try
             {
                 string version = ExecuteScalar("SELECT @@VERSION")?.ToString();
-                
-                if (string.IsNullOrEmpty(version))
-                {
-                    return false;
-                }
-                
-                // Check if it contains "Microsoft SQL Azure" (case-insensitive)
-                bool isAzure = version.IndexOf("Microsoft SQL Azure", StringComparison.OrdinalIgnoreCase) >= 0;
-                
-                if (isAzure)
-                {
-                    // Distinguish between Azure SQL Database and Managed Instance
-                    // Azure SQL Database (PaaS) contains "SQL Azure" but NOT "Managed Instance"
-                    // Azure SQL Managed Instance contains both "SQL Azure" and specific MI indicators
-                    bool isManagedInstance = version.IndexOf("Azure SQL Managed Instance", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                           version.IndexOf("SQL Azure Managed Instance", StringComparison.OrdinalIgnoreCase) >= 0;
-                    
-                    if (isManagedInstance)
-                    {
-                        Logger.Info($"Detected Azure SQL Managed Instance on {ExecutionServer}");
-                        return false; // Managed Instance has full features
-                    }
-                    else
-                    {
-                        Logger.Info($"Detected Azure SQL Database (PaaS) on {ExecutionServer}");
-                        return true; // PaaS has limitations
-                    }
-                }
-                
-                return false;
+                if (string.IsNullOrEmpty(version)) return false;
+
+                bool azure = version.IndexOf("Microsoft SQL Azure", StringComparison.OrdinalIgnoreCase) >= 0;
+                bool mi = version.IndexOf("Managed Instance", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                if (azure && !mi)
+                    Logger.Info($"Azure SQL Database detected on {ExecutionServer}");
+
+                return azure && !mi;
             }
-            catch
-            {
-                // If detection fails, assume it's not Azure SQL
-                return false;
-            }
+            catch { return false; }
         }
 
+        #endregion
+
+        #region Execution Context Tracking
+
         /// <summary>
-        /// Computes the execution database based on the linked server chain.
-        /// Should be called after the entire linked server setup is complete.
+        /// Resolves the active database after linked server traversal.
         /// </summary>
         public void ComputeExecutionDatabase()
         {
-            if (!_linkedServers.IsEmpty)
+            if (_linkedServers.IsEmpty) return;
+
+            var last = _linkedServers.ServerChain.Last();
+            if (!string.IsNullOrEmpty(last.Database))
             {
-                var lastServer = _linkedServers.ServerChain.Last();
-                if (!string.IsNullOrEmpty(lastServer.Database))
-                {
-                    // Use explicitly specified database from chain
-                    ExecutionDatabase = lastServer.Database;
-                    Logger.Debug($"Using explicitly specified database: {ExecutionDatabase}");
-                }
-                else
-                {
-                    // No explicit database: query to detect actual database where the link landed us
-                    try
-                    {
-                        ExecutionDatabase = ExecuteScalar("SELECT DB_NAME();")?.ToString();
-                        Logger.Debug($"Detected execution database: {ExecutionDatabase}");
-                    }
-                    catch (Exception ex)
-                    {
-                        // If detection fails, database remains unknown
-                        ExecutionDatabase = null;
-                        Logger.Debug($"Database detection failed: {ex.Message}");
-                    }
-                }
+                ExecutionDatabase = last.Database;
+                return;
             }
-            // If no linked servers, ExecutionDatabase is already set from Connection.Database
+
+            try
+            {
+                ExecutionDatabase = ExecuteScalar("SELECT DB_NAME();")?.ToString();
+                Logger.Debug($"Detected execution database: {ExecutionDatabase}");
+            }
+            catch
+            {
+                ExecutionDatabase = null;
+            }
         }
+
+        #endregion
     }
 }
