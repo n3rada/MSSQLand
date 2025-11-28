@@ -24,7 +24,7 @@ namespace MSSQLand.Utilities
         /// <summary>
         /// Gets or sets the minimum log level. Messages below this level will not be displayed.
         /// </summary>
-        public static LogLevel MinimumLogLevel { get; set; } = LogLevel.Debug;
+        public static LogLevel MinimumLogLevel { get; set; } = LogLevel.Info;
 
         /// <summary>
         /// Indicates whether debug messages should be printed.
