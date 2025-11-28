@@ -68,16 +68,7 @@ namespace MSSQLand.Actions.Database
             }
 
             // Get all permissions in a single query
-            string allPermissionsQuery = $@"
-                {useStatement}
-                SELECT 
-                    SCHEMA_NAME(o.schema_id) AS schema_name,
-                    o.name AS object_name,
-                    p.permission_name
-                FROM sys.objects o
-                CROSS APPLY fn_my_permissions(QUOTENAME(SCHEMA_NAME(o.schema_id)) + '.' + QUOTENAME(o.name), 'OBJECT') p
-                WHERE o.type IN ('U', 'V')
-                ORDER BY o.name, p.permission_name;";
+            string allPermissionsQuery = $@"{useStatement}SELECT SCHEMA_NAME(o.schema_id) AS schema_name, o.name AS object_name, p.permission_name FROM sys.objects o CROSS APPLY fn_my_permissions(QUOTENAME(SCHEMA_NAME(o.schema_id)) + '.' + QUOTENAME(o.name), 'OBJECT') p WHERE o.type IN ('U', 'V') ORDER BY o.name, p.permission_name;";
 
             DataTable allPermissions = databaseContext.QueryService.ExecuteTable(allPermissionsQuery);
 
@@ -117,7 +108,7 @@ namespace MSSQLand.Actions.Database
             }
 
 
-            Console.WriteLine(OutputFormatter.ConvertDataTable(tables));
+            Logger.Output(OutputFormatter.ConvertDataTable(tables));
             
             Logger.Success($"Retrieved {tables.Rows.Count} table(s) from [{targetDatabase}]");
 
