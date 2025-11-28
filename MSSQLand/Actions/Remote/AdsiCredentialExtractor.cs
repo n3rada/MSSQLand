@@ -61,7 +61,7 @@ namespace MSSQLand.Actions.Remote
         public override object? Execute(DatabaseContext databaseContext)
         {
             // Pre-check: Warn about authentication type limitations
-            string authType = databaseContext.AuthenticationService.CredentialsType;
+            string authType = databaseContext.AuthService.CredentialsType;
             if (_mode == Mode.Self && (authType == "windows" || authType == "token" || authType == "entraid"))
             {
                 Logger.Warning("Self mode only works with SQL authentication (local credentials).");
@@ -224,7 +224,7 @@ namespace MSSQLand.Actions.Remote
                 }
 
                 // Check authentication type to provide helpful feedback
-                string authType = databaseContext.AuthenticationService.CredentialsType;
+                string authType = databaseContext.AuthService.CredentialsType;
                 if (authType == "windows" || authType == "token" || authType == "entraid")
                 {
                     Logger.Warning("No credentials found - Windows/Token/EntraID authentication uses GSSAPI (encrypted).");
