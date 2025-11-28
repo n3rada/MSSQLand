@@ -185,13 +185,17 @@ namespace MSSQLand.Services
                     
                     
                     // Execute the wrapped query and check the result
-                    using SqlDataReader reader = ExecuteWithHandling(wrappedQuery, executeReader: true, timeout, MAX_RETRIES - 1) as SqlDataReader;
+                    using SqlDataReader reader = ExecuteWithHandling(wrappedQuery, executeReader: true, timeout, MAX_RETRIES) as SqlDataReader;
                     
+                    Logger.DebugNested("Processing wrapped DDL execution result");
                     if (reader != null && reader.Read())
                     {
                         string result = reader["Result"]?.ToString();
                         string error = reader["Error"]?.ToString();
                         
+                        Logger.DebugNested($"Wrapped DDL query result: {result}, error: {error}");
+                        
+
                         if (!string.IsNullOrEmpty(error))
                         {
                             // There was an error, throw it
