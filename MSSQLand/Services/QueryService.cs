@@ -166,6 +166,7 @@ namespace MSSQLand.Services
                     ex.Message.Contains("object has no columns"))
                 {
                     Logger.Debug("DDL statement detected - wrapping query to make it OPENQUERY-compatible");
+                    Logger.DebugNested("Retrying with wrapped query");
                     
                     // Wrap the query to return execution result or error message
                     string wrappedQuery = $@"
@@ -182,7 +183,6 @@ namespace MSSQLand.Services
                         END CATCH; 
                         SELECT @result AS Result, @error AS Error;";
                     
-                    Logger.WarningNested("Retrying with wrapped query");
                     
                     // Execute the wrapped query and check the result
                     using SqlDataReader reader = ExecuteWithHandling(wrappedQuery, executeReader: true, timeout, MAX_RETRIES - 1) as SqlDataReader;
