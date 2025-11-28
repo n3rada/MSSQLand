@@ -43,7 +43,7 @@ namespace MSSQLand.Actions.Remote
                 case "link":
                     if (parts.Length < 2)
                     {
-                        throw new ArgumentException("Missing target ADSI server name. Example: /a:adsicreds link SQL-ADSI");
+                        throw new ArgumentException("Missing target ADSI server name. Example: adsicreds link SQL-ADSI");
                     }
                     _mode = Mode.Link;
                     _targetServer = parts[1];
@@ -60,6 +60,18 @@ namespace MSSQLand.Actions.Remote
         /// </summary>
         public override object? Execute(DatabaseContext databaseContext)
         {
+            // Pre-check: Warn about authentication type limitations
+            string authType = databaseContext.AuthenticationService.CredentialsType;
+            if (_mode == Mode.Self && (authType == "windows" || authType == "token" || authType == "entraid"))
+            {
+                Logger.Warning("Self mode only works with SQL authentication (local credentials).");
+                Logger.InfoNested("Windows/Token/EntraID authentication uses GSSAPI (no cleartext password transmission).");
+                Logger.InfoNested($"To extract the '{databaseContext.Server.SystemUser}' password, use SQL authentication:");
+                Logger.InfoNested($"  -c local -u {databaseContext.Server.SystemUser} -p <password>");
+                Logger.NewLine();
+                Logger.Info("Continuing anyway - you may retrieve linked login credentials if configured...");
+            }
+
             if (_mode == Mode.Self)
             {
                 return ExtractCredentialsSelf(databaseContext);
@@ -190,8 +202,7 @@ namespace MSSQLand.Actions.Remote
                 if (ldapResult != null && ldapResult.Rows.Count > 0)
                 {
                     string rawCredentials = ldapResult.Rows[0][0].ToString();
-                    Logger.Success("Credentials retrieved");
-
+                    
                     // Split **only at the first occurrence** of `:`
                     int splitIndex = rawCredentials.IndexOf(':');
                     if (splitIndex > 0)
@@ -199,15 +210,36 @@ namespace MSSQLand.Actions.Remote
                         string username = rawCredentials.Substring(0, splitIndex);
                         string password = rawCredentials.Substring(splitIndex + 1);
 
-                        Logger.NewLine();
+                        Logger.Success("Credentials retrieved");
                         Console.WriteLine($"Username: {username}");
                         Console.WriteLine($"Password: {password}");
 
                         return Tuple.Create(username.Trim(), password.Trim());
                     }
+                    else
+                    {
+                        Logger.Warning($"Unexpected credential format: {rawCredentials}");
+                        return null;
+                    }
                 }
 
-                Logger.Warning("No credentials found");
+                // Check authentication type to provide helpful feedback
+                string authType = databaseContext.AuthenticationService.CredentialsType;
+                if (authType == "windows" || authType == "token" || authType == "entraid")
+                {
+                    Logger.Warning("No credentials found - Windows/Token/EntraID authentication uses GSSAPI (encrypted).");
+                    Logger.WarningNested("This technique only retrieves cleartext passwords with SQL authentication.");
+                }
+                else if (_mode == Mode.Link)
+                {
+                    Logger.Warning("No credentials found - the ADSI server may not have a linked login configured.");
+                    Logger.WarningNested($"Check if '{adsiServer}' has a linked login: EXEC sp_helplinkedsrvlogin '{adsiServer}'");
+                }
+                else
+                {
+                    Logger.Warning("No credentials found - SQL authentication may not be configured correctly.");
+                }
+                
                 return null;
             }
             catch (Exception ex)

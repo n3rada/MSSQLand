@@ -19,6 +19,11 @@ namespace MSSQLand.Services
         private string _domain;
         private int _connectionTimeout = 15;
 
+        /// <summary>
+        /// Gets the credentials type used for authentication.
+        /// </summary>
+        public string CredentialsType => _credentialsType;
+
         public AuthenticationService(Server server)
         {
             Server = server;
