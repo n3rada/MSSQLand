@@ -125,9 +125,9 @@ namespace MSSQLand.Actions.Administration
                     return true;
                 }
                 
-                if (ex.Message.Contains("permission"))
+                if (ex.Message.Contains("permission") || ex.Message.Contains("denied"))
                 {
-                    Logger.Warning("You may not have sufficient privileges to assign server roles.");
+                    Logger.Error($"Insufficient privileges: {ex.Message}");
                 }
                 else
                 {
