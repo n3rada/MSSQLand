@@ -183,6 +183,12 @@ namespace MSSQLand.Services
                     return ExecuteWithHandling(queryWithoutPrefix, executeReader, timeout, MAX_RETRIES - 1);
                 }
 
+                // Log the error with appropriate level before rethrowing
+                if (ex is SqlException)
+                {
+                    Logger.Error(ex.Message);
+                }
+                
                 throw;
             }
         }
