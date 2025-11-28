@@ -3,6 +3,7 @@ using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
+using System.Linq;
 
 namespace MSSQLand.Actions.Database
 {
@@ -17,9 +18,9 @@ namespace MSSQLand.Actions.Database
     /// 3. User membership in db_owner role (can impersonate dbo)
     /// 
     /// Usage:
-    /// - No arguments: Check all databases for privilege escalation vulnerabilities
-    /// - trustworthy [database]: Check specific database
-    /// - trustworthy -d [database] -e: Exploit and escalate current user to sysadmin
+    ///     - No arguments: Check all databases for privilege escalation vulnerabilities
+    ///     - trustworthy [database]: Check specific database
+    ///     - trustworthy -d [database] -e: Exploit and escalate current user to sysadmin
     /// </summary>
     internal class Trustworthy : BaseAction
     {
@@ -68,6 +69,9 @@ namespace MSSQLand.Actions.Database
         /// <summary>
         /// Scans databases for TRUSTWORTHY privilege escalation vulnerabilities.
         /// </summary>
+        /// <param name="databaseContext">The database context for query execution.</param>
+        /// <param name="specificDatabase">Optional database name to check, or null to scan all databases.</param>
+        /// <returns>DataTable containing vulnerability scan results with Vulnerable and Exploitable flags.</returns>
         private DataTable ScanVulnerableDatabases(DatabaseContext databaseContext, string? specificDatabase)
         {
             if (string.IsNullOrEmpty(specificDatabase))
@@ -204,20 +208,29 @@ ORDER BY [Database];";
 
                 Console.WriteLine(OutputFormatter.ConvertDataTable(results));
 
-                // Display summary
+                // Display enhanced summary
                 if (vulnerable > 0)
                 {
                     Logger.Success($"Found {vulnerable} vulnerable database(s) with TRUSTWORTHY=ON and sysadmin owner");
                     
                     if (exploitable > 0)
                     {
-                        Logger.SuccessNested($"Of these, {exploitable} database(s) are exploitable by the current user (db_owner)");
-                        Logger.SuccessNested("Use -e flag to exploit.");
+                        Logger.Warning($"{exploitable} of {vulnerable} vulnerable database(s) are immediately exploitable (you are db_owner)");
+                        Logger.WarningNested($"Use 'trustworthy <database> -e' to escalate to sysadmin");
                     }
+                    else
+                    {
+                        Logger.InfoNested("None are currently exploitable by your user (not db_owner)");
+                    }
+                }
+                else if (results.Rows.Cast<DataRow>().Any(r => Convert.ToBoolean(r["Trustworthy"])))
+                {
+                    Logger.Warning("Found databases with TRUSTWORTHY=ON but owners are not sysadmin");
+                    Logger.WarningNested("These are misconfigured but not exploitable for privilege escalation");
                 }
                 else
                 {
-                    Logger.Error("No TRUSTWORTHY vulnerabilities detected in accessible databases.");
+                    Logger.Success("No TRUSTWORTHY vulnerabilities detected");
                 }
 
                 return results;
@@ -231,7 +244,16 @@ ORDER BY [Database];";
 
         /// <summary>
         /// Exploits TRUSTWORTHY vulnerability to escalate current user to sysadmin.
+        /// 
+        /// Performs the following steps:
+        ///     1. Validates the database is vulnerable (TRUSTWORTHY=ON, owner is sysadmin)
+        ///     2. Verifies current user is db_owner in the target database
+        ///     3. Impersonates dbo to execute ALTER SERVER ROLE as sysadmin
+        ///     4. Adds current login to sysadmin role
         /// </summary>
+        /// <param name="databaseContext">The database context for query execution.</param>
+        /// <param name="database">The target database name to exploit.</param>
+        /// <returns>True if escalation succeeded, false otherwise.</returns>
         private object? ExploitPrivilegeEscalation(DatabaseContext databaseContext, string database)
         {
             Logger.TaskNested($"Exploiting TRUSTWORTHY vulnerability on database '{database}'");
