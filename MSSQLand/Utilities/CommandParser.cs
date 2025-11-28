@@ -103,7 +103,7 @@ namespace MSSQLand.Utilities
                 {
                     var assembly = System.Reflection.Assembly.GetExecutingAssembly();
                     var version = assembly.GetName().Version;
-                    Console.WriteLine(version);
+                    Console.WriteLine(version.ToString());
                     return (ParseResultType.ShowHelp, null);
                 }
 
