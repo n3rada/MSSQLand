@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("MSSQLand")]
-[assembly: AssemblyDescription("Interract with Microsoft SQL Server (MS SQL | MSSQL) servers and their linked instances in restricted environments, without the need for complex T-SQL queries.")]
+[assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("MSSQLand")]
-[assembly: AssemblyCopyright("Copyright ©  2025")]
+[assembly: AssemblyCopyright("")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -23,12 +23,18 @@ using System.Runtime.InteropServices;
 
 // Assembly versioning follows the format:
 // 
-//      Major Version
-//      Minor Version
-//      Build Number (auto-generated)
-//      Revision (auto-generated)
+// Major
+// Breaking changes or major capability shift.
+// Changing this implies incompatibility with older versions.
 //
-// Using the wildcard (*) in AssemblyVersion allows the Build and Revision numbers 
-// to be automatically determined based on the machine's local time during compilation.
+// Minor
+// New features, but backward compatible behavior.
 //
-[assembly: AssemblyVersion("2.0.0.*")]
+// Build
+// Internal release iteration or milestone. Often incremented per stable release.
+//
+// Revision
+// Patch-level change: hotfixes, small internal corrections, minor tweaks.
+//
+[assembly: AssemblyVersion("2.0.0.0")]
+[assembly: AssemblyFileVersion("2.0.0.0")]
