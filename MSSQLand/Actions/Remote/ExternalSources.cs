@@ -5,7 +5,7 @@ using System;
 using System.Data;
 
 
-namespace MSSQLand.Actions.Network
+namespace MSSQLand.Actions.Remote
 {
     /// <summary>
     /// Retrieves External Data Sources configured on the SQL Server instance.

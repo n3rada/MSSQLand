@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Data;
 using static MSSQLand.Utilities.Logger;
 
-namespace MSSQLand.Actions.Network
+namespace MSSQLand.Actions.Remote
 {
     /// <summary>
     /// Recursively explores all accessible linked server chains, mapping execution paths.

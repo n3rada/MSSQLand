@@ -3,7 +3,7 @@ using MSSQLand.Utilities;
 using System;
 using System.Text.RegularExpressions;
 
-namespace MSSQLand.Actions.Network
+namespace MSSQLand.Actions.Remote
 {
     internal class SmbCoerce : BaseAction
     {

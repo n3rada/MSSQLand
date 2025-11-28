@@ -5,7 +5,7 @@ using System;
 using System.Data;
 
 
-namespace MSSQLand.Actions.Network
+namespace MSSQLand.Actions.Remote
 {
     internal class Links : BaseAction
     {
