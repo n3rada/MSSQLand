@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using MSSQLand.Models;
 using MSSQLand.Services;
 using MSSQLand.Utilities;
@@ -9,11 +8,8 @@ using MSSQLand.Utilities;
 
 namespace MSSQLand
 {
-    [ComVisible(true)]
     internal class Program
     {
-
-        [STAThread]
         static int Main(string[] args)
         {
 
