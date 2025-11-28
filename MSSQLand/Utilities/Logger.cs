@@ -105,7 +105,7 @@ namespace MSSQLand.Utilities
             Console.ResetColor();
         }
 
-        public static void Out(string message)
+        public static void Error(string message)
         {
             if (IsSilentModeEnabled) return;
             Console.ForegroundColor = ConsoleColor.DarkRed;
@@ -149,7 +149,7 @@ namespace MSSQLand.Utilities
             Console.ResetColor();
         }
 
-        public static void OutNested(string message, int indentLevel = 0, string symbol = "|->")
+        public static void ErrorNested(string message, int indentLevel = 0, string symbol = "|->")
         {
             if (IsSilentModeEnabled) return;
             string indent = new(' ', indentLevel * 4);
