@@ -64,7 +64,7 @@ namespace MSSQLand.Actions.Remote
             string authType = databaseContext.AuthService.CredentialsType;
             if (_mode == Mode.Self && (authType == "windows" || authType == "token" || authType == "entraid"))
             {
-                Logger.Warning("Self mode only works with SQL authentication (local credentials).");
+                Logger.Warning("It only works with SQL authentication (local credentials).");
                 Logger.WarningNested("Windows/Token/EntraID authentication uses GSSAPI (no cleartext password transmission).");
                 Logger.WarningNested("Continuing anyway - you may retrieve linked login credentials if configured");
             }
