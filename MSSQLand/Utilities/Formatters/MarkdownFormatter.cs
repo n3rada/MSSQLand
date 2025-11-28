@@ -61,7 +61,10 @@ namespace MSSQLand.Utilities.Formatters
                 {
                     sqlStringBuilder.Append("| ").Append(item.Key.PadRight(columnOneWidth)).Append(" ");
                     sqlStringBuilder.Append("| ").Append(item.Value.PadRight(columnTwoWidth)).Append(" |");
-                    sqlStringBuilder.AppendLine();
+                    if (item.Key != dictionary.Take(dictionary.Count - 1).Last().Key)
+                    {
+                        sqlStringBuilder.AppendLine();
+                    }
                 }
             }
 
@@ -122,13 +125,17 @@ namespace MSSQLand.Utilities.Formatters
                 }
                 sqlStringBuilder.AppendLine("|");
 
-                foreach (var row in rows)
+                for (int rowIndex = 0; rowIndex < rows.Count; rowIndex++)
                 {
                     for (int i = 0; i < columnCount; i++)
                     {
-                        sqlStringBuilder.Append("| ").Append(row[i].PadRight(columnWidths[i])).Append(" ");
+                        sqlStringBuilder.Append("| ").Append(rows[rowIndex][i].PadRight(columnWidths[i])).Append(" ");
                     }
-                    sqlStringBuilder.AppendLine("|");
+                    sqlStringBuilder.Append("|");
+                    if (rowIndex < rows.Count - 1)
+                    {
+                        sqlStringBuilder.AppendLine();
+                    }
                 }
 
                 return sqlStringBuilder.ToString();
@@ -148,9 +155,13 @@ namespace MSSQLand.Utilities.Formatters
             sqlStringBuilder.Append("| ").Append(columnName.PadRight(columnWidth)).Append(" |").AppendLine();
             sqlStringBuilder.Append("| ").Append(new string('-', columnWidth)).Append(" |").AppendLine();
 
-            foreach (string item in list)
+            for (int i = 0; i < list.Count; i++)
             {
-                sqlStringBuilder.Append("| ").Append(item.PadRight(columnWidth)).Append(" |").AppendLine();
+                sqlStringBuilder.Append("| ").Append(list[i].PadRight(columnWidth)).Append(" |");
+                if (i < list.Count - 1)
+                {
+                    sqlStringBuilder.AppendLine();
+                }
             }
 
             return sqlStringBuilder.ToString();
@@ -193,6 +204,7 @@ namespace MSSQLand.Utilities.Formatters
             }
             sqlStringBuilder.AppendLine("|");
 
+            int rowIndex = 0;
             foreach (DataRow row in table.Rows)
             {
                 for (int i = 0; i < table.Columns.Count; i++)
@@ -204,7 +216,12 @@ namespace MSSQLand.Utilities.Formatters
 
                     sqlStringBuilder.Append("| ").Append(cellValue.PadRight(columnWidths[i])).Append(" ");
                 }
-                sqlStringBuilder.AppendLine("|");
+                sqlStringBuilder.Append("|");
+                if (rowIndex < table.Rows.Count - 1)
+                {
+                    sqlStringBuilder.AppendLine();
+                }
+                rowIndex++;
             }
 
             return sqlStringBuilder.ToString();
