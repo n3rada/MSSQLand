@@ -72,11 +72,11 @@ namespace MSSQLand.Actions.Database
         {
             if (string.IsNullOrEmpty(specificDatabase))
             {
-                Logger.Task("Scanning all databases for TRUSTWORTHY privilege escalation vulnerabilities");
+                Logger.TaskNested("Scanning all databases for TRUSTWORTHY privilege escalation vulnerabilities");
             }
             else
             {
-                Logger.Task($"Checking database '{specificDatabase}' for TRUSTWORTHY vulnerabilities");
+                Logger.TaskNested($"Checking database '{specificDatabase}' for TRUSTWORTHY vulnerabilities");
             }
 
             string databaseFilter = string.IsNullOrEmpty(specificDatabase) 
@@ -119,9 +119,8 @@ SELECT
     create_date,
     state_desc
 FROM sys.databases
-WHERE name NOT IN ('master', 'tempdb', 'model', 'msdb')
+WHERE state = 0; -- ONLINE only
 {databaseFilter}
-AND state = 0; -- ONLINE only
 
 OPEN db_cursor;
 FETCH NEXT FROM db_cursor INTO @dbname, @dbid, @owner, @trustworthy, @ownerIsSysadmin, @created, @state;
@@ -224,7 +223,7 @@ ORDER BY
         /// </summary>
         private object? ExploitPrivilegeEscalation(DatabaseContext databaseContext, string database)
         {
-            Logger.Task($"Exploiting TRUSTWORTHY vulnerability on database '{database}'");
+            Logger.TaskNested($"Exploiting TRUSTWORTHY vulnerability on database '{database}'");
             Logger.TaskNested("This will escalate your current user to sysadmin");
             
             try
