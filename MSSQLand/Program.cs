@@ -139,7 +139,7 @@ namespace MSSQLand
                     }
                     catch (Exception ex)
                     {
-                        Logger.Error($"Failed to retrieve user information on linked server: {ex.Message}");
+                        Logger.Error($"Failed to retrieve user information on linked server.");
                         return 1;
                     }
                 }
