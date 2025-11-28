@@ -43,9 +43,6 @@ namespace MSSQLand.Actions.Database
         private string? _targetTable = null;
 
         [ExcludeFromArguments]
-        private string? _targetDatabase = null;
-
-        [ExcludeFromArguments]
         private string? _targetSchema = null;
 
         public override void ValidateArguments(string[] args)
