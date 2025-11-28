@@ -80,21 +80,17 @@ namespace MSSQLand.Actions.Administration
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Creating SQL login '{_username}' with '{_role}' role");
+            Logger.TaskNested($"Creating SQL login '{_username}'");
+            Logger.TaskNested($"Password: '{_password}'");
+            Logger.TaskNested($"Role: '{_role}'");
 
             try
             {
-                // Create the SQL login
-                Logger.TaskNested($"Creating SQL login '{_username}'");
-                
+
                 // Escape single quotes in password
                 string escapedPassword = _password.Replace("'", "''");
                 
-                string createLoginQuery = $@"
-                    CREATE LOGIN [{_username}] 
-                    WITH PASSWORD = '{escapedPassword}', 
-                    CHECK_POLICY = OFF, 
-                    CHECK_EXPIRATION = OFF;";
+                string createLoginQuery = $@"CREATE LOGIN [{_username}]  WITH PASSWORD = '{escapedPassword}',  CHECK_POLICY = OFF, CHECK_EXPIRATION = OFF;";
 
                 databaseContext.QueryService.ExecuteNonProcessing(createLoginQuery);
                 Logger.Success($"SQL login '{_username}' created successfully.");
@@ -116,11 +112,6 @@ namespace MSSQLand.Actions.Administration
                 if (ex.Message.Contains("permission"))
                 {
                     Logger.Warning("You may not have sufficient privileges to create logins or assign server roles.");
-                }
-
-                if (Logger.IsDebugEnabled)
-                {
-                    Logger.DebugNested($"Stack trace: {ex.StackTrace}");
                 }
 
                 return false;
