@@ -137,7 +137,7 @@ namespace MSSQLand
                         Logger.Info($"Logged in on {databaseContext.QueryService.ExecutionServer} as {systemUser}");
                         Logger.InfoNested($"Mapped to the user {userName}");
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         Logger.Error($"Failed to retrieve user information on linked server.");
                         return 1;
