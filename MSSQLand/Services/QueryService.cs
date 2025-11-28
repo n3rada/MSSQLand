@@ -167,11 +167,53 @@ namespace MSSQLand.Services
                 {
                     Logger.Warning("DDL statement detected - wrapping query to make it OPENQUERY-compatible");
                     
-                    // Wrap the query to return a result set - use EXEC to avoid metadata issues
-                    string wrappedQuery = $"DECLARE @result NVARCHAR(MAX); BEGIN TRY {query.TrimEnd(';')}; SET @result = 'Success'; END TRY BEGIN CATCH SET @result = ERROR_MESSAGE(); END CATCH; SELECT @result AS Result;";
+                    // Wrap the query to return execution result or error message
+                    string wrappedQuery = $@"
+                        DECLARE @result NVARCHAR(MAX);
+                        DECLARE @error NVARCHAR(MAX);
+                        BEGIN TRY 
+                            {query.TrimEnd(';')}; 
+                            SET @result = CAST(@@ROWCOUNT AS NVARCHAR(MAX));
+                            SET @error = NULL;
+                        END TRY 
+                        BEGIN CATCH 
+                            SET @result = NULL;
+                            SET @error = ERROR_MESSAGE();
+                        END CATCH; 
+                        SELECT @result AS Result, @error AS Error;";
                     
                     Logger.WarningNested("Retrying with wrapped query");
-                    return ExecuteWithHandling(wrappedQuery, executeReader, timeout, MAX_RETRIES - 1);
+                    
+                    // Execute the wrapped query and check the result
+                    using SqlDataReader reader = ExecuteWithHandling(wrappedQuery, executeReader: true, timeout, MAX_RETRIES - 1) as SqlDataReader;
+                    
+                    if (reader != null && reader.Read())
+                    {
+                        string result = reader["Result"]?.ToString();
+                        string error = reader["Error"]?.ToString();
+                        
+                        if (!string.IsNullOrEmpty(error))
+                        {
+                            // There was an error, throw it
+                            throw new InvalidOperationException(error);
+                        }
+                        
+                        // Success - return the row count or 0
+                        if (executeReader)
+                        {
+                            // For reader mode, we can't return the reader since we already consumed it
+                            // This shouldn't happen in practice for DDL statements
+                            Logger.DebugNested($"Wrapped DDL query executed successfully (affected rows: {result ?? "0"})");
+                            return null;
+                        }
+                        else
+                        {
+                            Logger.DebugNested($"Wrapped DDL query executed successfully (affected rows: {result ?? "0"})");
+                            return int.TryParse(result, out int rowCount) ? rowCount : 0;
+                        }
+                    }
+                    
+                    throw new InvalidOperationException("DDL execution failed: No result returned");
                 }
 
                 if (ex.Message.Contains("is not supported") && ex.Message.Contains("master.") && query.Contains("master."))
