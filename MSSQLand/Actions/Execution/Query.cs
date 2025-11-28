@@ -66,7 +66,7 @@ namespace MSSQLand.Actions.Execution
             catch (SqlException sqlEx)
             {
                 Logger.Error($"SQL Error: {sqlEx.Message}");
-                if (Logger.IsDebugEnabled)
+                if (Logger.MinimumLogLevel <= LogLevel.Debug)
                 {
                     Logger.DebugNested($"Error Number: {sqlEx.Number}");
                     Logger.DebugNested($"Line Number: {sqlEx.LineNumber}");

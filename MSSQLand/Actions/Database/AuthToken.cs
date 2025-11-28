@@ -106,7 +106,7 @@ namespace MSSQLand.Actions.Database
             catch (Exception e)
             {
                 Logger.Error($"Failed to retrieve authentication token: {e.Message}");
-                if (Logger.IsDebugEnabled)
+                if (Logger.MinimumLogLevel <= LogLevel.Debug)
                 {
                     Logger.DebugNested($"Stack trace: {e.StackTrace}");
                 }

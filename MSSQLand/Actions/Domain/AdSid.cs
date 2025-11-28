@@ -85,7 +85,7 @@ namespace MSSQLand.Actions.Domain
             catch (Exception e)
             {
                 Logger.Error($"Failed to retrieve user SID: {e.Message}");
-                if (Logger.IsDebugEnabled)
+                if (Logger.MinimumLogLevel <= LogLevel.Debug)
                 {
                     Logger.DebugNested($"Stack trace: {e.StackTrace}");
                 }
