@@ -158,14 +158,14 @@ namespace MSSQLand.Services
                     Logger.Warning("The targeted server is not configured for Remote Procedure Call (RPC)");
                     Logger.WarningNested("Trying again with OPENQUERY");
                     _linkedServers.UseRemoteProcedureCall = false;
-                    return ExecuteWithHandling(query, executeReader, timeout, MAX_RETRIES - 1);
+                    return ExecuteWithHandling(query, executeReader, timeout, MAX_RETRIES);
                 }
 
                 if (ex.Message.Contains("The metadata could not be determined") || 
                     ex.Message.Contains("Deferred prepare could not be completed") ||
                     ex.Message.Contains("object has no columns"))
                 {
-                    Logger.Warning("DDL statement detected - wrapping query to make it OPENQUERY-compatible");
+                    Logger.Debug("DDL statement detected - wrapping query to make it OPENQUERY-compatible");
                     
                     // Wrap the query to return execution result or error message
                     string wrappedQuery = $@"
