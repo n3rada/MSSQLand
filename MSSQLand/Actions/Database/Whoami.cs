@@ -89,8 +89,6 @@ namespace MSSQLand.Actions.Database
                 }
             }
 
-            // Display the user information
-            Logger.Info("User Details:");
             
             // Only show roles where user is a member
             var userFixedRoles = fixedRoles.Where(r => r.IsMember).Select(r => r.Role);
