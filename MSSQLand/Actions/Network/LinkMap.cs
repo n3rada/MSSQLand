@@ -62,8 +62,8 @@ namespace MSSQLand.Actions.Network
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Enumerating linked servers");
-            Logger.Info($"Maximum recursion depth: {_maxDepth}");
+            Logger.TaskNested("Enumerating linked servers");
+            Logger.TaskNested($"Maximum recursion depth: {_maxDepth}");
 
             DataTable linkedServersTable = GetLinkedServers(databaseContext);
 
@@ -73,8 +73,11 @@ namespace MSSQLand.Actions.Network
                 return null;
             }
 
-            // Explore each linked server recursively
-            Logger.Task("Exploring all possible linked server chains");
+            Logger.TaskNested("Exploring all possible linked server chains");
+
+            // Suppress verbose logs during exploration
+            var originalLogLevel = Logger.MinimumLogLevel;
+            Logger.MinimumLogLevel = LogLevel.Warning;
 
             foreach (DataRow row in linkedServersTable.Rows)
             {
@@ -98,8 +101,9 @@ namespace MSSQLand.Actions.Network
                 RevertAllImpersonations(tempDatabaseContext.UserService, chainId);
             }
 
-            // Output final structured mapping
-            Logger.NewLine();
+            // Restore original log level
+            Logger.MinimumLogLevel = originalLogLevel;
+
             string initialServerEntry = $"{databaseContext.Server.Hostname} ({databaseContext.Server.SystemUser} [{databaseContext.Server.MappedUser}])";
 
             Logger.Debug($"Initial server entry: {initialServerEntry}");
@@ -125,7 +129,7 @@ namespace MSSQLand.Actions.Network
                     string mapped = entry["Mapped"];
                     string impersonatedUser = entry["ImpersonatedUser"].Trim();
 
-                    formattedLines.Add($"-{impersonatedUser}-> {serverName} ({loggedIn} [{mapped}])");
+                    formattedLines.Add($"-({impersonatedUser})-> {serverName} ({loggedIn} [{mapped}])");
                     
                     // Build chain command
                     if (impersonatedUser != "-")
@@ -145,7 +149,7 @@ namespace MSSQLand.Actions.Network
                 if (chainParts.Count > 0)
                 {
                     string chainCommand = $"-l {string.Join(",", chainParts)}";
-                    Logger.Info($"To use this chain: {chainCommand}");
+                    Logger.InfoNested($"To use this chain: {chainCommand}");
                 }
             }
 
