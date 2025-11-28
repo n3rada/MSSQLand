@@ -75,13 +75,12 @@ namespace MSSQLand.Actions.Network
 
             Logger.TaskNested("Exploring all possible linked server chains");
 
-            // Suppress verbose logs during exploration
-            var originalLogLevel = Logger.MinimumLogLevel;
+            // Suppress Info/Task/Success logs during exploration to reduce noise
+            LogLevel originalLogLevel = Logger.MinimumLogLevel;
             Logger.MinimumLogLevel = LogLevel.Warning;
 
             foreach (DataRow row in linkedServersTable.Rows)
             {
-                Logger.NewLine();
                 string remoteServer = row["Link"].ToString();
                 string localLogin = row["Local Login"] == DBNull.Value || string.IsNullOrEmpty(row["Local Login"].ToString()) 
                     ? "<Current Context>" 
