@@ -11,8 +11,8 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(Position = 0, Required = true, Description = "Table name in format: [table], [schema.table], or [database.schema.table]")]
         private string _fqtn; // Store the full qualified table name argument
 
-        [ArgumentMetadata(ShortName = "l", LongName = "limit", Description = "Maximum number of rows to retrieve (default: no limit)")]
-        private int _limit = 0; // 0 = no limit
+        [ArgumentMetadata(Position = 1, ShortName = "t", LongName = "top", Description = "Maximum number of rows to retrieve (default: no limit)")]
+        private int _top = 0; // 0 = no limit
 
         [ExcludeFromArguments]
         private string _database;
@@ -72,17 +72,17 @@ namespace MSSQLand.Actions.Database
                 throw new ArgumentException("Table name cannot be empty.");
             }
 
-            // Parse limit from named arguments
-            string limitStr = GetNamedArgument(namedArgs, "limit", GetNamedArgument(namedArgs, "l", "0"));
-            if (!int.TryParse(limitStr, out _limit))
+            // Parse top from named arguments or second positional argument
+            string topStr = GetNamedArgument(namedArgs, "top", GetNamedArgument(namedArgs, "t", GetPositionalArgument(positionalArgs, 1, "0")));
+            if (!int.TryParse(topStr, out _top))
             {
-                throw new ArgumentException($"Invalid limit value: {limitStr}. Limit must be an integer.");
+                throw new ArgumentException($"Invalid top value: {topStr}. Top must be an integer.");
             }
 
-            // Validate limit
-            if (_limit < 0)
+            // Validate top
+            if (_top < 0)
             {
-                throw new ArgumentException($"Invalid limit value: {_limit}. Limit must be a non-negative integer.");
+                throw new ArgumentException($"Invalid top value: {_top}. Top must be a non-negative integer.");
             }
         }
 
@@ -99,17 +99,17 @@ namespace MSSQLand.Actions.Database
             
             Logger.TaskNested($"Retrieving rows from {targetTable}");
             
-            if (_limit > 0)
+            if (_top > 0)
             {
-                Logger.TaskNested($"Limiting to {_limit} row(s)");
+                Logger.TaskNested($"Limiting to {_top} row(s)");
             }
 
             // Build query with optional TOP
             string query = $"SELECT";
             
-            if (_limit > 0)
+            if (_top > 0)
             {
-                query += $" TOP ({_limit})";
+                query += $" TOP ({_top})";
             }
             
             query += $" * FROM {targetTable};";
@@ -121,4 +121,5 @@ namespace MSSQLand.Actions.Database
             return rows;
         }
     }
+}
 }
