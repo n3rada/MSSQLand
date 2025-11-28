@@ -153,13 +153,7 @@ CLOSE db_cursor;
 DEALLOCATE db_cursor;
 
 SELECT * FROM @Results
-ORDER BY 
-    CASE 
-        WHEN Trustworthy = 1 AND OwnerIsSysadmin = 'YES' THEN 1
-        WHEN Trustworthy = 1 THEN 2
-        ELSE 3
-    END,
-    [Database];";
+ORDER BY [Database];";
 
             try
             {
@@ -171,7 +165,11 @@ ORDER BY
                     return results;
                 }
 
-                // Count vulnerabilities
+                // Add computed columns for Vulnerable and Exploitable flags
+                results.Columns.Add("Vulnerable", typeof(string));
+                results.Columns.Add("Exploitable", typeof(string));
+
+                // Count vulnerabilities and populate flags
                 int vulnerable = 0;
                 int exploitable = 0;
 
@@ -181,15 +179,28 @@ ORDER BY
                     string ownerIsSysadmin = row["OwnerIsSysadmin"].ToString();
                     string currentUserIsDbOwner = row["CurrentUserIsDbOwner"]?.ToString() ?? "NO";
 
-                    if (trustworthy && ownerIsSysadmin == "YES")
+                    // Determine if vulnerable
+                    bool isVulnerable = trustworthy && ownerIsSysadmin == "YES";
+                    row["Vulnerable"] = isVulnerable ? "YES" : "NO";
+
+                    // Determine if exploitable
+                    bool isExploitable = isVulnerable && currentUserIsDbOwner == "YES";
+                    row["Exploitable"] = isExploitable ? "YES" : "NO";
+
+                    if (isVulnerable)
                     {
                         vulnerable++;
-                        if (currentUserIsDbOwner == "YES")
+                        if (isExploitable)
                         {
                             exploitable++;
                         }
                     }
                 }
+
+                // Sort by priority: Exploitable > Vulnerable > Trustworthy > Database name
+                DataView dv = results.DefaultView;
+                dv.Sort = "Exploitable DESC, Vulnerable DESC, Trustworthy DESC, [Database] ASC";
+                results = dv.ToTable();
 
                 Console.WriteLine(OutputFormatter.ConvertDataTable(results));
 
@@ -200,6 +211,7 @@ ORDER BY
                     
                     if (exploitable > 0)
                     {
+                        Logger.SuccessNested($"Of these, {exploitable} database(s) are exploitable by the current user (db_owner)");
                         Logger.SuccessNested("Use -e flag to exploit.");
                     }
                 }
@@ -266,9 +278,7 @@ WHERE d.name = '{database.Replace("'", "''")}';";
 
                 // Check if vulnerable
                 if (!trustworthy || !ownerIsSysadmin || !isDbOwner)
-                {
-                    Logger.Error("Database is NOT vulnerable to TRUSTWORTHY escalation!");
-                    
+                {                    
                     if (!trustworthy)
                         Logger.Error("TRUSTWORTHY is OFF");
                     if (!ownerIsSysadmin)
