@@ -5,6 +5,7 @@ using MSSQLand.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using static MSSQLand.Utilities.Logger;
 
 namespace MSSQLand.Actions.Network
 {

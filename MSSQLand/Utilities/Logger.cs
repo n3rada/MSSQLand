@@ -6,7 +6,7 @@ namespace MSSQLand.Utilities
     /// <summary>
     /// Defines the severity level for log messages.
     /// </summary>
-    public enum LogLevel
+    internal enum LogLevel
     {
         Debug = 0,
         Info = 1,
@@ -29,7 +29,6 @@ namespace MSSQLand.Utilities
         /// <summary>
         /// Indicates whether debug messages should be printed.
         /// </summary>
-        [Obsolete("Use MinimumLogLevel = LogLevel.Debug instead")]
         public static bool IsDebugEnabled
         {
             get => MinimumLogLevel <= LogLevel.Debug;
