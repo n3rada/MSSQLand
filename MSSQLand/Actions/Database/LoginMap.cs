@@ -144,7 +144,6 @@ namespace MSSQLand.Actions.Database
                     }
                     
                     Logger.Info($"Filtered for login: '{LoginFilter}'");
-                    Logger.NewLine();
                 }
 
                 // Sort by database and server login
