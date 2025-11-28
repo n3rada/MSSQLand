@@ -248,7 +248,6 @@ namespace MSSQLand.Utilities
                     else
                     {
                         Logger.Error($"Unknown global argument: {arg}");
-                        Logger.NewLine();
                         Logger.Info("Available global arguments:");
                         Logger.InfoNested("-c, --credentials: Credential type for authentication");
                         Logger.InfoNested("-l, --links: Linked server chain");
@@ -280,7 +279,6 @@ namespace MSSQLand.Utilities
                 if (string.IsNullOrWhiteSpace(parsedArgs.CredentialType))
                 {
                 Logger.Error("Missing required argument: -c or --credentials.");
-                Logger.NewLine();
                 DataTable credentialsTable = new();
                 credentialsTable.Columns.Add("Type", typeof(string));
                 credentialsTable.Columns.Add("Description", typeof(string));
@@ -318,42 +316,6 @@ namespace MSSQLand.Utilities
 
                 // Get the action from the factory and pass action arguments
                 parsedArgs.Action = ActionFactory.GetAction(actionName, actionArgs.ToArray());
-
-                // Show parsed arguments only in debug mode
-                if (Logger.IsDebugEnabled)
-                {
-                    Logger.Debug("Parsed arguments (argparse-style)");
-                    Logger.DebugNested($"Host (positional): {parsedArgs.Host.Hostname}:{parsedArgs.Host.Port}");
-                    Logger.DebugNested($"Credential Type: {parsedArgs.CredentialType}");
-                    Logger.DebugNested($"Connection Timeout: {parsedArgs.ConnectionTimeout} seconds");
-                    
-                    if (!string.IsNullOrEmpty(parsedArgs.Host.Database))
-                    {
-                        Logger.DebugNested($"Database: {parsedArgs.Host.Database}");
-                    }
-
-                    if (parsedArgs.LinkedServers?.ServerNames != null && parsedArgs.LinkedServers.ServerNames.Length > 0)
-                    {
-                        Logger.DebugNested("Server Chain:");
-                        foreach (var server in parsedArgs.LinkedServers.ServerNames)
-                        {
-                            Logger.DebugNested($"{server}", 1, "-");
-                        }
-                    }
-
-                    Logger.DebugNested($"Action (positional): {parsedArgs.Action.GetName()}");
-                    
-                    if (actionArgs.Count > 0)
-                    {
-                        Logger.DebugNested("Action Arguments:");
-                        for (int i = 0; i < actionArgs.Count; i++)
-                        {
-                            Logger.DebugNested($"[{i}] {actionArgs[i]}", 1, "-");
-                        }
-                    }
-
-                    Logger.NewLine();
-                }
 
                 return (ParseResultType.Success, parsedArgs);
             }
