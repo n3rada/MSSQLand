@@ -203,6 +203,7 @@ namespace MSSQLand.Models
         /// Constructs a nested `OPENQUERY` statement for querying linked SQL servers in a chain.
         /// It passes the query string as-is to the linked server without attempting to parse or validate it as T-SQL on the local server.
         /// https://learn.microsoft.com/en-us/sql/t-sql/functions/openquery-transact-sql
+        /// 
         /// </summary>
         /// <param name="query">The SQL query to execute at the final server.</param>
         /// <returns>A string containing the nested `OPENQUERY` statement.</returns>
@@ -218,6 +219,8 @@ namespace MSSQLand.Models
 
         /// <summary>
         /// Recursively constructs a nested `OPENQUERY` statement for querying linked SQL servers.
+        /// Executes as a remote SELECT engine on the linked server.
+        /// Each level doubles the single quotes to escape them properly.
         /// </summary>
         /// <param name="linkedServers">An array of server names representing the path of linked servers to traverse. '0' in front of them is mandatory to make the query work properly.</param>
         /// <param name="query">The SQL query to be executed at the final server in the linked server path.</param>
@@ -255,7 +258,7 @@ namespace MSSQLand.Models
             }
 
 
-            string thicksRepr = new('\'', (int)Math.Pow(2, thicksCounter));
+            string thicksRepr = new('\'',(1 << thicksCounter));
 
             // Base case: if this is the last server in the chain
             if (linkedServers.Length == 1)
@@ -264,12 +267,12 @@ namespace MSSQLand.Models
 
                 if (!string.IsNullOrEmpty(login))
                 {
-                    baseQuery.Append($"EXECUTE AS LOGIN = '{login}'; ");
+                    baseQuery.Append($"EXECUTE AS LOGIN = '{login}';");
                 }
 
-                if (!string.IsNullOrEmpty(database) && database != "master")
+                if (!string.IsNullOrEmpty(database))
                 {
-                    baseQuery.Append($"USE [{database}]; ");
+                    baseQuery.Append($"USE [{database}];");
                 }
 
                 baseQuery.Append(currentQuery.TrimEnd(';'));
@@ -285,7 +288,7 @@ namespace MSSQLand.Models
             stringBuilder.Append("SELECT * FROM OPENQUERY(");
 
             // Taking the next server in the path.
-            stringBuilder.Append($"[{linkedServers[1]}], ");
+            stringBuilder.Append($"[{linkedServers[1]}],");
 
             
             stringBuilder.Append(thicksRepr);
@@ -295,15 +298,15 @@ namespace MSSQLand.Models
             // Add impersonation if applicable
             if (!string.IsNullOrEmpty(login))
             {
-                string impersonationQuery = $"EXECUTE AS LOGIN = '{login}'; ";
-                stringBuilder.Append(impersonationQuery.Replace("'", new('\'', (int)Math.Pow(2, thicksCounter + 1))));
+                string impersonationQuery = $"EXECUTE AS LOGIN = '{login}';";
+                stringBuilder.Append(impersonationQuery.Replace("'", new('\'',(1 << (thicksCounter + 1)))));
             }
 
             // Add database context if applicable
-            if (!string.IsNullOrEmpty(database) && database != "master")
+            if (!string.IsNullOrEmpty(database))
             {
-                string useQuery = $"USE [{database}]; ";
-                stringBuilder.Append(useQuery.Replace("'", new('\'', (int)Math.Pow(2, thicksCounter + 1))));
+                string useQuery = $"USE [{database}];";
+                stringBuilder.Append(useQuery.Replace("'", new('\'',(1 << (thicksCounter + 1)))));
             }
 
 
@@ -344,6 +347,14 @@ namespace MSSQLand.Models
 
         /// <summary>
         /// Recursively constructs a nested EXEC AT statement for querying linked SQL servers.
+        /// It loop from innermost server to outermost server.
+        /// Each iteration adds impersonation and database context if provided. Then, appends prior query escaped.
+        /// And finally wraps everything in EXEC ('...') AT [server].
+        /// 
+        /// Big-O time complexity of O(n * L) where:
+        ///     n = number of linked servers
+        ///     L = final query string length
+        /// This is expected and optimal: you must touch the whole string each time because SQL must be re-encoded at each hop.
         /// <param name="linkedServers">An array of server names.</param>
         /// <param name="query">The SQL query to execute.</param>
         /// <param name="linkedImpersonation">An array of impersonation users for each server.</param>
