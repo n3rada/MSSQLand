@@ -87,13 +87,21 @@ namespace MSSQLand
                     return 1;
                 }
 
-                (string userName, string systemUser) = databaseContext.UserService.GetInfo();
+                string userName, systemUser;
+                try
+                {
+                    (userName, systemUser) = databaseContext.UserService.GetInfo();
+                    databaseContext.Server.MappedUser = userName;
+                    databaseContext.Server.SystemUser = systemUser;
 
-                databaseContext.Server.MappedUser = userName;
-                databaseContext.Server.SystemUser = systemUser;
-
-                Logger.Info($"Logged in on {databaseContext.Server.Hostname} as {systemUser}");
-                Logger.InfoNested($"Mapped to the user {userName}");
+                    Logger.Info($"Logged in on {databaseContext.Server.Hostname} as {systemUser}");
+                    Logger.InfoNested($"Mapped to the user {userName}");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Failed to retrieve user information: {ex.Message}");
+                    return 1;
+                }
 
                 // Compute effective user and source principal (handles group-based access via AD groups)
                 // Only works for Windows Integrated authentication on on-premises SQL Server
@@ -122,10 +130,18 @@ namespace MSSQLand
 
                     Logger.Info($"Server chain: {arguments.Host.Hostname} -> " + string.Join(" -> ", arguments.LinkedServers.ServerNames));
                     
-                    (userName, systemUser) = databaseContext.UserService.GetInfo();
+                    try
+                    {
+                        (userName, systemUser) = databaseContext.UserService.GetInfo();
 
-                    Logger.Info($"Logged in on {databaseContext.QueryService.ExecutionServer} as {systemUser}");
-                    Logger.InfoNested($"Mapped to the user {userName}");
+                        Logger.Info($"Logged in on {databaseContext.QueryService.ExecutionServer} as {systemUser}");
+                        Logger.InfoNested($"Mapped to the user {userName}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"Failed to retrieve user information on linked server: {ex.Message}");
+                        return 1;
+                    }
                 }
 
                 // Compute and display the final execution context
