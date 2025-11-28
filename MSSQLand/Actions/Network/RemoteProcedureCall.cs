@@ -11,7 +11,7 @@ namespace MSSQLand.Actions.Network
     {
         private enum RpcActionMode { Add, Del }
         
-        [ArgumentMetadata(Position = 0, Required = true, Description = "Action: add or del")]
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Action: + or -")]
         private RpcActionMode _action;
         
         [ArgumentMetadata(Position = 1, Required = true, Description = "Linked server name")]
@@ -21,19 +21,27 @@ namespace MSSQLand.Actions.Network
         {
             if (args == null || args.Length == 0)
             {
-                throw new ArgumentException("Remote Procedure Call (RPC) action requires two arguments: action ('add' or 'del') and linked server name.");
+                throw new ArgumentException("Remote Procedure Call (RPC) action requires two arguments: action ('+' or '-') and linked server name.");
             }
 
             if (args.Length != 2)
             {
-                throw new ArgumentException("RPC action requires exactly two arguments: action ('add' or 'del') and linked server name.");
+                throw new ArgumentException("RPC action requires exactly two arguments: action ('+' or '-') and linked server name.");
             }
 
-            // Parse action mode
-            if (!Enum.TryParse(args[0].Trim(), true, out _action))
+            // Map symbols to enum values
+            string actionArg = args[0].Trim();
+            if (actionArg == "+")
             {
-                string validActions = string.Join(", ", Enum.GetNames(typeof(RpcActionMode)).Select(a => a.ToLower()));
-                throw new ArgumentException($"Invalid action: {args[0]}. Valid actions are: {validActions}.");
+                _action = RpcActionMode.Add;
+            }
+            else if (actionArg == "-")
+            {
+                _action = RpcActionMode.Del;
+            }
+            else
+            {
+                throw new ArgumentException($"Invalid action: {args[0]}. Valid actions are: '+' (enable) or '-' (disable).");
             }
 
             _linkedServerName = args[1].Trim();
@@ -42,8 +50,9 @@ namespace MSSQLand.Actions.Network
         public override object? Execute(DatabaseContext databaseContext)
         {
             string rpcValue = _action == RpcActionMode.Add ? "true" : "false";
+            string actionVerb = _action == RpcActionMode.Add ? "Enabling" : "Disabling";
 
-            Logger.TaskNested($"Executing RPC {_action.ToString().ToLower()} on linked server '{_linkedServerName}'");
+            Logger.TaskNested($"{actionVerb} RPC on linked server '{_linkedServerName}'");
 
             string query = $@"
                 EXEC sp_serveroption 
@@ -57,12 +66,13 @@ namespace MSSQLand.Actions.Network
                 DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
                 Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
 
-                Logger.Success($"RPC {_action.ToString().ToLower()} action executed successfully on '{_linkedServerName}'");
+                string status = _action == RpcActionMode.Add ? "enabled" : "disabled";
+                Logger.Success($"RPC successfully {status} on '{_linkedServerName}'");
                 return resultTable;
             }
             catch (Exception ex)
             {
-                Logger.Error($"Failed to execute RPC {_action.ToString().ToLower()} on '{_linkedServerName}': {ex.Message}");
+                Logger.Error($"Failed to modify RPC settings on '{_linkedServerName}': {ex.Message}");
                 return null;
             }
         }
