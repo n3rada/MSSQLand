@@ -169,7 +169,6 @@ namespace MSSQLand.Actions.Database
                 totalTablesSearched += tablesSearched;
             }
 
-            Logger.NewLine();
             Logger.Success($"Search completed across {databasesToSearch.Count} database(s) and {totalTablesSearched} table(s):");
             Logger.TaskNested($"Column header matches: {totalHeaderMatches}");
             Logger.TaskNested($"Row matches: {totalRowMatches}");
@@ -182,14 +181,19 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private object? SearchColumnsOnly(DatabaseContext databaseContext)
         {
-            Logger.Task($"Searching for '{_keyword}' in column names only (fast mode)");
-            Logger.NewLine();
+            Logger.TaskNested($"Searching for '{_keyword}' in column names only");
 
             // Get all accessible databases
             List<string> databasesToSearch = new();
 
-            if (_allDatabases)
+            if (!string.IsNullOrEmpty(_limitDatabase))
             {
+                // Search only the specified database
+                databasesToSearch.Add(_limitDatabase);
+            }
+            else
+            {
+                // Search all accessible databases
                 DataTable accessibleDatabases = databaseContext.QueryService.ExecuteTable(
                     "SELECT name FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1 AND state = 0 ORDER BY name;"
                 );
@@ -198,10 +202,6 @@ namespace MSSQLand.Actions.Database
                 {
                     databasesToSearch.Add(row["name"].ToString());
                 }
-            }
-            else
-            {
-                databasesToSearch.Add(databaseContext.QueryService.ExecutionDatabase);
             }
 
             DataTable allMatches = new();
