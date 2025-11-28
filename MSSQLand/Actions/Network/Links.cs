@@ -30,7 +30,6 @@ namespace MSSQLand.Actions.Network
                 Logger.WarningNested("Linked servers are supported in Azure SQL Managed Instance.");
                 Logger.WarningNested("https://learn.microsoft.com/en-us/sql/relational-databases/linked-servers/linked-servers-database-engine");
                 Logger.WarningNested("For Azure SQL Database, use /a:extsources to check External Data Sources.");
-                Logger.NewLine();
                 return null;
             }
 
