@@ -120,7 +120,6 @@
     <Compile Include="Actions\Remote\AdsiManager.cs" />
     <Compile Include="Actions\Remote\AdsiQuery.cs" />
     <Compile Include="Actions\Remote\ExternalCredentials.cs" />
-    <Compile Include="Actions\Remote\ExternalCredentials.cs" />
     <Compile Include="Actions\Remote\ExternalSources.cs" />
     <Compile Include="Actions\Remote\ExternalTables.cs" />
     <Compile Include="Actions\Remote\LinkMap.cs" />
