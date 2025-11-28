@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 
-namespace MSSQLand.Actions.Network
+namespace MSSQLand.Actions.Remote
 {
     /// <summary>
     /// Extracts credentials from ADSI linked servers.

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using MSSQLand.Actions;
-using MSSQLand.Actions.Network;
+using MSSQLand.Actions.Remote;
 using MSSQLand.Actions.Database;
 using MSSQLand.Actions.FileSystem;
 using MSSQLand.Actions.Execution;
@@ -54,7 +54,6 @@ namespace MSSQLand.Utilities
             { "createuser", (typeof(CreateUser), "Create a SQL login with specified server role privileges (default: sysadmin).") },
             { "sessions", (typeof(Sessions), "Display active SQL Server sessions with login and connection information.") },
             { "kill", (typeof(Kill), "Terminate SQL Server sessions by session ID or kill all running sessions.") },
-            { "adsi", (typeof(AdsiManager), "Manage ADSI linked servers: list, create, or delete ADSI providers.") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // DOMAIN ACTIONS
@@ -82,7 +81,7 @@ namespace MSSQLand.Utilities
             { "tree", (typeof(Tree), "Display directory tree structure in Linux tree-style format.") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
-            // NETWORK ACTIONS
+            // REMOTE DATA ACCESS ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
             { "links", (typeof(Links), "Enumerate linked servers and their configuration.") },
             { "linkmap", (typeof(LinkMap), "Map all possible linked server chains and execution paths.") },
@@ -90,8 +89,9 @@ namespace MSSQLand.Utilities
             { "extsources", (typeof(ExternalSources), "Enumerate External Data Sources (Azure SQL Database, Synapse, PolyBase).") },
             { "extcreds", (typeof(ExternalCredentials), "Enumerate database-scoped credentials used by External Data Sources.") },
             { "exttables", (typeof(ExternalTables), "Enumerate external tables and their remote data locations.") },
-            { "adsiquery", (typeof(AdsiQuery), "Query Active Directory via ADSI using fully qualified domain name (auto-creates temp server if needed).") },
-            { "adsicreds", (typeof(AdsiCredentialExtractor), "Extract credentials from ADSI linked servers by intercepting LDAP authentication.") },
+            { "adsi-manager", (typeof(AdsiManager), "Manage ADSI linked servers: list, create, or delete ADSI providers.") },
+            { "adsi-query", (typeof(AdsiQuery), "Query Active Directory via ADSI using fully qualified domain name (auto-creates temp server if needed).") },
+            { "adsi-creds", (typeof(AdsiCredentialExtractor), "Extract credentials from ADSI linked servers by intercepting LDAP authentication.") },
             { "smbcoerce", (typeof(SmbCoerce), "Force SMB authentication to a specified UNC path to capture time-limited Net-NTLMv2 challenge/response.") }
         };
 

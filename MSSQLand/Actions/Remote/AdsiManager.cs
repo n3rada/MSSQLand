@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Collections.Generic;
 
-namespace MSSQLand.Actions.Administration
+namespace MSSQLand.Actions.Remote
 {
     /// <summary>
     /// Manages ADSI (Active Directory Service Interfaces) linked servers.

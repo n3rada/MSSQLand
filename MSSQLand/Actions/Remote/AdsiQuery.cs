@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.Network
+namespace MSSQLand.Actions.Remote
 {
     /// <summary>
     /// Performs LDAP queries against ADSI linked servers.

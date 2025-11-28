@@ -74,7 +74,6 @@
     <Compile Include="Actions\BaseAction.cs" />
     <Compile Include="Actions\ExcludeFromArgumentsAttribute.cs" />
 
-    <Compile Include="Actions\Administration\AdsiManager.cs" />
     <Compile Include="Actions\Administration\Config.cs" />
     <Compile Include="Actions\Administration\CreateUser.cs" />
     <Compile Include="Actions\Administration\Kill.cs" />
@@ -117,15 +116,17 @@
     <Compile Include="Actions\FileSystem\FileRead.cs" />
     <Compile Include="Actions\FileSystem\Tree.cs" />
 
-    <Compile Include="Actions\Network\AdsiCredentialExtractor.cs" />
-    <Compile Include="Actions\Network\AdsiQuery.cs" />
-    <Compile Include="Actions\Network\ExternalCredentials.cs" />
-    <Compile Include="Actions\Network\ExternalSources.cs" />
-    <Compile Include="Actions\Network\ExternalTables.cs" />
-    <Compile Include="Actions\Network\LinkMap.cs" />
-    <Compile Include="Actions\Network\Links.cs" />
-    <Compile Include="Actions\Network\RemoteProcedureCall.cs" />
-    <Compile Include="Actions\Network\SmbCoerce.cs" />
+    <Compile Include="Actions\Remote\AdsiCredentialExtractor.cs" />
+    <Compile Include="Actions\Remote\AdsiManager.cs" />
+    <Compile Include="Actions\Remote\AdsiQuery.cs" />
+    <Compile Include="Actions\Remote\ExternalCredentials.cs" />
+    <Compile Include="Actions\Remote\ExternalCredentials.cs" />
+    <Compile Include="Actions\Remote\ExternalSources.cs" />
+    <Compile Include="Actions\Remote\ExternalTables.cs" />
+    <Compile Include="Actions\Remote\LinkMap.cs" />
+    <Compile Include="Actions\Remote\Links.cs" />
+    <Compile Include="Actions\Remote\RemoteProcedureCall.cs" />
+    <Compile Include="Actions\Remote\SmbCoerce.cs" />
 
     <Compile Include="Models\CommandArgs.cs" />
     <Compile Include="Models\LinkedServers.cs" />
