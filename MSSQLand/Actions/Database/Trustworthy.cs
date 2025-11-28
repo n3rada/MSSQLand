@@ -119,7 +119,6 @@ SELECT
     create_date,
     state_desc
 FROM sys.databases
-WHERE state = 0; -- ONLINE only
 {databaseFilter}
 
 OPEN db_cursor;
@@ -129,8 +128,8 @@ WHILE @@FETCH_STATUS = 0
 BEGIN
     SET @isDbOwner = 'NO';
     
-    -- Check if current user has access and is db_owner in this database
-    IF HAS_DBACCESS(@dbname) = 1
+    -- Check if current user has access and is db_owner in this database (only for ONLINE databases)
+    IF HAS_DBACCESS(@dbname) = 1 AND @state = 'ONLINE'
     BEGIN
         BEGIN TRY
             SET @sql = N'USE [' + REPLACE(@dbname, ']', ']]') + N']; 
@@ -201,7 +200,7 @@ ORDER BY
                     
                     if (exploitable > 0)
                     {
-                        Logger.Info("Use -e flag to exploit.");
+                        Logger.SuccessNested("Use -e flag to exploit.");
                     }
                 }
                 else
