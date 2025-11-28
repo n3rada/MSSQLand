@@ -136,7 +136,7 @@ namespace MSSQLand.Utilities
                 {
                     if (args[i] == "--debug")
                     {
-                        Logger.IsDebugEnabled = true;
+                        Logger.MinimumLogLevel = LogLevel.Debug;
                     }
                     else if (args[i] == "-s" || args[i] == "--silent")
                     {
