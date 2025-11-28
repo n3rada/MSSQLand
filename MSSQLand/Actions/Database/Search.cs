@@ -12,16 +12,17 @@ namespace MSSQLand.Actions.Database
     /// Search for keywords in column names and data across databases.
     /// 
     /// Usage:
-    /// - search <keyword>: Search current database for keyword in column names and row data
-    /// - search <keyword> -a: Search all accessible databases
-    /// - search <keyword> -t schema.table: Search specific table only
-    /// - search <keyword> -t database.schema.table: Search specific table in specific database
+    /// - search <keyword>: Search all accessible databases for keyword (default behavior)
+    /// - search <keyword> <database>: Search specific database only
+    /// - search <keyword> <schema.table>: Search specific table in current database
+    /// - search <keyword> <database.schema.table>: Search specific table in specific database
     /// - search <keyword> -c: Search column names only (no row data)
     /// 
     /// Examples:
-    /// - search password: Search for 'password' in current database
-    /// - search password -a: Search for 'password' in all databases
-    /// - search admin -t dbo.users: Search only in dbo.users table
+    /// - search password: Search for 'password' in all databases
+    /// - search password music: Search for 'password' in music database only
+    /// - search admin dbo.users: Search only in dbo.users table (current database)
+    /// - search admin music.dbo.users: Search only in music.dbo.users table
     /// - search email -c: Find columns containing 'email' (fast)
     /// </summary>
     internal class Search : BaseAction
@@ -29,13 +30,16 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(Position = 0, ShortName = "k", LongName = "keyword", Required = true, Description = "Keyword to search for")]
         private string _keyword;
 
+        [ArgumentMetadata(Position = 1, Description = "Database, schema.table, or database.schema.table (searches all databases if not specified)")]
+        private string? _target = null;
+
         [ArgumentMetadata(ShortName = "c", LongName = "columns", Description = "Search column names only (no row data)")]
         private bool _columnsOnly = false;
 
-        [ArgumentMetadata(ShortName = "a", LongName = "all", Description = "Search across all accessible databases")]
-        private bool _allDatabases = false;
+        [ExcludeFromArguments]
+        private string? _limitDatabase = null;
 
-        [ArgumentMetadata(ShortName = "t", LongName = "table", Description = "Specific table to search: schema.table or database.schema.table")]
+        [ExcludeFromArguments]
         private string? _targetTable = null;
 
         [ExcludeFromArguments]
@@ -61,7 +65,7 @@ namespace MSSQLand.Actions.Database
 
             if (string.IsNullOrEmpty(_keyword))
             {
-                throw new ArgumentException("Keyword is required. Usage: search <keyword> [-c] [-a] [-t table]");
+                throw new ArgumentException("Keyword is required. Usage: search <keyword> [target] [-c]");
             }
 
             // Check for columns-only flag
@@ -70,45 +74,39 @@ namespace MSSQLand.Actions.Database
                 _columnsOnly = true;
             }
 
-            // Check for all databases flag
-            if (namedArgs.ContainsKey("a") || namedArgs.ContainsKey("all"))
-            {
-                _allDatabases = true;
-            }
+            // Get target from position 1
+            _target = GetPositionalArgument(positionalArgs, 1);
 
-            // Get target table if specified
-            _targetTable = GetNamedArgument(namedArgs, "t")
-                        ?? GetNamedArgument(namedArgs, "table");
+            // Parse target to determine what it is
+            if (!string.IsNullOrEmpty(_target))
+            {
+                string[] parts = _target.Split('.');
+
+                if (parts.Length == 3) // database.schema.table
+                {
+                    _limitDatabase = parts[0];
+                    _targetSchema = parts[1];
+                    _targetTable = parts[2];
+                }
+                else if (parts.Length == 2) // schema.table (current database)
+                {
+                    _targetSchema = parts[0];
+                    _targetTable = parts[1];
+                }
+                else if (parts.Length == 1) // just database name
+                {
+                    _limitDatabase = parts[0];
+                }
+                else
+                {
+                    throw new ArgumentException("Invalid target format. Use: database, schema.table, or database.schema.table");
+                }
+            }
         }
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            // Parse table argument if provided
-            if (!string.IsNullOrEmpty(_targetTable))
-            {
-                string[] tableParts = _targetTable.Split('.');
-
-                if (tableParts.Length == 3) // database.schema.table
-                {
-                    _targetDatabase = tableParts[0];
-                    _targetSchema = tableParts[1];
-                    _targetTable = tableParts[2];
-                }
-                else if (tableParts.Length == 2) // schema.table (current database)
-                {
-                    _targetSchema = tableParts[0];
-                    _targetTable = tableParts[1];
-                }
-                else if (tableParts.Length == 1) // just table name (use dbo schema)
-                {
-                    _targetSchema = "dbo";
-                    _targetTable = tableParts[0];
-                }
-                else
-                {
-                    throw new ArgumentException("Invalid table format. Use: schema.table or database.schema.table");
-                }
-            }
+            Logger.TaskNested($"Starting search for keyword: '{_keyword}'");
 
             // Handle column-only search
             if (_columnsOnly)
@@ -119,24 +117,31 @@ namespace MSSQLand.Actions.Database
             // Handle specific table search
             if (!string.IsNullOrEmpty(_targetTable))
             {
-                string dbName = _targetDatabase ?? databaseContext.QueryService.ExecutionDatabase;
-                Logger.Task($"Searching for '{_keyword}' in [{dbName}].[{_targetSchema}].[{_targetTable}]");
+                string dbName = _limitDatabase ?? databaseContext.QueryService.ExecutionDatabase;
+                Logger.TaskNested($"Looking inside [{dbName}].[{_targetSchema}].[{_targetTable}]");
                 var (headerMatches, rowMatches, _) = SearchDatabase(databaseContext, dbName, _targetSchema, _targetTable);
                 
-                Logger.NewLine();
-                Logger.Success($"Search completed:");
-                Logger.TaskNested($"Column header matches: {headerMatches}");
-                Logger.TaskNested($"Row matches: {rowMatches}");
+                Logger.Success($"Search completed");
+                Logger.SuccessNested($"Column header matches: {headerMatches}");
+                Logger.SuccessNested($"Row matches: {rowMatches}");
                 return null;
             }
 
             // Handle database-wide or all databases search
             List<string> databasesToSearch = new();
 
-            if (_allDatabases)
+            if (!string.IsNullOrEmpty(_limitDatabase))
             {
-                Logger.Task("Searching for keyword across ALL accessible databases");
-                Logger.TaskNested("Searching in accessible user tables only (excluding Microsoft system tables)");
+                // Search only the specified database
+                Logger.TaskNested($"Limiting search to database [{_limitDatabase}]");
+                Logger.TaskNested("Searching in user tables only (excluding Microsoft system tables)");
+                databasesToSearch.Add(_limitDatabase);
+            }
+            else
+            {
+                // Default: search ALL accessible databases
+                Logger.TaskNested("Searching across ALL accessible databases");
+                Logger.TaskNested("Searching in user tables only (excluding Microsoft system tables)");
                 
                 // Get all accessible databases
                 DataTable accessibleDatabases = databaseContext.QueryService.ExecuteTable(
@@ -148,14 +153,7 @@ namespace MSSQLand.Actions.Database
                     databasesToSearch.Add(row["name"].ToString());
                 }
 
-                Logger.TaskNested($"Found {databasesToSearch.Count} accessible databases to search.");
-            }
-            else
-            {
-                Logger.Task($"Lurking for '{_keyword}' in user tables only (excluding Microsoft system tables)");
-                // Use the execution database from QueryService
-                string database = databaseContext.QueryService.ExecutionDatabase;
-                databasesToSearch.Add(database);
+                Logger.TaskNested($"Found {databasesToSearch.Count} accessible database(s) to search");
             }
             
             int totalHeaderMatches = 0;
