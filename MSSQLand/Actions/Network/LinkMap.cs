@@ -129,7 +129,7 @@ namespace MSSQLand.Actions.Network
                     string mapped = entry["Mapped"];
                     string impersonatedUser = entry["ImpersonatedUser"].Trim();
 
-                    formattedLines.Add($"-({impersonatedUser})-> {serverName} ({loggedIn} [{mapped}])");
+                    formattedLines.Add($"-{impersonatedUser}-> {serverName} ({loggedIn} [{mapped}])");
                     
                     // Build chain command
                     if (impersonatedUser != "-")
