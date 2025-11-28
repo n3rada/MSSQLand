@@ -8,7 +8,7 @@ namespace MSSQLand.Actions.Database
 {
     public class Rows : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "Table name or FQTN (database.schema.table)")]
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Table name in format: [table], [schema.table], or [database.schema.table]")]
         private string _fqtn; // Store the full qualified table name argument
 
         [ArgumentMetadata(ShortName = "l", LongName = "limit", Description = "Maximum number of rows to retrieve (default: no limit)")]
@@ -50,7 +50,7 @@ namespace MSSQLand.Actions.Database
                 _schema = parts[1];
                 _table = parts[2];
             }
-            else if (parts.Length == 2) // Format: schema.table
+            else if (parts.Length == 2) // Format: schema.table (SQL Server standard)
             {
                 _database = null; // Use the current database
                 _schema = parts[0];
@@ -59,12 +59,12 @@ namespace MSSQLand.Actions.Database
             else if (parts.Length == 1) // Format: table
             {
                 _database = null; // Use the current database
-                _schema = null; // Use user's default schema
+                _schema = "dbo"; // Default to dbo schema
                 _table = parts[0];
             }
             else
             {
-                throw new ArgumentException("Invalid format for the argument. Expected formats: 'database.schema.table', 'schema.table', or 'table'.");
+                throw new ArgumentException("Invalid format. Use: [table], [schema.table], or [database.schema.table].");
             }
 
             if (string.IsNullOrEmpty(_table))
@@ -94,17 +94,8 @@ namespace MSSQLand.Actions.Database
                 _database = databaseContext.QueryService.ExecutionDatabase;
             }
 
-            // Build the target table name based on what was specified
-            string targetTable;
-            if (!string.IsNullOrEmpty(_schema))
-            {
-                targetTable = $"[{_database}].[{_schema}].[{_table}]";
-            }
-            else
-            {
-                // No schema specified - let SQL Server use the user's default schema
-                targetTable = $"[{_database}]..[{_table}]";
-            }
+            // Build the target table name
+            string targetTable = $"[{_database}].[{_schema}].[{_table}]";
             
             Logger.TaskNested($"Retrieving rows from {targetTable}");
             
