@@ -4,14 +4,37 @@ using System.Linq;
 namespace MSSQLand.Utilities
 {
     /// <summary>
+    /// Defines the severity level for log messages.
+    /// </summary>
+    public enum LogLevel
+    {
+        Debug = 0,
+        Info = 1,
+        Task = 2,
+        Success = 3,
+        Warning = 4,
+        Error = 5
+    }
+
+    /// <summary>
     /// Provides logging functionality with compact and visually intuitive output.
     /// </summary>
     internal static class Logger
     {
         /// <summary>
+        /// Gets or sets the minimum log level. Messages below this level will not be displayed.
+        /// </summary>
+        public static LogLevel MinimumLogLevel { get; set; } = LogLevel.Debug;
+
+        /// <summary>
         /// Indicates whether debug messages should be printed.
         /// </summary>
-        public static bool IsDebugEnabled { get; set; } = false;
+        [Obsolete("Use MinimumLogLevel = LogLevel.Debug instead")]
+        public static bool IsDebugEnabled
+        {
+            get => MinimumLogLevel <= LogLevel.Debug;
+            set => MinimumLogLevel = value ? LogLevel.Debug : LogLevel.Info;
+        }
 
         /// <summary>
         /// Indicates whether all output should be suppressed.
@@ -67,7 +90,7 @@ namespace MSSQLand.Utilities
 
         public static void Info(string message)
         {
-            if (IsSilentModeEnabled) return;
+            if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Info) return;
             Console.ForegroundColor = ConsoleColor.White;
             Console.Out.WriteLine($"[i] {message}");
             Console.ResetColor();
@@ -75,7 +98,7 @@ namespace MSSQLand.Utilities
 
         public static void Task(string message)
         {
-            if (IsSilentModeEnabled) return;
+            if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Task) return;
             Console.ForegroundColor = ConsoleColor.DarkCyan;
             Console.Out.WriteLine($"[>] {message}");
             Console.ResetColor();
@@ -83,7 +106,7 @@ namespace MSSQLand.Utilities
 
         public static void Success(string message)
         {
-            if (IsSilentModeEnabled) return;
+            if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Success) return;
             Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.Out.WriteLine($"[+] {message}");
             Console.ResetColor();
@@ -91,7 +114,7 @@ namespace MSSQLand.Utilities
 
         public static void Debug(string message)
         {
-            if (IsSilentModeEnabled || !IsDebugEnabled) return;
+            if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Debug) return;
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Out.WriteLine($"[*] {message}");
             Console.ResetColor();
@@ -99,7 +122,7 @@ namespace MSSQLand.Utilities
 
         public static void Warning(string message)
         {
-            if (IsSilentModeEnabled) return;
+            if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Warning) return;
             Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.Out.WriteLine($"[!] {message}");
             Console.ResetColor();
@@ -107,7 +130,7 @@ namespace MSSQLand.Utilities
 
         public static void Error(string message)
         {
-            if (IsSilentModeEnabled) return;
+            if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Error) return;
             Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.Out.WriteLine($"[-] {message}");
             Console.ResetColor();
@@ -115,7 +138,7 @@ namespace MSSQLand.Utilities
 
         public static void InfoNested(string message, int indentLevel = 0, string symbol = "|->")
         {
-            if (IsSilentModeEnabled) return;
+            if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Info) return;
             Console.ForegroundColor = ConsoleColor.White;
             string indent = new(' ', indentLevel * 4);
             Console.Out.WriteLine($"{indent}{symbol} {message}");
@@ -124,7 +147,7 @@ namespace MSSQLand.Utilities
 
         public static void SuccessNested(string message, int indentLevel = 0, string symbol = "|->")
         {
-            if (IsSilentModeEnabled) return;
+            if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Success) return;
             Console.ForegroundColor = ConsoleColor.DarkGreen;
             string indent = new(' ', indentLevel * 4);
             Console.Out.WriteLine($"{indent}{symbol} {message}");
@@ -133,7 +156,7 @@ namespace MSSQLand.Utilities
 
         public static void TaskNested(string message, int indentLevel = 0, string symbol = "|->")
         {
-            if (IsSilentModeEnabled) return;
+            if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Task) return;
             Console.ForegroundColor = ConsoleColor.DarkCyan;
             string indent = new(' ', indentLevel * 4);
             Console.Out.WriteLine($"{indent}{symbol} {message}");
@@ -142,7 +165,7 @@ namespace MSSQLand.Utilities
 
         public static void DebugNested(string message, int indentLevel = 0, string symbol = "|->")
         {
-            if (IsSilentModeEnabled || !IsDebugEnabled) return;
+            if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Debug) return;
             string indent = new(' ', indentLevel * 4);
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Out.WriteLine($"{indent}{symbol} {message}");
@@ -151,7 +174,7 @@ namespace MSSQLand.Utilities
 
         public static void ErrorNested(string message, int indentLevel = 0, string symbol = "|->")
         {
-            if (IsSilentModeEnabled) return;
+            if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Error) return;
             string indent = new(' ', indentLevel * 4);
             Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.Out.WriteLine($"{indent}{symbol} {message}");
@@ -160,7 +183,7 @@ namespace MSSQLand.Utilities
 
         public static void WarningNested(string message, int indentLevel = 0, string symbol = "|->")
         {
-            if (IsSilentModeEnabled) return;
+            if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Warning) return;
             string indent = new(' ', indentLevel * 4);
             Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.Out.WriteLine($"{indent}{symbol} {message}");
