@@ -65,11 +65,8 @@ namespace MSSQLand.Actions.Remote
             if (_mode == Mode.Self && (authType == "windows" || authType == "token" || authType == "entraid"))
             {
                 Logger.Warning("Self mode only works with SQL authentication (local credentials).");
-                Logger.InfoNested("Windows/Token/EntraID authentication uses GSSAPI (no cleartext password transmission).");
-                Logger.InfoNested($"To extract the '{databaseContext.Server.SystemUser}' password, use SQL authentication:");
-                Logger.InfoNested($"  -c local -u {databaseContext.Server.SystemUser} -p <password>");
-                Logger.NewLine();
-                Logger.Info("Continuing anyway - you may retrieve linked login credentials if configured...");
+                Logger.WarningNested("Windows/Token/EntraID authentication uses GSSAPI (no cleartext password transmission).");
+                Logger.WarningNested("Continuing anyway - you may retrieve linked login credentials if configured");
             }
 
             if (_mode == Mode.Self)
@@ -153,7 +150,6 @@ namespace MSSQLand.Actions.Remote
             if (!adsiService.AdsiServerExists(adsiServer))
             {
                 Logger.Error($"ADSI linked server '{adsiServer}' not found.");
-                Logger.InfoNested("Use '/a:adsi list' to see available ADSI servers.");
                 return null;
             }
 
