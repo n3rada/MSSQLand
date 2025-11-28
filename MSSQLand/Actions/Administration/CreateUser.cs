@@ -86,15 +86,27 @@ namespace MSSQLand.Actions.Administration
 
             try
             {
-
                 // Escape single quotes in password
                 string escapedPassword = _password.Replace("'", "''");
                 
-                string createLoginQuery = $@"CREATE LOGIN [{_username}]  WITH PASSWORD = '{escapedPassword}',  CHECK_POLICY = OFF, CHECK_EXPIRATION = OFF;";
-
+                // Try to create new login
+                string createLoginQuery = $@"CREATE LOGIN [{_username}] WITH PASSWORD = '{escapedPassword}', CHECK_POLICY = OFF, CHECK_EXPIRATION = OFF;";
                 databaseContext.QueryService.ExecuteNonProcessing(createLoginQuery);
                 Logger.Success($"SQL login '{_username}' created successfully.");
+            }
+            catch (Exception ex) when (ex.Message.Contains("already exists"))
+            {
+                // Login exists, update password instead
+                Logger.Warning($"SQL login '{_username}' already exists. Updating password.");
+                
+                string escapedPassword = _password.Replace("'", "''");
+                string alterPasswordQuery = $@"ALTER LOGIN [{_username}] WITH PASSWORD = '{escapedPassword}';";
+                databaseContext.QueryService.ExecuteNonProcessing(alterPasswordQuery);
+                Logger.Success($"Password updated for '{_username}'.");
+            }
 
+            try
+            {
                 // Add the login to the specified server role
                 Logger.TaskNested($"Adding '{_username}' to {_role} server role.");
                 
@@ -107,11 +119,19 @@ namespace MSSQLand.Actions.Administration
             }
             catch (Exception ex)
             {
-                Logger.Error($"Failed to create SQL login: {ex.Message}");
+                if (ex.Message.Contains("already a member"))
+                {
+                    Logger.Info($"'{_username}' is already a member of {_role} role.");
+                    return true;
+                }
                 
                 if (ex.Message.Contains("permission"))
                 {
-                    Logger.Warning("You may not have sufficient privileges to create logins or assign server roles.");
+                    Logger.Warning("You may not have sufficient privileges to assign server roles.");
+                }
+                else
+                {
+                    Logger.Error($"Failed to add user to role: {ex.Message}");
                 }
 
                 return false;
