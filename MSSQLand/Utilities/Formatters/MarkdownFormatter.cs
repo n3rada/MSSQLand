@@ -207,7 +207,7 @@ namespace MSSQLand.Utilities.Formatters
                 sqlStringBuilder.AppendLine("|");
             }
 
-            return "\n" + sqlStringBuilder.ToString() + "\n";
+            return sqlStringBuilder.ToString();
         }
     }
 }
