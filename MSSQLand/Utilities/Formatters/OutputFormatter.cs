@@ -52,7 +52,8 @@ namespace MSSQLand.Utilities.Formatters
         /// </summary>
         public static string ConvertDictionary(Dictionary<string, string> dictionary, string columnOneHeader, string columnTwoHeader)
         {
-            return _currentFormatter.ConvertDictionary(dictionary, columnOneHeader, columnTwoHeader);
+            string result = _currentFormatter.ConvertDictionary(dictionary, columnOneHeader, columnTwoHeader);
+            return string.IsNullOrEmpty(result) ? result : "\n" + result + "\n";
         }
 
         /// <summary>
@@ -60,7 +61,8 @@ namespace MSSQLand.Utilities.Formatters
         /// </summary>
         public static string ConvertSqlDataReader(SqlDataReader reader)
         {
-            return _currentFormatter.ConvertSqlDataReader(reader);
+            string result = _currentFormatter.ConvertSqlDataReader(reader);
+            return string.IsNullOrEmpty(result) ? result : "\n" + result + "\n";
         }
 
         /// <summary>
@@ -68,7 +70,8 @@ namespace MSSQLand.Utilities.Formatters
         /// </summary>
         public static string ConvertList(List<string> list, string columnName)
         {
-            return _currentFormatter.ConvertList(list, columnName);
+            string result = _currentFormatter.ConvertList(list, columnName);
+            return string.IsNullOrEmpty(result) ? result : "\n" + result + "\n";
         }
 
         /// <summary>
@@ -76,7 +79,8 @@ namespace MSSQLand.Utilities.Formatters
         /// </summary>
         public static string ConvertDataTable(DataTable table)
         {
-            return _currentFormatter.ConvertDataTable(table);
+            string result = _currentFormatter.ConvertDataTable(table);
+            return string.IsNullOrEmpty(result) ? result : "\n" + result + "\n";
         }
     }
 }

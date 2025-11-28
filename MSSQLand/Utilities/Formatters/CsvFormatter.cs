@@ -72,7 +72,7 @@ namespace MSSQLand.Utilities.Formatters
                 csvBuilder.AppendLine($"{EscapeCsvValue(item.Key)}{Separator}{EscapeCsvValue(item.Value)}");
             }
 
-            return "\n" + csvBuilder.ToString() + "\n";
+            return csvBuilder.ToString();
         }
 
         public string ConvertSqlDataReader(SqlDataReader reader)
@@ -117,7 +117,7 @@ namespace MSSQLand.Utilities.Formatters
                     csvBuilder.AppendLine(string.Join(Separator.ToString(), values));
                 }
 
-                return "\n" + csvBuilder.ToString() + "\n";
+                return csvBuilder.ToString();
             }
         }
 
@@ -139,7 +139,7 @@ namespace MSSQLand.Utilities.Formatters
                 csvBuilder.AppendLine(EscapeCsvValue(item));
             }
 
-            return "\n" + csvBuilder.ToString() + "\n";
+            return csvBuilder.ToString();
         }
 
         public string ConvertDataTable(DataTable table)
@@ -175,7 +175,7 @@ namespace MSSQLand.Utilities.Formatters
                 csvBuilder.AppendLine(string.Join(Separator.ToString(), values));
             }
 
-            return "\n" + csvBuilder.ToString() + "\n";
+            return csvBuilder.ToString();
         }
     }
 }

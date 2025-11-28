@@ -65,7 +65,7 @@ namespace MSSQLand.Utilities.Formatters
                 }
             }
 
-            return "\n" + sqlStringBuilder.ToString() + "\n";
+            return sqlStringBuilder.ToString();
         }
 
         public string ConvertSqlDataReader(SqlDataReader reader)
@@ -131,7 +131,7 @@ namespace MSSQLand.Utilities.Formatters
                     sqlStringBuilder.AppendLine("|");
                 }
 
-                return "\n" + sqlStringBuilder.ToString() + "\n";
+                return sqlStringBuilder.ToString();
             }
         }
 
@@ -153,7 +153,7 @@ namespace MSSQLand.Utilities.Formatters
                 sqlStringBuilder.Append("| ").Append(item.PadRight(columnWidth)).Append(" |").AppendLine();
             }
 
-            return "\n" + sqlStringBuilder.ToString() + "\n";
+            return sqlStringBuilder.ToString();
         }
 
         public string ConvertDataTable(DataTable table)
@@ -207,7 +207,7 @@ namespace MSSQLand.Utilities.Formatters
                 sqlStringBuilder.AppendLine("|");
             }
 
-            return sqlStringBuilder.ToString();
+            return "\n" + sqlStringBuilder.ToString() + "\n";
         }
     }
 }
