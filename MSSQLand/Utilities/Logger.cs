@@ -8,12 +8,13 @@ namespace MSSQLand.Utilities
     /// </summary>
     internal enum LogLevel
     {
-        Debug = 0,
-        Info = 1,
-        Task = 2,
-        Success = 3,
-        Warning = 4,
-        Error = 5
+        Trace = 0,
+        Debug = 1,
+        Info = 2,
+        Task = 3,
+        Success = 4,
+        Warning = 5,
+        Error = 6
     }
 
     /// <summary>
@@ -25,15 +26,6 @@ namespace MSSQLand.Utilities
         /// Gets or sets the minimum log level. Messages below this level will not be displayed.
         /// </summary>
         public static LogLevel MinimumLogLevel { get; set; } = LogLevel.Info;
-
-        /// <summary>
-        /// Indicates whether debug messages should be printed.
-        /// </summary>
-        public static bool IsDebugEnabled
-        {
-            get => MinimumLogLevel <= LogLevel.Debug;
-            set => MinimumLogLevel = value ? LogLevel.Debug : LogLevel.Info;
-        }
 
         /// <summary>
         /// Indicates whether all output should be suppressed.
@@ -119,6 +111,14 @@ namespace MSSQLand.Utilities
             Console.ResetColor();
         }
 
+        public static void Trace(string message)
+        {
+            if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Trace) return;
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Out.WriteLine($"[~] {message}");
+            Console.ResetColor();
+        }
+
         public static void Warning(string message)
         {
             if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Warning) return;
@@ -165,6 +165,15 @@ namespace MSSQLand.Utilities
         public static void DebugNested(string message, int indentLevel = 0, string symbol = "|->")
         {
             if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Debug) return;
+            string indent = new(' ', indentLevel * 4);
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Out.WriteLine($"{indent}{symbol} {message}");
+            Console.ResetColor();
+        }
+
+        public static void TraceNested(string message, int indentLevel = 0, string symbol = "|->")
+        {
+            if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Trace) return;
             string indent = new(' ', indentLevel * 4);
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Out.WriteLine($"{indent}{symbol} {message}");

@@ -66,13 +66,10 @@ namespace MSSQLand.Actions.Execution
             catch (SqlException sqlEx)
             {
                 Logger.Error($"SQL Error: {sqlEx.Message}");
-                if (Logger.MinimumLogLevel <= LogLevel.Debug)
-                {
-                    Logger.DebugNested($"Error Number: {sqlEx.Number}");
-                    Logger.DebugNested($"Line Number: {sqlEx.LineNumber}");
-                    Logger.DebugNested($"Procedure: {sqlEx.Procedure}");
-                    Logger.DebugNested($"Server: {sqlEx.Server}");
-                }
+                Logger.TraceNested($"Error Number: {sqlEx.Number}");
+                Logger.TraceNested($"Line Number: {sqlEx.LineNumber}");
+                Logger.TraceNested($"Procedure: {sqlEx.Procedure}");
+                Logger.TraceNested($"Server: {sqlEx.Server}");
                 return null;
             }
             catch (Exception ex)
