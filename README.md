@@ -84,7 +84,7 @@ The tool's output, enriched with timestamps and valuable contextual information,
 All output tables are Markdown-friendly and can be copied and pasted directly into your notes without any formatting hassle.
 
 > [!TIP]
-> You can also have `.csv` compatible output by using the `-o csv` option: `MSSQLand.exe localhost -c token -o csv procedures > procedures.csv`
+> You can also have `.csv` compatible output by using the `-o csv` option: `MSSQLand.exe localhost -c token -o csv --silent procedures > procedures.csv`
 
 ## 🤝 Contributing 
 
