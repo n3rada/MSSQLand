@@ -21,7 +21,7 @@ namespace MSSQLand.Actions.Remote
         [ArgumentMetadata(Position = 2, Description = "Quick query preset: users, computers, groups, admins, ou, or custom (default: users)")]
         private string _preset = "users";
 
-        [ArgumentMetadata(Position = 3, Description = "Fully qualified domain name (e.g., contoso.local) - required for presets")]
+        [ArgumentMetadata(Position = 3, Description = "FQDN (required for presets)")]
         private string _domainFqdn;
 
         private bool _usingTempServer = false;
@@ -31,7 +31,7 @@ namespace MSSQLand.Actions.Remote
             if (args == null || args.Length == 0)
             {
                 // No arguments - need domain for default preset
-                throw new ArgumentException("Fully qualified domain name is required. Example: /a:adsiquery contoso.local");
+                throw new ArgumentException("Fully qualified domain name is required");
             }
 
             string[] parts = args;
@@ -46,7 +46,7 @@ namespace MSSQLand.Actions.Remote
                 // Domain must be provided
                 if (parts.Length < 2)
                 {
-                    throw new ArgumentException($"Fully qualified domain name is required. Example: /a:adsiquery {_preset} contoso.local");
+                    throw new ArgumentException($"Fully qualified domain name is required");
                 }
 
                 _domainFqdn = parts[1];
@@ -83,7 +83,7 @@ namespace MSSQLand.Actions.Remote
                     // Domain must be provided as second argument
                     if (parts.Length < 2)
                     {
-                        throw new ArgumentException($"Fully qualified domain name is required. Example: /a:adsiquery {_adsiServerName} contoso.local users");
+                        throw new ArgumentException($"Fully qualified domain name is required");
                     }
 
                     _domainFqdn = parts[1];
@@ -117,7 +117,7 @@ namespace MSSQLand.Actions.Remote
             if (!_domainFqdn.Contains("."))
             {
                 Logger.Warning($"Domain '{_domainFqdn}' does not appear to be a fully qualified domain name (FQDN).");
-                Logger.InfoNested("Example of FQDN: contoso.local, corp.company.com");
+                Logger.InfoNested("FQDN format: domain.tld");
             }
         }
 
@@ -205,7 +205,7 @@ namespace MSSQLand.Actions.Remote
                 {
                     Logger.InfoNested("Check your LDAP query syntax and domain FQDN.");
                     Logger.InfoNested($"Current domain: {_domainFqdn}");
-                    Logger.InfoNested("Example: /a:adsiquery contoso.local users");
+                    Logger.InfoNested("Example: /a:adsiquery <fqdn> users");
                 }
 
                 return null;
@@ -233,7 +233,7 @@ namespace MSSQLand.Actions.Remote
         /// </summary>
         private string BuildPresetQuery()
         {
-            // Convert domain FQDN to LDAP path (e.g., contoso.local -> DC=contoso,DC=local)
+            // Convert domain FQDN to LDAP path
             string ldapPath = BuildLdapPath(_domainFqdn);
 
             return _preset switch
@@ -256,7 +256,7 @@ namespace MSSQLand.Actions.Remote
 
         /// <summary>
         /// Converts a fully qualified domain name to an LDAP path.
-        /// Example: contoso.local -> LDAP://DC=contoso,DC=local
+        /// Converts FQDN to LDAP path
         /// </summary>
         private string BuildLdapPath(string domainFqdn)
         {

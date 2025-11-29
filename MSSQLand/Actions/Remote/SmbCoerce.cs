@@ -7,13 +7,13 @@ namespace MSSQLand.Actions.Remote
 {
     internal class SmbCoerce : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "UNC path for SMB coercion (e.g., \\\\192.168.1.10\\share)")]
+        [ArgumentMetadata(Position = 0, Required = true, Description = "UNC path")]
         private string _uncPath;
 
         /// <summary>
         /// Validates the arguments passed to the SmbCoerce action.
         /// </summary>
-        /// <param name="args">The UNC path for SMB coercion (e.g., \\\\172.16.118.218\\shared).</param>
+        /// <param name="args">The UNC path.</param>
         public override void ValidateArguments(string[] args)
         {
             if (args == null || args.Length == 0)
@@ -47,7 +47,7 @@ namespace MSSQLand.Actions.Remote
         }
 
         /// <summary>
-        /// Executes SMB coercion using multiple fallback methods.
+        /// Executes SMB interaction using multiple fallback methods.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
         public override object? Execute(DatabaseContext databaseContext)
@@ -72,13 +72,13 @@ namespace MSSQLand.Actions.Remote
                 return true;
             }
 
-            Logger.Error("All SMB coercion methods failed.");
+            Logger.Error("All SMB methods failed.");
 
             return false;
         }
 
         /// <summary>
-        /// Attempts SMB coercion using xp_dirtree (most reliable method).
+        /// Attempts SMB interaction using xp_dirtree.
         /// </summary>
         private bool TryXpDirtree(DatabaseContext databaseContext)
         {
@@ -100,7 +100,7 @@ namespace MSSQLand.Actions.Remote
         }
 
         /// <summary>
-        /// Attempts SMB coercion using xp_subdirs (alternative method).
+        /// Attempts SMB interaction using xp_subdirs.
         /// </summary>
         private bool TryXpSubdirs(DatabaseContext databaseContext)
         {
@@ -122,7 +122,7 @@ namespace MSSQLand.Actions.Remote
         }
 
         /// <summary>
-        /// Attempts SMB coercion using xp_fileexist (last resort method).
+        /// Attempts SMB interaction using xp_fileexist.
         /// </summary>
         private bool TryXpFileexist(DatabaseContext databaseContext)
         {

@@ -8,13 +8,13 @@ namespace MSSQLand.Actions.Execution
 {
     internal class XpCmd : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "Operating system command to execute via xp_cmdshell")]
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Operating system command to execute")]
         private string _command;
 
         /// <summary>
         /// Validates the arguments passed to the Shell action.
         /// </summary>
-        /// <param name="args">The command to execute using xp_cmdshell.</param>
+        /// <param name="args">The command to execute.</param>
         public override void ValidateArguments(string[] args)
         {
             if (args == null || args.Length == 0)
@@ -26,7 +26,7 @@ namespace MSSQLand.Actions.Execution
         }
 
         /// <summary>
-        /// Executes the provided shell command on the SQL server using xp_cmdshell.
+        /// Executes the provided shell command on the SQL server.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
         /// <returns>A list of strings containing the command output, or an empty list if no output.</returns>

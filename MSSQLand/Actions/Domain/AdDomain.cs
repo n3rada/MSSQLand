@@ -34,7 +34,7 @@ namespace MSSQLand.Actions.Domain
                 string domain = dtDomain.Rows[0][0].ToString();
                 Logger.Info($"Domain: {domain}");
 
-                // 2) Obtain the domain SID by querying a known group (Domain Admins)
+                // 2) Obtain the domain SID by querying a known group
                 var dtSid = databaseContext.QueryService.ExecuteTable($"SELECT SUSER_SID('{domain}\\Domain Admins');");
                 if (dtSid.Rows.Count == 0 || dtSid.Rows[0][0] == DBNull.Value)
                 {
@@ -69,7 +69,7 @@ namespace MSSQLand.Actions.Domain
                 var result = new Dictionary<string, string>
                 {
                     { "Domain", domain },
-                    { "Full SID (Domain Admins)", AdDomainString },
+                    { "Full SID", AdDomainString },
                     { "Domain SID", AdDomainPrefix }
                 };
 

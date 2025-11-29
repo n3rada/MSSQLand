@@ -17,7 +17,7 @@ namespace MSSQLand.Actions.Database
         [ExcludeFromArguments]
         private static readonly Dictionary<string, string> ProcedureDescriptions = new()
         {
-            { "xp_cmdshell", "Executes command shell commands" },
+            { "xp_cmdshell", "Command execution" },
             { "xp_dirtree", "Displays directory tree structure" },
             { "xp_fileexist", "Checks if a file exists" },
             { "xp_fixeddrives", "Lists fixed drives and their free space" },

@@ -6,11 +6,11 @@ using System;
 namespace MSSQLand.Actions.Execution
 {
     /// <summary>
-    /// OLE (Object Linking and Embedding) is a Microsoft technology that allows embedding and linking to documents and objects. In the context of SQL Server, OLE Automation Procedures enable interaction with COM objects from within SQL Server. These objects can perform tasks outside the database, such as file manipulation, network operations, or other system-level activities.
+    /// Enables interaction with COM objects from within SQL Server for external operations.
     /// </summary>
     internal class ObjectLinkingEmbedding : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "Operating system command to execute via OLE Automation")]
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Operating system command to execute")]
         private string _command;
 
         /// <summary>

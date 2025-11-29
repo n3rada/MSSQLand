@@ -61,16 +61,16 @@ namespace MSSQLand.Utilities
             { "ad-domain", (typeof(AdDomain), "Retrieve the domain SID using DEFAULT_DOMAIN() and SUSER_SID().") },
             { "ad-sid", (typeof(AdSid), "Retrieve the current user's SID using SUSER_SID().") },
             { "ad-groups", (typeof(AdGroups), "Retrieve Active Directory domain groups with SQL Server principals that the user is a member of.") },
-            { "ad-members", (typeof(AdMembers), "Retrieve members of an Active Directory group (e.g., DOMAIN\\Domain Admins).") },
+            { "ad-members", (typeof(AdMembers), "Retrieve members of an Active Directory group.") },
             { "ridcycle", (typeof(RidCycle), "Enumerate domain users by RID cycling using SUSER_SNAME().") },
             
             // ═══════════════════════════════════════════════════════════════════════════════
             // EXECUTION ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "exec", (typeof(XpCmd), "Execute operating system commands using xp_cmdshell.") },
-            { "pwsh", (typeof(PowerShell), "Execute PowerShell scripts via xp_cmdshell.") },
+            { "exec", (typeof(XpCmd), "Execute operating system commands.") },
+            { "pwsh", (typeof(PowerShell), "Execute PowerShell scripts.") },
             { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a remote PowerShell script from a URL.") },
-            { "ole", (typeof(ObjectLinkingEmbedding), "Execute operating system commands using OLE Automation Procedures.") },
+            { "ole", (typeof(ObjectLinkingEmbedding), "Execute operating system commands via procedures.") },
             { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.") },
             { "agents", (typeof(Agents), "Manage and interact with SQL Server Agent jobs.") },
 

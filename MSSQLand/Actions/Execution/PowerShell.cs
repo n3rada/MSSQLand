@@ -25,7 +25,7 @@ namespace MSSQLand.Actions.Execution
         }
 
         /// <summary>
-        /// Executes the provided PowerShell script on the SQL server using xp_cmdshell.
+        /// Executes the provided PowerShell script on the SQL server.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
         public override object? Execute(DatabaseContext databaseContext)

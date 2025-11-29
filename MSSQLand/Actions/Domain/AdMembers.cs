@@ -11,7 +11,7 @@ namespace MSSQLand.Actions.Domain
     /// </summary>
     internal class AdMembers : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "AD group name (e.g., DOMAIN\\Domain Admins)")]
+        [ArgumentMetadata(Position = 0, Required = true, Description = "AD group name")]
         private string _groupName;
 
         [ExcludeFromArguments]
@@ -21,7 +21,7 @@ namespace MSSQLand.Actions.Domain
         {
             if (args == null || args.Length == 0)
             {
-                throw new ArgumentException("Group name is required. Example: DOMAIN\\IT or DOMAIN\\Domain Admins");
+                throw new ArgumentException("Group name is required");
             }
 
             string[] parts = args;
