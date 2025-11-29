@@ -14,7 +14,7 @@ MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikiped
 > [!NOTE]
 > Do not forget the basics. During a security assessment, it is sometimes easier to use [SQL Server Management Studio (SSMS)](https://learn.microsoft.com/en-us/ssms/).
 
-## 🚀 Quick Start
+## 🧸 Usage
 
 ```shell
 MSSQLand.exe <host> [options] <action> [action-options]
@@ -116,7 +116,7 @@ Acceptable environments include:
 
 Misuse of this project may result in legal action.
 
-## Legal Notice
+## ⚖️ Legal Notice
 Any unauthorized use of this tool in real-world environments or against systems without explicit permission from the system owner is strictly prohibited and may violate legal and ethical standards. The creators and contributors of this tool are not responsible for any misuse or damage caused.
 
 Use responsibly and ethically. Always respect the law and obtain proper authorization.
