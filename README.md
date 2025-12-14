@@ -35,7 +35,7 @@ MSSQLand.exe localhost,1434@db03 -c token info
 ```
 
 > [!IMPORTANT]
-> The **host** (first argument) and **action** (after flags) are positional arguments. All flags use `-` prefix. For example: `localhost -c token createuser -p p@ssword!` - here `-p` belongs to the action, not the global arguments.
+> The **host** (first argument) and **action** (after flags) are positional arguments. All flags use `-` prefix. For example: `localhost -c token createuser -p p@ssword!`. Here, `-p` belongs to the action, not the global arguments.
 
 **Common options:**
 - `--timeout 30` - Connection timeout in seconds (default: 15)
