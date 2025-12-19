@@ -51,17 +51,33 @@ namespace MSSQLand
                 using AuthenticationService authService = new(arguments.Host);
 
                 // Authenticate with the provided credentials
-                if (!authService.Authenticate(
-                    credentialsType: arguments.CredentialType,
-                    sqlServer: $"{arguments.Host.Hostname},{arguments.Host.Port}",
-                    database: arguments.Host.Database ?? "master",
-                    username: arguments.Username,
-                    password: arguments.Password,
-                    domain: arguments.Domain,
-                    connectionTimeout: arguments.ConnectionTimeout
-                 ))
+                try
                 {
-                    Logger.Error("Authentication failed.");
+                    if (!authService.Authenticate(
+                        credentialsType: arguments.CredentialType,
+                        sqlServer: $"{arguments.Host.Hostname},{arguments.Host.Port}",
+                        database: arguments.Host.Database ?? "master",
+                        username: arguments.Username,
+                        password: arguments.Password,
+                        domain: arguments.Domain,
+                        connectionTimeout: arguments.ConnectionTimeout
+                     ))
+                    {
+                        Logger.Error("Authentication failed.");
+                        return 1;
+                    }
+                }
+                catch (SqlException sqlEx) when (sqlEx.Number == -2 || sqlEx.Number == -1)
+                {
+                    // Timeout errors: -2 (client-side timeout), -1 (connection timeout)
+                    Logger.Error($"Connection timeout: Unable to connect to {arguments.Host.Hostname}:{arguments.Host.Port}");
+                    Logger.ErrorNested($"The server did not respond within the specified timeout period ({arguments.ConnectionTimeout} seconds).");
+                    return 1;
+                }
+                catch (SqlException sqlEx)
+                {
+                    // Other SQL-specific connection errors
+                    Logger.Error($"Connection error: {sqlEx.Message}");
                     return 1;
                 }
 
