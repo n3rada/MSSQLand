@@ -1,4 +1,6 @@
-﻿using MSSQLand.Utilities;
+﻿// MSSQLand/Services/UserService.cs
+
+using MSSQLand.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -20,8 +22,6 @@ namespace MSSQLand.Services
         /// </summary>
         private readonly ConcurrentDictionary<string, bool> _isDomainUserCache = new();
         
-
-
         public string MappedUser { get; private set; }
         public string SystemUser { get; private set; }
         public string EffectiveUser { get; private set; }
