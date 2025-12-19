@@ -7,7 +7,7 @@ namespace MSSQLand.Services.Credentials
     public abstract class BaseCredentials
     {
 
-        private int _connectTimeout = 15;
+        private int _connectTimeout = 5;
 
         /// <summary>
         /// Indicates whether the current authentication attempt was successful.
@@ -72,6 +72,7 @@ namespace MSSQLand.Services.Credentials
             }
             catch
             {
+                Logger.Trace($"Connection attempt failed, disposing connection.");
                 connection.Dispose();
                 throw; // Re-throw exception to be handled at higher level
             }

@@ -19,7 +19,7 @@ namespace MSSQLand.Services
         private string _username;
         private string _password;
         private string _domain;
-        private int _connectionTimeout = 15;
+        private int _connectionTimeout = 5;
         private BaseCredentials _credentials;
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace MSSQLand.Services
         /// <param name="username">The username (optional).</param>
         /// <param name="password">The password (optional).</param>
         /// <param name="domain">The domain for Windows authentication (optional).</param>
-        /// <param name="connectionTimeout">The connection timeout in seconds (default: 15).</param>
+        /// <param name="connectionTimeout">The connection timeout in seconds (default: 5).</param>
         public bool Authenticate(
             string credentialsType,
             string sqlServer,
@@ -54,7 +54,7 @@ namespace MSSQLand.Services
             string username = null,
             string password = null,
             string domain = null,
-            int connectionTimeout = 15)
+            int connectionTimeout = 5)
         {
             // Store authentication parameters
             _credentialsType = credentialsType;

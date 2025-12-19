@@ -43,9 +43,9 @@ namespace MSSQLand.Models
         public BaseAction Action { get; set; }
 
         /// <summary>
-        /// The connection timeout in seconds (default: 15).
+        /// The connection timeout in seconds (default: 5).
         /// </summary>
-        public int ConnectionTimeout { get; set; } = 15;
+        public int ConnectionTimeout { get; set; } = 5;
 
     }
 }
