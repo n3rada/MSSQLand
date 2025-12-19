@@ -7,6 +7,25 @@ using System.Text;
 
 namespace MSSQLand.Models
 {
+    /// <summary>
+    /// Manages linked server chains for SQL Server connections.
+    /// 
+    /// Chain Format:
+    /// - Servers are separated by semicolons: server1;server2;server3
+    /// - Use brackets [] for hostnames containing any delimiter (: / @ ;):
+    ///   [SQL02;PROD];SQL03 or [SQL02/PROD]/user@db or [SQL02@INSTANCE]
+    /// - Format for each server: server[:port][/user][@database]
+    /// 
+    /// Examples:
+    /// - Simple: SQL01;SQL02;SQL03
+    /// - With users: SQL01/admin;SQL02/webapp@mydb
+    /// - Hostname with delimiters: [SQL02;PROD];[SQL03/TEST];[SQL04@INST]
+    /// - Complex: SQL01:1433/admin;[SQL02;PROD]/domain_user@db_name;SQL03
+    /// 
+    /// Note: Brackets are needed for hostnames containing : / @ ; characters.
+    /// This prevents them from being misinterpreted as port/user/database/chain delimiters.
+    /// User names and databases don't need brackets (delimiters after hostname are unambiguous).
+    /// </summary>
     public class LinkedServers
     {
         /// <summary>
@@ -117,6 +136,15 @@ namespace MSSQLand.Models
 
         /// <summary>
         /// Returns a properly formatted linked server chain string.
+        /// Automatically adds brackets around hostnames containing any delimiter (: / @ ;).
+        /// 
+        /// Examples:
+        /// - SQL01, SQL02 → ["SQL01", "SQL02"]
+        /// - SQL02;PROD → ["[SQL02;PROD]"]
+        /// - SQL02/PROD → ["[SQL02/PROD]"]
+        /// - SQL02@PROD → ["[SQL02@PROD]"]
+        /// - SQL02:PROD → ["[SQL02:PROD]"]
+        /// - [SQL02;PROD]/admin → ["[SQL02;PROD]/admin"] (brackets protect hostname only)
         /// </summary>
         public List<string> GetChainParts()
         {
@@ -127,6 +155,12 @@ namespace MSSQLand.Models
                 string serverName = ServerChain[i].Hostname;
                 string impersonationUser = ServerChain[i].ImpersonationUser;
                 string database = ServerChain[i].Database;
+
+                // Bracket the hostname if it contains ANY delimiter character
+                if (serverName.IndexOfAny(new[] { ':', '/', '@', ';' }) >= 0)
+                {
+                    serverName = $"[{serverName}]";
+                }
 
                 StringBuilder part = new StringBuilder(serverName);
 
@@ -144,15 +178,7 @@ namespace MSSQLand.Models
                     part.Append($"@{database}");
                 }
 
-                string partString = part.ToString();
-                
-                // Add brackets if the part contains a semicolon
-                if (partString.Contains(";"))
-                {
-                    partString = $"[{partString}]";
-                }
-                
-                chainParts.Add(partString);
+                chainParts.Add(part.ToString());
             }
 
             return chainParts;
@@ -191,7 +217,16 @@ namespace MSSQLand.Models
 
         /// <summary>
         /// Parses a semicolon-separated list of servers into an array of Server objects.
-        /// Accepts the format "SQL27/user01;SQL53/user02" or "SQL27:1433/user01@db;SQL53/user02".
+        /// 
+        /// Format: "server1;server2;server3"
+        /// Supports brackets for hostnames containing delimiters: "[SQL02;PROD]/user;SQL03"
+        /// Brackets protect hostnames from having : / @ ; misinterpreted as delimiters.
+        /// 
+        /// Examples:
+        /// - "SQL27/user01;SQL53/user02"
+        /// - "SQL27:1433/user01@db;SQL53/user02"
+        /// - "[SQL02;PROD];[SQL03/TEST];[SQL04@INST]/admin@mydb"
+        /// - "[SQL02:8080]/domain_user@db_name;SQL03" (brackets protect : in hostname)
         /// </summary>
         /// <param name="chainInput">Semicolon-separated list of servers.</param>
         /// <returns>An array of Server objects.</returns>
