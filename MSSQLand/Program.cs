@@ -165,8 +165,9 @@ namespace MSSQLand
 
                 stopwatch.Stop();
                 DateTime endTime = DateTime.UtcNow;
+
+                Logger.NewLine();
                 Logger.Banner($"End at {endTime:yyyy-MM-dd HH:mm:ss:fffff} UTC\nTotal duration: {stopwatch.Elapsed.TotalSeconds:F2} seconds", totalWidth: bannerWidth);
-                
                 return 0;
             }
             catch (Exception ex)
