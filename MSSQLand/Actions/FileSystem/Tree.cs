@@ -21,11 +21,17 @@ namespace MSSQLand.Actions.FileSystem
     /// - │   for vertical lines continuing to subdirectories
     /// - Indentation to show hierarchy levels
     /// 
-    /// Use /unicode:0 or /u:false flag to fall back to ASCII characters (|, \, |) for legacy terminals
+    /// Use --unicode:0 or -u:false flag to fall back to ASCII characters (|, \, |) for legacy terminals
+    /// 
+    /// Note: Paths containing spaces must be enclosed in quotes.
+    /// Examples:
+    ///     tree "C:\Program Files" 3
+    ///     tree "C:\My Documents" --depth:5
+    ///     tree C:\Windows 2 --files:false
     /// </summary>
     internal class Tree : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "Directory path to display")]
+        [ArgumentMetadata(Position = 0, Required = false, Description = "Directory path to display (default: current directory)")]
         private string _path;
 
         [ArgumentMetadata(Position = 1, ShortName = "d", LongName = "depth", Description = "Directory depth to traverse (1-255)")]
@@ -45,11 +51,11 @@ namespace MSSQLand.Actions.FileSystem
         {
             var (namedArgs, positionalArgs) = ParseActionArguments(args);
 
-            // Get path from positional argument or throw error
-            _path = GetPositionalArgument(positionalArgs, 0, null);
+            // Get path from positional argument or use current directory
+            _path = GetPositionalArgument(positionalArgs, 0, ".");
             if (string.IsNullOrWhiteSpace(_path))
             {
-                throw new ArgumentException("Tree action requires a directory path as an argument.");
+                _path = ".";
             }
 
             // Get depth from named argument or positional argument
@@ -59,7 +65,8 @@ namespace MSSQLand.Actions.FileSystem
 
             if (!int.TryParse(depthStr, out _depth))
             {
-                Logger.Warning($"Invalid depth value '{depthStr}', using default depth of 3");
+                Logger.Warning($"Invalid depth value '{depthStr}', using default depth of 3. " +
+                             "If your path contains spaces, enclose it in quotes (e.g., \"C:\\Program Files\")");
                 _depth = 3;
             }
 
