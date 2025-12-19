@@ -1,4 +1,6 @@
-﻿using MSSQLand.Services;
+﻿// MSSQLand/Actions/Remote/RemoteProcedureCall.cs
+
+using MSSQLand.Services;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
@@ -9,9 +11,26 @@ namespace MSSQLand.Actions.Remote
 {
     internal class RemoteProcedureCall : BaseAction
     {
-        private enum RpcActionMode { Add, Del }
+        private enum RpcActionMode { Enable, Disable }
         
-        [ArgumentMetadata(Position = 0, Required = true, Description = "Action: + or -")]
+        // Mapping of all accepted aliases to their normalized action
+        private static readonly Dictionary<string, RpcActionMode> ActionAliases = new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "+", RpcActionMode.Enable },
+            { "add", RpcActionMode.Enable },
+            { "on", RpcActionMode.Enable },
+            { "1", RpcActionMode.Enable },
+            { "true", RpcActionMode.Enable },
+            { "enable", RpcActionMode.Enable },
+            { "-", RpcActionMode.Disable },
+            { "del", RpcActionMode.Disable },
+            { "off", RpcActionMode.Disable },
+            { "0", RpcActionMode.Disable },
+            { "false", RpcActionMode.Disable },
+            { "disable", RpcActionMode.Disable }
+        };
+        
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Action: enable/disable (or aliases: +/-, on/off, 1/0, true/false, add/del)")]
         private RpcActionMode _action;
         
         [ArgumentMetadata(Position = 1, Required = true, Description = "Linked server name")]
@@ -21,27 +40,22 @@ namespace MSSQLand.Actions.Remote
         {
             if (args == null || args.Length == 0)
             {
-                throw new ArgumentException("Remote Procedure Call (RPC) action requires two arguments: action ('+' or '-') and linked server name.");
+                throw new ArgumentException("Remote Procedure Call (RPC) action requires two arguments: action and linked server name.");
             }
 
             if (args.Length != 2)
             {
-                throw new ArgumentException("RPC action requires exactly two arguments: action ('+' or '-') and linked server name.");
+                throw new ArgumentException("RPC action requires exactly two arguments: action and linked server name.");
             }
 
-            // Map symbols to enum values
+            // Map action alias to enum value
             string actionArg = args[0].Trim();
-            if (actionArg == "+")
+            
+            if (!ActionAliases.TryGetValue(actionArg, out _action))
             {
-                _action = RpcActionMode.Add;
-            }
-            else if (actionArg == "-")
-            {
-                _action = RpcActionMode.Del;
-            }
-            else
-            {
-                throw new ArgumentException($"Invalid action: {args[0]}. Valid actions are: '+' (enable) or '-' (disable).");
+                var enableAliases = string.Join(", ", ActionAliases.Where(kv => kv.Value == RpcActionMode.Enable).Select(kv => $"'{kv.Key}'"));
+                var disableAliases = string.Join(", ", ActionAliases.Where(kv => kv.Value == RpcActionMode.Disable).Select(kv => $"'{kv.Key}'"));
+                throw new ArgumentException($"Invalid action: '{actionArg}'. Valid actions are: {enableAliases} (to enable) or {disableAliases} (to disable).");
             }
 
             _linkedServerName = args[1].Trim();
@@ -49,8 +63,8 @@ namespace MSSQLand.Actions.Remote
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            string rpcValue = _action == RpcActionMode.Add ? "true" : "false";
-            string actionVerb = _action == RpcActionMode.Add ? "Enabling" : "Disabling";
+            string rpcValue = _action == RpcActionMode.Enable ? "true" : "false";
+            string actionVerb = _action == RpcActionMode.Enable ? "Enabling" : "Disabling";
 
             Logger.TaskNested($"{actionVerb} RPC on linked server '{_linkedServerName}'");
 
@@ -66,7 +80,7 @@ namespace MSSQLand.Actions.Remote
                 DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
                 Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
 
-                string status = _action == RpcActionMode.Add ? "enabled" : "disabled";
+                string status = _action == RpcActionMode.Enable ? "enabled" : "disabled";
                 Logger.Success($"RPC successfully {status} on '{_linkedServerName}'");
                 return resultTable;
             }
