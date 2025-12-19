@@ -23,9 +23,6 @@ namespace MSSQLand.Actions.Execution
         private string _filePath;
 
         [ArgumentMetadata(Position = 1, ShortName = "w", LongName = "wait", Description = "Execute synchronously (wait for completion)")]
-        private bool _waitForCompletion = false;
-
-        [ArgumentMetadata(Position = 2, ShortName = "o", LongName = "capture-output", Description = "Capture stdout/stderr (implies --wait, forces xp_cmdshell)")]
         private bool _captureOutput = false;
 
         [ExcludeFromArguments]
@@ -121,7 +118,7 @@ namespace MSSQLand.Actions.Execution
             }
 
             // Check if OLE Automation is available
-            bool oleAvailable = databaseContext.ConfigurationService.SetConfigurationOption("Ole Automation Procedures", 1);
+            bool oleAvailable = databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1);
 
             // Use OLE if available, otherwise xp_cmdshell
             if (oleAvailable)
@@ -222,7 +219,7 @@ END
 EXEC sp_OADestroy @ObjectToken;
 ";
 
-                    databaseContext.QueryService.ExecuteNonQuery(query);
+                    databaseContext.QueryService.ExecuteNonProcessing(query);
                     Logger.Success("File launched successfully via OLE (running in background)");
                     return "Process launched in background";
                 }
@@ -298,7 +295,7 @@ SELECT @ExitCode AS ExitCode;
         private object ExecuteViaXpCmdshell(DatabaseContext databaseContext, bool asyncMode)
         {
             // Enable xp_cmdshell if needed
-            if (!databaseContext.ConfigurationService.SetConfigurationOption("xp_cmdshell", 1))
+            if (!databaseContext.ConfigService.SetConfigurationOption("xp_cmdshell", 1))
             {
                 Logger.Error("Failed to enable xp_cmdshell");
                 return null;
@@ -322,7 +319,7 @@ SELECT @ExitCode AS ExitCode;
                     string query = $"EXEC master..xp_cmdshell '{escapedCommand}'";
 
                     Logger.Info("Executing via xp_cmdshell (async)");
-                    databaseContext.QueryService.ExecuteNonQuery(query);
+                    databaseContext.QueryService.ExecuteNonProcessing(query);
                     Logger.Success("File launched successfully via xp_cmdshell (running in background)");
                     return "Process launched in background";
                 }

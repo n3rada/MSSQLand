@@ -107,7 +107,7 @@ namespace MSSQLand.Actions.FileSystem
             }
 
             // Check if OLE Automation is available
-            bool oleAvailable = databaseContext.ConfigurationService.SetConfigurationOption("Ole Automation Procedures", 1);
+            bool oleAvailable = databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1);
 
             bool success;
             if (oleAvailable)
@@ -262,7 +262,7 @@ EXEC sp_OADestroy @ObjectToken;
 
             try
             {
-                databaseContext.QueryService.ExecuteNonQuery(query);
+                databaseContext.QueryService.ExecuteNonProcessing(query);
                 Logger.Info("OLE upload command executed successfully");
                 return true;
             }
@@ -282,7 +282,7 @@ EXEC sp_OADestroy @ObjectToken;
         private bool UploadViaXpCmdshell(DatabaseContext databaseContext, byte[] fileContent)
         {
             // Enable xp_cmdshell if needed
-            if (!databaseContext.ConfigurationService.SetConfigurationOption("xp_cmdshell", 1))
+            if (!databaseContext.ConfigService.SetConfigurationOption("xp_cmdshell", 1))
             {
                 Logger.Error("Failed to enable xp_cmdshell");
                 return false;
@@ -311,7 +311,7 @@ EXEC sp_OADestroy @ObjectToken;
                     string encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(psScript));
 
                     string query = $"EXEC master..xp_cmdshell 'powershell -e {encodedCommand}'";
-                    databaseContext.QueryService.ExecuteNonQuery(query);
+                    databaseContext.QueryService.ExecuteNonProcessing(query);
                     Logger.Info("PowerShell upload command executed");
                 }
                 else
@@ -325,7 +325,7 @@ EXEC sp_OADestroy @ObjectToken;
                     string psScript = $"$d=[Convert]::FromBase64String('{chunk}');[IO.File]::WriteAllBytes('{escapedRemotePath}',$d)";
                     string encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(psScript));
                     string query = $"EXEC master..xp_cmdshell 'powershell -e {encodedCommand}'";
-                    databaseContext.QueryService.ExecuteNonQuery(query);
+                    databaseContext.QueryService.ExecuteNonProcessing(query);
                     Logger.Info("Chunk 1 uploaded");
 
                     // Remaining chunks - append
@@ -340,7 +340,7 @@ EXEC sp_OADestroy @ObjectToken;
                         encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(psScript));
                         query = $"EXEC master..xp_cmdshell 'powershell -e {encodedCommand}'";
 
-                        databaseContext.QueryService.ExecuteNonQuery(query);
+                        databaseContext.QueryService.ExecuteNonProcessing(query);
 
                         offset += maxChunkSize;
                         Logger.Info($"Chunk {chunkNum}/{totalChunks} uploaded");
