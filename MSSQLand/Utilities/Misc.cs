@@ -101,5 +101,34 @@ namespace MSSQLand.Utilities
             }
             return message;
         }
+
+        /// <summary>
+        /// Wraps SQL Server identifier in brackets if it contains separator characters.
+        /// Only brackets if the name contains delimiters used in our syntax: : / @ ;
+        /// 
+        /// This is used for linked server chains where hostnames may contain these
+        /// characters and need protection from being interpreted as delimiters.
+        /// </summary>
+        /// <param name="name">The identifier name to potentially bracket.</param>
+        /// <returns>Bracketed identifier if separators present, otherwise unchanged.</returns>
+        /// <example>
+        /// BracketIdentifier("SQL01") => "SQL01"
+        /// BracketIdentifier("SQL02;PROD") => "[SQL02;PROD]"
+        /// BracketIdentifier("SQL03/TEST") => "[SQL03/TEST]"
+        /// BracketIdentifier("SQL04@INST") => "[SQL04@INST]"
+        /// BracketIdentifier("SQL05:8080") => "[SQL05:8080]"
+        /// </example>
+        public static string BracketIdentifier(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return name;
+
+            // Only bracket if name contains our special delimiter characters
+            if (name.IndexOfAny(new[] { ':', '/', '@', ';' }) >= 0)
+            {
+                return $"[{name}]";
+            }
+            return name;
+        }
     }
 }

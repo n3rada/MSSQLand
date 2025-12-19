@@ -10,21 +10,28 @@ namespace MSSQLand.Models
     /// <summary>
     /// Manages linked server chains for SQL Server connections.
     /// 
+    /// Syntax:
+    /// - Semicolon (;) - Separates servers in the chain
+    /// - Forward slash (/) - Specifies user to impersonate ("execute as user")
+    /// - At sign (@) - Specifies database context
+    /// - Brackets [...] - Used to protect the server name from being split by our delimiters
+    /// 
     /// Chain Format:
     /// - Servers are separated by semicolons: server1;server2;server3
-    /// - Use brackets [] for hostnames containing any delimiter (: / @ ;):
-    ///   [SQL02;PROD];SQL03 or [SQL02/PROD]/user@db or [SQL02@INSTANCE]
-    /// - Format for each server: server[:port][/user][@database]
+    /// - Format for each server: hostname[:port][/user][@database]
+    /// - Use brackets [] for hostnames containing any delimiter (: / @ ;)
     /// 
     /// Examples:
     /// - Simple: SQL01;SQL02;SQL03
     /// - With users: SQL01/admin;SQL02/webapp@mydb
+    /// - With port: SQL01:1433;SQL02:1434/admin
     /// - Hostname with delimiters: [SQL02;PROD];[SQL03/TEST];[SQL04@INST]
     /// - Complex: SQL01:1433/admin;[SQL02;PROD]/domain_user@db_name;SQL03
+    /// - Bracketed with modifiers: [SERVER;PROD]:1434/admin@clients
     /// 
-    /// Note: Brackets are needed for hostnames containing : / @ ; characters.
-    /// This prevents them from being misinterpreted as port/user/database/chain delimiters.
-    /// User names and databases don't need brackets (delimiters after hostname are unambiguous).
+    /// Note: Brackets protect only the hostname from delimiter interpretation.
+    /// Port/user/database modifiers are specified after the closing bracket.
+    /// Brackets are only needed when the hostname itself contains : / @ ; characters.
     /// </summary>
     public class LinkedServers
     {
@@ -157,10 +164,7 @@ namespace MSSQLand.Models
                 string database = ServerChain[i].Database;
 
                 // Bracket the hostname if it contains ANY delimiter character
-                if (serverName.IndexOfAny(new[] { ':', '/', '@', ';' }) >= 0)
-                {
-                    serverName = $"[{serverName}]";
-                }
+                serverName = Misc.BracketIdentifier(serverName);
 
                 StringBuilder part = new StringBuilder(serverName);
 
@@ -218,15 +222,23 @@ namespace MSSQLand.Models
         /// <summary>
         /// Parses a semicolon-separated list of servers into an array of Server objects.
         /// 
+        /// Syntax:
+        /// - Semicolon (;) - Separates servers in the chain
+        /// - Forward slash (/) - Specifies user to impersonate ("execute as user")
+        /// - At sign (@) - Specifies database context
+        /// - Brackets [...] - Used to protect the server name from being split by our delimiters
+        /// 
         /// Format: "server1;server2;server3"
-        /// Supports brackets for hostnames containing delimiters: "[SQL02;PROD]/user;SQL03"
-        /// Brackets protect hostnames from having : / @ ; misinterpreted as delimiters.
+        /// Each server: hostname[:port][/user][@database]
         /// 
         /// Examples:
         /// - "SQL27/user01;SQL53/user02"
         /// - "SQL27:1433/user01@db;SQL53/user02"
         /// - "[SQL02;PROD];[SQL03/TEST];[SQL04@INST]/admin@mydb"
         /// - "[SQL02:8080]/domain_user@db_name;SQL03" (brackets protect : in hostname)
+        /// - "[SERVER;PROD]:1434/admin@clients;SQL03" (bracketed hostname with port, user, and database)
+        /// 
+        /// Note: Brackets protect only the hostname. Port/user/database modifiers come after the closing bracket.
         /// </summary>
         /// <param name="chainInput">Semicolon-separated list of servers.</param>
         /// <returns>An array of Server objects.</returns>
@@ -261,13 +273,26 @@ namespace MSSQLand.Models
                     if (closingBracket == -1)
                         throw new ArgumentException($"Unclosed bracket in server chain at position {pos}");
                     
-                    // Extract content between brackets
-                    serverString = chainInput.Substring(pos + 1, closingBracket - pos - 1);
+                    // Extract content between brackets (this is the hostname)
+                    string bracketedHostname = chainInput.Substring(pos + 1, closingBracket - pos - 1);
                     pos = closingBracket + 1;
                     
-                    // Skip semicolon if present
-                    while (pos < chainInput.Length && (chainInput[pos] == ';' || char.IsWhiteSpace(chainInput[pos])))
-                        pos++;
+                    // Continue extracting modifiers (port/user/database) after the bracket until semicolon
+                    int semicolon = chainInput.IndexOf(';', pos);
+                    string modifiers;
+                    if (semicolon == -1)
+                    {
+                        modifiers = chainInput.Substring(pos);
+                        pos = chainInput.Length;
+                    }
+                    else
+                    {
+                        modifiers = chainInput.Substring(pos, semicolon - pos);
+                        pos = semicolon + 1;
+                    }
+                    
+                    // Combine bracketed hostname with modifiers for parsing
+                    serverString = bracketedHostname + modifiers;
                 }
                 else
                 {

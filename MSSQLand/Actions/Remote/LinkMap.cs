@@ -122,7 +122,9 @@ namespace MSSQLand.Actions.Remote
             {
                 List<Dictionary<string, string>> chainMapping = chainEntry.Value;
                 List<string> formattedLines = new() { initialServerEntry };
-                List<string> chainParts = new();
+                
+                // Build a proper LinkedServers chain to use its formatting logic
+                List<Server> serverChainList = new();
 
                 foreach (var entry in chainMapping)
                 {
@@ -133,33 +135,23 @@ namespace MSSQLand.Actions.Remote
 
                     formattedLines.Add($"-{impersonatedUser}-> {serverName} ({loggedIn} [{mapped}])");
                     
-                    // Build chain command - bracket serverName if it contains any delimiter
-                    string chainServerName = serverName;
-                    if (chainServerName.IndexOfAny(new[] { ':', '/', '@', ';' }) >= 0)
+                    // Add to the server chain for proper formatting (brackets applied in GetChainArguments())
+                    serverChainList.Add(new Server
                     {
-                        chainServerName = $"[{chainServerName}]";
-                    }
-                    
-                    string chainPart;
-                    if (impersonatedUser != "-")
-                    {
-                        chainPart = $"{chainServerName}/{impersonatedUser}";
-                    }
-                    else
-                    {
-                        chainPart = chainServerName;
-                    }
-                    
-                    chainParts.Add(chainPart);
+                        Hostname = serverName,
+                        ImpersonationUser = impersonatedUser != "-" ? impersonatedUser : null,
+                        Database = null // LinkMap doesn't track database context yet
+                    });
                 }
 
                 Console.WriteLine();
                 Console.WriteLine(string.Join(" ", formattedLines));
                 
-                // Show command to reproduce this chain
-                if (chainParts.Count > 0)
+                // Show command to reproduce this chain using proper formatting
+                if (serverChainList.Count > 0)
                 {
-                    string chainCommand = $"-l {string.Join(";", chainParts)}";
+                    LinkedServers chainForDisplay = new LinkedServers(serverChainList.ToArray());
+                    string chainCommand = $"-l {chainForDisplay.GetChainArguments()}";
                     Logger.InfoNested($"To use this chain: {chainCommand}");
                 }
             }
