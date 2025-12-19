@@ -1,4 +1,6 @@
-﻿using MSSQLand.Models;
+﻿// MSSQLand/Services/Authentication/AuthenticationService.cs
+
+using MSSQLand.Models;
 using MSSQLand.Services.Credentials;
 using System;
 using System.Data.SqlClient;

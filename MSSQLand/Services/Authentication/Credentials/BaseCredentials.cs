@@ -70,23 +70,10 @@ namespace MSSQLand.Services.Credentials
 
                 return connection;
             }
-            catch (SqlException ex)
+            catch
             {
-                Logger.Error($"SQL error while opening connection: {ex.Message}");
                 connection.Dispose();
-                return null;
-            }
-            catch (InvalidOperationException ex)
-            {
-                Logger.Error($"Invalid operation while opening connection: {ex.Message}");
-                connection.Dispose();
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Unexpected error while opening connection: {ex.Message}");
-                connection.Dispose();
-                return null;
+                throw; // Re-throw exception to be handled at higher level
             }
         }
 
