@@ -68,7 +68,7 @@ namespace MSSQLand
                     connectionTimeout: arguments.ConnectionTimeout
                  ))
                 {
-                    Logger.Error("Failed to authenticate with the provided credentials.");
+                    Logger.Error("Authentication failed.");
                     return 1;
                 }
 
