@@ -82,9 +82,9 @@ namespace MSSQLand.Models
         }
 
         /// <summary>
-        /// Initializes the linked server chain from a comma-separated list.
+        /// Initializes the linked server chain from a semicolon-separated list.
         /// </summary>
-        /// <param name="chainInput">Comma-separated list of server names with optional impersonation users.</param>
+        /// <param name="chainInput">Semicolon-separated list of server names with optional impersonation users.</param>
         public LinkedServers(string chainInput)
             : this(string.IsNullOrWhiteSpace(chainInput) ? Array.Empty<Server>() : ParseServerChain(chainInput))
         { }
@@ -112,7 +112,7 @@ namespace MSSQLand.Models
 
         public string GetChainArguments()
         {
-            return string.Join(",", GetChainParts());
+            return string.Join(";", GetChainParts());
         }
 
         /// <summary>
@@ -182,10 +182,10 @@ namespace MSSQLand.Models
         }
 
         /// <summary>
-        /// Parses a comma-separated list of servers into an array of Server objects.
-        /// Accepts the format "SQL27:user01,SQL53:user02".
+        /// Parses a semicolon-separated list of servers into an array of Server objects.
+        /// Accepts the format "SQL27:user01;SQL53:user02".
         /// </summary>
-        /// <param name="chainInput">Comma-separated list of servers.</param>
+        /// <param name="chainInput">Semicolon-separated list of servers.</param>
         /// <returns>An array of Server objects.</returns>
         private static Server[] ParseServerChain(string chainInput)
         {
@@ -194,8 +194,11 @@ namespace MSSQLand.Models
                 throw new ArgumentException("Server list cannot be null or empty.", nameof(chainInput));
             }
 
-            return chainInput.Split(',')
-                             .Select(serverString => Server.ParseServer(serverString.Trim()))
+            // Split the input by semicolons and parse each server string
+            // Note: when parsing the individual servers in the chain, we set parsingPort to false
+            // because ports are not expected in linked server chains.
+            return chainInput.Split(';')
+                             .Select(serverString => Server.ParseServer(serverString.Trim(), parsingPort: false))
                              .ToArray();
         }
 

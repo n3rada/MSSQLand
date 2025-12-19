@@ -96,7 +96,9 @@ namespace MSSQLand.Models
         /// - server:user,1434@database
         /// Any combination works!
         /// </summary>
-        public static Server ParseServer(string serverInput)
+        /// <param name="serverInput">The server input string to parse.</param>
+        /// <param name="parsingPort">If true, comma is treated as port delimiter. If false, comma is ignored (for linked server chains).</param>
+        public static Server ParseServer(string serverInput, bool parsingPort = true)
         {
             if (string.IsNullOrWhiteSpace(serverInput))
                 throw new ArgumentException("Server input cannot be null or empty.");
@@ -108,7 +110,7 @@ namespace MSSQLand.Models
             int firstDelimiterIndex = remaining.Length;
             char firstDelimiter = '\0';
 
-            int commaIndex = remaining.IndexOf(',');
+            int commaIndex = parsingPort ? remaining.IndexOf(',') : -1;
             int colonIndex = remaining.IndexOf(':');
             int atIndex = remaining.IndexOf('@');
 
@@ -135,7 +137,7 @@ namespace MSSQLand.Models
             while (!string.IsNullOrWhiteSpace(remaining))
             {
                 // Find next delimiter and what it is
-                commaIndex = remaining.IndexOf(',');
+                commaIndex = parsingPort ? remaining.IndexOf(',') : -1;
                 colonIndex = remaining.IndexOf(':');
                 atIndex = remaining.IndexOf('@');
 
