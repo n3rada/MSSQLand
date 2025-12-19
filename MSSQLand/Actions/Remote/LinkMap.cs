@@ -134,14 +134,23 @@ namespace MSSQLand.Actions.Remote
                     formattedLines.Add($"-{impersonatedUser}-> {serverName} ({loggedIn} [{mapped}])");
                     
                     // Build chain command
+                    string chainPart;
                     if (impersonatedUser != "-")
                     {
-                        chainParts.Add($"{serverName}:{impersonatedUser}");
+                        chainPart = $"{serverName}/{impersonatedUser}";
                     }
                     else
                     {
-                        chainParts.Add(serverName);
+                        chainPart = serverName;
                     }
+                    
+                    // Add brackets if the part contains a semicolon
+                    if (chainPart.Contains(";"))
+                    {
+                        chainPart = $"[{chainPart}]";
+                    }
+                    
+                    chainParts.Add(chainPart);
                 }
 
                 Console.WriteLine();
@@ -150,7 +159,7 @@ namespace MSSQLand.Actions.Remote
                 // Show command to reproduce this chain
                 if (chainParts.Count > 0)
                 {
-                    string chainCommand = $"-l {string.Join(",", chainParts)}";
+                    string chainCommand = $"-l {string.Join(";", chainParts)}";
                     Logger.InfoNested($"To use this chain: {chainCommand}");
                 }
             }

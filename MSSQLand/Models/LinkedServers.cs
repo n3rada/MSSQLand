@@ -130,21 +130,29 @@ namespace MSSQLand.Models
 
                 StringBuilder part = new StringBuilder(serverName);
 
-                // Add user@database or just @database
+                // Add /user@database or just @database
                 if (!string.IsNullOrEmpty(impersonationUser) && !string.IsNullOrEmpty(database))
                 {
-                    part.Append($":{impersonationUser}@{database}");
+                    part.Append($"/{impersonationUser}@{database}");
                 }
                 else if (!string.IsNullOrEmpty(impersonationUser))
                 {
-                    part.Append($":{impersonationUser}");
+                    part.Append($"/{impersonationUser}");
                 }
                 else if (!string.IsNullOrEmpty(database))
                 {
                     part.Append($"@{database}");
                 }
 
-                chainParts.Add(part.ToString());
+                string partString = part.ToString();
+                
+                // Add brackets if the part contains a semicolon
+                if (partString.Contains(";"))
+                {
+                    partString = $"[{partString}]";
+                }
+                
+                chainParts.Add(partString);
             }
 
             return chainParts;
@@ -183,7 +191,7 @@ namespace MSSQLand.Models
 
         /// <summary>
         /// Parses a semicolon-separated list of servers into an array of Server objects.
-        /// Accepts the format "SQL27:user01;SQL53:user02".
+        /// Accepts the format "SQL27/user01;SQL53/user02" or "SQL27:1433/user01@db;SQL53/user02".
         /// </summary>
         /// <param name="chainInput">Semicolon-separated list of servers.</param>
         /// <returns>An array of Server objects.</returns>
@@ -194,12 +202,58 @@ namespace MSSQLand.Models
                 throw new ArgumentException("Server list cannot be null or empty.", nameof(chainInput));
             }
 
-            // Split the input by semicolons and parse each server string
+            // Split the input by semicolons, handling bracketed entries
             // Note: when parsing the individual servers in the chain, we set parsingPort to false
             // because ports are not expected in linked server chains.
-            return chainInput.Split(';')
-                             .Select(serverString => Server.ParseServer(serverString.Trim(), parsingPort: false))
-                             .ToArray();
+            List<string> serverStrings = new List<string>();
+            int pos = 0;
+            
+            while (pos < chainInput.Length)
+            {
+                // Skip whitespace
+                while (pos < chainInput.Length && char.IsWhiteSpace(chainInput[pos]))
+                    pos++;
+                
+                if (pos >= chainInput.Length)
+                    break;
+                
+                string serverString;
+                
+                // Check if this entry is bracketed
+                if (chainInput[pos] == '[')
+                {
+                    int closingBracket = chainInput.IndexOf(']', pos);
+                    if (closingBracket == -1)
+                        throw new ArgumentException($"Unclosed bracket in server chain at position {pos}");
+                    
+                    // Extract content between brackets
+                    serverString = chainInput.Substring(pos + 1, closingBracket - pos - 1);
+                    pos = closingBracket + 1;
+                    
+                    // Skip semicolon if present
+                    while (pos < chainInput.Length && (chainInput[pos] == ';' || char.IsWhiteSpace(chainInput[pos])))
+                        pos++;
+                }
+                else
+                {
+                    // Find next semicolon
+                    int semicolon = chainInput.IndexOf(';', pos);
+                    if (semicolon == -1)
+                    {
+                        serverString = chainInput.Substring(pos);
+                        pos = chainInput.Length;
+                    }
+                    else
+                    {
+                        serverString = chainInput.Substring(pos, semicolon - pos);
+                        pos = semicolon + 1;
+                    }
+                }
+                
+                serverStrings.Add(serverString.Trim());
+            }
+            
+            return serverStrings.Select(s => Server.ParseServer(s)).ToArray();
         }
 
         /// <summary>

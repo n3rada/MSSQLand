@@ -82,23 +82,23 @@ namespace MSSQLand.Models
         
         /// <summary>
         /// Parses a server input string into a Server object.
-        /// Format: server[,port][:user][@database]
-        /// Order is completely flexible - components can appear in any order after the hostname.
-        /// The hostname is always the part before any delimiter (,, :, @).
+        /// Format: server[:port][/user][@database]
+        /// Components are parsed in order from left to right:
+        /// - hostname (required): everything before the first delimiter
+        /// - :port (optional): port number after colon
+        /// - /user (optional): impersonation user after forward slash
+        /// - @database (optional): database context after at sign
         /// Examples:
         /// - server
-        /// - server,1434
-        /// - server:user
+        /// - server:1434
+        /// - server/user
         /// - server@database
-        /// - server,1434:user@database
-        /// - server:user@database,1434
-        /// - server@database,1434:user
-        /// - server:user,1434@database
-        /// Any combination works!
+        /// - server:1434/user@database
+        /// - server/user@database
+        /// - server:1434@database
         /// </summary>
         /// <param name="serverInput">The server input string to parse.</param>
-        /// <param name="parsingPort">If true, comma is treated as port delimiter. If false, comma is ignored (for linked server chains).</param>
-        public static Server ParseServer(string serverInput, bool parsingPort = true)
+        public static Server ParseServer(string serverInput)
         {
             if (string.IsNullOrWhiteSpace(serverInput))
                 throw new ArgumentException("Server input cannot be null or empty.");
@@ -110,12 +110,12 @@ namespace MSSQLand.Models
             int firstDelimiterIndex = remaining.Length;
             char firstDelimiter = '\0';
 
-            int commaIndex = parsingPort ? remaining.IndexOf(',') : -1;
             int colonIndex = remaining.IndexOf(':');
+            int slashIndex = remaining.IndexOf('/');
             int atIndex = remaining.IndexOf('@');
 
-            if (commaIndex >= 0 && commaIndex < firstDelimiterIndex) { firstDelimiterIndex = commaIndex; firstDelimiter = ','; }
             if (colonIndex >= 0 && colonIndex < firstDelimiterIndex) { firstDelimiterIndex = colonIndex; firstDelimiter = ':'; }
+            if (slashIndex >= 0 && slashIndex < firstDelimiterIndex) { firstDelimiterIndex = slashIndex; firstDelimiter = '/'; }
             if (atIndex >= 0 && atIndex < firstDelimiterIndex) { firstDelimiterIndex = atIndex; firstDelimiter = '@'; }
 
             if (firstDelimiterIndex == remaining.Length)
@@ -137,37 +137,37 @@ namespace MSSQLand.Models
             while (!string.IsNullOrWhiteSpace(remaining))
             {
                 // Find next delimiter and what it is
-                commaIndex = parsingPort ? remaining.IndexOf(',') : -1;
                 colonIndex = remaining.IndexOf(':');
+                slashIndex = remaining.IndexOf('/');
                 atIndex = remaining.IndexOf('@');
 
                 int nextDelimiterIndex = remaining.Length;
                 char nextDelimiter = '\0';
 
-                if (commaIndex >= 0 && commaIndex < nextDelimiterIndex) { nextDelimiterIndex = commaIndex; nextDelimiter = ','; }
                 if (colonIndex >= 0 && colonIndex < nextDelimiterIndex) { nextDelimiterIndex = colonIndex; nextDelimiter = ':'; }
+                if (slashIndex >= 0 && slashIndex < nextDelimiterIndex) { nextDelimiterIndex = slashIndex; nextDelimiter = '/'; }
                 if (atIndex >= 0 && atIndex < nextDelimiterIndex) { nextDelimiterIndex = atIndex; nextDelimiter = '@'; }
 
                 string component = remaining.Substring(0, nextDelimiterIndex);
 
                 if (string.IsNullOrWhiteSpace(component))
                 {
-                    if (firstDelimiter == ',')
-                        throw new ArgumentException("Port cannot be empty after ,");
-                    else if (firstDelimiter == ':')
-                        throw new ArgumentException("Impersonation user cannot be empty after :");
+                    if (firstDelimiter == ':')
+                        throw new ArgumentException("Port cannot be empty after :");
+                    else if (firstDelimiter == '/')
+                        throw new ArgumentException("Impersonation user cannot be empty after /");
                     else
                         throw new ArgumentException("Database cannot be empty after @");
                 }
 
                 // Determine what component this is based on what delimiter preceded it
-                if (firstDelimiter == ',')
+                if (firstDelimiter == ':')
                 {
                     if (!int.TryParse(component, out int port) || port <= 0 || port > 65535)
                         throw new ArgumentException($"Invalid port number: {component}. Port must be between 1 and 65535.");
                     server.Port = port;
                 }
-                else if (firstDelimiter == ':')
+                else if (firstDelimiter == '/')
                 {
                     server.ImpersonationUser = component;
                 }

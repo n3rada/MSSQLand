@@ -62,13 +62,13 @@ MSSQLand.exe SQL01,1434:webapp01 -c token info
 MSSQLand.exe SQL01@myapp -c token info
 
 # Full format: connect to SQL01:1434, impersonate webapp01, use myapp database
-MSSQLand.exe SQL01,1434:webapp01@myapp -c token info
+MSSQLand.exe SQL01:1434/webapp01@myapp -c token info
 
 # Linked servers (using configured linked server names, not hostname:port)
-MSSQLand.exe SQL01 -c token -l SQL02:webapp02@appdb,SQL03:webapp03@analytics,SQL04@proddb links
+MSSQLand.exe SQL01 -c token -l SQL02/webapp02@appdb;SQL03/webapp03@analytics;SQL04@proddb links
 
 # Mixed linked servers (some with database, some without)
-MSSQLand.exe SQL01 -c token -l SQL02:webapp02,SQL03:webapp03@mydb,SQL04@reporting links
+MSSQLand.exe SQL01 -c token -l SQL02/webapp02;SQL03/webapp03@mydb;SQL04@reporting links
 ```
 
 ## 🫤 Help
