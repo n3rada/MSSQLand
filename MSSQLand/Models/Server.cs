@@ -82,12 +82,13 @@ namespace MSSQLand.Models
         
         /// <summary>
         /// Parses a server input string into a Server object.
-        /// Format: server[:port][/user][@database]
+        /// Format: server[:port][/user][@database] or [server][:port][/user][@database]
         /// Components are parsed in order from left to right:
-        /// - hostname (required): everything before the first delimiter
+        /// - hostname (required): everything before the first delimiter, or content in brackets
         /// - :port (optional): port number after colon
         /// - /user (optional): impersonation user after forward slash
         /// - @database (optional): database context after at sign
+        /// Brackets [...] protect hostnames containing delimiters from being split
         /// Examples:
         /// - server
         /// - server:1434
@@ -96,6 +97,8 @@ namespace MSSQLand.Models
         /// - server:1434/user@database
         /// - server/user@database
         /// - server:1434@database
+        /// - [SQL02;PROD]:1433
+        /// - [SERVER@INSTANCE]/user@database
         /// </summary>
         /// <param name="serverInput">The server input string to parse.</param>
         public static Server ParseServer(string serverInput)
@@ -105,41 +108,79 @@ namespace MSSQLand.Models
 
             Server server = new();
             string remaining = serverInput;
-
-            // Extract hostname (everything before the first delimiter)
-            int firstDelimiterIndex = remaining.Length;
             char firstDelimiter = '\0';
 
-            int colonIndex = remaining.IndexOf(':');
-            int slashIndex = remaining.IndexOf('/');
-            int atIndex = remaining.IndexOf('@');
-
-            if (colonIndex >= 0 && colonIndex < firstDelimiterIndex) { firstDelimiterIndex = colonIndex; firstDelimiter = ':'; }
-            if (slashIndex >= 0 && slashIndex < firstDelimiterIndex) { firstDelimiterIndex = slashIndex; firstDelimiter = '/'; }
-            if (atIndex >= 0 && atIndex < firstDelimiterIndex) { firstDelimiterIndex = atIndex; firstDelimiter = '@'; }
-
-            if (firstDelimiterIndex == remaining.Length)
+            // Check if hostname is bracketed (for hostnames containing delimiters)
+            if (remaining.StartsWith("["))
             {
-                // No delimiters, just hostname
-                if (string.IsNullOrWhiteSpace(remaining))
+                int closingBracket = remaining.IndexOf(']');
+                if (closingBracket == -1)
+                    throw new ArgumentException($"Unclosed bracket in server specification: {serverInput}");
+
+                // Extract hostname without brackets
+                server.Hostname = remaining.Substring(1, closingBracket - 1);
+                
+                if (string.IsNullOrWhiteSpace(server.Hostname))
                     throw new ArgumentException("Server hostname cannot be empty");
-                server.Hostname = remaining;
-                return server;
+
+                // Continue parsing modifiers after the closing bracket
+                remaining = remaining.Substring(closingBracket + 1);
+                
+                // If nothing remains after bracket, we're done
+                if (string.IsNullOrWhiteSpace(remaining))
+                    return server;
+                
+                // Determine first modifier delimiter after bracket
+                if (remaining.Length > 0)
+                {
+                    if (remaining[0] == ':')
+                        firstDelimiter = ':';
+                    else if (remaining[0] == '/')
+                        firstDelimiter = '/';
+                    else if (remaining[0] == '@')
+                        firstDelimiter = '@';
+                    else
+                        throw new ArgumentException($"Invalid character after closing bracket: {remaining[0]}");
+                    
+                    remaining = remaining.Substring(1);
+                }
             }
+            else
+            {
+                // Extract hostname (everything before the first delimiter)
+                int firstDelimiterIndex = remaining.Length;
 
-            server.Hostname = remaining.Substring(0, firstDelimiterIndex);
-            if (string.IsNullOrWhiteSpace(server.Hostname))
-                throw new ArgumentException("Server hostname cannot be empty");
+                int colonIndex = remaining.IndexOf(':');
+                int slashIndex = remaining.IndexOf('/');
+                int atIndex = remaining.IndexOf('@');
 
-            remaining = remaining.Substring(firstDelimiterIndex + 1);
+                if (colonIndex >= 0 && colonIndex < firstDelimiterIndex) { firstDelimiterIndex = colonIndex; firstDelimiter = ':'; }
+                if (slashIndex >= 0 && slashIndex < firstDelimiterIndex) { firstDelimiterIndex = slashIndex; firstDelimiter = '/'; }
+                if (atIndex >= 0 && atIndex < firstDelimiterIndex) { firstDelimiterIndex = atIndex; firstDelimiter = '@'; }
+
+                if (firstDelimiterIndex == remaining.Length)
+                {
+                    // No delimiters, just hostname
+                    if (string.IsNullOrWhiteSpace(remaining))
+                        throw new ArgumentException("Server hostname cannot be empty");
+                    server.Hostname = remaining;
+                    return server;
+                }
+
+                server.Hostname = remaining.Substring(0, firstDelimiterIndex);
+                if (string.IsNullOrWhiteSpace(server.Hostname))
+                    throw new ArgumentException("Server hostname cannot be empty");
+
+                remaining = remaining.Substring(firstDelimiterIndex + 1);
+            }
 
             // Extract all components from remaining string
             while (!string.IsNullOrWhiteSpace(remaining))
             {
                 // Find next delimiter and what it is
-                colonIndex = remaining.IndexOf(':');
-                slashIndex = remaining.IndexOf('/');
-                atIndex = remaining.IndexOf('@');
+                int colonIndex = remaining.IndexOf(':');
+                int slashIndex = remaining.IndexOf('/');
+                int atIndex = remaining.IndexOf('@');
 
                 int nextDelimiterIndex = remaining.Length;
                 char nextDelimiter = '\0';
@@ -162,6 +203,29 @@ namespace MSSQLand.Models
 
                 // Determine what component this is based on what delimiter preceded it
                 if (firstDelimiter == ':')
+                {
+                    if (!int.TryParse(component, out int port) || port <= 0 || port > 65535)
+                        throw new ArgumentException($"Invalid port number: {component}. Port must be between 1 and 65535.");
+                    server.Port = port;
+                }
+                else if (firstDelimiter == '/')
+                {
+                    server.ImpersonationUser = component;
+                }
+                else if (firstDelimiter == '@')
+                {
+                    server.Database = component;
+                }
+
+                if (nextDelimiterIndex == remaining.Length)
+                    break;
+
+                firstDelimiter = nextDelimiter;
+                remaining = remaining.Substring(nextDelimiterIndex + 1);
+            }
+
+            return server;
+        }
                 {
                     if (!int.TryParse(component, out int port) || port <= 0 || port > 65535)
                         throw new ArgumentException($"Invalid port number: {component}. Port must be between 1 and 65535.");
