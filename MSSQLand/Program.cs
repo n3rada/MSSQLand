@@ -82,6 +82,8 @@ namespace MSSQLand
                 Logger.SuccessNested($"Client Application Name: {authService.Credentials.AppName}");
                 Logger.SuccessNested($"Client Connection ID: {connection.ClientConnectionId}");
 
+                Logger.NewLine();
+
                 DatabaseContext databaseContext;
                 try
                 {
