@@ -226,29 +226,5 @@ namespace MSSQLand.Models
 
             return server;
         }
-                {
-                    if (!int.TryParse(component, out int port) || port <= 0 || port > 65535)
-                        throw new ArgumentException($"Invalid port number: {component}. Port must be between 1 and 65535.");
-                    server.Port = port;
-                }
-                else if (firstDelimiter == '/')
-                {
-                    server.ImpersonationUser = component;
-                }
-                else if (firstDelimiter == '@')
-                {
-                    server.Database = component;
-                }
-
-                if (nextDelimiterIndex == remaining.Length)
-                    break;
-
-                firstDelimiter = nextDelimiter;
-                remaining = remaining.Substring(nextDelimiterIndex + 1);
-            }
-
-            return server;
-        }
-
     }
 }
