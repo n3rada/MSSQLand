@@ -70,7 +70,7 @@ namespace MSSQLand
                 catch (SqlException sqlEx) when (sqlEx.Number == -2 || sqlEx.Number == -1)
                 {
                     // Timeout errors: -2 (client-side timeout), -1 (connection timeout)
-                    Logger.Error($"Connection timeout: Unable to connect to {arguments.Host.Hostname}:{arguments.Host.Port}");
+                    Logger.Error($"Connection timeout. Unable to connect to {arguments.Host.Hostname} on port {arguments.Host.Port}");
                     Logger.ErrorNested($"The server did not respond within the specified timeout period ({arguments.ConnectionTimeout} seconds).");
                     return 1;
                 }
