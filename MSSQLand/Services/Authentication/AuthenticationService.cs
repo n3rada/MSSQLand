@@ -18,11 +18,17 @@ namespace MSSQLand.Services
         private string _password;
         private string _domain;
         private int _connectionTimeout = 15;
+        private BaseCredentials _credentials;
 
         /// <summary>
         /// Gets the credentials type used for authentication.
         /// </summary>
         public string CredentialsType => _credentialsType;
+
+        /// <summary>
+        /// Gets the credentials instance used for authentication.
+        /// </summary>
+        public BaseCredentials Credentials => _credentials;
 
         public AuthenticationService(Server server)
         {
@@ -58,11 +64,11 @@ namespace MSSQLand.Services
             _connectionTimeout = connectionTimeout;
 
             // Get the appropriate credentials service
-            var credentials = CredentialsFactory.GetCredentials(credentialsType);
-            credentials.SetConnectionTimeout(connectionTimeout);
+            _credentials = CredentialsFactory.GetCredentials(credentialsType);
+            _credentials.SetConnectionTimeout(connectionTimeout);
 
             // Use the credentials service to authenticate and establish the connection
-            Connection = credentials.Authenticate(sqlServer, database, username, password, domain);
+            Connection = _credentials.Authenticate(sqlServer, database, username, password, domain);
 
             if (Connection == null)
             {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Reflection;
 using MSSQLand.Models;
@@ -47,14 +48,6 @@ namespace MSSQLand
                     return 1;
                 }
 
-
-                // Show banner only when executing an action
-                int bannerWidth = Logger.Banner($"Executing from: {Environment.MachineName}\nTime Zone ID: {timeZoneId}\nLocal Time: {localTime:HH:mm:ss}, UTC Offset: {formattedOffset}");
-                Logger.NewLine();
-
-                Logger.Banner($"Start at {startTime:yyyy-MM-dd HH:mm:ss:fffff} UTC", totalWidth: bannerWidth);
-                Logger.NewLine();
-
                 using AuthenticationService authService = new(arguments.Host);
 
                 // Authenticate with the provided credentials
@@ -71,6 +64,23 @@ namespace MSSQLand
                     Logger.Error("Authentication failed.");
                     return 1;
                 }
+
+                // Show banner only after successful authentication
+                int bannerWidth = Logger.Banner($"Executing from: {Environment.MachineName}\nTime Zone ID: {timeZoneId}\nLocal Time: {localTime:HH:mm:ss}, UTC Offset: {formattedOffset}");
+                Logger.NewLine();
+
+                Logger.Banner($"Start at {startTime:yyyy-MM-dd HH:mm:ss:fffff} UTC", totalWidth: bannerWidth);
+                Logger.NewLine();
+
+                // Log connection information
+                SqlConnection connection = authService.Connection;
+                Logger.Success($"Connection opened successfully");
+                Logger.SuccessNested($"Server: {connection.DataSource}");
+                Logger.SuccessNested($"Database: {connection.Database}");
+                Logger.SuccessNested($"Server Version: {connection.ServerVersion}");
+                Logger.SuccessNested($"Client Workstation ID: {authService.Credentials.WorkstationId}");
+                Logger.SuccessNested($"Client Application Name: {authService.Credentials.AppName}");
+                Logger.SuccessNested($"Client Connection ID: {connection.ClientConnectionId}");
 
                 DatabaseContext databaseContext;
                 try

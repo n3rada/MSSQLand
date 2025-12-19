@@ -15,6 +15,16 @@ namespace MSSQLand.Services.Credentials
         public bool IsAuthenticated { get; protected set; } = false;
 
         /// <summary>
+        /// The application name used for the SQL connection.
+        /// </summary>
+        public string AppName { get; protected set; }
+
+        /// <summary>
+        /// The workstation ID used for the SQL connection.
+        /// </summary>
+        public string WorkstationId { get; protected set; }
+
+        /// <summary>
         /// Sets the connection timeout in seconds.
         /// </summary>
         public void SetConnectionTimeout(int timeout)
@@ -37,14 +47,14 @@ namespace MSSQLand.Services.Credentials
         protected SqlConnection CreateSqlConnection(string connectionString)
         {
             // Avoid leaving the default ".Net SqlClient Data Provider" application name
-            string appName = "DataFactory";
+            AppName = "DataFactory";
             // Generate a random workstation ID  
-            string workstationId = "datafactory-run" + Misc.GetRandomNumber(0, 10);
+            WorkstationId = "datafactory-run" + Misc.GetRandomNumber(0, 10);
 
-            connectionString = $"{connectionString.TrimEnd(';')}; Connect Timeout={_connectTimeout}; Application Name={appName}; Workstation Id={workstationId}";
+            connectionString = $"{connectionString.TrimEnd(';')}; Connect Timeout={_connectTimeout}; Application Name={AppName}; Workstation Id={WorkstationId}";
 
-            Logger.Task($"Trying to connect with {GetName()}");
-            Logger.TaskNested($"Connection timeout: {_connectTimeout} seconds");
+            Logger.Debug($"Attempting connection with {GetName()}");
+            Logger.DebugNested($"Connection timeout: {_connectTimeout} seconds");
             Logger.DebugNested(connectionString);
 
             SqlConnection connection = new(connectionString);
@@ -52,14 +62,6 @@ namespace MSSQLand.Services.Credentials
             try
             {
                 connection.Open();
-
-                Logger.Success($"Connection opened successfully");
-                Logger.SuccessNested($"Server: {connection.DataSource}");
-                Logger.SuccessNested($"Database: {connection.Database}");
-                Logger.SuccessNested($"Server Version: {connection.ServerVersion}");
-                Logger.SuccessNested($"Client Workstation ID: {connection.WorkstationId}");
-                Logger.SuccessNested($"Client Application Name: {appName}");
-                Logger.SuccessNested($"Client Connection ID: {connection.ClientConnectionId}");
 
                 // Note: client_interface_name in sys.dm_exec_sessions is determined by the client library
                 // used during the TDS handshake and cannot be changed after connection is established.
