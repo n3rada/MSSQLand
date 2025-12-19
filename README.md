@@ -66,13 +66,6 @@ Chain multiple SQL servers using the `-l` flag with **semicolon (`;`) as the sep
 > [!NOTE]
 > Port specification (`:port`) only applies to the initial host connection. Linked server chains (`-l`) use the linked server names as configured in `sys.servers`, not `hostname:port` combinations.
 
-
-### 
-
-> [!NOTE]
-> Port specification (`,port`) only applies to the initial host connection. Linked server chains (`-l`) use the linked server names as configured in `sys.servers`, not `hostname:port` combinations.
-
-
 ## 🫤 Help
 
 - `-h` or `--help` - Show all available actions
