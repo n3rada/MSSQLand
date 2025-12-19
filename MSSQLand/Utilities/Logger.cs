@@ -1,4 +1,6 @@
-﻿using System;
+﻿// MSSQLand/Utilities/Logger.cs
+
+using System;
 using System.Linq;
 
 namespace MSSQLand.Utilities

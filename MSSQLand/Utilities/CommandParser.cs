@@ -1,4 +1,6 @@
-﻿using System;
+﻿// MSSQLand/Utilities/CommandParser.cs
+
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;

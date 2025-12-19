@@ -1,4 +1,6 @@
-﻿using System;
+﻿// MSSQLand/Utilities/Helper.cs
+
+using System;
 using System.Data;
 using System.Linq;
 using System.Collections.Generic;

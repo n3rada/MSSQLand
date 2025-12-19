@@ -1,3 +1,5 @@
+// MSSQLand/Utilities/SidParser.cs
+
 using System;
 using System.Security.Principal;
 
