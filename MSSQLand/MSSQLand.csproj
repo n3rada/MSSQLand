@@ -115,6 +115,7 @@
 
     <Compile Include="Actions\FileSystem\FileRead.cs" />
     <Compile Include="Actions\FileSystem\Tree.cs" />
+    <Compile Include="Actions\FileSystem\Upload.cs" />
 
     <Compile Include="Actions\Remote\AdsiCredentialExtractor.cs" />
     <Compile Include="Actions\Remote\AdsiManager.cs" />

@@ -79,6 +79,7 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             { "read", (typeof(FileRead), "Read file contents from the server's file system.") },
             { "tree", (typeof(Tree), "Display directory tree structure in Linux tree-style format.") },
+            { "upload", (typeof(Upload), "Upload a local file to the SQL Server filesystem.") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // REMOTE DATA ACCESS ACTIONS
