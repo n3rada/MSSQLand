@@ -111,6 +111,7 @@
     <Compile Include="Actions\Execution\Query.cs" />
     <Compile Include="Actions\Execution\QueryAll.cs" />
     <Compile Include="Actions\Execution\RemotePowerShellExecutor.cs" />
+    <Compile Include="Actions\Execution\Run.cs" />
     <Compile Include="Actions\Execution\XpCmd.cs" />
 
     <Compile Include="Actions\FileSystem\FileRead.cs" />

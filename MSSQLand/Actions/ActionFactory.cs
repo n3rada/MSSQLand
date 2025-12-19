@@ -73,6 +73,7 @@ namespace MSSQLand.Utilities
             { "ole", (typeof(ObjectLinkingEmbedding), "Execute operating system commands via procedures.") },
             { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.") },
             { "agents", (typeof(Agents), "Manage and interact with SQL Server Agent jobs.") },
+            { "run", (typeof(Run), "Execute a remote file on the SQL Server.") },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // FILESYSTEM ACTIONS
