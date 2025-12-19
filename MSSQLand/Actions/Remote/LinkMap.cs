@@ -133,21 +133,21 @@ namespace MSSQLand.Actions.Remote
 
                     formattedLines.Add($"-{impersonatedUser}-> {serverName} ({loggedIn} [{mapped}])");
                     
-                    // Build chain command
+                    // Build chain command - bracket serverName if it contains any delimiter
+                    string chainServerName = serverName;
+                    if (chainServerName.IndexOfAny(new[] { ':', '/', '@', ';' }) >= 0)
+                    {
+                        chainServerName = $"[{chainServerName}]";
+                    }
+                    
                     string chainPart;
                     if (impersonatedUser != "-")
                     {
-                        chainPart = $"{serverName}/{impersonatedUser}";
+                        chainPart = $"{chainServerName}/{impersonatedUser}";
                     }
                     else
                     {
-                        chainPart = serverName;
-                    }
-                    
-                    // Add brackets if the part contains a semicolon
-                    if (chainPart.Contains(";"))
-                    {
-                        chainPart = $"[{chainPart}]";
+                        chainPart = chainServerName;
                     }
                     
                     chainParts.Add(chainPart);
