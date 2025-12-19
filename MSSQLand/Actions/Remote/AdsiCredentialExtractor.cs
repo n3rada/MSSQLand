@@ -1,4 +1,6 @@
-﻿using MSSQLand.Services;
+﻿// MSSQLand/Actions/Remote/AdsiCredentialExtractor.cs
+
+using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
 using System.Collections.Generic;
