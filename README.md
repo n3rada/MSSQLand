@@ -23,53 +23,55 @@ MSSQLand.exe <host> [options] <action> [action-options]
 > [!TIP]
 > Avoid typing out all the **[RPC Out](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql)** or **[OPENQUERY](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql)** calls manually. Let the tool handle any linked servers chain with the `-l` argument, so you can focus on the big picture.
 
-Format: `server,port:user@database` or any combination.
-- `server` (required) - The SQL Server hostname or IP.
-- `,port` (optional) - Port number (default: 1433).
-- `:user` (optional) - User to impersonate on this server.
-- `@database` (optional) - Database context (defaults to 'master' if not specified).
+Format: `server:port/user@database` or any combination `server/user@database:port`.
+- `server` (required) - The SQL Server hostname or IP
+- `:port` (optional) - Port number (default: 1433, also common: 1434, 14333, 2433)
+- `/user` (optional) - User to impersonate on this server ("execute as user")
+- `@database` (optional) - Database context (defaults to 'master' if not specified)
 
 ```shell
 MSSQLand.exe localhost -c token info
-MSSQLand.exe localhost,1434@db03 -c token info
+MSSQLand.exe localhost:1434@db03 -c token info
 ```
 
-> [!IMPORTANT]
-> The **host** (first argument) and **action** (after flags) are positional arguments. All flags use `-` prefix. For example: `localhost -c token createuser -p p@ssword!`. Here, `-p` belongs to the action, not the global arguments.
+### 🔗 Linked Servers Chain
 
-**Common options:**
-- `--timeout 30` - Connection timeout in seconds (default: 15)
-- `-l SERVER1:user1,SERVER2:user2@dbclients` - Chain through linked servers (uses configured linked server names)
+Chain multiple SQL servers using the `-l` flag with **semicolon (`;`) as the separator**:
+
+```shell
+-l SQL01;SQL02/user;SQL03@database
+```
+
+**Syntax:**
+- **Semicolon (`;`)** - Separates servers in the chain
+- **Forward slash (`/`)** - Specifies user to impersonate ("execute as user")
+- **At sign (`@`)** - Specifies database context
+- **Brackets (`[...]`)** - Used to protect the server name from being split by our delimiters
+
+**Examples:**
+```shell
+# Simple chain
+-l SQL01;SQL02;SQL03
+
+# With impersonation and databases
+-l SQL01/admin;SQL02;SQL03/manager@clients
+
+# Server names can contain hyphens, dots (no brackets needed)
+-l SQL-01;SERVER.001;HOST.DOMAIN.COM
+
+# Brackets only needed if server name contains delimiter characters
+-l [SERVER;PROD];SQL02;[SQL03@clients]@clientdb
+```
+
+> [!NOTE]
+> Port specification (`:port`) only applies to the initial host connection. Linked server chains (`-l`) use the linked server names as configured in `sys.servers`, not `hostname:port` combinations.
+
+
+### 
 
 > [!NOTE]
 > Port specification (`,port`) only applies to the initial host connection. Linked server chains (`-l`) use the linked server names as configured in `sys.servers`, not `hostname:port` combinations.
 
-**Format examples:**
-```shell
-# Simple: connect to SQL01 using master database
-MSSQLand.exe SQL01 -c token info
-
-# Custom port: connect to SQL01 on port 1434
-MSSQLand.exe SQL01,1434 -c token info
-
-# Impersonate user: connect to SQL01, impersonate webapp01, use master database
-MSSQLand.exe SQL01:webapp01 -c token info
-
-# Port with impersonation: connect to SQL01:1434, impersonate webapp01
-MSSQLand.exe SQL01,1434:webapp01 -c token info
-
-# Specify database: connect to SQL01, use myapp database (no impersonation)
-MSSQLand.exe SQL01@myapp -c token info
-
-# Full format: connect to SQL01:1434, impersonate webapp01, use myapp database
-MSSQLand.exe SQL01:1434/webapp01@myapp -c token info
-
-# Linked servers (using configured linked server names, not hostname:port)
-MSSQLand.exe SQL01 -c token -l SQL02/webapp02@appdb;SQL03/webapp03@analytics;SQL04@proddb links
-
-# Mixed linked servers (some with database, some without)
-MSSQLand.exe SQL01 -c token -l SQL02/webapp02;SQL03/webapp03@mydb;SQL04@reporting links
-```
 
 ## 🫤 Help
 
