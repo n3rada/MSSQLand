@@ -38,8 +38,7 @@ namespace MSSQLand.Actions.Execution
             base.ValidateArguments(new string[] { powerShellCommand });
 
             // Call the parent's Execute method to execute the command
-            base.Execute(databaseContext);
-            return null;
+            return base.Execute(databaseContext);
         }
     }
 }
