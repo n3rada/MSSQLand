@@ -108,7 +108,7 @@ Then, do not forget to add the newly created action to the [factory](MSSQLand\Ac
 
 And voilà, now you can use-it directly with:
 ```shell
-/a:new
+MSSQLand localhost -c token new
 ```
 
 ## 🌉 Port Forwarding with Linux
