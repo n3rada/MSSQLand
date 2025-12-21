@@ -14,7 +14,7 @@ MSSQLand is built on a clean, OOP-driven architecture designed for extensibility
 
 This design makes adding new features straightforward—simply create a new action class, and the framework handles the rest.
 
-Depending of your new feature, you will need to create a new action class inside the targeted sub-directory. For example, if it is related to Active Directory, you can add-it inside [Domain](.\MSSQLand\Actions\Domain). Once decided, you can next copy-paste this skeleton:
+Depending of your new feature, you will need to create a new action class inside the targeted sub-directory. Once decided, you can next copy-paste this skeleton:
 
 ```csharp
 using MSSQLand.Services;
@@ -46,7 +46,7 @@ namespace MSSQLand.Actions.Domain
             // Parse both positional and named arguments
             var (namedArgs, positionalArgs) = ParseActionArguments(args);
 
-            // Get argument from position 0 or /a: or /argument:
+            // Get argument from position 0 or -a or --argument
             _argument = GetNamedArgument(namedArgs, "a")
                      ?? GetNamedArgument(namedArgs, "argument")
                      ?? GetPositionalArgument(positionalArgs, 0);
