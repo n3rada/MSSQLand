@@ -273,9 +273,7 @@ namespace MSSQLand.Utilities
                 // Check if action was provided
                 if (string.IsNullOrWhiteSpace(actionName))
                 {
-                    Logger.Info("No action specified. Connection test mode - will authenticate and exit.");
-                    Logger.Info("Use '-h' to see available actions.");
-                    // Set a flag to skip action execution
+                    // Connection test mode
                     parsedArgs.Action = null;
                 }
 
@@ -318,8 +316,11 @@ namespace MSSQLand.Utilities
                 parsedArgs.Password = password;
                 parsedArgs.Domain = domain;
 
-                // Get the action from the factory and pass action arguments
-                parsedArgs.Action = ActionFactory.GetAction(actionName, actionArgs.ToArray());
+                // Get the action from the factory and pass action arguments (only if action was specified)
+                if (!string.IsNullOrWhiteSpace(actionName))
+                {
+                    parsedArgs.Action = ActionFactory.GetAction(actionName, actionArgs.ToArray());
+                }
 
                 return (ParseResultType.Success, parsedArgs);
             }
