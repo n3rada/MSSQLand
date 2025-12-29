@@ -32,7 +32,6 @@ namespace MSSQLand.Models
                 MajorVersion = ParseMajorVersion(version);
                 if (MajorVersion <= 13)
                 {
-                    Logger.Warning("Legacy server");
                     Legacy = true;
                 }
             }
