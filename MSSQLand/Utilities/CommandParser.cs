@@ -171,6 +171,13 @@ namespace MSSQLand.Utilities
                 {
                     string arg = args[currentIndex];
 
+                    // Check for help flag
+                    if (arg == "-h" || arg == "--help")
+                    {
+                        Helper.ShowAllActions();
+                        return (ParseResultType.ShowHelp, null);
+                    }
+
                     // If it's not a flag, it's the action
                     if (!IsFlag(arg))
                     {
