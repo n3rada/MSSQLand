@@ -33,7 +33,8 @@ namespace MSSQLand.Utilities
             LdapQueryService ldapService = new(domainService);
 
             // LDAP filter and properties for MS SQL SPNs
-            const string ldapFilter = "(&(sAMAccountType=805306368)(servicePrincipalName=MSSQL*))";
+            // SQL Server SPNs use the service class "MSSQLSvc"
+            const string ldapFilter = "(servicePrincipalName=MSSQL*)";
             string[] ldapAttributes = { "cn", "samaccountname", "objectsid", "serviceprincipalname", "lastlogon" };
 
             // Execute the LDAP query
