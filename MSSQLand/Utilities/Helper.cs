@@ -226,6 +226,7 @@ namespace MSSQLand.Utilities
             argumentsTable.Rows.Add("--timeout", "Connection timeout in seconds (default: 15).");
             argumentsTable.Rows.Add("-s, --silent", "Enable silent mode. No logging, only results.");
             argumentsTable.Rows.Add("--debug", "Enable debug mode for detailed logs.");
+            argumentsTable.Rows.Add("--trace", "Enable trace mode for verbose debugging logs.");
             argumentsTable.Rows.Add("-h, --help", "Display help. Use with action for action-specific help.");
             argumentsTable.Rows.Add("--version", "Display version information.");
             argumentsTable.Rows.Add("--findsql <domain>", "Find SQL Servers in Active Directory (standalone utility).");
