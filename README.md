@@ -20,6 +20,9 @@ MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikiped
 MSSQLand.exe <host> [options] <action> [action-options]
 ```
 
+> [!NOTE]
+> Omitting `<action>` performs a connection test only - authenticates and exits without running queries. Ideal for credential validation with minimal OPSEC footprint.
+
 > [!TIP]
 > Avoid typing out all the **[RPC Out](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql)** or **[OPENQUERY](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql)** calls manually. Let the tool handle any linked servers chain with the `-l` argument, so you can focus on the big picture.
 
@@ -30,6 +33,10 @@ Format: `server:port/user@database` or any combination `server/user@database:por
 - `@database` (optional) - Database context (defaults to 'master' if not specified)
 
 ```shell
+# Connection test only (no action executed)
+MSSQLand.exe localhost -c token
+
+# Execute specific action
 MSSQLand.exe localhost -c token info
 MSSQLand.exe localhost:1434@db03 -c token info
 ```
