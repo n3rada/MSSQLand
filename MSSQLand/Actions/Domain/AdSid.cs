@@ -38,6 +38,28 @@ namespace MSSQLand.Actions.Domain
                 // Extract the binary SID from the query result
                 object rawSidObj = dtSid.Rows[0][0];
                 
+                // Convert binary SID to hex string
+                string hexSid = null;
+                string hexDomainSid = null;
+                string hexRid = null;
+                if (rawSidObj is byte[] sidBytes)
+                {
+                    hexSid = "0x" + BitConverter.ToString(sidBytes).Replace("-", "");
+                    
+                    // Domain SID is the user SID without the last 4 bytes (RID)
+                    if (sidBytes.Length > 4)
+                    {
+                        byte[] domainSidBytes = new byte[sidBytes.Length - 4];
+                        Array.Copy(sidBytes, 0, domainSidBytes, 0, domainSidBytes.Length);
+                        hexDomainSid = "0x" + BitConverter.ToString(domainSidBytes).Replace("-", "");
+                        
+                        // Extract the last 4 bytes as the RID
+                        byte[] ridBytes = new byte[4];
+                        Array.Copy(sidBytes, sidBytes.Length - 4, ridBytes, 0, 4);
+                        hexRid = "0x" + BitConverter.ToString(ridBytes).Replace("-", "");
+                    }
+                }
+                
                 // Parse the binary SID
                 string AdSidString = SidParser.ParseSid(rawSidObj);
                 
@@ -67,10 +89,23 @@ namespace MSSQLand.Actions.Domain
                     { "User SID", AdSidString }
                 };
 
+                if (!string.IsNullOrEmpty(hexSid))
+                {
+                    result.Add("User Hex SID", hexSid);
+                }
+
                 if (!string.IsNullOrEmpty(AdDomain))
                 {
                     result.Add("Domain SID", AdDomain);
+                    if (!string.IsNullOrEmpty(hexDomainSid))
+                    {
+                        result.Add("Domain Hex SID", hexDomainSid);
+                    }
                     result.Add("RID", rid);
+                    if (!string.IsNullOrEmpty(hexRid))
+                    {
+                        result.Add("Hex RID", hexRid);
+                    }
                 }
                 else
                 {
