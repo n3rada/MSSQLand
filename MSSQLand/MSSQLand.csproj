@@ -129,6 +129,8 @@
     <Compile Include="Actions\Remote\RemoteProcedureCall.cs" />
     <Compile Include="Actions\Remote\SmbCoerce.cs" />
 
+    <Compile Include="Actions\SCCM\Sccm.cs" />
+
     <Compile Include="Models\CommandArgs.cs" />
     <Compile Include="Models\LinkedServers.cs" />
     <Compile Include="Models\Server.cs" />
