@@ -132,11 +132,15 @@ namespace MSSQLand.Utilities
                     return (ParseResultType.UtilityMode, null);
                 }
 
-                // First pass: extract --debug and --silent flags from anywhere in the arguments
+                // First pass: extract --trace, --debug and --silent flags from anywhere in the arguments
                 var filteredArgs = new List<string>();
                 for (int i = 0; i < args.Length; i++)
                 {
-                    if (args[i] == "--debug")
+                    if (args[i] == "--trace")
+                    {
+                        Logger.MinimumLogLevel = LogLevel.Trace;
+                    }
+                    else if (args[i] == "--debug")
                     {
                         Logger.MinimumLogLevel = LogLevel.Debug;
                     }
@@ -150,7 +154,7 @@ namespace MSSQLand.Utilities
                     }
                 }
 
-                // Continue parsing with filtered arguments (without --debug and --silent)
+                // Continue parsing with filtered arguments (without --trace, --debug and --silent)
                 args = filteredArgs.ToArray();
                 currentIndex = 0;
 
