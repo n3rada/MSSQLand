@@ -124,7 +124,7 @@ AND TABLE_SCHEMA = 'dbo';
         /// <summary>
         /// Checks if the SCCM database has vSMS_* views (newer versions) or uses base tables (SCCM 2016 and older).
         /// Uses SQL Server version detection: SQL Server 2016 (version 13) and older use base tables.
-        /// For linked servers, uses the execution server's version; otherwise uses the connection server's version.
+        /// ExecutionServer automatically represents the correct target (direct connection or last server in linked chain).
         /// </summary>
         public bool HasSccmViews()
         {

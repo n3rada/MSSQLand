@@ -20,11 +20,13 @@ namespace MSSQLand.Actions.SCCM
         {
             Logger.TaskNested("Detecting SCCM databases");
 
+            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+
             try
             {
                 // Get and validate SCCM databases (only require base tables that exist in all versions)
                 string[] requiredTables = { "Sites", "SC_Component", "RBAC_Admins" };
-                var databases = databaseContext.SccmService.GetValidatedSccmDatabases(requiredTables, 2);
+                var databases = sccmService.GetValidatedSccmDatabases(requiredTables, 2);
                 
                 if (databases.Count == 0)
                 {
@@ -84,7 +86,7 @@ FROM [{sccmDatabase}].dbo.Sites;
                     // Get component status (handles both views and base tables)
                     try
                     {
-                        var components = databaseContext.SccmService.GetComponentStatus(sccmDatabase);
+                        var components = sccmService.GetComponentStatus(sccmDatabase);
                         
                         if (components.Rows.Count > 0)
                         {
@@ -100,7 +102,7 @@ FROM [{sccmDatabase}].dbo.Sites;
                     // Get site system roles (handles both views and base tables)
                     try
                     {
-                        var siteSystems = databaseContext.SccmService.GetSiteSystemRoles(sccmDatabase);
+                        var siteSystems = sccmService.GetSiteSystemRoles(sccmDatabase);
                         
                         if (siteSystems.Rows.Count > 0)
                         {
@@ -116,7 +118,7 @@ FROM [{sccmDatabase}].dbo.Sites;
                     // Get network boundaries (handles both views and base tables)
                     try
                     {
-                        var boundaries = databaseContext.SccmService.GetBoundaries(sccmDatabase);
+                        var boundaries = sccmService.GetBoundaries(sccmDatabase);
                         
                         if (boundaries.Rows.Count > 0)
                         {
@@ -132,7 +134,7 @@ FROM [{sccmDatabase}].dbo.Sites;
                     // Get distribution points (handles both views and base tables)
                     try
                     {
-                        var distributionPoints = databaseContext.SccmService.GetDistributionPoints(sccmDatabase);
+                        var distributionPoints = sccmService.GetDistributionPoints(sccmDatabase);
                         
                         if (distributionPoints.Rows.Count > 0)
                         {

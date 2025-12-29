@@ -20,11 +20,13 @@ namespace MSSQLand.Actions.SCCM
         {
             Logger.TaskNested("Enumerating SCCM RBAC administrators");
 
+            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+
             try
             {
                 // Get and validate SCCM databases
                 string[] requiredTables = { "RBAC_Admins" };
-                var databases = databaseContext.SccmService.GetValidatedSccmDatabases(requiredTables, 1);
+                var databases = sccmService.GetValidatedSccmDatabases(requiredTables, 1);
                 
                 if (databases.Count == 0)
                 {

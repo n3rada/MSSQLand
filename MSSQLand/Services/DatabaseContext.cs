@@ -12,7 +12,6 @@ namespace MSSQLand.Services
         public readonly QueryService QueryService;
         public readonly ConfigurationService ConfigService;
         public readonly UserService UserService;
-        public readonly SccmService SccmService;
 
 
         public DatabaseContext(AuthenticationService authService)
@@ -24,7 +23,6 @@ namespace MSSQLand.Services
             QueryService.ExecutionServer = Server;
             ConfigService = new ConfigurationService(QueryService, Server);
             UserService = new UserService(QueryService);
-            SccmService = new SccmService(QueryService);
 
             if (HandleImpersonation() == false)
             {
