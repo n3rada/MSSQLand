@@ -5,6 +5,7 @@ using System.Reflection;
 using MSSQLand.Models;
 using MSSQLand.Services;
 using MSSQLand.Utilities;
+using MSSQLand.Exceptions;
 
 
 namespace MSSQLand
@@ -53,7 +54,7 @@ namespace MSSQLand
                 // Authenticate with the provided credentials
                 try
                 {
-                    if (!authService.Authenticate(
+                    authService.Authenticate(
                         credentialsType: arguments.CredentialType,
                         sqlServer: $"{arguments.Host.Hostname},{arguments.Host.Port}",
                         database: arguments.Host.Database ?? "master",
@@ -61,11 +62,12 @@ namespace MSSQLand
                         password: arguments.Password,
                         domain: arguments.Domain,
                         connectionTimeout: arguments.ConnectionTimeout
-                     ))
-                    {
-                        Logger.Error("Authentication failed.");
-                        return 1;
-                    }
+                     );
+                }
+                catch (AuthenticationFailedException ex)
+                {
+                    Logger.Error($"Authentication failed: {ex.Message}");
+                    return 1;
                 }
                 catch (SqlException sqlEx) when (sqlEx.Number == -2 || sqlEx.Number == -1)
                 {

@@ -2,6 +2,7 @@
 
 using MSSQLand.Models;
 using MSSQLand.Utilities;
+using MSSQLand.Exceptions;
 using System;
 using System.Collections.Concurrent;
 using System.Data;
@@ -243,7 +244,7 @@ SELECT @result AS Result, @error AS Error;";
             if (!_linkedServers.UseRemoteProcedureCall && RequiresRPC(query))
             {
                 Logger.Warning("Server-level command rejected under OPENQUERY.");
-                throw new InvalidOperationException("This query requires RPC.");
+                throw new RpcRequiredException(query);
             }
 
             string finalQuery = _linkedServers.UseRemoteProcedureCall

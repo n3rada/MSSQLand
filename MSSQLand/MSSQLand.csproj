@@ -133,6 +133,12 @@
     <Compile Include="Actions\SCCM\SccmAdmins.cs" />
 
     <Compile Include="Exceptions\ActionNotFoundException.cs" />
+    <Compile Include="Exceptions\AuthenticationFailedException.cs" />
+    <Compile Include="Exceptions\ConfigurationException.cs" />
+    <Compile Include="Exceptions\ImpersonationFailedException.cs" />
+    <Compile Include="Exceptions\InvalidCredentialException.cs" />
+    <Compile Include="Exceptions\MissingRequiredArgumentException.cs" />
+    <Compile Include="Exceptions\RpcRequiredException.cs" />
 
     <Compile Include="Models\CommandArgs.cs" />
     <Compile Include="Models\LinkedServers.cs" />

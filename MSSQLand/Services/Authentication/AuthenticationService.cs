@@ -2,6 +2,7 @@
 
 using MSSQLand.Models;
 using MSSQLand.Services.Credentials;
+using MSSQLand.Exceptions;
 using System;
 using System.Data.SqlClient;
 
@@ -39,6 +40,7 @@ namespace MSSQLand.Services
 
         /// <summary>
         /// Authenticates and establishes a connection to the database using the specified credentials type.
+        /// Throws AuthenticationFailedException if authentication fails.
         /// </summary>
         /// <param name="credentialsType">The type of credentials to use (e.g., "token", "domain").</param>
         /// <param name="sqlServer">The SQL server address.</param>
@@ -47,7 +49,7 @@ namespace MSSQLand.Services
         /// <param name="password">The password (optional).</param>
         /// <param name="domain">The domain for Windows authentication (optional).</param>
         /// <param name="connectionTimeout">The connection timeout in seconds (default: 5).</param>
-        public bool Authenticate(
+        public void Authenticate(
             string credentialsType,
             string sqlServer,
             string database = "master",
@@ -74,12 +76,10 @@ namespace MSSQLand.Services
 
             if (Connection == null)
             {
-                return false;
+                throw new AuthenticationFailedException(sqlServer, credentialsType);
             }
 
             Server.Version = Connection.ServerVersion;
-
-            return true;
         }
 
         /// <summary>
@@ -100,15 +100,13 @@ namespace MSSQLand.Services
 
         /// <summary>
         /// Duplicates this AuthenticationService with a new connection.
+        /// Throws AuthenticationFailedException if duplication fails.
         /// </summary>
         /// <returns>A new AuthenticationService object with the same parameters.</returns>
         public AuthenticationService Duplicate()
         {
             var duplicateService = new AuthenticationService(Server);
-            if (!duplicateService.Authenticate(_credentialsType, _sqlServer, _database, _username, _password, _domain, _connectionTimeout))
-            {
-                throw new InvalidOperationException("Failed to duplicate authentication service.");
-            }
+            duplicateService.Authenticate(_credentialsType, _sqlServer, _database, _username, _password, _domain, _connectionTimeout);
             return duplicateService;
         }
 

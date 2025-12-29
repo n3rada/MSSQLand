@@ -411,7 +411,7 @@ namespace MSSQLand.Utilities
                 Console.WriteLine(OutputFormatter.ConvertDataTable(credentialsTable));
                 
                 var availableTypes = string.Join(", ", CredentialsFactory.GetCredentialTypeNames());
-                throw new ArgumentException($"Unknown credential type: {credentialType}. Available types: {availableTypes}");
+                throw new InvalidCredentialException(credentialType, $"Unknown credential type: {credentialType}. Available types: {availableTypes}");
             }
 
             // Get the required arguments for this credential type from CredentialsFactory
@@ -421,17 +421,17 @@ namespace MSSQLand.Utilities
             // Validate arguments
             if (requiredArgs.Contains("username") && string.IsNullOrEmpty(username))
             {
-                throw new ArgumentException($"{credentialType} credentials require -u (username).");
+                throw new MissingRequiredArgumentException("username", $"{credentialType} credentials");
             }
 
             if (requiredArgs.Contains("password") && string.IsNullOrEmpty(password))
             {
-                throw new ArgumentException($"{credentialType} credentials require -p (password).");
+                throw new MissingRequiredArgumentException("password", $"{credentialType} credentials");
             }
 
             if (requiredArgs.Contains("domain") && string.IsNullOrEmpty(domain))
             {
-                throw new ArgumentException($"{credentialType} credentials require -d (domain).");
+                throw new MissingRequiredArgumentException("domain", $"{credentialType} credentials");
             }
 
             // Ensure no extra arguments are provided

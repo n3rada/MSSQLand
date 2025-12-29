@@ -1,6 +1,7 @@
 ﻿// MSSQLand/Services/UserService.cs
 
 using MSSQLand.Utilities;
+using MSSQLand.Exceptions;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -270,18 +271,24 @@ ORDER BY dp.principal_id;";
 
         /// <summary>
         /// Impersonates a specified user on the initial connection.
+        /// Throws ImpersonationFailedException if impersonation fails.
         /// </summary>
         /// <param name="user">The login to impersonate.</param>
         public void ImpersonateUser(string user)
         {
-            const string query = "EXECUTE AS LOGIN = @User;";
-            using var command = new SqlCommand(query, _queryService.Connection);
-            command.Parameters.AddWithValue("@User", user);
+            try
+            {
+                const string query = "EXECUTE AS LOGIN = @User;";
+                using var command = new SqlCommand(query, _queryService.Connection);
+                command.Parameters.AddWithValue("@User", user);
 
-            
-            command.ExecuteNonQuery();
-            Logger.Info($"Impersonated user {user} for current connection");
-
+                command.ExecuteNonQuery();
+                Logger.Info($"Impersonated user {user} for current connection");
+            }
+            catch (Exception ex)
+            {
+                throw new ImpersonationFailedException(user, $"Failed to impersonate user '{user}': {ex.Message}", ex);
+            }
         }
 
         /// <summary>

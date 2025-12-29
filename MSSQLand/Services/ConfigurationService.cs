@@ -1,6 +1,7 @@
 ﻿using MSSQLand.Models;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
+using MSSQLand.Exceptions;
 using System;
 using System.Data;
 
