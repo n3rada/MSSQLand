@@ -273,8 +273,10 @@ namespace MSSQLand.Utilities
                 // Check if action was provided
                 if (string.IsNullOrWhiteSpace(actionName))
                 {
-                    Helper.ShowAllActions();
-                    return (ParseResultType.ShowHelp, null);
+                    Logger.Info("No action specified. Connection test mode - will authenticate and exit.");
+                    Logger.Info("Use '-h' to see available actions.");
+                    // Set a flag to skip action execution
+                    parsedArgs.Action = null;
                 }
 
                 // Check if credential type is provided

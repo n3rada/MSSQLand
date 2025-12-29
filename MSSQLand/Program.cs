@@ -175,9 +175,18 @@ namespace MSSQLand
                 // Detect Azure SQL on the final execution server
                 databaseContext.QueryService.IsAzureSQL();
 
-                Logger.NewLine();
-                Logger.Task($"Executing action '{arguments.Action.GetName()}' against {databaseContext.QueryService.ExecutionServer}");
-                arguments.Action.Execute(databaseContext);
+                // Execute action if one was provided
+                if (arguments.Action != null)
+                {
+                    Logger.NewLine();
+                    Logger.Task($"Executing action '{arguments.Action.GetName()}' against {databaseContext.QueryService.ExecutionServer}");
+                    arguments.Action.Execute(databaseContext);
+                }
+                else
+                {
+                    Logger.NewLine();
+                    Logger.Success("Connection test successful. No action executed.");
+                }
 
                 stopwatch.Stop();
                 DateTime endTime = DateTime.UtcNow;
