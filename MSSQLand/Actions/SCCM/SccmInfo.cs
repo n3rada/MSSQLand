@@ -47,37 +47,44 @@ namespace MSSQLand.Actions.SCCM
 
                     // Get site information
                     string siteInfoQuery = $@"
-SELECT 
-    SiteCode,
-    SiteName,
-    Version,
-    BuildNumber,
-    InstallDir,
-    ServerName,
-    ReportServerInstance,
-    SiteServer
-FROM [{sccmDatabase}].dbo.Sites
-WHERE SiteCode = '{siteCode}';
+SELECT *
+FROM [{sccmDatabase}].dbo.Sites;
 ";
 
                     var siteInfo = databaseContext.QueryService.ExecuteTable(siteInfoQuery);
                     
                     if (siteInfo.Rows.Count > 0)
                     {
+                        // Filter to only useful columns
+                        var filteredSiteInfo = new DataTable();
+                        string[] columnsToShow = { "SiteCode", "SiteName", "Version", "SiteServer", "InstallDir", "DefaultMP" };
+                        
+                        foreach (string col in columnsToShow)
+                        {
+                            if (siteInfo.Columns.Contains(col))
+                            {
+                                filteredSiteInfo.Columns.Add(col, siteInfo.Columns[col].DataType);
+                            }
+                        }
+                        
+                        foreach (DataRow row in siteInfo.Rows)
+                        {
+                            var newRow = filteredSiteInfo.NewRow();
+                            foreach (DataColumn col in filteredSiteInfo.Columns)
+                            {
+                                newRow[col.ColumnName] = row[col.ColumnName];
+                            }
+                            filteredSiteInfo.Rows.Add(newRow);
+                        }
+                        
                         Logger.Success("Site Information");
-                        Console.WriteLine(OutputFormatter.ConvertDataTable(siteInfo));
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(filteredSiteInfo));
                     }
 
                     // Get component servers
                     string componentQuery = $@"
-SELECT 
-    ServerName,
-    SiteCode,
-    ComponentName,
-    Status,
-    Availability
+SELECT *
 FROM [{sccmDatabase}].dbo.vSMS_SC_Component_Status
-WHERE SiteCode = '{siteCode}'
 ORDER BY ComponentName;
 ";
 
@@ -91,12 +98,8 @@ ORDER BY ComponentName;
 
                     // Get site system servers
                     string siteSystemsQuery = $@"
-SELECT 
-    ServerName,
-    RoleName,
-    SiteCode
+SELECT *
 FROM [{sccmDatabase}].dbo.vSMS_SC_SiteSystemRole
-WHERE SiteCode = '{siteCode}'
 ORDER BY ServerName, RoleName;
 ";
 
@@ -110,11 +113,7 @@ ORDER BY ServerName, RoleName;
 
                     // Get site boundaries
                     string boundariesQuery = $@"
-SELECT 
-    DisplayName,
-    BoundaryType,
-    Value,
-    SiteSystems
+SELECT *
 FROM [{sccmDatabase}].dbo.vSMS_Boundary
 ORDER BY BoundaryType, DisplayName;
 ";
@@ -129,14 +128,8 @@ ORDER BY BoundaryType, DisplayName;
 
                     // Get distribution points
                     string dpQuery = $@"
-SELECT 
-    ServerName,
-    NALPath,
-    SiteCode,
-    IsActive,
-    IsPullDP
+SELECT *
 FROM [{sccmDatabase}].dbo.vSMS_DistributionPoint
-WHERE SiteCode = '{siteCode}'
 ORDER BY ServerName;
 ";
 
@@ -157,7 +150,7 @@ ORDER BY ServerName;
             catch (Exception ex)
             {
                 Logger.Error($"Failed to enumerate SCCM databases: {ex.Message}");
-                Logger.TraceNested($"Stack trace: {ex.StackTrace}");
+                Logger.Trace($"Stack trace: {ex.StackTrace}");
                 return null;
             }
         }
