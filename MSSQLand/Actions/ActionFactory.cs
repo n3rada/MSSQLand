@@ -101,7 +101,7 @@ namespace MSSQLand.Utilities
             // SCCM ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
             { "sccm-info", (typeof(SccmInfo), "Retrieve SCCM site information including site code, version, components, and distribution points.") },
-            { "sccm-users", (typeof(SccmUsers), "Enumerate SCCM users and their associated devices.") }
+            { "sccm-admins", (typeof(SccmAdmins), "Enumerate SCCM RBAC administrators.") }
         };
 
         public static BaseAction GetAction(string actionType, string[] actionArguments)
