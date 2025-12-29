@@ -32,7 +32,7 @@ namespace MSSQLand.Services
             get
             {
                 // Check if the domain user status is already cached for the current ExecutionServer
-                if (_isDomainUserCache.TryGetValue(_queryService.ExecutionServer, out bool isDomainUser))
+                if (_isDomainUserCache.TryGetValue(_queryService.ExecutionServer.Hostname, out bool isDomainUser))
                 {
                     return isDomainUser;
                 }
@@ -41,7 +41,7 @@ namespace MSSQLand.Services
                 bool domainUserStatus = CheckIfDomainUser();
 
                 // Cache the result for the current ExecutionServer
-                _isDomainUserCache[_queryService.ExecutionServer] = domainUserStatus;
+                _isDomainUserCache[_queryService.ExecutionServer.Hostname] = domainUserStatus;
 
                 return domainUserStatus;
             }
@@ -56,7 +56,7 @@ namespace MSSQLand.Services
         public bool IsAdmin()
         {
             // Check if the admin status is already cached for the current ExecutionServer
-            if (_adminStatusCache.TryGetValue(_queryService.ExecutionServer, out bool isAdmin))
+            if (_adminStatusCache.TryGetValue(_queryService.ExecutionServer.Hostname, out bool isAdmin))
             {
                 return isAdmin;
             }
@@ -65,7 +65,7 @@ namespace MSSQLand.Services
             bool adminStatus = IsMemberOfRole("sysadmin");
 
             // Cache the result for the current ExecutionServer
-            _adminStatusCache[_queryService.ExecutionServer] = adminStatus;
+            _adminStatusCache[_queryService.ExecutionServer.Hostname] = adminStatus;
 
             return adminStatus;
         }
@@ -251,7 +251,7 @@ ORDER BY dp.principal_id;";
             // A sysadmin user can impersonate anyone
             if (IsAdmin())
             {
-                Logger.Info($"You can impersonate anyone on {_queryService.ExecutionServer} as a sysadmin");
+                Logger.Info($"You can impersonate anyone on {_queryService.ExecutionServer.Hostname} as a sysadmin");
                 return true;
             }
 

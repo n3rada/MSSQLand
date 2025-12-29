@@ -91,7 +91,7 @@ namespace MSSQLand.Actions.Database
             // Use the execution database if no database is specified
             if (string.IsNullOrEmpty(_database))
             {
-                _database = databaseContext.QueryService.ExecutionDatabase;
+                _database = databaseContext.QueryService.ExecutionServer.Database;
             }
 
             // Build the target table name

@@ -175,7 +175,7 @@ namespace MSSQLand.Actions.Remote
 
                 Logger.TaskNested("Executing LDAP solicitation");
 
-                string impersonateTarget = databaseContext.Server.ImpersonationUser;
+                string impersonateTarget = databaseContext.QueryService.ExecutionServer.ImpersonationUser;
 
                 string exploitQuery = $"SELECT * FROM OPENQUERY([{adsiServer}], 'SELECT * FROM ''LDAP://localhost:{adsiService.Port}'' ');";
 

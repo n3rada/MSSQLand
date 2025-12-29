@@ -106,7 +106,7 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private DataTable ListProcedures(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Retrieving all stored procedures in [{databaseContext.QueryService.ExecutionDatabase}]");
+            Logger.TaskNested($"Retrieving all stored procedures in [{databaseContext.QueryService.ExecutionServer.Database}]");
 
             string query = $@"
                 SELECT 
@@ -215,7 +215,7 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private DataTable ExecuteProcedure(DatabaseContext databaseContext, string procedureName, string procedureArgs)
         {
-            Logger.Task($"Executing [{databaseContext.QueryService.ExecutionDatabase}].[{procedureName}]");
+            Logger.Task($"Executing [{databaseContext.QueryService.ExecutionServer.Database}].[{procedureName}]");
             if (!string.IsNullOrEmpty(procedureArgs))
                 Logger.TaskNested($"With arguments: {procedureArgs}");
 
@@ -243,7 +243,7 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private object? ReadProcedureDefinition(DatabaseContext databaseContext, string procedureName)
         {
-            Logger.TaskNested($"Retrieving definition of [{databaseContext.QueryService.ExecutionDatabase}].[{procedureName}]");
+            Logger.TaskNested($"Retrieving definition of [{databaseContext.QueryService.ExecutionServer.Database}].[{procedureName}]");
 
             // Parse schema.procedure format
             string[] parts = procedureName.Split('.');
@@ -288,7 +288,7 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private DataTable SearchProcedures(DatabaseContext databaseContext, string keyword)
         {
-            Logger.TaskNested($"Searching for keyword '{keyword}' in [{databaseContext.QueryService.ExecutionDatabase}] procedures");
+            Logger.TaskNested($"Searching for keyword '{keyword}' in [{databaseContext.QueryService.ExecutionServer.Database}] procedures");
 
             string query = $@"
                 SELECT 

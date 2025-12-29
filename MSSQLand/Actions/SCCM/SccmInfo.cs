@@ -22,9 +22,9 @@ namespace MSSQLand.Actions.SCCM
 
             try
             {
-                // Get and validate SCCM databases
-                string[] requiredTables = { "Sites", "SC_Component", "RbacSecuredObject", "Collections", "vSMS_Boundary" };
-                var databases = databaseContext.SccmService.GetValidatedSccmDatabases(requiredTables, 3);
+                // Get and validate SCCM databases (only require base tables that exist in all versions)
+                string[] requiredTables = { "Sites", "SC_Component", "RBAC_Admins" };
+                var databases = databaseContext.SccmService.GetValidatedSccmDatabases(requiredTables, 2);
                 
                 if (databases.Count == 0)
                 {
@@ -81,64 +81,68 @@ FROM [{sccmDatabase}].dbo.Sites;
                         Console.WriteLine(OutputFormatter.ConvertDataTable(filteredSiteInfo));
                     }
 
-                    // Get component servers
-                    string componentQuery = $@"
-SELECT *
-FROM [{sccmDatabase}].dbo.vSMS_SC_Component_Status
-ORDER BY ComponentName;
-";
-
-                    var components = databaseContext.QueryService.ExecuteTable(componentQuery);
-                    
-                    if (components.Rows.Count > 0)
+                    // Get component status (handles both views and base tables)
+                    try
                     {
-                        Logger.Success("SCCM Components");
-                        Console.WriteLine(OutputFormatter.ConvertDataTable(components));
+                        var components = databaseContext.SccmService.GetComponentStatus(sccmDatabase);
+                        
+                        if (components.Rows.Count > 0)
+                        {
+                            Logger.Success("SCCM Components");
+                            Console.WriteLine(OutputFormatter.ConvertDataTable(components));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Debug($"Could not query SCCM components: {ex.Message}");
                     }
 
-                    // Get site system servers
-                    string siteSystemsQuery = $@"
-SELECT *
-FROM [{sccmDatabase}].dbo.vSMS_SC_SiteSystemRole
-ORDER BY ServerName, RoleName;
-";
-
-                    var siteSystems = databaseContext.QueryService.ExecuteTable(siteSystemsQuery);
-                    
-                    if (siteSystems.Rows.Count > 0)
+                    // Get site system roles (handles both views and base tables)
+                    try
                     {
-                        Logger.Success("Site System Roles");
-                        Console.WriteLine(OutputFormatter.ConvertDataTable(siteSystems));
+                        var siteSystems = databaseContext.SccmService.GetSiteSystemRoles(sccmDatabase);
+                        
+                        if (siteSystems.Rows.Count > 0)
+                        {
+                            Logger.Success("Site System Roles");
+                            Console.WriteLine(OutputFormatter.ConvertDataTable(siteSystems));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Debug($"Could not query site system roles: {ex.Message}");
                     }
 
-                    // Get site boundaries
-                    string boundariesQuery = $@"
-SELECT *
-FROM [{sccmDatabase}].dbo.vSMS_Boundary
-ORDER BY BoundaryType, DisplayName;
-";
-
-                    var boundaries = databaseContext.QueryService.ExecuteTable(boundariesQuery);
-                    
-                    if (boundaries.Rows.Count > 0)
+                    // Get network boundaries (handles both views and base tables)
+                    try
                     {
-                        Logger.Success("Network Boundaries");
-                        Console.WriteLine(OutputFormatter.ConvertDataTable(boundaries));
+                        var boundaries = databaseContext.SccmService.GetBoundaries(sccmDatabase);
+                        
+                        if (boundaries.Rows.Count > 0)
+                        {
+                            Logger.Success("Network Boundaries");
+                            Console.WriteLine(OutputFormatter.ConvertDataTable(boundaries));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Debug($"Could not query network boundaries: {ex.Message}");
                     }
 
-                    // Get distribution points
-                    string dpQuery = $@"
-SELECT *
-FROM [{sccmDatabase}].dbo.vSMS_DistributionPoint
-ORDER BY ServerName;
-";
-
-                    var distributionPoints = databaseContext.QueryService.ExecuteTable(dpQuery);
-                    
-                    if (distributionPoints.Rows.Count > 0)
+                    // Get distribution points (handles both views and base tables)
+                    try
                     {
-                        Logger.Success("Distribution Points");
-                        Console.WriteLine(OutputFormatter.ConvertDataTable(distributionPoints));
+                        var distributionPoints = databaseContext.SccmService.GetDistributionPoints(sccmDatabase);
+                        
+                        if (distributionPoints.Rows.Count > 0)
+                        {
+                            Logger.Success("Distribution Points");
+                            Console.WriteLine(OutputFormatter.ConvertDataTable(distributionPoints));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Debug($"Could not query distribution points: {ex.Message}");
                     }
                 }
 

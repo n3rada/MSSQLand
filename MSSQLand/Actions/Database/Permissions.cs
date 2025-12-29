@@ -102,7 +102,7 @@ namespace MSSQLand.Actions.Database
             // Use the execution database if no database is specified
             if (string.IsNullOrEmpty(_database))
             {
-                _database = databaseContext.QueryService.ExecutionDatabase;
+                _database = databaseContext.QueryService.ExecutionServer.Database;
             }
 
             // Build the target table name based on what was specified
@@ -120,7 +120,7 @@ namespace MSSQLand.Actions.Database
             Logger.TaskNested($"Listing permissions for {databaseContext.UserService.MappedUser} on [{_database}]{targetTable}");
 
             // Build USE statement if specific database is different from current
-            string useStatement = string.IsNullOrEmpty(_database) || _database == databaseContext.QueryService.ExecutionDatabase
+            string useStatement = string.IsNullOrEmpty(_database) || _database == databaseContext.QueryService.ExecutionServer.Database
                 ? ""
                 : $"USE [{_database}];";
 

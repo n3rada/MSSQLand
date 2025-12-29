@@ -34,7 +34,7 @@ namespace MSSQLand.Actions.Execution
         /// <param name="databaseContext">The ConnectionManager for executing the query.</param>
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Executing against {databaseContext.QueryService.ExecutionServer}: {_query}");
+            Logger.TaskNested($"Executing against {databaseContext.QueryService.ExecutionServer.Hostname}: {_query}");
 
             try
             {

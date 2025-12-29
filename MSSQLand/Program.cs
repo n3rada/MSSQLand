@@ -162,34 +162,39 @@ namespace MSSQLand
                     {
                         (userName, systemUser) = databaseContext.UserService.GetInfo();
 
-                        Logger.Info($"Logged in on {databaseContext.QueryService.ExecutionServer} as {systemUser}");
+                        Logger.Info($"Logged in on {databaseContext.QueryService.ExecutionServer.Hostname} as {systemUser}");
                         Logger.InfoNested($"Mapped to the user {userName}");
                     }
                     catch (Exception ex)
                     {
-                        Logger.Error($"Unable to connect to linked server '{databaseContext.QueryService.ExecutionServer}': {ex.Message}");
+                        Logger.Error($"Unable to connect to linked server '{databaseContext.QueryService.ExecutionServer.Hostname}': {ex.Message}");
                         return 1;
+                    }
+
+                    Logger.InfoNested($"Execution database: {databaseContext.QueryService.ExecutionServer.Database}");
+
+                    // Warn about legacy server on execution server
+                    if (databaseContext.QueryService.ExecutionServer.Legacy)
+                    {
+                        Logger.NewLine();
+                        Logger.Warning($"Execution server '{databaseContext.QueryService.ExecutionServer.Hostname}' is running legacy SQL Server (version {databaseContext.QueryService.ExecutionServer.MajorVersion}).");
                     }
                 }
 
-                // Compute and display the final execution context
-                databaseContext.QueryService.ComputeExecutionDatabase();
-                Logger.InfoNested($"Execution database: {databaseContext.QueryService.ExecutionDatabase}");
-
-                // Detect Azure SQL on the final execution server
+                // Detect Azure SQL on the execution server (local or remote)
                 databaseContext.QueryService.IsAzureSQL();
 
                 // Execute action if one was provided
                 if (arguments.Action != null)
                 {
                     Logger.NewLine();
-                    Logger.Task($"Executing action '{arguments.Action.GetName()}' against {databaseContext.QueryService.ExecutionServer}");
+                    Logger.Task($"Executing action '{arguments.Action.GetName()}' against {databaseContext.QueryService.ExecutionServer.Hostname}");
                     arguments.Action.Execute(databaseContext);
                 }
                 else
                 {
                     Logger.NewLine();
-                    Logger.Success("Connection test successful. No action executed.");
+                    Logger.Success("Connection test successful. No action specified.");
                 }
 
                 stopwatch.Stop();

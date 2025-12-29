@@ -16,7 +16,7 @@ namespace MSSQLand.Actions.Execution
         /// </summary>
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Executing across ALL accessible databases on {databaseContext.QueryService.ExecutionServer}");
+            Logger.TaskNested($"Executing across ALL accessible databases on {databaseContext.QueryService.ExecutionServer.Hostname}");
 
             // Get list of accessible databases
             DataTable databases = databaseContext.QueryService.ExecuteTable(

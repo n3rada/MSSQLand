@@ -20,12 +20,11 @@ namespace MSSQLand.Services
             AuthService = authService;
             Server = AuthService.Server;
             QueryService = new QueryService(AuthService.Connection);
+            // Use authenticated Server as ExecutionServer (direct reference, version already set)
+            QueryService.ExecutionServer = Server;
             ConfigService = new ConfigurationService(QueryService, Server);
             UserService = new UserService(QueryService);
             SccmService = new SccmService(QueryService);
-
-
-            Server.Hostname = QueryService.ExecutionServer;
 
             if (HandleImpersonation() == false)
             {

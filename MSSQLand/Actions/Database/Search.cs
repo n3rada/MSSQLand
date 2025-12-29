@@ -114,7 +114,7 @@ namespace MSSQLand.Actions.Database
             // Handle specific table search
             if (!string.IsNullOrEmpty(_targetTable))
             {
-                string dbName = _limitDatabase ?? databaseContext.QueryService.ExecutionDatabase;
+                string dbName = _limitDatabase ?? databaseContext.QueryService.ExecutionServer.Database;
                 Logger.TaskNested($"Looking inside [{dbName}].[{_targetSchema}].[{_targetTable}]");
                 var (headerMatches, rowMatches, _) = SearchDatabase(databaseContext, dbName, _targetSchema, _targetTable);
                 

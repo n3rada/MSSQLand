@@ -181,13 +181,13 @@ namespace MSSQLand.Actions.Remote
 
             // Save current state for restoration
             LinkedServers previousLinkedServers = new LinkedServers(databaseContext.QueryService.LinkedServers);
-            string previousExecutionServer = databaseContext.QueryService.ExecutionServer;
+            Server previousExecutionServer = databaseContext.QueryService.ExecutionServer;
 
             try
             {
                 // Check if we are already logged in with the correct user
                 var (currentUser, systemUser) = databaseContext.UserService.GetInfo();
-                Logger.DebugNested($"[{databaseContext.QueryService.ExecutionServer}] LoggedIn: {systemUser}, Mapped: {currentUser}");
+                Logger.DebugNested($"[{databaseContext.QueryService.ExecutionServer.Hostname}] LoggedIn: {systemUser}, Mapped: {currentUser}");
 
                 string impersonatedUser = null;
 
@@ -205,11 +205,11 @@ namespace MSSQLand.Actions.Remote
                         // Track impersonation in stack for proper LIFO reversion
                         _impersonationStack[chainId].Push(expectedLocalLogin);
                         
-                        Logger.DebugNested($"[{databaseContext.QueryService.ExecutionServer}] Impersonated '{expectedLocalLogin}' to access {targetServer}.");
+                        Logger.DebugNested($"[{databaseContext.QueryService.ExecutionServer.Hostname}] Impersonated '{expectedLocalLogin}' to access {targetServer}.");
                     }
                     else
                     {
-                        Logger.Warning($"[{databaseContext.QueryService.ExecutionServer}] Cannot impersonate {expectedLocalLogin} on {targetServer}. Skipping.");
+                        Logger.Warning($"[{databaseContext.QueryService.ExecutionServer.Hostname}] Cannot impersonate {expectedLocalLogin} on {targetServer}. Skipping.");
                         return;
                     }
                 }
@@ -220,7 +220,7 @@ namespace MSSQLand.Actions.Remote
 
                 // Update the linked server chain
                 databaseContext.QueryService.LinkedServers.AddToChain(targetServer);
-                databaseContext.QueryService.ExecutionServer = targetServer;
+                // LinkedServers setter automatically creates new ExecutionServer object
 
                 // Query user info THROUGH the linked server chain
                 var (mappedUser, remoteLoggedInUser) = databaseContext.UserService.GetInfo();
@@ -259,7 +259,7 @@ namespace MSSQLand.Actions.Remote
                     { "ImpersonatedUser", !string.IsNullOrEmpty(impersonatedUser) ? $" {impersonatedUser} " : "-" }
                 });
 
-                Logger.DebugNested($"[{databaseContext.QueryService.ExecutionServer}] LoggedIn: {remoteLoggedInUser}, Mapped: {mappedUser}");
+                Logger.DebugNested($"[{databaseContext.QueryService.ExecutionServer.Hostname}] LoggedIn: {remoteLoggedInUser}, Mapped: {mappedUser}");
 
                 // Retrieve linked servers from remote server
                 DataTable remoteLinkedServers = GetLinkedServersWithTimeout(databaseContext, targetServer);

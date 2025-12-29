@@ -30,7 +30,7 @@ namespace MSSQLand.Actions.Database
         {
             // Use the execution database if no database is specified
             string targetDatabase = string.IsNullOrEmpty(_database) 
-                ? databaseContext.QueryService.ExecutionDatabase 
+                ? databaseContext.QueryService.ExecutionServer.Database 
                 : _database;
 
             Logger.TaskNested($"Retrieving tables from [{targetDatabase}]");

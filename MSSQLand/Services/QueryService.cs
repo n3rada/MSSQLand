@@ -1,4 +1,6 @@
-﻿using MSSQLand.Models;
+﻿// MSSQLand/Services/QueryService.cs
+
+using MSSQLand.Models;
 using MSSQLand.Utilities;
 using System;
 using System.Collections.Concurrent;
@@ -39,14 +41,9 @@ namespace MSSQLand.Services
         public readonly SqlConnection Connection;
 
         /// <summary>
-        /// Final execution host after linked server resolution.
+        /// The server where queries actually execute (may differ from connection server when using linked servers).
         /// </summary>
-        public string ExecutionServer { get; set; }
-
-        /// <summary>
-        /// Final execution database after chain resolution.
-        /// </summary>
-        public string ExecutionDatabase { get; set; }
+        public Server ExecutionServer { get; set; }
 
         private LinkedServers _linkedServers = new();
         private const int MAX_RETRIES = 3;
@@ -55,8 +52,6 @@ namespace MSSQLand.Services
         /// Per-server Azure SQL detection cache.
         /// </summary>
         private readonly ConcurrentDictionary<string, bool> _isAzureSQLCache = new();
-
-        #region Query Classification
 
         /// <summary>
         /// Determines if a SQL statement requires RPC execution because it modifies server-level state.
@@ -120,10 +115,6 @@ END CATCH;
 SELECT @result AS Result, @error AS Error;";
         }
 
-        #endregion
-
-        #region Linked Server Configuration
-
         /// <summary>
         /// Linked server chain configuration.
         /// Automatically updates execution target when modified.
@@ -134,23 +125,9 @@ SELECT @result AS Result, @error AS Error;";
             set
             {
                 _linkedServers = value ?? new LinkedServers();
-
-                if (_linkedServers.ServerNames.Length > 0)
-                {
-                    ExecutionServer = _linkedServers.ServerNames.Last();
-                    Logger.Debug($"Execution server set to: {ExecutionServer}");
-                }
-                else
-                {
-                    ExecutionServer = GetServerName();
-                    ExecutionDatabase = Connection.Database;
-                }
+                ComputeExecutionServer();
             }
         }
-
-        #endregion
-
-        #region Initialization
 
         /// <summary>
         /// Initializes a QueryService bound to an existing SQL connection.
@@ -159,8 +136,14 @@ SELECT @result AS Result, @error AS Error;";
         public QueryService(SqlConnection connection)
         {
             Connection = connection;
-            ExecutionServer = GetServerName();
-            ExecutionDatabase = connection.Database;
+            // Initialize ExecutionServer with basic connection info
+            // This will be replaced by the authenticated Server in DatabaseContext
+            // or by ComputeExecutionServer() when linked servers are configured
+            ExecutionServer = new Server 
+            { 
+                Hostname = GetServerName(),
+                Database = connection.Database 
+            };
         }
 
         /// <summary>
@@ -172,10 +155,6 @@ SELECT @result AS Result, @error AS Error;";
             string serverName = ExecuteScalar("SELECT @@SERVERNAME")?.ToString();
             return serverName?.Split('\\')[0] ?? "Unknown";
         }
-
-        #endregion
-
-        #region Execution API
 
         /// <summary>
         /// Executes a query and returns a reader.
@@ -275,10 +254,6 @@ SELECT @result AS Result, @error AS Error;";
             return finalQuery;
         }
 
-        #endregion
-
-        #region Convenience Wrappers
-
         /// <summary>
         /// Executes a query and loads result into a DataTable.
         /// </summary>
@@ -301,21 +276,17 @@ SELECT @result AS Result, @error AS Error;";
                 : null;
         }
 
-        #endregion
-
-        #region Azure Detection
-
         /// <summary>
         /// Determines whether the final execution server is Azure SQL Database (PaaS).
         /// Results are cached.
         /// </summary>
         public bool IsAzureSQL()
         {
-            if (_isAzureSQLCache.TryGetValue(ExecutionServer, out bool cached))
+            if (_isAzureSQLCache.TryGetValue(ExecutionServer.Hostname, out bool cached))
                 return cached;
 
             bool isAzure = DetectAzureSQL();
-            _isAzureSQLCache[ExecutionServer] = isAzure;
+            _isAzureSQLCache[ExecutionServer.Hostname] = isAzure;
             return isAzure;
         }
 
@@ -333,42 +304,72 @@ SELECT @result AS Result, @error AS Error;";
                 bool mi = version.IndexOf("Managed Instance", StringComparison.OrdinalIgnoreCase) >= 0;
 
                 if (azure && !mi)
-                    Logger.Info($"Azure SQL Database detected on {ExecutionServer}");
+                    Logger.Info($"Azure SQL Database detected on {ExecutionServer.Hostname}");
 
                 return azure && !mi;
             }
             catch { return false; }
         }
 
-        #endregion
-
-        #region Execution Context Tracking
-
         /// <summary>
-        /// Resolves the active database after linked server traversal.
+        /// Resolves the execution server context (hostname, version, database) for linked servers.
+        /// For direct connections, ExecutionServer is already set with version from authentication.
         /// </summary>
-        public void ComputeExecutionDatabase()
+        public void ComputeExecutionServer()
         {
-            if (_linkedServers.IsEmpty) return;
-
-            var last = _linkedServers.ServerChain.Last();
-            if (!string.IsNullOrEmpty(last.Database))
-            {
-                ExecutionDatabase = last.Database;
+            // For linked servers, use the last server in the chain as base
+            if (_linkedServers.IsEmpty){
+                // Direct connection: ExecutionServer is already set
                 return;
             }
+            
+            Server last = _linkedServers.ServerChain.Last();
+            ExecutionServer = last;
 
+            // Query the actual server name from the last chain
             try
             {
-                ExecutionDatabase = ExecuteScalar("SELECT DB_NAME();")?.ToString();
-                Logger.Debug($"Detected execution database: {ExecutionDatabase}");
+                ExecutionServer.Hostname = GetServerName();
             }
             catch
             {
-                ExecutionDatabase = null;
+                // Keep the configured hostname if query fails
+            }
+
+            // Query and set the server version for linked server
+            try
+            {
+                string version = ExecuteScalar("SELECT @@VERSION")?.ToString();
+                if (!string.IsNullOrEmpty(version))
+                {
+                    // Extract version number from version string
+                    // Example: "Microsoft SQL Server 2019 (RTM) - 15.0.2000.5..."
+                    var match = System.Text.RegularExpressions.Regex.Match(version, @"\s(\d+\.\d+\.\d+)");
+                    if (match.Success)
+                    {
+                        ExecutionServer.Version = match.Groups[1].Value;
+                        Logger.Debug($"Execution server version: {ExecutionServer.Version} (Major: {ExecutionServer.MajorVersion})");
+                    }
+                }
+            }
+            catch
+            {
+                // Version detection is optional
+            }
+
+            // Set database: use configured database or query DB_NAME()
+            if (string.IsNullOrEmpty(last.Database))
+            {
+                try
+                {
+                    ExecutionServer.Database = ExecuteScalar("SELECT DB_NAME();")?.ToString();
+                    Logger.Debug($"Detected execution database: {ExecutionServer.Database}");
+                }
+                catch
+                {
+                    ExecutionServer.Database = null;
+                }
             }
         }
-
-        #endregion
     }
 }
