@@ -132,6 +132,8 @@
     <Compile Include="Actions\SCCM\SccmInfo.cs" />
     <Compile Include="Actions\SCCM\SccmAdmins.cs" />
 
+    <Compile Include="Exceptions\ActionNotFoundException.cs" />
+
     <Compile Include="Models\CommandArgs.cs" />
     <Compile Include="Models\LinkedServers.cs" />
     <Compile Include="Models\Server.cs" />

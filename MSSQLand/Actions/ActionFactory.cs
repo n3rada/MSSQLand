@@ -8,6 +8,7 @@ using MSSQLand.Actions.Execution;
 using MSSQLand.Actions.Domain;
 using MSSQLand.Actions.Administration;
 using MSSQLand.Actions.SCCM;
+using MSSQLand.Exceptions;
 
 namespace MSSQLand.Utilities
 {
@@ -110,7 +111,7 @@ namespace MSSQLand.Utilities
             {
                 if (!ActionMetadata.TryGetValue(actionType.ToLower(), out var metadata))
                 {
-                    throw new ArgumentException($"Unsupported action type: {actionType}");
+                    throw new ActionNotFoundException(actionType);
                 }
 
                 // Create an instance of the action class
@@ -158,6 +159,27 @@ namespace MSSQLand.Utilities
                 return metadata.ActionClass;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Gets all actions that start with the given prefix.
+        /// </summary>
+        /// <param name="prefix">The prefix to search for.</param>
+        /// <returns>List of matching action names and descriptions.</returns>
+        public static List<(string ActionName, string Description)> GetActionsByPrefix(string prefix)
+        {
+            var matches = new List<(string ActionName, string Description)>();
+            string lowerPrefix = prefix.ToLower();
+
+            foreach (var action in ActionMetadata)
+            {
+                if (action.Key.StartsWith(lowerPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    matches.Add((action.Key, action.Value.Description));
+                }
+            }
+
+            return matches;
         }
     }
 }

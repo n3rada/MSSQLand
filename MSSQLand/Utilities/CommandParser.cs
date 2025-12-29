@@ -6,6 +6,7 @@ using System.Data;
 using System.Text;
 using System.Text.RegularExpressions;
 using MSSQLand.Actions;
+using MSSQLand.Exceptions;
 using MSSQLand.Models;
 using MSSQLand.Services.Credentials;
 using MSSQLand.Utilities.Formatters;
@@ -330,7 +331,39 @@ namespace MSSQLand.Utilities
                 // Get the action from the factory and pass action arguments (only if action was specified)
                 if (!string.IsNullOrWhiteSpace(actionName))
                 {
-                    parsedArgs.Action = ActionFactory.GetAction(actionName, actionArgs.ToArray());
+                    try
+                    {
+                        parsedArgs.Action = ActionFactory.GetAction(actionName, actionArgs.ToArray());
+                    }
+                    catch (ActionNotFoundException ex)
+                    {
+                        // Try to find actions that start with the given name
+                        var matches = ActionFactory.GetActionsByPrefix(ex.ActionName);
+                        
+                        if (matches.Count > 0)
+                        {
+                            Logger.Error($"Action '{ex.ActionName}' not found. Did you mean one of these?");
+                            Logger.NewLine();
+                            
+                            DataTable matchTable = new();
+                            matchTable.Columns.Add("Action", typeof(string));
+                            matchTable.Columns.Add("Description", typeof(string));
+                            
+                            foreach (var match in matches)
+                            {
+                                matchTable.Rows.Add(match.ActionName, match.Description);
+                            }
+                            
+                            Console.WriteLine(OutputFormatter.ConvertDataTable(matchTable));
+                        }
+                        else
+                        {
+                            Logger.Error($"Action '{ex.ActionName}' not found.");
+                            Logger.ErrorNested("Use -h or --help to see all available actions.");
+                        }
+                        
+                        return (ParseResultType.InvalidInput, null);
+                    }
                 }
 
                 return (ParseResultType.Success, parsedArgs);
