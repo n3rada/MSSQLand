@@ -100,7 +100,7 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             // SCCM ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "sccm", (typeof(Sccm), "Retrieve SCCM site information including site code, version, components, and distribution points.") }
+            { "sccm-info", (typeof(SccmInfo), "Retrieve SCCM site information including site code, version, components, and distribution points.") }
         };
 
         public static BaseAction GetAction(string actionType, string[] actionArguments)

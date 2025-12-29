@@ -10,7 +10,7 @@ namespace MSSQLand.Actions.SCCM
     /// <summary>
     /// Retrieve global SCCM site information including site code, version, and URIs.
     /// </summary>
-    internal class Sccm : BaseAction
+    internal class SccmInfo : BaseAction
     {
         public override void ValidateArguments(string[] args)
         {
@@ -48,10 +48,8 @@ namespace MSSQLand.Actions.SCCM
 
                     // Validate this is actually an SCCM database by checking for core SCCM tables
                     string validationQuery = $@"
-USE [{sccmDatabase}];
-
 SELECT COUNT(*) AS TableCount
-FROM INFORMATION_SCHEMA.TABLES
+FROM [{sccmDatabase}].INFORMATION_SCHEMA.TABLES
 WHERE TABLE_NAME IN ('Sites', 'SC_Component', 'RbacSecuredObject', 'Collections', 'vSMS_Boundary')
 AND TABLE_SCHEMA = 'dbo';
 ";
@@ -187,6 +185,11 @@ ORDER BY ServerName;
                     {
                         Logger.Error($"Failed to query SCCM database '{sccmDatabase}': {ex.Message}");
                         Logger.ErrorNested("Ensure you have appropriate permissions to read SCCM tables");
+                    }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"Failed to validate database '{sccmDatabase}': {ex.Message}");
                     }
                 }
 
