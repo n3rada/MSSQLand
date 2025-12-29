@@ -130,6 +130,7 @@
     <Compile Include="Actions\Remote\SmbCoerce.cs" />
 
     <Compile Include="Actions\SCCM\SccmInfo.cs" />
+    <Compile Include="Actions\SCCM\SccmUsers.cs" />
 
     <Compile Include="Models\CommandArgs.cs" />
     <Compile Include="Models\LinkedServers.cs" />
@@ -141,6 +142,7 @@
     <Compile Include="Services\ConfigurationService.cs" />
     <Compile Include="Services\DatabaseContext.cs" />
     <Compile Include="Services\QueryService.cs" />
+    <Compile Include="Services\SccmService.cs" />
     <Compile Include="Services\UserService.cs" />
 
     <Compile Include="Services\Authentication\AuthenticationService.cs" />

@@ -3,7 +3,6 @@ using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
-using System.Linq;
 
 namespace MSSQLand.Actions.SCCM
 {
@@ -23,57 +22,31 @@ namespace MSSQLand.Actions.SCCM
 
             try
             {
-                // Get all databases that start with CM_
-                var databases = databaseContext.QueryService.ExecuteTable("SELECT name FROM sys.databases WHERE name LIKE 'CM_%';");
+                // Get and validate SCCM databases
+                string[] requiredTables = { "Sites", "SC_Component", "RbacSecuredObject", "Collections", "vSMS_Boundary" };
+                var databases = databaseContext.SccmService.GetValidatedSccmDatabases(requiredTables, 3);
                 
-                if (databases.Rows.Count == 0)
+                if (databases.Count == 0)
                 {
-                    Logger.Warning("No databases found with SCCM naming pattern (CM_*)");
-                    Logger.InfoNested("SCCM databases typically follow the naming pattern: CM_<SiteCode>");
+                    Logger.Warning("No valid SCCM databases found");
                     return null;
                 }
 
-                Logger.Info($"Found {databases.Rows.Count} database(s) matching SCCM naming pattern");
-                Logger.NewLine();
-
-                int validSccmDatabases = 0;
-
-                // Process each potential SCCM database
-                foreach (DataRow row in databases.Rows)
+                if (databases.Count > 1)
                 {
-                    string sccmDatabase = row["name"].ToString();
-                    string siteCode = sccmDatabase.Substring(3); // Remove "CM_" prefix
-                    
-                    Logger.Info($"Validating database: {sccmDatabase}");
+                    Logger.Info($"Multiple SCCM databases detected: {databases.Count}");
+                    Logger.NewLine();
+                }
 
-                    // Validate this is actually an SCCM database by checking for core SCCM tables
-                    string validationQuery = $@"
-SELECT COUNT(*) AS TableCount
-FROM [{sccmDatabase}].INFORMATION_SCHEMA.TABLES
-WHERE TABLE_NAME IN ('Sites', 'SC_Component', 'RbacSecuredObject', 'Collections', 'vSMS_Boundary')
-AND TABLE_SCHEMA = 'dbo';
-";
+                // Process each validated SCCM database
+                foreach (string sccmDatabase in databases)
+                {
+                    string siteCode = SccmService.GetSiteCode(sccmDatabase);
+                    Logger.Info($"Enumerating SCCM database: {sccmDatabase} (Site Code: {siteCode})");
+                    Logger.NewLine();
 
-                    try
-                    {
-                        var validation = databaseContext.QueryService.ExecuteTable(validationQuery);
-                        int tableCount = Convert.ToInt32(validation.Rows[0]["TableCount"]);
-
-                        if (tableCount < 3)
-                        {
-                            Logger.Warning($"Database '{sccmDatabase}' does not appear to be a valid SCCM database (missing core tables)");
-                            Logger.NewLine();
-                            continue;
-                        }
-
-                        validSccmDatabases++;
-                        Logger.Success($"Confirmed SCCM database: {sccmDatabase} (Site Code: {siteCode})");
-                        Logger.NewLine();
-
-                    try
-                    {
-                        // Get site information
-                        string siteInfoQuery = $@"
+                    // Get site information
+                    string siteInfoQuery = $@"
 SELECT 
     SiteCode,
     SiteName,
@@ -87,17 +60,16 @@ FROM [{sccmDatabase}].dbo.Sites
 WHERE SiteCode = '{siteCode}';
 ";
 
-                        var siteInfo = databaseContext.QueryService.ExecuteTable(siteInfoQuery);
-                        
-                        if (siteInfo.Rows.Count > 0)
-                        {
-                            Logger.Success("Site Information");
-                            Console.WriteLine(OutputFormatter.ConvertDataTable(siteInfo));
-                            Logger.NewLine();
-                        }
+                    var siteInfo = databaseContext.QueryService.ExecuteTable(siteInfoQuery);
+                    
+                    if (siteInfo.Rows.Count > 0)
+                    {
+                        Logger.Success("Site Information");
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(siteInfo));
+                    }
 
-                        // Get component servers
-                        string componentQuery = $@"
+                    // Get component servers
+                    string componentQuery = $@"
 SELECT 
     ServerName,
     SiteCode,
@@ -109,17 +81,16 @@ WHERE SiteCode = '{siteCode}'
 ORDER BY ComponentName;
 ";
 
-                        var components = databaseContext.QueryService.ExecuteTable(componentQuery);
-                        
-                        if (components.Rows.Count > 0)
-                        {
-                            Logger.Success("SCCM Components");
-                            Console.WriteLine(OutputFormatter.ConvertDataTable(components));
-                            Logger.NewLine();
-                        }
+                    var components = databaseContext.QueryService.ExecuteTable(componentQuery);
+                    
+                    if (components.Rows.Count > 0)
+                    {
+                        Logger.Success("SCCM Components");
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(components));
+                    }
 
-                        // Get site system servers
-                        string siteSystemsQuery = $@"
+                    // Get site system servers
+                    string siteSystemsQuery = $@"
 SELECT 
     ServerName,
     RoleName,
@@ -129,17 +100,16 @@ WHERE SiteCode = '{siteCode}'
 ORDER BY ServerName, RoleName;
 ";
 
-                        var siteSystems = databaseContext.QueryService.ExecuteTable(siteSystemsQuery);
-                        
-                        if (siteSystems.Rows.Count > 0)
-                        {
-                            Logger.Success("Site System Roles");
-                            Console.WriteLine(OutputFormatter.ConvertDataTable(siteSystems));
-                            Logger.NewLine();
-                        }
+                    var siteSystems = databaseContext.QueryService.ExecuteTable(siteSystemsQuery);
+                    
+                    if (siteSystems.Rows.Count > 0)
+                    {
+                        Logger.Success("Site System Roles");
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(siteSystems));
+                    }
 
-                        // Get site boundaries
-                        string boundariesQuery = $@"
+                    // Get site boundaries
+                    string boundariesQuery = $@"
 SELECT 
     DisplayName,
     BoundaryType,
@@ -149,17 +119,16 @@ FROM [{sccmDatabase}].dbo.vSMS_Boundary
 ORDER BY BoundaryType, DisplayName;
 ";
 
-                        var boundaries = databaseContext.QueryService.ExecuteTable(boundariesQuery);
-                        
-                        if (boundaries.Rows.Count > 0)
-                        {
-                            Logger.Success("Network Boundaries");
-                            Console.WriteLine(OutputFormatter.ConvertDataTable(boundaries));
-                            Logger.NewLine();
-                        }
+                    var boundaries = databaseContext.QueryService.ExecuteTable(boundariesQuery);
+                    
+                    if (boundaries.Rows.Count > 0)
+                    {
+                        Logger.Success("Network Boundaries");
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(boundaries));
+                    }
 
-                        // Get distribution points
-                        string dpQuery = $@"
+                    // Get distribution points
+                    string dpQuery = $@"
 SELECT 
     ServerName,
     NALPath,
@@ -171,44 +140,24 @@ WHERE SiteCode = '{siteCode}'
 ORDER BY ServerName;
 ";
 
-                        var distributionPoints = databaseContext.QueryService.ExecuteTable(dpQuery);
-                        
-                        if (distributionPoints.Rows.Count > 0)
-                        {
-                            Logger.Success("Distribution Points");
-                            Console.WriteLine(OutputFormatter.ConvertDataTable(distributionPoints));
-                            Logger.NewLine();
-                        }
-
-                    }
-                    catch (Exception ex)
+                    var distributionPoints = databaseContext.QueryService.ExecuteTable(dpQuery);
+                    
+                    if (distributionPoints.Rows.Count > 0)
                     {
-                        Logger.Error($"Failed to query SCCM database '{sccmDatabase}': {ex.Message}");
-                        Logger.ErrorNested("Ensure you have appropriate permissions to read SCCM tables");
-                    }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Error($"Failed to validate database '{sccmDatabase}': {ex.Message}");
+                        Logger.Success("Distribution Points");
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(distributionPoints));
                     }
                 }
 
                 Logger.NewLine();
-                if (validSccmDatabases == 0)
-                {
-                    Logger.Warning("No valid SCCM databases were found");
-                }
-                else
-                {
-                    Logger.Success($"Successfully enumerated {validSccmDatabases} SCCM database(s)");
-                }
+                Logger.Success($"Successfully enumerated {databases.Count} SCCM database(s)");
 
                 return null;
             }
             catch (Exception ex)
             {
                 Logger.Error($"Failed to enumerate SCCM databases: {ex.Message}");
-                Logger.Debug($"Stack trace: {ex.StackTrace}");
+                Logger.TraceNested($"Stack trace: {ex.StackTrace}");
                 return null;
             }
         }
