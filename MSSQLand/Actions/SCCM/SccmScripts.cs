@@ -86,6 +86,9 @@ ORDER BY LastUpdateTime DESC;
                         Logger.InfoNested($"Script Parameters: {decodedParams}");
                     }
 
+                    Logger.InfoNested("Script Content:");
+                    Logger.NewLine();
+
                     byte[] scriptBlob = row.Field<byte[]>("Script") ?? Array.Empty<byte>();
                     if (scriptBlob.Length != 0)
                     {
