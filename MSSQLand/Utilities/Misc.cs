@@ -105,22 +105,25 @@ namespace MSSQLand.Utilities
             return message;
         }
 
-        private static (Encoding Encoding, int BomLength) DetectEncoding(ReadOnlySpan<byte> data)
+        public static (Encoding Encoding, int BomLength) DetectEncoding(byte[] data)
         {
-            if (data.StartsWith(new byte[] { 0xEF, 0xBB, 0xBF }))
+            if (data == null || data.Length == 0)
+                return (Encoding.UTF8, 0);
+
+            if (data.Length >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF)
                 return (Encoding.UTF8, 3);
 
-            if (data.StartsWith(new byte[] { 0xFF, 0xFE }))
+            if (data.Length >= 2 && data[0] == 0xFF && data[1] == 0xFE)
                 return (Encoding.Unicode, 2); // UTF-16 LE
 
-            if (data.StartsWith(new byte[] { 0xFE, 0xFF }))
+            if (data.Length >= 2 && data[0] == 0xFE && data[1] == 0xFF)
                 return (Encoding.BigEndianUnicode, 2); // UTF-16 BE
 
             // Default: UTF-8 without BOM
             return (Encoding.UTF8, 0);
         }
 
-        private static string DecodeText(byte[] data, Encoding encoding, int offset)
+        public static string DecodeText(byte[] data, Encoding encoding, int offset)
         {
             if (data == null || data.Length <= offset)
                 return string.Empty;
