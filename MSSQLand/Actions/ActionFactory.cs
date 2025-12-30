@@ -103,7 +103,8 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             { "sccm-info", (typeof(SccmInfo), "Retrieve SCCM site information including site code, version, components, and distribution points.") },
             { "sccm-admins", (typeof(SccmAdmins), "Enumerate SCCM RBAC administrators.") },
-            { "sccm-scripts", (typeof(SccmScripts), "Enumerate SCCM scripts.") }
+            { "sccm-scripts", (typeof(SccmScripts), "Enumerate SCCM scripts.") },
+            { "sccm-passwords", (typeof(SccmPasswords), "Enumerate SCCM stored credentials and encrypted passwords.") }
         };
 
         public static BaseAction GetAction(string actionType, string[] actionArguments)

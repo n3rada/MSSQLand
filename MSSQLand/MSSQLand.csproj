@@ -132,6 +132,7 @@
     <Compile Include="Actions\SCCM\SccmInfo.cs" />
     <Compile Include="Actions\SCCM\SccmAdmins.cs" />
     <Compile Include="Actions\SCCM\SccmScripts.cs" />
+    <Compile Include="Actions\SCCM\SccmPasswords.cs" />
 
     <Compile Include="Exceptions\ActionNotFoundException.cs" />
     <Compile Include="Exceptions\AuthenticationFailedException.cs" />
