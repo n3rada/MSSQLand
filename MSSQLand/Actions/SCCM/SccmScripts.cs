@@ -43,7 +43,7 @@ SELECT
     Author,
     CAST(Script AS NVARCHAR(MAX)) AS Script,
     LastUpdateTime
-FROM [CM_<SiteCode>].dbo.Scripts
+FROM [{db}].dbo.Scripts
 ORDER BY LastUpdateTime DESC;
 ";
 
