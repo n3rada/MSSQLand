@@ -266,7 +266,7 @@ SELECT
         ELSE CAST(b.BoundaryType AS VARCHAR(10))
     END AS BoundaryType,
     b.Value,
-    bg.GroupName,
+    bg.Name AS BoundaryGroup,
     b.BoundaryID
 FROM [{database}].dbo.BoundaryEx b
 LEFT JOIN [{database}].dbo.BoundaryGroupMembers bgm ON b.BoundaryID = bgm.BoundaryID
