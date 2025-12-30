@@ -57,7 +57,7 @@ ORDER BY LastUpdateTime DESC;
                 {
                     string scriptName = row.Field<string>("ScriptName") ?? string.Empty;
 
-                    string scriptGUID = row.Field<string>("ScriptGuid") ?? string.Empty;
+                    string scriptGUID = row.Field<Guid?>("ScriptGuid")?.ToString() ?? string.Empty;
 
                     string author = row.Field<string>("Author") ?? string.Empty;
 
