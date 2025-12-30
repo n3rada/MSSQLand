@@ -40,7 +40,7 @@ namespace MSSQLand.Actions.SCCM
 
                 string query = $@"
 SELECT *
-FROM [CM_PSC].dbo.Scripts
+FROM [{db}].dbo.Scripts
 WHERE Author <> 'CM'
 ORDER BY LastUpdateTime DESC;
 ";
