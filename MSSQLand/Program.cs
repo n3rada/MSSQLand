@@ -103,6 +103,7 @@ namespace MSSQLand
                 Logger.NewLine();
 
                 if (authService.Server.Legacy){
+                    Logger.NewLine();
                     Logger.Warning("Connected to a legacy SQL Server version (2016 or earlier).");
                 }
                 

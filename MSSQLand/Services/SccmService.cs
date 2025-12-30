@@ -164,11 +164,14 @@ ORDER BY ComponentName;
             return _queryService.ExecuteTable($@"
 SELECT 
     ComponentName,
-    MachineName,
-    Status,
-    Errors,
-    Warnings,
-    Infos
+    Name AS MachineName,
+    CASE Flags 
+        WHEN 2 THEN 'OK'
+        WHEN 5 THEN 'Warning'
+        WHEN 6 THEN 'Error'
+        ELSE 'Unknown'
+    END AS Status,
+    SiteNumber
 FROM [{database}].dbo.SC_Component
 ORDER BY ComponentName;
 ");
@@ -201,12 +204,29 @@ ORDER BY ServerName, RoleName;
             Logger.Debug("Querying site system roles using SC_SysResUse base table");
             return _queryService.ExecuteTable($@"
 SELECT 
-    SiteCode,
-    RoleName,
-    NALPath,
-    SiteSystem
-FROM [{database}].dbo.SC_SysResUse
-ORDER BY SiteSystem, RoleName;
+    sr.NALPath,
+    sr.RoleTypeID,
+    CASE sr.RoleTypeID
+        WHEN 2 THEN 'SMS Provider'
+        WHEN 3 THEN 'Distribution Point'
+        WHEN 4 THEN 'Management Point'
+        WHEN 5 THEN 'Fallback Status Point'
+        WHEN 6 THEN 'Site Server'
+        WHEN 11 THEN 'Software Update Point'
+        WHEN 16 THEN 'Application Catalog Web Service Point'
+        WHEN 17 THEN 'Application Catalog Website Point'
+        WHEN 21 THEN 'Reporting Services Point'
+        WHEN 22 THEN 'Enrollment Point'
+        WHEN 23 THEN 'Enrollment Proxy Point'
+        WHEN 25 THEN 'Asset Intelligence Synchronization Point'
+        WHEN 27 THEN 'State Migration Point'
+        WHEN 28 THEN 'System Health Validator Point'
+        WHEN 31 THEN 'Out Of Band Service Point'
+        ELSE CAST(sr.RoleTypeID AS VARCHAR(10))
+    END AS RoleName,
+    sr.NALResType
+FROM [{database}].dbo.SC_SysResUse sr
+ORDER BY sr.NALPath, sr.RoleTypeID;
 ");
         }
 
@@ -237,15 +257,21 @@ ORDER BY BoundaryType, DisplayName;
             Logger.Debug("Querying boundaries using BoundaryEx base table");
             return _queryService.ExecuteTable($@"
 SELECT 
-    b.DisplayName,
-    b.BoundaryType,
+    b.Name AS DisplayName,
+    CASE b.BoundaryType
+        WHEN 0 THEN 'IP Subnet'
+        WHEN 1 THEN 'AD Site'
+        WHEN 2 THEN 'IPv6 Prefix'
+        WHEN 3 THEN 'IP Range'
+        ELSE CAST(b.BoundaryType AS VARCHAR(10))
+    END AS BoundaryType,
     b.Value,
     bg.GroupName,
-    b.SiteCode
+    b.BoundaryID
 FROM [{database}].dbo.BoundaryEx b
 LEFT JOIN [{database}].dbo.BoundaryGroupMembers bgm ON b.BoundaryID = bgm.BoundaryID
 LEFT JOIN [{database}].dbo.BoundaryGroup bg ON bgm.GroupID = bg.GroupID
-ORDER BY b.BoundaryType, b.DisplayName;
+ORDER BY b.BoundaryType, b.Name;
 ");
         }
 
@@ -277,9 +303,11 @@ ORDER BY ServerName;
             return _queryService.ExecuteTable($@"
 SELECT 
     ServerName,
-    SiteCode,
+    SMSSiteCode AS SiteCode,
     NALPath,
-    Description
+    Description,
+    CASE WHEN IsPXE = 1 THEN 'Yes' ELSE 'No' END AS PXE_Enabled,
+    CASE WHEN IsActive = 1 THEN 'Active' ELSE 'Inactive' END AS Status
 FROM [{database}].dbo.DistributionPoints
 ORDER BY ServerName;
 ");
