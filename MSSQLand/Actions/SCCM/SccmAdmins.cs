@@ -38,6 +38,7 @@ namespace MSSQLand.Actions.SCCM
                 foreach (string sccmDatabase in databases)
                 {
                     string siteCode = SccmService.GetSiteCode(sccmDatabase);
+                    Logger.NewLine();
                     Logger.Info($"Enumerating RBAC admins from: {sccmDatabase} (Site Code: {siteCode})");
                     Logger.NewLine();
 
