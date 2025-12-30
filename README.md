@@ -23,7 +23,7 @@ MSSQLand.exe <host> [options] <action> [action-options]
 ```
 
 > [!NOTE]
-> Omitting `<action>` performs a connection test only - authenticates and exits without running queries. Ideal for credential validation with minimal OPSEC footprint.
+> Omitting `<action>` performs a connection test only. It authenticates and exits without running queries. Ideal for credential validation with minimal OPSEC footprint.
 
 > [!TIP]
 > Avoid typing out all the **[RPC Out](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql)** or **[OPENQUERY](https://learn.microsoft.com/fr-fr/sql/t-sql/functions/openquery-transact-sql)** calls manually. Let the tool handle any linked servers chain with the `-l` argument, so you can focus on the big picture.
