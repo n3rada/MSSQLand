@@ -105,6 +105,29 @@ namespace MSSQLand.Utilities
             return message;
         }
 
+        private static (Encoding Encoding, int BomLength) DetectEncoding(ReadOnlySpan<byte> data)
+        {
+            if (data.StartsWith(new byte[] { 0xEF, 0xBB, 0xBF }))
+                return (Encoding.UTF8, 3);
+
+            if (data.StartsWith(new byte[] { 0xFF, 0xFE }))
+                return (Encoding.Unicode, 2); // UTF-16 LE
+
+            if (data.StartsWith(new byte[] { 0xFE, 0xFF }))
+                return (Encoding.BigEndianUnicode, 2); // UTF-16 BE
+
+            // Default: UTF-8 without BOM
+            return (Encoding.UTF8, 0);
+        }
+
+        private static string DecodeText(byte[] data, Encoding encoding, int offset)
+        {
+            if (data == null || data.Length <= offset)
+                return string.Empty;
+
+            return encoding.GetString(data, offset, data.Length - offset);
+        }
+
         /// <summary>
         /// Extracts a value from an XML string using an XPath expression.
         /// </summary>

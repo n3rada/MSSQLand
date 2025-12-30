@@ -1,8 +1,11 @@
 using MSSQLand.Services;
 using MSSQLand.Utilities;
-using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Text;
 
 namespace MSSQLand.Actions.SCCM
 {
@@ -36,14 +39,9 @@ namespace MSSQLand.Actions.SCCM
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
                 string query = $@"
-SELECT
-    ScriptGuid,
-    ScriptName,
-    ScriptDescription,
-    Author,
-    CAST(Script AS NVARCHAR(MAX)) AS Script,
-    LastUpdateTime
-FROM [{db}].dbo.Scripts
+SELECT *
+FROM [CM_PSC].dbo.Scripts
+WHERE Author <> 'CM'
 ORDER BY LastUpdateTime DESC;
 ";
 
@@ -55,10 +53,49 @@ ORDER BY LastUpdateTime DESC;
                     continue;
                 }
 
-                Console.WriteLine(OutputFormatter.ConvertDataTable(result));
+                foreach (DataRow row in result.Rows)
+                {
+                    string scriptName = row.Field<string>("ScriptName") ?? string.Empty;
+
+                    string scriptGUID = row.Field<string>("ScriptGuid") ?? string.Empty;
+
+                    string author = row.Field<string>("Author") ?? string.Empty;
+
+                    Logger.NewLine();
+                    Logger.Info($"{scriptName} (GUID: {scriptGUID}) - {author}");
+
+                    DateTime lastUpdated = row.Field<DateTime?>("LastUpdateTime") ?? DateTime.MinValue;
+
+                    if (lastUpdated != DateTime.MinValue)
+                    {
+                        Logger.InfoNested($"Last Updated: {lastUpdated}");
+                    }
+
+                    string scriptDescription = row.Field<string>("ScriptDescription") ?? string.Empty;
+
+                    if (!string.IsNullOrEmpty(scriptDescription))
+                    {
+                        Logger.InfoNested($"Description: {scriptDescription}");
+                    }
+
+                    string scriptParamsDefinition = row.Field<string>("ParamsDefinition") ?? string.Empty;
+
+                    if (!string.IsNullOrWhiteSpace(scriptParamsDefinition))
+                    {
+                        string decodedParams = Encoding.ASCII.GetString(Convert.FromBase64String(scriptParamsDefinition));
+                        Logger.InfoNested($"Script Parameters: {decodedParams}");
+                    }
+
+                    byte[] scriptBlob = row.Field<byte[]>("Script") ?? Array.Empty<byte>();
+                    if (scriptBlob.Length != 0)
+                    {
+                        var (encoding, bomLength) = Misc.DetectEncoding(scriptBlob);
+                        string decodedScript = Misc.DecodeText(scriptBlob, encoding, bomLength);
+                        Console.WriteLine(decodedScript);
+                    }
+                }
             }
 
-            Logger.Success("Script enumeration completed");
             return null;
         }
     }
