@@ -41,9 +41,9 @@ SELECT
     ScriptName,
     ScriptDescription,
     Author,
-    Script,
+    CAST(Script AS NVARCHAR(MAX)) AS Script,
     LastUpdateTime
-FROM [{db}].dbo.Scripts
+FROM [CM_<SiteCode>].dbo.Scripts
 ORDER BY LastUpdateTime DESC;
 ";
 
@@ -55,7 +55,6 @@ ORDER BY LastUpdateTime DESC;
                     continue;
                 }
 
-                Logger.Success("SCCM Scripts");
                 Console.WriteLine(OutputFormatter.ConvertDataTable(result));
             }
 
