@@ -18,7 +18,10 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 1, ShortName = "o", LongName = "online", Description = "Show only online devices (default: false)")]
         private bool _onlineOnly = false;
 
-        [ArgumentMetadata(Position = 2, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 2, ShortName = "u", LongName = "require-lastuser", Description = "Show only devices with a LastUser value (default: false)")]
+        private bool _requireLastUser = false;
+
+        [ArgumentMetadata(Position = 3, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
@@ -36,9 +39,16 @@ namespace MSSQLand.Actions.SCCM
                 _onlineOnly = bool.Parse(onlineStr);
             }
 
+            string requireLastUserStr = GetNamedArgument(named, "u", null)
+                                     ?? GetNamedArgument(named, "require-lastuser", null);
+            if (!string.IsNullOrEmpty(requireLastUserStr))
+            {
+                _requireLastUser = bool.Parse(requireLastUserStr);
+            }
+
             string limitStr = GetNamedArgument(named, "l", null)
                            ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 1);
+                           ?? GetPositionalArgument(positional, 2);
             if (!string.IsNullOrEmpty(limitStr))
             {
                 _limit = int.Parse(limitStr);
@@ -49,7 +59,8 @@ namespace MSSQLand.Actions.SCCM
         {
             string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
             string onlineMsg = _onlineOnly ? " (online only)" : "";
-            Logger.TaskNested($"Enumerating SCCM devices{filterMsg}{onlineMsg}");
+            string lastUserMsg = _requireLastUser ? " (with last user)" : "";
+            Logger.TaskNested($"Enumerating SCCM devices{filterMsg}{onlineMsg}{lastUserMsg}");
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -85,6 +96,12 @@ namespace MSSQLand.Actions.SCCM
                     if (_onlineOnly)
                     {
                         whereClause += " AND bgb.OnlineStatus = 1";
+                    }
+
+                    // Add last user filter
+                    if (_requireLastUser)
+                    {
+                        whereClause += " AND sys.User_Name0 IS NOT NULL AND sys.User_Name0 != ''";
                     }
 
                     string topClause = _limit > 0 ? $"TOP {_limit}" : "";

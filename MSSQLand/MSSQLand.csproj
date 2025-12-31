@@ -137,6 +137,7 @@
     <Compile Include="Actions\SCCM\SccmInfo.cs" Condition="'$(EnableSCCM)' == 'true'" />
     <Compile Include="Actions\SCCM\SccmAdmins.cs" Condition="'$(EnableSCCM)' == 'true'" />
     <Compile Include="Actions\SCCM\SccmServers.cs" Condition="'$(EnableSCCM)' == 'true'" />
+    <Compile Include="Actions\SCCM\SccmCollections.cs" Condition="'$(EnableSCCM)' == 'true'" />
     <Compile Include="Actions\SCCM\SccmDevices.cs" Condition="'$(EnableSCCM)' == 'true'" />
     <Compile Include="Actions\SCCM\SccmDevicesBgb.cs" Condition="'$(EnableSCCM)' == 'true'" />
     <Compile Include="Actions\SCCM\SccmScripts.cs" Condition="'$(EnableSCCM)' == 'true'" />
