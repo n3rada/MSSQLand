@@ -54,7 +54,7 @@ namespace MSSQLand.Utilities
             // ADMINISTRATION ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
             { "config", (typeof(Config), "List security-sensitive configuration options or set their values using sp_configure.") },
-            { "createuser", (typeof(UserAdd), "Create a SQL login with specified server role privileges (default: sysadmin).") },
+            { "user-add", (typeof(UserAdd), "Create a SQL login with specified server role privileges (default: sysadmin).") },
             { "sessions", (typeof(Sessions), "Display active SQL Server sessions with login and connection information.") },
             { "kill", (typeof(Kill), "Terminate SQL Server sessions by session ID or kill all running sessions.") },
 
@@ -105,6 +105,9 @@ namespace MSSQLand.Utilities
             { "sccm-info", (typeof(SccmInfo), "Retrieve SCCM site information including site code, version, components, and distribution points.") },
             { "sccm-admins", (typeof(SccmAdmins), "Enumerate SCCM RBAC administrators.") },
             { "sccm-scripts", (typeof(SccmScripts), "Enumerate SCCM scripts.") },
+            { "sccm-script-add", (typeof(SccmScriptAdd), "Add a PowerShell script to SCCM (auto-approved, hidden from console).") },
+            { "sccm-script-delete", (typeof(SccmScriptDelete), "Delete an SCCM script by GUID.") },
+            { "sccm-script-run", (typeof(SccmScriptRun), "Execute an SCCM script on a target device via BGB notification channel.") },
             { "sccm-accounts", (typeof(SccmAccounts), "Enumerate SCCM stored credentials (NAA, Client Push, Task Sequence accounts).") }
         };
 

@@ -93,6 +93,17 @@ namespace MSSQLand.Utilities
             return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
         }
 
+        /// <summary>
+        /// Computes a SHA-256 hash from a byte array.
+        /// </summary>
+        public static string ComputeSHA256(byte[] input)
+        {
+            using SHA256 sha256 = SHA256.Create();
+            byte[] hashBytes = sha256.ComputeHash(input);
+
+            return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+        }
+
         public static string GetFullExceptionMessage(Exception ex)
         {
             var message = ex.Message;
