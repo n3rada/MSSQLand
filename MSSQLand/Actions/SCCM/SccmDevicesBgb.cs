@@ -68,7 +68,11 @@ namespace MSSQLand.Actions.SCCM
 
                     string topClause = _limit > 0 ? $"TOP {_limit}" : "";
 
-                    string query = $@"
+                    string query;
+                    if (databaseContext.QueryService.ExecutionServer.IsLegacy)
+                    {
+                        // SQL Server 2016 and earlier: Use STUFF + FOR XML PATH
+                        query = $@"
 SELECT {topClause}
     sys.ResourceID,
     sys.Name0 AS DeviceName,
@@ -91,7 +95,34 @@ SELECT {topClause}
 FROM [{db}].dbo.v_R_System sys
 INNER JOIN [{db}].dbo.BGB_ResStatus brs ON sys.ResourceID = brs.ResourceID
 {whereClause}
+GROUP BY sys.ResourceID, sys.Name0, brs.OnlineStatus, brs.LastOnlineTime, brs.LastOfflineTime, brs.IPAddress, brs.AccessMP
 ORDER BY brs.LastOnlineTime DESC";
+                    }
+                    else
+                    {
+                        // SQL Server 2017+: Use STRING_AGG
+                        query = $@"
+SELECT {topClause}
+    sys.ResourceID,
+    sys.Name0 AS DeviceName,
+    CASE 
+        WHEN brs.OnlineStatus = 1 THEN 'Online'
+        WHEN brs.OnlineStatus = 0 THEN 'Offline'
+        ELSE 'Unknown'
+    END AS OnlineStatus,
+    brs.LastOnlineTime,
+    brs.LastOfflineTime,
+    brs.IPAddress,
+    brs.AccessMP,
+    STRING_AGG(col.Name, ', ') AS Collections
+FROM [{db}].dbo.v_R_System sys
+INNER JOIN [{db}].dbo.BGB_ResStatus brs ON sys.ResourceID = brs.ResourceID
+LEFT JOIN [{db}].dbo.v_FullCollectionMembership cm ON sys.ResourceID = cm.ResourceID
+LEFT JOIN [{db}].dbo.v_Collection col ON cm.CollectionID = col.CollectionID AND col.CollectionType = 2
+{whereClause}
+GROUP BY sys.ResourceID, sys.Name0, brs.OnlineStatus, brs.LastOnlineTime, brs.LastOfflineTime, brs.IPAddress, brs.AccessMP
+ORDER BY brs.LastOnlineTime DESC";
+                    }
 
                     DataTable statusTable = databaseContext.QueryService.ExecuteTable(query);
 

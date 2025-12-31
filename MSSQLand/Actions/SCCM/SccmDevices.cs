@@ -106,7 +106,11 @@ namespace MSSQLand.Actions.SCCM
 
                     string topClause = _limit > 0 ? $"TOP {_limit}" : "";
 
-                    string query = $@"
+                    string query;
+                    if (databaseContext.QueryService.ExecutionServer.IsLegacy)
+                    {
+                        // SQL Server 2016 and earlier: Use STUFF + FOR XML PATH
+                        query = $@"
 SELECT {topClause}
     sys.ResourceID,
     sys.Name0 AS DeviceName,
@@ -139,6 +143,40 @@ ORDER BY
     bgb.OnlineStatus,
     sys.Resource_Domain_OR_Workgr0,
     bgb.LastOnlineTime DESC";
+                    }
+                    else
+                    {
+                        // SQL Server 2017+: Use STRING_AGG
+                        query = $@"
+SELECT {topClause}
+    sys.ResourceID,
+    sys.Name0 AS DeviceName,
+    sys.Resource_Domain_OR_Workgr0 AS Domain,
+    sys.SMS_Unique_Identifier0 AS SMSID,
+    sys.Operating_System_Name_and0 AS OperatingSystem,
+    sys.User_Name0 AS LastUser,
+    sys.AD_Site_Name0 AS ADSite,
+    bgb.OnlineStatus,
+    bgb.LastOnlineTime,
+    sys.Last_Logon_Timestamp0 AS LastLogon,
+    sys.Client_Version0 AS ClientVersion,
+    sys.Client0 AS Client,
+    sys.Decommissioned0 AS Decommissioned,
+    STRING_AGG(col.Name, ', ') AS Collections
+FROM [{db}].dbo.v_R_System sys
+LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
+LEFT JOIN [{db}].dbo.v_RA_System_IPAddresses SYSIP ON sys.ResourceID = SYSIP.ResourceID
+LEFT JOIN [{db}].dbo.v_FullCollectionMembership cm ON sys.ResourceID = cm.ResourceID
+LEFT JOIN [{db}].dbo.v_Collection col ON cm.CollectionID = col.CollectionID AND col.CollectionType = 2
+{whereClause}
+GROUP BY sys.ResourceID, sys.Name0, sys.Resource_Domain_OR_Workgr0, sys.SMS_Unique_Identifier0,
+         sys.Operating_System_Name_and0, sys.User_Name0, sys.AD_Site_Name0, bgb.OnlineStatus,
+         bgb.LastOnlineTime, sys.Last_Logon_Timestamp0, sys.Client_Version0, sys.Client0, sys.Decommissioned0
+ORDER BY 
+    bgb.OnlineStatus,
+    sys.Resource_Domain_OR_Workgr0,
+    bgb.LastOnlineTime DESC";
+                    }
 
                     DataTable devicesTable = databaseContext.QueryService.ExecuteTable(query);
 
