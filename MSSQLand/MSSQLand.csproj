@@ -141,6 +141,7 @@
     <Compile Include="Actions\SCCM\SccmScriptRun.cs" />
     <Compile Include="Actions\SCCM\SccmScriptStatus.cs" />
     <Compile Include="Actions\SCCM\SccmAccounts.cs" />
+    <Compile Include="Actions\SCCM\SccmAadApps.cs" />
 
     <Compile Include="Exceptions\ActionNotFoundException.cs" />
     <Compile Include="Exceptions\AuthenticationFailedException.cs" />

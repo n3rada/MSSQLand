@@ -112,7 +112,8 @@ namespace MSSQLand.Utilities
             { "sccm-script-delete", (typeof(SccmScriptDelete), "Delete an SCCM script by GUID.") },
             { "sccm-script-run", (typeof(SccmScriptRun), "Execute an SCCM script on a target device via BGB notification channel.") },
             { "sccm-script-status", (typeof(SccmScriptStatus), "Check the execution status of an SCCM script task.") },
-            { "sccm-accounts", (typeof(SccmAccounts), "Enumerate SCCM stored credentials (NAA, Client Push, Task Sequence accounts).") }
+            { "sccm-accounts", (typeof(SccmAccounts), "Enumerate SCCM stored credentials (NAA, Client Push, Task Sequence accounts).") },
+            { "sccm-aad-apps", (typeof(SccmAadApps), "List Azure AD application configurations with encrypted secrets.") }
         };
 
         public static BaseAction GetAction(string actionType, string[] actionArguments)
