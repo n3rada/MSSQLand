@@ -16,13 +16,16 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by name, IP, or username")]
         private string _filter = "";
 
-        [ArgumentMetadata(Position = 1, ShortName = "o", LongName = "online", Description = "Show only online devices (default: false)")]
+        [ArgumentMetadata(Position = 1, ShortName = "d", LongName = "domain", Description = "Filter by domain")]
+        private string _domain = "";
+
+        [ArgumentMetadata(Position = 2, ShortName = "o", LongName = "online", Description = "Show only online devices (default: false)")]
         private bool _onlineOnly = false;
 
-        [ArgumentMetadata(Position = 2, ShortName = "u", LongName = "require-lastuser", Description = "Show only devices with a LastUser value (default: false)")]
+        [ArgumentMetadata(Position = 3, ShortName = "u", LongName = "require-lastuser", Description = "Show only devices with a LastUser value (default: false)")]
         private bool _requireLastUser = false;
 
-        [ArgumentMetadata(Position = 3, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 4, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
@@ -32,6 +35,10 @@ namespace MSSQLand.Actions.SCCM
             _filter = GetNamedArgument(named, "f", null)
                    ?? GetNamedArgument(named, "filter", null)
                    ?? GetPositionalArgument(positional, 0, "");
+
+            _domain = GetNamedArgument(named, "d", null)
+                   ?? GetNamedArgument(named, "domain", null)
+                   ?? GetPositionalArgument(positional, 1, "");
 
             string onlineStr = GetNamedArgument(named, "o", null)
                             ?? GetNamedArgument(named, "online", null);
@@ -49,7 +56,7 @@ namespace MSSQLand.Actions.SCCM
 
             string limitStr = GetNamedArgument(named, "l", null)
                            ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 2);
+                           ?? GetPositionalArgument(positional, 3);
             if (!string.IsNullOrEmpty(limitStr))
             {
                 _limit = int.Parse(limitStr);
@@ -59,9 +66,10 @@ namespace MSSQLand.Actions.SCCM
         public override object? Execute(DatabaseContext databaseContext)
         {
             string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
+            string domainMsg = !string.IsNullOrEmpty(_domain) ? $" (domain: {_domain})" : "";
             string onlineMsg = _onlineOnly ? " (online only)" : "";
             string lastUserMsg = _requireLastUser ? " (with last user)" : "";
-            Logger.TaskNested($"Enumerating SCCM devices{filterMsg}{onlineMsg}{lastUserMsg}");
+            Logger.TaskNested($"Enumerating SCCM devices{filterMsg}{domainMsg}{onlineMsg}{lastUserMsg}");
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -91,6 +99,12 @@ namespace MSSQLand.Actions.SCCM
                                       $"OR sys.User_Name0 LIKE '%{_filter.Replace("'", "''")}%' " +
                                       $"OR sys.Resource_Domain_OR_Workgr0 LIKE '%{_filter.Replace("'", "''")}%' " +
                                       $"OR SYSIP.IP_Addresses0 LIKE '{_filter.Replace("'", "''")}%')";
+                    }
+
+                    // Add domain filter
+                    if (!string.IsNullOrEmpty(_domain))
+                    {
+                        whereClause += $" AND sys.Resource_Domain_OR_Workgr0 LIKE '%{_domain.Replace("'", "''")}%'";
                     }
 
                     // Add online status filter
