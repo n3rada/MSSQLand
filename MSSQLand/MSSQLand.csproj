@@ -75,7 +75,7 @@
     <Compile Include="Actions\ExcludeFromArgumentsAttribute.cs" />
 
     <Compile Include="Actions\Administration\Config.cs" />
-    <Compile Include="Actions\Administration\CreateUser.cs" />
+    <Compile Include="Actions\Administration\UserAdd.cs" />
     <Compile Include="Actions\Administration\Kill.cs" />
     <Compile Include="Actions\Administration\Monitor.cs" />
     <Compile Include="Actions\Administration\Sessions.cs" />

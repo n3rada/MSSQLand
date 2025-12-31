@@ -54,7 +54,7 @@ namespace MSSQLand.Utilities
             // ADMINISTRATION ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
             { "config", (typeof(Config), "List security-sensitive configuration options or set their values using sp_configure.") },
-            { "createuser", (typeof(CreateUser), "Create a SQL login with specified server role privileges (default: sysadmin).") },
+            { "createuser", (typeof(UserAdd), "Create a SQL login with specified server role privileges (default: sysadmin).") },
             { "sessions", (typeof(Sessions), "Display active SQL Server sessions with login and connection information.") },
             { "kill", (typeof(Kill), "Terminate SQL Server sessions by session ID or kill all running sessions.") },
 
