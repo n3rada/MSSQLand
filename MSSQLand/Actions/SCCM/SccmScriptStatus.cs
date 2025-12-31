@@ -105,11 +105,19 @@ WHERE ses.TaskID = {_taskId}";
 
                         try
                         {
-                            // Try to parse as JSON array
-                            var lines = System.Text.Json.JsonSerializer.Deserialize<string[]>(scriptOutput);
-                            foreach (var line in lines)
+                            // Try to parse as JSON array (simple parsing for .NET 4.8)
+                            if (scriptOutput.StartsWith("[") && scriptOutput.EndsWith("]"))
                             {
-                                Console.WriteLine(line);
+                                string cleaned = scriptOutput.Trim('[', ']').Replace("\\\\", "\\").Replace("\\\"", "\"");
+                                string[] lines = cleaned.Split(new[] { "\",\"" }, StringSplitOptions.RemoveEmptyEntries);
+                                foreach (var line in lines)
+                                {
+                                    Console.WriteLine(line.Trim('\"'));
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine(scriptOutput);
                             }
                         }
                         catch

@@ -88,7 +88,7 @@ ORDER BY a.LastUpdateTime DESC";
                     Logger.NewLine();
 
                     IOutputFormatter formatter = OutputFormatterFactory.GetFormatter(_format);
-                    formatter.Format(appsTable);
+                    Console.WriteLine(formatter.ConvertDataTable(appsTable));
 
                     // Show decryption hint if secrets found
                     bool hasSecrets = false;

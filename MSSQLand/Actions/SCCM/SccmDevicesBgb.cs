@@ -105,7 +105,7 @@ ORDER BY brs.OnlineStatus DESC, sys.Name0";
                     Logger.NewLine();
 
                     IOutputFormatter formatter = OutputFormatterFactory.GetFormatter(_format);
-                    formatter.Format(statusTable);
+                    Console.WriteLine(formatter.ConvertDataTable(statusTable));
                 }
                 catch (Exception ex)
                 {

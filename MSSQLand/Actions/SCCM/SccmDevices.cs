@@ -135,7 +135,7 @@ ORDER BY sys.Name0";
                     Logger.NewLine();
 
                     IOutputFormatter formatter = OutputFormatterFactory.GetFormatter(_format);
-                    formatter.Format(devicesTable);
+                    Console.WriteLine(formatter.ConvertDataTable(devicesTable));
                 }
                 catch (Exception ex)
                 {

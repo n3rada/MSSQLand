@@ -77,7 +77,7 @@ ORDER BY sd.SiteCode, sd.SiteServerName";
                     Logger.NewLine();
 
                     IOutputFormatter formatter = OutputFormatterFactory.GetFormatter(_format);
-                    formatter.Format(serversTable);
+                    Console.WriteLine(formatter.ConvertDataTable(serversTable));
                 }
                 catch (Exception ex)
                 {
