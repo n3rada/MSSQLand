@@ -106,7 +106,7 @@ SELECT {topClause}
     RefreshSchedule,
     LastRefreshTime,
     LastMemberChangeTime
-FROM [{db}].dbo.Collections_G
+FROM [{db}].dbo.v_Collection
 {whereClause}
 ORDER BY CollectionType, Name";
 

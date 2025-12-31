@@ -80,11 +80,18 @@ SELECT {topClause}
     brs.LastOnlineTime,
     brs.LastOfflineTime,
     brs.IPAddress,
-    brs.AccessMP
+    brs.AccessMP,
+    STUFF((
+        SELECT ', ' + col.Name
+        FROM [{db}].dbo.v_FullCollectionMembership cm
+        INNER JOIN [{db}].dbo.v_Collection col ON cm.CollectionID = col.CollectionID
+        WHERE cm.ResourceID = sys.ResourceID AND col.CollectionType = 2
+        FOR XML PATH(''), TYPE
+    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS Collections
 FROM [{db}].dbo.v_R_System sys
 INNER JOIN [{db}].dbo.BGB_ResStatus brs ON sys.ResourceID = brs.ResourceID
 {whereClause}
-ORDER BY brs.OnlineStatus DESC, sys.Name0";
+ORDER BY brs.LastOnlineTime DESC";
 
                     DataTable statusTable = databaseContext.QueryService.ExecuteTable(query);
 

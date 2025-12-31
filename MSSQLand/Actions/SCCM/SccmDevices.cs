@@ -123,8 +123,8 @@ SELECT {topClause}
     sys.Decommissioned0 AS Decommissioned,
     STUFF((
         SELECT ', ' + col.Name
-        FROM [{db}].dbo.CollectionMembers cm
-        INNER JOIN [{db}].dbo.Collections_G col ON cm.CollectionID = col.CollectionID
+        FROM [{db}].dbo.v_FullCollectionMembership cm
+        INNER JOIN [{db}].dbo.v_Collection col ON cm.CollectionID = col.CollectionID
         WHERE cm.ResourceID = sys.ResourceID AND col.CollectionType = 2
         FOR XML PATH(''), TYPE
     ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS Collections
