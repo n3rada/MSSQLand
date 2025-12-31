@@ -61,24 +61,24 @@ namespace MSSQLand.Actions.SCCM
 
                 string filterClause = string.IsNullOrEmpty(_filter)
                     ? "WHERE CIType_ID = 10"
-                    : $"WHERE CIType_ID = 10 AND DisplayName LIKE '%{_filter}%'";
+                    : $"WHERE CIType_ID = 10 AND ModelName LIKE '%{_filter}%'";
 
                 string query = $@"
 SELECT TOP {_limit}
     CI_ID,
-    DisplayName,
-    Description,
-    SoftwareVersion,
-    Publisher,
+    ModelName,
+    CI_UniqueID,
+    CIVersion,
     IsDeployed,
     IsEnabled,
     IsExpired,
     IsSuperseded,
-    NumberOfDeployments,
-    NumberOfDevicesWithApp,
-    NumberOfUsersWithApp,
+    IsHidden,
+    IsUserDefined,
+    ContentSourcePath,
     CreatedBy,
     DateCreated,
+    LastModifiedBy,
     DateLastModified,
     SourceSite
 FROM [{db}].dbo.v_ConfigurationItems
