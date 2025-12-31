@@ -70,22 +70,7 @@ SELECT TOP {_limit}
     ds.CollectionID,
     c.Name AS CollectionName,
     ds.FeatureType,
-    CASE ds.FeatureType
-        WHEN 1 THEN 'Application'
-        WHEN 2 THEN 'Package'
-        WHEN 3 THEN 'Software Update'
-        WHEN 4 THEN 'Task Sequence'
-        WHEN 5 THEN 'Device Setting'
-        WHEN 7 THEN 'Baseline'
-        ELSE CAST(ds.FeatureType AS VARCHAR)
-    END AS DeploymentType,
     ds.DeploymentIntent,
-    CASE ds.DeploymentIntent
-        WHEN 1 THEN 'Required'
-        WHEN 2 THEN 'Available'
-        WHEN 3 THEN 'Simulate'
-        ELSE CAST(ds.DeploymentIntent AS VARCHAR)
-    END AS Intent,
     ds.NumberSuccess,
     ds.NumberInProgress,
     ds.NumberErrors,

@@ -72,18 +72,6 @@ SELECT TOP {_limit}
     p.Manufacturer,
     p.Version,
     p.PackageType,
-    CASE p.PackageType
-        WHEN 0 THEN 'Software Distribution'
-        WHEN 3 THEN 'Driver Package'
-        WHEN 4 THEN 'Task Sequence'
-        WHEN 5 THEN 'Software Update'
-        WHEN 6 THEN 'Device Setting'
-        WHEN 8 THEN 'Application'
-        WHEN 257 THEN 'Image Package'
-        WHEN 258 THEN 'Boot Image'
-        WHEN 259 THEN 'OS Install Package'
-        ELSE CAST(p.PackageType AS VARCHAR)
-    END AS PackageTypeName,
     p.PackageSize,
     p.StoredPkgPath,
     p.SourceVersion,

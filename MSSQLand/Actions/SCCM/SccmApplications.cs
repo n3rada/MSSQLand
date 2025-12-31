@@ -60,36 +60,36 @@ namespace MSSQLand.Actions.SCCM
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
                 string filterClause = string.IsNullOrEmpty(_filter)
-                    ? ""
-                    : $"WHERE app.DisplayName LIKE '%{_filter}%'";
+                    ? "WHERE ci.CIType_ID = 10"
+                    : $"WHERE ci.CIType_ID = 10 AND ci.DisplayName LIKE '%{_filter}%'";
 
                 string query = $@"
 SELECT TOP {_limit}
-    app.CI_ID,
-    app.DisplayName,
-    app.SoftwareVersion,
-    app.Publisher,
-    app.IsDeployed,
-    app.IsEnabled,
-    app.IsExpired,
-    app.IsSuperseded,
-    app.NumberOfDeployments,
-    app.NumberOfDevicesWithApp,
-    app.NumberOfUsersWithApp,
-    app.CreatedBy,
-    app.DateCreated,
-    app.DateLastModified,
-    app.SourceSite,
-    dt.Technology AS DeploymentType,
+    ci.CI_ID,
+    ci.DisplayName,
+    ci.Description,
+    ci.SoftwareVersion,
+    ci.Publisher,
+    ci.IsDeployed,
+    ci.IsEnabled,
+    ci.IsExpired,
+    ci.IsSuperseded,
+    ci.NumberOfDeployments,
+    ci.NumberOfDevicesWithApp,
+    ci.NumberOfUsersWithApp,
+    ci.CreatedBy,
+    ci.DateCreated,
+    ci.DateLastModified,
+    ci.SourceSite,
+    dt.Technology AS DeploymentTechnology,
     dt.ContentLocation,
     dt.InstallCommandLine,
     dt.UninstallCommandLine,
     dt.ExecutionContext
-FROM [{db}].dbo.v_ApplicationAssignment app
-LEFT JOIN [{db}].dbo.v_ConfigurationItems ci ON app.CI_ID = ci.CI_ID
+FROM [{db}].dbo.v_ConfigurationItems ci
 LEFT JOIN [{db}].dbo.v_DeploymentType dt ON ci.ModelName = dt.AppModelName
 {filterClause}
-ORDER BY app.DisplayName;
+ORDER BY ci.IsDeployed DESC, ci.DateCreated DESC;
 ";
 
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);

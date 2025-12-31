@@ -69,11 +69,7 @@ SELECT DISTINCT
     dp.IsPullDP,
     dp.IsMulticast,
     dp.IsPXE,
-    CASE dp.DPType
-        WHEN 0 THEN 'Distribution Point'
-        WHEN 1 THEN 'Pull Distribution Point'
-        ELSE CAST(dp.DPType AS VARCHAR)
-    END AS DPType,
+    dp.DPType,
     COUNT(DISTINCT dps.PackageID) AS PackageCount
 FROM [{db}].dbo.v_DistributionPoint dp
 LEFT JOIN [{db}].dbo.v_DistributionPointStatus dps ON dp.ServerName = dps.ServerName
