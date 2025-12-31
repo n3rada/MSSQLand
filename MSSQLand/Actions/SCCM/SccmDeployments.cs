@@ -43,7 +43,7 @@ namespace MSSQLand.Actions.SCCM
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
-            string[] requiredTables = { "vSMS_DeploymentSummary", "v_Collection" };
+            string[] requiredTables = { "v_DeploymentSummary", "v_Collection" };
             var databases = sccmService.GetValidatedSccmDatabases(requiredTables, 1);
 
             if (databases.Count == 0)
@@ -79,7 +79,7 @@ SELECT TOP {_limit}
     ds.DeploymentTime,
     ds.CreationTime,
     ds.ModificationTime
-FROM [{db}].dbo.vSMS_DeploymentSummary ds
+FROM [{db}].dbo.v_DeploymentSummary ds
 LEFT JOIN [{db}].dbo.v_Collection c ON ds.CollectionID = c.CollectionID
 {filterClause}
 ORDER BY ds.CreationTime DESC;
