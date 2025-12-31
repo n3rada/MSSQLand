@@ -125,25 +125,17 @@ namespace MSSQLand.Utilities
 
         public static BaseAction GetAction(string actionType, string[] actionArguments)
         {
-            try
+            if (!ActionMetadata.TryGetValue(actionType.ToLower(), out var metadata))
             {
-                if (!ActionMetadata.TryGetValue(actionType.ToLower(), out var metadata))
-                {
-                    throw new ActionNotFoundException(actionType);
-                }
-
-                // Create an instance of the action class
-                BaseAction action = (BaseAction)Activator.CreateInstance(metadata.ActionClass);
-
-                // Validate and initialize the action with the action arguments
-                action.ValidateArguments(actionArguments);
-                return action;
+                throw new ActionNotFoundException(actionType);
             }
-            catch (Exception ex)
-            {
-                Logger.Error($"Error creating action for type '{actionType}': {ex.Message}");
-                throw;
-            }
+
+            // Create an instance of the action class
+            BaseAction action = (BaseAction)Activator.CreateInstance(metadata.ActionClass);
+
+            // Validate and initialize the action with the action arguments
+            action.ValidateArguments(actionArguments);
+            return action;
         }
 
         public static List<(string ActionName, string Description, List<string> Arguments, string Category)> GetAvailableActions()
