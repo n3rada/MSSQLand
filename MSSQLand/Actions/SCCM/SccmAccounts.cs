@@ -41,11 +41,13 @@ namespace MSSQLand.Actions.SCCM
 
                 string query = $@"
 SELECT
+    ua.ID,
+    ua.SiteNumber,
     ua.UserName,
-    ua.Usage,
+    CONVERT(VARCHAR(MAX), ua.Password, 1) AS Password,
+    ua.Availability,
     sd.SiteCode,
-    sd.SiteServerName,
-    CONVERT(VARCHAR(MAX), ua.Password, 1) AS Password
+    sd.SiteServerName
 FROM [{db}].dbo.SC_UserAccount ua
 LEFT JOIN [{db}].dbo.SC_SiteDefinition sd ON ua.SiteNumber = sd.SiteNumber
 ORDER BY ua.UserName;
