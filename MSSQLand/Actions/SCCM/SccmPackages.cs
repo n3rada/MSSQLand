@@ -72,7 +72,6 @@ SELECT TOP {_limit}
     p.Manufacturer,
     p.Version,
     p.PackageType,
-    p.PackageSize,
     p.StoredPkgPath,
     p.SourceVersion,
     p.SourceDate,
@@ -83,7 +82,7 @@ LEFT JOIN [{db}].dbo.v_Program pr ON p.PackageID = pr.PackageID
 {filterClause}
 GROUP BY 
     p.PackageID, p.Name, p.Description, p.PkgSourcePath, 
-    p.Manufacturer, p.Version, p.PackageType, p.PackageSize,
+    p.Manufacturer, p.Version, p.PackageType,
     p.StoredPkgPath, p.SourceVersion, p.SourceDate, p.LastRefreshTime
 ORDER BY p.Name;
 ";

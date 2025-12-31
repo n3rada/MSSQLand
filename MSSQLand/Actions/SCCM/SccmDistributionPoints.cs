@@ -49,35 +49,30 @@ namespace MSSQLand.Actions.SCCM
 
                 string filterClause = string.IsNullOrEmpty(_filter)
                     ? ""
-                    : $"WHERE dp.ServerName LIKE '%{_filter}%'";
+                    : $"WHERE ServerName LIKE '%{_filter}%'";
 
                 string query = $@"
-SELECT DISTINCT
-    dp.ServerName,
-    dp.NALPath,
+SELECT
+    ServerName,
+    NALPath,
     CASE 
-        WHEN dp.NALPath LIKE '%\\\\%' THEN 
-            SUBSTRING(dp.NALPath, CHARINDEX('\\\\', dp.NALPath) + 2, 
+        WHEN NALPath LIKE '%\\\\%' THEN 
+            SUBSTRING(NALPath, CHARINDEX('\\\\', NALPath) + 2, 
                 CASE 
-                    WHEN CHARINDEX('\\', dp.NALPath, CHARINDEX('\\\\', dp.NALPath) + 2) > 0 
-                    THEN CHARINDEX('\\', dp.NALPath, CHARINDEX('\\\\', dp.NALPath) + 2) - CHARINDEX('\\\\', dp.NALPath) - 2
-                    ELSE LEN(dp.NALPath)
+                    WHEN CHARINDEX('\\', NALPath, CHARINDEX('\\\\', NALPath) + 2) > 0 
+                    THEN CHARINDEX('\\', NALPath, CHARINDEX('\\\\', NALPath) + 2) - CHARINDEX('\\\\', NALPath) - 2
+                    ELSE LEN(NALPath)
                 END)
         ELSE NULL
     END AS ContentShare,
-    dp.SiteCode,
-    dp.IsPullDP,
-    dp.IsMulticast,
-    dp.IsPXE,
-    dp.DPType,
-    COUNT(DISTINCT dps.PackageID) AS PackageCount
-FROM [{db}].dbo.v_DistributionPoint dp
-LEFT JOIN [{db}].dbo.v_DistributionPointStatus dps ON dp.ServerName = dps.ServerName
+    SiteCode,
+    IsPullDP,
+    IsMulticast,
+    IsPXE,
+    DPType
+FROM [{db}].dbo.v_DistributionPoint
 {filterClause}
-GROUP BY 
-    dp.ServerName, dp.NALPath, dp.SiteCode, dp.IsPullDP, 
-    dp.IsMulticast, dp.IsPXE, dp.DPType
-ORDER BY dp.ServerName;
+ORDER BY ServerName;
 ";
 
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
