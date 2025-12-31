@@ -44,23 +44,30 @@ namespace MSSQLand.Actions.Database
             // Parse the table name to extract database, schema, and table
             string[] parts = _fqtn.Split('.');
 
+            // Helper function to strip brackets from a part
+            string StripBrackets(string part)
+            {
+                if (string.IsNullOrEmpty(part)) return part;
+                return part.Trim('[', ']');
+            }
+
             if (parts.Length == 3) // Format: database.schema.table
             {
-                _database = parts[0];
-                _schema = parts[1];
-                _table = parts[2];
+                _database = StripBrackets(parts[0]);
+                _schema = StripBrackets(parts[1]);
+                _table = StripBrackets(parts[2]);
             }
             else if (parts.Length == 2) // Format: schema.table (SQL Server standard)
             {
                 _database = null; // Use the current database
-                _schema = parts[0];
-                _table = parts[1];
+                _schema = StripBrackets(parts[0]);
+                _table = StripBrackets(parts[1]);
             }
             else if (parts.Length == 1) // Format: table
             {
                 _database = null; // Use the current database
                 _schema = "dbo"; // Default to dbo schema
-                _table = parts[0];
+                _table = StripBrackets(parts[0]);
             }
             else
             {
