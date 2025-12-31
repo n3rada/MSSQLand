@@ -181,9 +181,10 @@ ORDER BY brs.LastOnlineTime DESC";
                         }
                     }
 
-                    Logger.Success($"Found {statusTable.Rows.Count} device(s) with BGB status");
-
+                
                     Console.WriteLine(OutputFormatter.ConvertDataTable(statusTable));
+
+                    Logger.Success($"Found {statusTable.Rows.Count} device(s) with BGB status");
                 }
                 catch (Exception ex)
                 {
