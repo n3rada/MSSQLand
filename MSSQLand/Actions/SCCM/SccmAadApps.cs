@@ -48,6 +48,25 @@ namespace MSSQLand.Actions.SCCM
 
                 try
                 {
+                    // First check if tables exist and have data
+                    string checkQuery = $@"
+SELECT 
+    (SELECT COUNT(*) FROM [{db}].dbo.AAD_Application_Ex) AS AppCount,
+    (SELECT COUNT(*) FROM [{db}].dbo.AAD_Tenant_Ex) AS TenantCount";
+
+                    DataTable checkResult = databaseContext.QueryService.ExecuteTable(checkQuery);
+                    int appCount = Convert.ToInt32(checkResult.Rows[0]["AppCount"]);
+                    int tenantCount = Convert.ToInt32(checkResult.Rows[0]["TenantCount"]);
+
+                    Logger.InfoNested($"AAD_Application_Ex: {appCount} row(s)");
+                    Logger.InfoNested($"AAD_Tenant_Ex: {tenantCount} row(s)");
+
+                    if (appCount == 0)
+                    {
+                        Logger.Warning("No Azure AD applications configured in SCCM");
+                        continue;
+                    }
+
                     string whereClause = "";
                     if (!string.IsNullOrEmpty(_filter))
                     {
