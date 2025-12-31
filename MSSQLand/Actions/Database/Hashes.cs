@@ -36,12 +36,10 @@ namespace MSSQLand.Actions.Database
             string query = @"
                 SELECT 
                     name AS LoginName,
-                    type_desc AS Type,
-                    is_disabled AS IsDisabled,
-                    create_date AS CreateDate,
                     CONVERT(VARCHAR(MAX), password_hash, 1) AS PasswordHash
                 FROM master.sys.sql_logins
                 WHERE password_hash IS NOT NULL
+                AND name NOT LIKE '##MS_%##'
                 ORDER BY name;";
 
             DataTable hashTable = databaseContext.QueryService.ExecuteTable(query);
@@ -51,8 +49,6 @@ namespace MSSQLand.Actions.Database
                 Logger.Warning("No SQL logins with password hashes found");
                 return null;
             }
-
-            // Console.WriteLine(OutputFormatter.ConvertDataTable(hashTable));
 
             var hashcatOutput = new StringBuilder();
             bool hasLegacyHashes = false;
@@ -90,14 +86,15 @@ namespace MSSQLand.Actions.Database
                 }
             }
 
+            Logger.NewLine();
             Console.WriteLine(hashcatOutput.ToString());
 
             if (hasLegacyHashes){
-                Logger.Info("Note: Detected legacy SQL Server hashes (2000-2008 format, mode 131)");
+                Logger.Info("Legacy SQL Server hashes (2000-2008 format, mode 131)");
             }
-            
+
             if (hasModernHashes){
-                Logger.Info("Note: Detected modern SQL Server hashes (2012+ format, mode 1731)");
+                Logger.Info("Modern SQL Server hashes (2012+ format, mode 1731)");
             }
 
             Logger.Success($"Extracted {hashTable.Rows.Count} password hashes");
