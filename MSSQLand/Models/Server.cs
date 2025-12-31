@@ -32,7 +32,7 @@ namespace MSSQLand.Models
                 MajorVersion = ParseMajorVersion(version);
                 if (MajorVersion <= 13)
                 {
-                    Legacy = true;
+                    IsLegacy = true;
                 }
             }
         }
@@ -42,7 +42,7 @@ namespace MSSQLand.Models
         /// </summary>
         public int MajorVersion { get; private set; }
 
-        public bool Legacy { get; private set; } = false;
+        public bool IsLegacy { get; private set; } = false;
 
         public bool IsAzureSQL { get; set; } = false;
 

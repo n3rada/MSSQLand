@@ -199,7 +199,7 @@ namespace MSSQLand.Services
         /// <returns>True if the hash was successfully added, false otherwise.</returns>
         public bool RegisterTrustedAssembly(string assemblyHash, string assemblyDescription)
         {
-            if (_server.Legacy)
+            if (_server.IsLegacy)
             {
                 Logger.Warning("CLR hash cannot be added to legacy servers");
                 return false;

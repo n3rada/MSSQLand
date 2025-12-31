@@ -130,9 +130,9 @@ AND TABLE_SCHEMA = 'dbo';
         {
             // Use execution server (handles both direct connection and linked server chains)
             Server executionServer = _queryService.ExecutionServer;
-            bool usesViews = !executionServer.Legacy;
+            bool usesViews = !executionServer.IsLegacy;
             
-            Logger.Debug($"SQL Server version {executionServer.MajorVersion} (Legacy: {executionServer.Legacy}) - Using {(usesViews ? "vSMS_* views" : "base tables")}");
+            Logger.Debug($"SQL Server version {executionServer.MajorVersion} (IsLegacy: {executionServer.IsLegacy}) - Using {(usesViews ? "vSMS_* views" : "base tables")}");
             return usesViews;
         }
 

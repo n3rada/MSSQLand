@@ -102,7 +102,7 @@ namespace MSSQLand
 
                 Logger.NewLine();
 
-                if (authService.Server.Legacy){
+                if (authService.Server.IsLegacy){
                     Logger.NewLine();
                     Logger.Warning("Connected to a legacy SQL Server version (2016 or earlier).");
                 }
@@ -177,7 +177,7 @@ namespace MSSQLand
                     Logger.InfoNested($"Execution database: {databaseContext.QueryService.ExecutionServer.Database}");
 
                     // Warn about legacy server on execution server
-                    if (databaseContext.QueryService.ExecutionServer.Legacy)
+                    if (databaseContext.QueryService.ExecutionServer.IsLegacy)
                     {
                         Logger.NewLine();
                         Logger.Warning($"Execution server '{databaseContext.QueryService.ExecutionServer.Hostname}' is running legacy SQL Server (version {databaseContext.QueryService.ExecutionServer.MajorVersion}).");
