@@ -19,7 +19,7 @@ namespace MSSQLand.Actions.SCCM
         private string _collectionType = "";
 
         [ArgumentMetadata(Position = 2, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 100)")]
-        private int _limit = 100;
+        private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
         {
@@ -47,6 +47,7 @@ namespace MSSQLand.Actions.SCCM
             string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
             string typeMsg = !string.IsNullOrEmpty(_collectionType) ? $" (type: {_collectionType})" : "";
             Logger.TaskNested($"Enumerating SCCM collections{filterMsg}{typeMsg}");
+            Logger.TaskNested($"Limit: {_limit}");
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
