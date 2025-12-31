@@ -95,7 +95,7 @@ namespace MSSQLand.Actions.SCCM
 SELECT {topClause} *
 FROM [{db}].dbo.v_Collection
 {whereClause}
-ORDER BY CollectionType, Name";
+ORDER BY CollectionType, MemberCount DESC, LastMemberChangeTime DESC";
 
                     DataTable collectionsTable = databaseContext.QueryService.ExecuteTable(query);
 
