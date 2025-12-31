@@ -97,11 +97,7 @@ SELECT {topClause}
     sys.Operating_System_Name_and0 AS OperatingSystem,
     sys.User_Name0 AS LastUser,
     sys.AD_Site_Name0 AS ADSite,
-    CASE 
-        WHEN bgb.OnlineStatus = 1 THEN 'Online'
-        WHEN bgb.OnlineStatus = 0 THEN 'Offline'
-        ELSE 'Unknown'
-    END AS Status,
+    bgb.OnlineStatus,
     bgb.LastOnlineTime,
     sys.Last_Logon_Timestamp0 AS LastLogon,
     sys.Client_Version0 AS ClientVersion,
@@ -114,7 +110,10 @@ LEFT JOIN [{db}].dbo.v_RA_System_IPAddresses SYSIP ON sys.ResourceID = SYSIP.Res
 GROUP BY sys.ResourceID, sys.Name0, sys.Resource_Domain_OR_Workgr0, sys.SMS_Unique_Identifier0,
          sys.Operating_System_Name_and0, sys.User_Name0, sys.AD_Site_Name0, bgb.OnlineStatus,
          bgb.LastOnlineTime, sys.Last_Logon_Timestamp0, sys.Client_Version0, sys.Client0, sys.Decommissioned0
-ORDER BY sys.Name0";
+ORDER BY 
+    bgb.OnlineStatus,
+    sys.Resource_Domain_OR_Workgr0,
+    bgb.LastOnlineTime DESC";
 
                     DataTable devicesTable = databaseContext.QueryService.ExecuteTable(query);
 
@@ -125,7 +124,6 @@ ORDER BY sys.Name0";
                     }
 
                     Logger.Success($"Found {devicesTable.Rows.Count} device(s)");
-                    Logger.NewLine();
 
                     Console.WriteLine(OutputFormatter.ConvertDataTable(devicesTable));
                 }
