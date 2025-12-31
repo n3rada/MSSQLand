@@ -136,6 +136,7 @@
     <Compile Include="Actions\SCCM\SccmScriptAdd.cs" />
     <Compile Include="Actions\SCCM\SccmScriptDelete.cs" />
     <Compile Include="Actions\SCCM\SccmScriptRun.cs" />
+    <Compile Include="Actions\SCCM\SccmScriptStatus.cs" />
     <Compile Include="Actions\SCCM\SccmAccounts.cs" />
 
     <Compile Include="Exceptions\ActionNotFoundException.cs" />

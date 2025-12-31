@@ -21,58 +21,30 @@ namespace MSSQLand.Actions.SCCM
     /// </summary>
     internal class SccmScriptRun : BaseAction
     {
-        [ArgumentMetadata(Position = 0, ShortName = "r", LongName = "resourceid", Description = "Target device ResourceID")]
+        [ArgumentMetadata(Position = 0, ShortName = "r", LongName = "resourceid", Description = "Target device ResourceID", Required = true)]
         private string _resourceId;
 
-        [ArgumentMetadata(Position = 1, ShortName = "g", LongName = "scriptguid", Description = "Script GUID to execute")]
+        [ArgumentMetadata(Position = 1, ShortName = "g", LongName = "scriptguid", Description = "Script GUID to execute", Required = true)]
         private string _scriptGuid;
-
-        [ArgumentMetadata(Position = 2, ShortName = "w", LongName = "wait", Description = "Wait for execution output (default: true)")]
-        private bool _waitForOutput = true;
-
-        [ArgumentMetadata(Position = 3, ShortName = "t", LongName = "timeout", Description = "Timeout in seconds (default: 60)")]
-        private int _timeout = 60;
 
         public override void ValidateArguments(string[] args)
         {
             var (named, positional) = ParseActionArguments(args);
 
-            // Named arguments
-            if (named.TryGetValue("r", out string resourceId) || named.TryGetValue("resourceid", out resourceId))
-            {
-                _resourceId = resourceId;
-            }
-
-            if (named.TryGetValue("g", out string guid) || named.TryGetValue("scriptguid", out guid))
-            {
-                _scriptGuid = guid;
-            }
-
-            if (named.TryGetValue("w", out string wait) || named.TryGetValue("wait", out wait))
-            {
-                _waitForOutput = bool.Parse(wait);
-            }
-
-            if (named.TryGetValue("t", out string timeout) || named.TryGetValue("timeout", out timeout))
-            {
-                _timeout = int.Parse(timeout);
-            }
-
-            // Positional arguments
-            if (!named.ContainsKey("r") && !named.ContainsKey("resourceid") && positional.Count > 0)
-            {
-                _resourceId = positional[0];
-            }
-
-            if (!named.ContainsKey("g") && !named.ContainsKey("scriptguid") && positional.Count > 1)
-            {
-                _scriptGuid = positional[1];
-            }
+            // ResourceID argument (required)
+            _resourceId = GetNamedArgument(named, "r", null)
+                       ?? GetNamedArgument(named, "resourceid", null)
+                       ?? GetPositionalArgument(positional, 0);
 
             if (string.IsNullOrWhiteSpace(_resourceId))
             {
                 throw new ArgumentException("ResourceID is required (--resourceid or -r)");
             }
+
+            // Script GUID argument (required)
+            _scriptGuid = GetNamedArgument(named, "g", null)
+                       ?? GetNamedArgument(named, "scriptguid", null)
+                       ?? GetPositionalArgument(positional, 1);
 
             if (string.IsNullOrWhiteSpace(_scriptGuid))
             {
@@ -178,71 +150,53 @@ VALUES
                     databaseContext.QueryService.ExecuteNonProcessing(insertResTaskQuery);
                     Logger.Success("Task pushed to device");
 
-                    // Step 7: Wait for execution output
-                    if (_waitForOutput)
-                    {
-                        Logger.TaskNested($"Waiting for execution output (timeout: {_timeout}s)");
-                        
-                        int elapsed = 0;
-                        int pollInterval = 5;
-                        bool outputReceived = false;
+                    // Step 7: Check status after brief delay
+                    Logger.TaskNested("Checking execution status...");
+                    Thread.Sleep(2000); // Wait 2 seconds for execution
 
-                        while (elapsed < _timeout)
-                        {
-                            Thread.Sleep(pollInterval * 1000);
-                            elapsed += pollInterval;
-
-                            string outputQuery = $@"
+                    string outputQuery = $@"
 SELECT ScriptExecutionState, ScriptExitCode, ScriptOutput 
 FROM [{db}].dbo.ScriptsExecutionStatus 
 WHERE TaskID = {taskId}";
 
-                            DataTable outputResult = databaseContext.QueryService.ExecuteTable(outputQuery);
+                    DataTable outputResult = databaseContext.QueryService.ExecuteTable(outputQuery);
 
-                            if (outputResult.Rows.Count > 0)
-                            {
-                                outputReceived = true;
-                                int exitCode = Convert.ToInt32(outputResult.Rows[0]["ScriptExitCode"]);
-                                string scriptOutput = outputResult.Rows[0]["ScriptOutput"]?.ToString() ?? string.Empty;
+                    if (outputResult.Rows.Count > 0)
+                    {
+                        int exitCode = Convert.ToInt32(outputResult.Rows[0]["ScriptExitCode"]);
+                        string scriptOutput = outputResult.Rows[0]["ScriptOutput"]?.ToString() ?? string.Empty;
 
-                                Logger.NewLine();
-                                Logger.Success($"Script execution completed (Exit Code: {exitCode})");
-                                Logger.TaskNested("Script Output:");
-                                Logger.NewLine();
+                        Logger.NewLine();
+                        Logger.Success($"Script execution completed (Exit Code: {exitCode})");
+                        Logger.TaskNested("Script Output:");
+                        Logger.NewLine();
 
-                                if (!string.IsNullOrEmpty(scriptOutput))
-                                {
-                                    try
-                                    {
-                                        // Try to parse as JSON array
-                                        var lines = System.Text.Json.JsonSerializer.Deserialize<string[]>(scriptOutput);
-                                        foreach (var line in lines)
-                                        {
-                                            Console.WriteLine(line);
-                                        }
-                                    }
-                                    catch
-                                    {
-                                        // Raw output
-                                        Console.WriteLine(scriptOutput);
-                                    }
-                                }
-                                else
-                                {
-                                    Logger.Warning("No output received");
-                                }
-
-                                break;
-                            }
-
-                            Logger.InfoNested($"Waiting... ({elapsed}s / {_timeout}s)");
-                        }
-
-                        if (!outputReceived)
+                        if (!string.IsNullOrEmpty(scriptOutput))
                         {
-                            Logger.Warning("Timeout waiting for output - script may still be executing");
-                            Logger.InfoNested($"Check manually: SELECT * FROM ScriptsExecutionStatus WHERE TaskID = {taskId}");
+                            try
+                            {
+                                // Try to parse as JSON array
+                                var lines = System.Text.Json.JsonSerializer.Deserialize<string[]>(scriptOutput);
+                                foreach (var line in lines)
+                                {
+                                    Console.WriteLine(line);
+                                }
+                            }
+                            catch
+                            {
+                                // Raw output
+                                Console.WriteLine(scriptOutput);
+                            }
                         }
+                        else
+                        {
+                            Logger.Warning("No output received");
+                        }
+                    }
+                    else
+                    {
+                        Logger.Warning("Script is still executing or waiting in queue");
+                        Logger.InfoNested($"Use 'sccm-script-status --taskid {taskId}' to check status");
                     }
                 }
                 catch (Exception ex)

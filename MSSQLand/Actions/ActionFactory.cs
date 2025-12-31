@@ -108,6 +108,7 @@ namespace MSSQLand.Utilities
             { "sccm-script-add", (typeof(SccmScriptAdd), "Add a PowerShell script to SCCM (auto-approved, hidden from console).") },
             { "sccm-script-delete", (typeof(SccmScriptDelete), "Delete an SCCM script by GUID.") },
             { "sccm-script-run", (typeof(SccmScriptRun), "Execute an SCCM script on a target device via BGB notification channel.") },
+            { "sccm-script-status", (typeof(SccmScriptStatus), "Check the execution status of an SCCM script task.") },
             { "sccm-accounts", (typeof(SccmAccounts), "Enumerate SCCM stored credentials (NAA, Client Push, Task Sequence accounts).") }
         };
 
