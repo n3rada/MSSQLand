@@ -92,20 +92,7 @@ namespace MSSQLand.Actions.SCCM
                     string topClause = _limit > 0 ? $"TOP {_limit}" : "";
 
                     string query = $@"
-SELECT {topClause}
-    CollectionID,
-    Name AS CollectionName,
-    Comment,
-    MemberCount,
-    CASE CollectionType
-        WHEN 1 THEN 'User'
-        WHEN 2 THEN 'Device'
-        ELSE 'Unknown'
-    END AS CollectionType,
-    RefreshType,
-    RefreshSchedule,
-    LastRefreshTime,
-    LastMemberChangeTime
+SELECT {topClause} *
 FROM [{db}].dbo.v_Collection
 {whereClause}
 ORDER BY CollectionType, Name";

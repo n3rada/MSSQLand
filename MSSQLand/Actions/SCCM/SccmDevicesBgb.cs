@@ -3,6 +3,7 @@ using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
+using System.Linq;
 
 namespace MSSQLand.Actions.SCCM
 {
@@ -39,6 +40,7 @@ namespace MSSQLand.Actions.SCCM
         {
             string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
             Logger.TaskNested($"Enumerating SCCM devices BGB status{filterMsg}");
+            Logger.TaskNested($"Limit: {_limit}");
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -132,8 +134,54 @@ ORDER BY brs.LastOnlineTime DESC";
                         continue;
                     }
 
+                    // Add UniqueCollections column - shows collections NOT shared by all devices
+                    statusTable.Columns.Add("UniqueCollections", typeof(string));
+
+                    // Only compute unique collections if there are multiple devices
+                    if (statusTable.Rows.Count > 1)
+                    {
+                        var collectionCounts = new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                        var deviceCollections = new System.Collections.Generic.List<string[]>(statusTable.Rows.Count);
+                        int totalDevices = statusTable.Rows.Count;
+
+                        // Single pass: count collections and store splits
+                        foreach (DataRow row in statusTable.Rows)
+                        {
+                            string collectionsStr = row["Collections"]?.ToString() ?? "";
+                            string[] collections = string.IsNullOrEmpty(collectionsStr) 
+                                ? Array.Empty<string>() 
+                                : collectionsStr.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
+                            
+                            deviceCollections.Add(collections);
+
+                            foreach (var collection in collections)
+                            {
+                                if (collectionCounts.ContainsKey(collection))
+                                    collectionCounts[collection]++;
+                                else
+                                    collectionCounts[collection] = 1;
+                            }
+                        }
+
+                        // Find collections that are NOT in all devices
+                        var uniqueCollectionNames = new System.Collections.Generic.HashSet<string>(
+                            collectionCounts.Where(kvp => kvp.Value < totalDevices).Select(kvp => kvp.Key),
+                            StringComparer.OrdinalIgnoreCase
+                        );
+
+                        // Populate UniqueCollections using pre-split arrays
+                        for (int i = 0; i < statusTable.Rows.Count; i++)
+                        {
+                            var collections = deviceCollections[i];
+                            if (collections.Length > 0)
+                            {
+                                var uniqueOnes = collections.Where(c => uniqueCollectionNames.Contains(c));
+                                statusTable.Rows[i]["UniqueCollections"] = string.Join(", ", uniqueOnes);
+                            }
+                        }
+                    }
+
                     Logger.Success($"Found {statusTable.Rows.Count} device(s) with BGB status");
-                    Logger.NewLine();
 
                     Console.WriteLine(OutputFormatter.ConvertDataTable(statusTable));
                 }

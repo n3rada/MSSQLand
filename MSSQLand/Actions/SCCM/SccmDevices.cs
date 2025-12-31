@@ -70,6 +70,7 @@ namespace MSSQLand.Actions.SCCM
             string onlineMsg = _onlineOnly ? " (online only)" : "";
             string lastUserMsg = _requireLastUser ? " (with last user)" : "";
             Logger.TaskNested($"Enumerating SCCM devices{filterMsg}{domainMsg}{onlineMsg}{lastUserMsg}");
+            Logger.TaskNested($"Limit: {_limit}");
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
