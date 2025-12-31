@@ -49,30 +49,13 @@ namespace MSSQLand.Actions.SCCM
 
                 string filterClause = string.IsNullOrEmpty(_filter)
                     ? ""
-                    : $"WHERE ServerName LIKE '%{_filter}%'";
+                    : $"WHERE ServerNALPath LIKE '%{_filter}%'";
 
                 string query = $@"
-SELECT
-    ServerName,
-    NALPath,
-    CASE 
-        WHEN NALPath LIKE '%\\\\%' THEN 
-            SUBSTRING(NALPath, CHARINDEX('\\\\', NALPath) + 2, 
-                CASE 
-                    WHEN CHARINDEX('\\', NALPath, CHARINDEX('\\\\', NALPath) + 2) > 0 
-                    THEN CHARINDEX('\\', NALPath, CHARINDEX('\\\\', NALPath) + 2) - CHARINDEX('\\\\', NALPath) - 2
-                    ELSE LEN(NALPath)
-                END)
-        ELSE NULL
-    END AS ContentShare,
-    SiteCode,
-    IsPullDP,
-    IsMulticast,
-    IsPXE,
-    DPType
+SELECT *
 FROM [{db}].dbo.v_DistributionPoint
 {filterClause}
-ORDER BY ServerName;
+ORDER BY ServerNALPath;
 ";
 
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
