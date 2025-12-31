@@ -40,7 +40,6 @@ namespace MSSQLand.Actions.SCCM
                     string siteCode = SccmService.GetSiteCode(sccmDatabase);
                     Logger.NewLine();
                     Logger.Info($"Enumerating RBAC admins from: {sccmDatabase} (Site Code: {siteCode})");
-                    Logger.NewLine();
 
                     // Get SCCM RBAC administrators
                     string rbacAdminsQuery = $@"

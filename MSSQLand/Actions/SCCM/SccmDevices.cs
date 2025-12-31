@@ -64,6 +64,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
+                Logger.NewLine();
                 string siteCode = SccmService.GetSiteCode(db);
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
@@ -119,13 +120,15 @@ ORDER BY
 
                     if (devicesTable.Rows.Count == 0)
                     {
+                        Logger.NewLine();
                         Logger.Warning("No devices found");
                         continue;
                     }
 
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(devicesTable));
+
                     Logger.Success($"Found {devicesTable.Rows.Count} device(s)");
 
-                    Console.WriteLine(OutputFormatter.ConvertDataTable(devicesTable));
                 }
                 catch (Exception ex)
                 {
