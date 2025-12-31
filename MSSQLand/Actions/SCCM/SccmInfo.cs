@@ -36,23 +36,22 @@ namespace MSSQLand.Actions.SCCM
 
                 if (databases.Count > 1)
                 {
-                    Logger.Info($"Multiple SCCM databases detected: {databases.Count}");
-                    Logger.NewLine();
+                    Logger.TaskNested($"Multiple SCCM databases detected: {databases.Count}");
+                    foreach (string db in databases)
+                    {
+                        Logger.InfoNested($"- {db}");
+                    }
                 }
 
                 // Process each validated SCCM database
                 foreach (string sccmDatabase in databases)
                 {
+                    Logger.NewLine();
                     string siteCode = SccmService.GetSiteCode(sccmDatabase);
-                    Logger.NewLine();
-                    Logger.Info($"Enumerating SCCM database: {sccmDatabase} (Site Code: {siteCode})");
-                    Logger.NewLine();
+                    Logger.Info($"Enumerating SCCM database: {sccmDatabase} (Site Code: {siteCode})")
 
                     // Get site information
-                    string siteInfoQuery = $@"
-SELECT *
-FROM [{sccmDatabase}].dbo.Sites;
-";
+                    string siteInfoQuery = $"SELECT * FROM [{sccmDatabase}].dbo.Sites;";
 
                     var siteInfo = databaseContext.QueryService.ExecuteTable(siteInfoQuery);
                     
@@ -149,7 +148,6 @@ FROM [{sccmDatabase}].dbo.Sites;
                     }
                 }
 
-                Logger.NewLine();
                 Logger.Success($"Successfully enumerated {databases.Count} SCCM database(s)");
 
                 return null;
