@@ -3,6 +3,7 @@ using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
+using System.Linq;
 
 namespace MSSQLand.Actions.SCCM
 {
@@ -185,6 +186,53 @@ ORDER BY
                         Logger.NewLine();
                         Logger.Warning("No devices found");
                         continue;
+                    }
+
+                    // Add UniqueCollections column - shows collections NOT shared by all devices
+                    devicesTable.Columns.Add("UniqueCollections", typeof(string));
+
+                    // Only compute unique collections if there are multiple devices
+                    if (devicesTable.Rows.Count > 1)
+                    {
+                        var collectionCounts = new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                        var deviceCollections = new System.Collections.Generic.List<string[]>(devicesTable.Rows.Count);
+                        int totalDevices = devicesTable.Rows.Count;
+
+                        // Single pass: count collections and store splits
+                        foreach (DataRow row in devicesTable.Rows)
+                        {
+                            string collectionsStr = row["Collections"]?.ToString() ?? "";
+                            string[] collections = string.IsNullOrEmpty(collectionsStr) 
+                                ? Array.Empty<string>() 
+                                : collectionsStr.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
+                            
+                            deviceCollections.Add(collections);
+
+                            foreach (var collection in collections)
+                            {
+                                if (collectionCounts.ContainsKey(collection))
+                                    collectionCounts[collection]++;
+                                else
+                                    collectionCounts[collection] = 1;
+                            }
+                        }
+
+                        // Find collections that are NOT in all devices
+                        var uniqueCollectionNames = new System.Collections.Generic.HashSet<string>(
+                            collectionCounts.Where(kvp => kvp.Value < totalDevices).Select(kvp => kvp.Key),
+                            StringComparer.OrdinalIgnoreCase
+                        );
+
+                        // Populate UniqueCollections using pre-split arrays
+                        for (int i = 0; i < devicesTable.Rows.Count; i++)
+                        {
+                            var collections = deviceCollections[i];
+                            if (collections.Length > 0)
+                            {
+                                var uniqueOnes = collections.Where(c => uniqueCollectionNames.Contains(c));
+                                devicesTable.Rows[i]["UniqueCollections"] = string.Join(", ", uniqueOnes);
+                            }
+                        }
                     }
 
                     Console.WriteLine(OutputFormatter.ConvertDataTable(devicesTable));
