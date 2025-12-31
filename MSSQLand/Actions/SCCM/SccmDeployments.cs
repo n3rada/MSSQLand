@@ -61,12 +61,12 @@ namespace MSSQLand.Actions.SCCM
 
                 string filterClause = string.IsNullOrEmpty(_filter)
                     ? ""
-                    : $"WHERE ds.DeploymentName LIKE '%{_filter}%'";
+                    : $"WHERE ds.SoftwareName LIKE '%{_filter}%'";
 
                 string query = $@"
 SELECT TOP {_limit}
-    ds.DeploymentID,
-    ds.DeploymentName,
+    ds.AssignmentID,
+    ds.SoftwareName,
     ds.CollectionID,
     c.Name AS CollectionName,
     ds.FeatureType,
