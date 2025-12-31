@@ -33,24 +33,50 @@ namespace MSSQLand.Actions.Database
             {
                 // On-premises SQL Server: Show server logins and database users
                 Logger.TaskNested("Enumerating server-level principals (logins) and their instance-wide server roles");
-                string query = @"
-                    SELECT 
-                        sp.name AS Name, 
-                        sp.type_desc AS Type, 
-                        sp.is_disabled, 
-                        sp.create_date, 
-                        sp.modify_date,
-                        STRING_AGG(sr.name, ', ') AS groups
-                    FROM master.sys.server_principals sp
-                    LEFT JOIN master.sys.server_role_members srm ON sp.principal_id = srm.member_principal_id
-                    LEFT JOIN master.sys.server_principals sr ON srm.role_principal_id = sr.principal_id AND sr.type = 'R'
-                    WHERE sp.type IN ('G','U','E','S','X') AND sp.name NOT LIKE '##%'
-                    GROUP BY sp.name, sp.type_desc, sp.is_disabled, sp.create_date, sp.modify_date
-                    ORDER BY sp.modify_date DESC;";
+                
+                string query;
+                if (databaseContext.QueryService.ExecutionServer.IsLegacy)
+                {
+                    // SQL Server 2016 and earlier: Use STUFF + FOR XML PATH
+                    query = @"
+                        SELECT 
+                            sp.name AS Name, 
+                            sp.type_desc AS Type, 
+                            sp.is_disabled, 
+                            sp.create_date, 
+                            sp.modify_date,
+                            STUFF((
+                                SELECT ', ' + sr.name
+                                FROM master.sys.server_role_members srm2
+                                INNER JOIN master.sys.server_principals sr ON srm2.role_principal_id = sr.principal_id AND sr.type = 'R'
+                                WHERE srm2.member_principal_id = sp.principal_id
+                                FOR XML PATH(''), TYPE
+                            ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS groups
+                        FROM master.sys.server_principals sp
+                        WHERE sp.type IN ('G','U','E','S','X') AND sp.name NOT LIKE '##%'
+                        ORDER BY sp.modify_date DESC;";
+                }
+                else
+                {
+                    // SQL Server 2017+: Use STRING_AGG
+                    query = @"
+                        SELECT 
+                            sp.name AS Name, 
+                            sp.type_desc AS Type, 
+                            sp.is_disabled, 
+                            sp.create_date, 
+                            sp.modify_date,
+                            STRING_AGG(sr.name, ', ') AS groups
+                        FROM master.sys.server_principals sp
+                        LEFT JOIN master.sys.server_role_members srm ON sp.principal_id = srm.member_principal_id
+                        LEFT JOIN master.sys.server_principals sr ON srm.role_principal_id = sr.principal_id AND sr.type = 'R'
+                        WHERE sp.type IN ('G','U','E','S','X') AND sp.name NOT LIKE '##%'
+                        GROUP BY sp.name, sp.type_desc, sp.is_disabled, sp.create_date, sp.modify_date
+                        ORDER BY sp.modify_date DESC;";
+                }
 
-                DataTable rawTable = databaseContext.QueryService.ExecuteTable(query);
-
-                Console.WriteLine(OutputFormatter.ConvertDataTable(rawTable));
+                DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
+                Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
             }
 
             Logger.TaskNested("Database users in current database context");
