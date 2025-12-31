@@ -48,7 +48,7 @@ namespace MSSQLand.Actions.SCCM
                 {
                     Logger.NewLine();
                     string siteCode = SccmService.GetSiteCode(sccmDatabase);
-                    Logger.Info($"Enumerating SCCM database: {sccmDatabase} (Site Code: {siteCode})")
+                    Logger.Info($"Enumerating SCCM database: {sccmDatabase} (Site Code: {siteCode})");
 
                     // Get site information
                     string siteInfoQuery = $"SELECT * FROM [{sccmDatabase}].dbo.Sites;";
