@@ -44,7 +44,7 @@ namespace MSSQLand.Actions.SCCM
                 _limit = int.Parse(limitStr);
             }
 
-            _withMembers = HasNamedArgument(named, "wm") || HasNamedArgument(named, "with-members");
+            _withMembers = named.ContainsKey("wm") || named.ContainsKey("with-members");
         }
 
         public override object? Execute(DatabaseContext databaseContext)
