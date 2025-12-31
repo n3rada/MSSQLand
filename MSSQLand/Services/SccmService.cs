@@ -1,6 +1,9 @@
+// MSSQLand/Services/SccmService.cs
+
 using MSSQLand.Models;
 using MSSQLand.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 
@@ -13,6 +16,11 @@ namespace MSSQLand.Services
     {
         private readonly QueryService _queryService;
         private readonly Server _server;
+        
+        /// <summary>
+        /// Cache for vSMS_* views detection per execution server.
+        /// </summary>
+        private readonly ConcurrentDictionary<string, bool> _hasSccmViewsCache = new();
 
         public SccmService(QueryService queryService, Server server)
         {
@@ -123,9 +131,16 @@ AND TABLE_SCHEMA = 'dbo';
 
         /// <summary>
         /// Checks if the SCCM database has vSMS_* views or uses base tables.
+        /// Result is cached per execution server.
         /// </summary>
         public bool HasSccmViews()
         {
+            // Check cache first
+            if (_hasSccmViewsCache.TryGetValue(_queryService.ExecutionServer.Hostname, out bool hasViews))
+            {
+                return hasViews;
+            }
+
             try
             {
                 var result = _queryService.ExecuteScalar(@"
@@ -134,14 +149,22 @@ AND TABLE_SCHEMA = 'dbo';
                     WHERE name LIKE 'vSMS_%'");
         
                 int viewCount = Convert.ToInt32(result);
-                bool hasViews = viewCount > 0;
+                bool viewsExist = viewCount > 0;
         
-                Logger.Debug($"Found {viewCount} vSMS_* views - Using {(hasViews ? "views" : "base tables")}");
-                return hasViews;
+                Logger.Debug($"Found {viewCount} vSMS_* views - Using {(viewsExist ? "views" : "base tables")}");
+                
+                // Cache result for this execution server
+                _hasSccmViewsCache[_queryService.ExecutionServer.Hostname] = viewsExist;
+                
+                return viewsExist;
             }
             catch
             {
                 Logger.Debug("Failed to check for vSMS_* views, falling back to base tables");
+                
+                // Cache the fallback result
+                _hasSccmViewsCache[_queryService.ExecutionServer.Hostname] = false;
+                
                 return false;
             }
         }
