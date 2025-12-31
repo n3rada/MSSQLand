@@ -104,6 +104,9 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             { "sccm-info", (typeof(SccmInfo), "Retrieve SCCM site information including site code, version, components, and distribution points.") },
             { "sccm-admins", (typeof(SccmAdmins), "Enumerate SCCM RBAC administrators.") },
+            { "sccm-servers", (typeof(SccmServers), "List servers in the hierarchy with associated database server and site code.") },
+            { "sccm-devices", (typeof(SccmDevices), "List known devices with ResourceID, name, online status, and last activity.") },
+            { "sccm-devices-bgb", (typeof(SccmDevicesBgb), "List devices with BGB notification channel status (online/offline, last contact).") },
             { "sccm-scripts", (typeof(SccmScripts), "Enumerate SCCM scripts.") },
             { "sccm-script-add", (typeof(SccmScriptAdd), "Add a PowerShell script to SCCM (auto-approved, hidden from console).") },
             { "sccm-script-delete", (typeof(SccmScriptDelete), "Delete an SCCM script by GUID.") },

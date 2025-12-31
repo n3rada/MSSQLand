@@ -1,0 +1,119 @@
+using MSSQLand.Services;
+using MSSQLand.Utilities;
+using MSSQLand.Utilities.Formatters;
+using System;
+using System.Data;
+
+namespace MSSQLand.Actions.SCCM
+{
+    /// <summary>
+    /// List SCCM devices with BGB (Background) notification channel status.
+    /// Shows online/offline status, last contact times, and Management Point access.
+    /// </summary>
+    internal class SccmDevicesBgb : BaseAction
+    {
+        [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by name or IP address")]
+        private string _filter = "";
+
+        [ArgumentMetadata(Position = 1, ShortName = "fmt", LongName = "format", Description = "Output format (table, csv, markdown)")]
+        private string _format = "table";
+
+        [ArgumentMetadata(Position = 2, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
+        private int _limit = 50;
+
+        public override void ValidateArguments(string[] args)
+        {
+            var (named, positional) = ParseActionArguments(args);
+
+            _filter = GetNamedArgument(named, "f", null)
+                   ?? GetNamedArgument(named, "filter", null)
+                   ?? GetPositionalArgument(positional, 0, "");
+
+            _format = GetNamedArgument(named, "fmt", null)
+                   ?? GetNamedArgument(named, "format", null)
+                   ?? GetPositionalArgument(positional, 1, "table");
+
+            string limitStr = GetNamedArgument(named, "l", null)
+                           ?? GetNamedArgument(named, "limit", null)
+                           ?? GetPositionalArgument(positional, 2);
+            if (!string.IsNullOrEmpty(limitStr))
+            {
+                _limit = int.Parse(limitStr);
+            }
+        }
+
+        public override object? Execute(DatabaseContext databaseContext)
+        {
+            string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
+            Logger.TaskNested($"Enumerating SCCM devices BGB status{filterMsg}");
+
+            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+
+            string[] requiredTables = { "v_R_System", "BGB_ResStatus" };
+            var databases = sccmService.GetValidatedSccmDatabases(requiredTables, 2);
+
+            if (databases.Count == 0)
+            {
+                Logger.Warning("No SCCM databases found");
+                return null;
+            }
+
+            foreach (string db in databases)
+            {
+                string siteCode = SccmService.GetSiteCode(db);
+                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+
+                try
+                {
+                    string whereClause = "WHERE 1=1";
+                    
+                    if (!string.IsNullOrEmpty(_filter))
+                    {
+                        whereClause += $" AND (sys.Name0 LIKE '%{_filter.Replace("'", "''")}%' " +
+                                      $"OR brs.IPAddress LIKE '{_filter.Replace("'", "''")}%')";
+                    }
+
+                    string topClause = _limit > 0 ? $"TOP {_limit}" : "";
+
+                    string query = $@"
+SELECT {topClause}
+    sys.ResourceID,
+    sys.Name0 AS DeviceName,
+    CASE 
+        WHEN brs.OnlineStatus = 1 THEN 'Online'
+        WHEN brs.OnlineStatus = 0 THEN 'Offline'
+        ELSE 'Unknown'
+    END AS OnlineStatus,
+    brs.LastOnlineTime,
+    brs.LastOfflineTime,
+    brs.IPAddress,
+    brs.AccessMP
+FROM [{db}].dbo.v_R_System sys
+INNER JOIN [{db}].dbo.BGB_ResStatus brs ON sys.ResourceID = brs.ResourceID
+{whereClause}
+ORDER BY brs.OnlineStatus DESC, sys.Name0";
+
+                    DataTable statusTable = databaseContext.QueryService.ExecuteTable(query);
+
+                    if (statusTable.Rows.Count == 0)
+                    {
+                        Logger.Warning("No devices found");
+                        continue;
+                    }
+
+                    Logger.Success($"Found {statusTable.Rows.Count} device(s) with BGB status");
+                    Logger.NewLine();
+
+                    IOutputFormatter formatter = OutputFormatterFactory.GetFormatter(_format);
+                    formatter.Format(statusTable);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Failed to enumerate BGB status: {ex.Message}");
+                }
+            }
+
+            return null;
+        }
+    }
+}

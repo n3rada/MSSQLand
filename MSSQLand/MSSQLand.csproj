@@ -132,6 +132,9 @@
 
     <Compile Include="Actions\SCCM\SccmInfo.cs" />
     <Compile Include="Actions\SCCM\SccmAdmins.cs" />
+    <Compile Include="Actions\SCCM\SccmServers.cs" />
+    <Compile Include="Actions\SCCM\SccmDevices.cs" />
+    <Compile Include="Actions\SCCM\SccmDevicesBgb.cs" />
     <Compile Include="Actions\SCCM\SccmScripts.cs" />
     <Compile Include="Actions\SCCM\SccmScriptAdd.cs" />
     <Compile Include="Actions\SCCM\SccmScriptDelete.cs" />
