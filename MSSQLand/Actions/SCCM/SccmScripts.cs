@@ -38,12 +38,7 @@ namespace MSSQLand.Actions.SCCM
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
-                string query = $@"
-SELECT *
-FROM [{db}].dbo.Scripts
-WHERE Author <> 'CM'
-ORDER BY LastUpdateTime DESC;
-";
+                string query = $"SELECT * FROM [{db}].dbo.Scripts WHERE ScriptName <> 'CMPivot' ORDER BY LastUpdateTime DESC;";
 
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
 
