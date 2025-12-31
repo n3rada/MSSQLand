@@ -15,8 +15,8 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by deployment name")]
         private string _filter = "";
 
-        [ArgumentMetadata(Position = 1, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 100)")]
-        private int _limit = 100;
+        [ArgumentMetadata(Position = 1, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
+        private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
         {
@@ -39,6 +39,7 @@ namespace MSSQLand.Actions.SCCM
         {
             string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
             Logger.TaskNested($"Enumerating SCCM deployments{filterMsg}");
+            Logger.TaskNested($"Limit: {_limit}");
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -107,8 +108,9 @@ ORDER BY ds.CreationTime DESC;
                     continue;
                 }
 
-                Logger.Success($"Found {result.Rows.Count} deployment(s)");
                 Console.WriteLine(OutputFormatter.ConvertDataTable(result));
+
+                Logger.Success($"Found {result.Rows.Count} deployment(s)");
             }
 
             Logger.Success("Deployment enumeration completed");

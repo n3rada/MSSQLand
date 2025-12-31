@@ -92,8 +92,9 @@ ORDER BY dp.ServerName;
                     continue;
                 }
 
-                Logger.Success($"Found {result.Rows.Count} distribution point(s)");
                 Console.WriteLine(OutputFormatter.ConvertDataTable(result));
+
+                Logger.Success($"Found {result.Rows.Count} distribution point(s)");
             }
 
             Logger.Success("Distribution point enumeration completed");

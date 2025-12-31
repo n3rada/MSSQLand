@@ -111,7 +111,7 @@ namespace MSSQLand.Utilities
             { "sccm-devices-bgb", (typeof(SccmDevicesBgb), "List devices with BGB notification channel status (online/offline, last contact).") },
             { "sccm-deployments", (typeof(SccmDeployments), "Enumerate SCCM deployments with target collections and deployment settings.") },
             { "sccm-packages", (typeof(SccmPackages), "List SCCM packages with source paths and program details.") },
-            { "sccm-applications", (typeof(SccmApplications), "Enumerate SCCM applications with installation commands and deployment types.") },
+            { "sccm-apps", (typeof(SccmApplications), "Enumerate SCCM applications with installation commands and deployment types.") },
             { "sccm-dp", (typeof(SccmDistributionPoints), "List distribution points with content shares and properties.") },
             { "sccm-accounts", (typeof(SccmAccounts), "Enumerate SCCM stored credentials (NAA, Client Push, Task Sequence accounts).") },
             { "sccm-aad-apps", (typeof(SccmAadApps), "List Azure AD application configurations with encrypted secrets.") },
