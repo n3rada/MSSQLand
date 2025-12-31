@@ -147,6 +147,10 @@
     <Compile Include="Actions\SCCM\SccmScriptStatus.cs" Condition="'$(EnableSCCM)' == 'true'" />
     <Compile Include="Actions\SCCM\SccmAccounts.cs" Condition="'$(EnableSCCM)' == 'true'" />
     <Compile Include="Actions\SCCM\SccmAadApps.cs" Condition="'$(EnableSCCM)' == 'true'" />
+    <Compile Include="Actions\SCCM\SccmDeployments.cs" Condition="'$(EnableSCCM)' == 'true'" />
+    <Compile Include="Actions\SCCM\SccmPackages.cs" Condition="'$(EnableSCCM)' == 'true'" />
+    <Compile Include="Actions\SCCM\SccmApplications.cs" Condition="'$(EnableSCCM)' == 'true'" />
+    <Compile Include="Actions\SCCM\SccmDistributionPoints.cs" Condition="'$(EnableSCCM)' == 'true'" />
 
     <Compile Include="Exceptions\ActionNotFoundException.cs" />
     <Compile Include="Exceptions\AuthenticationFailedException.cs" />

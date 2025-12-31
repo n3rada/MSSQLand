@@ -109,13 +109,17 @@ namespace MSSQLand.Utilities
             { "sccm-collections", (typeof(SccmCollections), "List SCCM collections with properties and member counts.") },
             { "sccm-devices", (typeof(SccmDevices), "List known devices with ResourceID, name, online status, collections, and last activity.") },
             { "sccm-devices-bgb", (typeof(SccmDevicesBgb), "List devices with BGB notification channel status (online/offline, last contact).") },
+            { "sccm-deployments", (typeof(SccmDeployments), "Enumerate SCCM deployments with target collections and deployment settings.") },
+            { "sccm-packages", (typeof(SccmPackages), "List SCCM packages with source paths and program details.") },
+            { "sccm-applications", (typeof(SccmApplications), "Enumerate SCCM applications with installation commands and deployment types.") },
+            { "sccm-dp", (typeof(SccmDistributionPoints), "List distribution points with content shares and properties.") },
+            { "sccm-accounts", (typeof(SccmAccounts), "Enumerate SCCM stored credentials (NAA, Client Push, Task Sequence accounts).") },
+            { "sccm-aad-apps", (typeof(SccmAadApps), "List Azure AD application configurations with encrypted secrets.") },
             { "sccm-scripts", (typeof(SccmScripts), "Enumerate SCCM scripts.") },
             { "sccm-script-add", (typeof(SccmScriptAdd), "Add a PowerShell script to SCCM (auto-approved, hidden from console).") },
             { "sccm-script-delete", (typeof(SccmScriptDelete), "Delete an SCCM script by GUID.") },
             { "sccm-script-run", (typeof(SccmScriptRun), "Execute an SCCM script on a target device via BGB notification channel.") },
-            { "sccm-script-status", (typeof(SccmScriptStatus), "Check the execution status of an SCCM script task.") },
-            { "sccm-accounts", (typeof(SccmAccounts), "Enumerate SCCM stored credentials (NAA, Client Push, Task Sequence accounts).") },
-            { "sccm-aad-apps", (typeof(SccmAadApps), "List Azure AD application configurations with encrypted secrets.") }
+            { "sccm-script-status", (typeof(SccmScriptStatus), "Check the execution status of an SCCM script task.") }
 #endif
         };
 

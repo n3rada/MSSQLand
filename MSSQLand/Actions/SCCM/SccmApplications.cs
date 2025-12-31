@@ -1,0 +1,110 @@
+using MSSQLand.Services;
+using MSSQLand.Utilities;
+using MSSQLand.Utilities.Formatters;
+using System;
+using System.Data;
+
+namespace MSSQLand.Actions.SCCM
+{
+    /// <summary>
+    /// Enumerate SCCM applications with installation details and requirements.
+    /// Applications are the newer deployment model compared to packages.
+    /// </summary>
+    internal class SccmApplications : BaseAction
+    {
+        [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by application name")]
+        private string _filter = "";
+
+        [ArgumentMetadata(Position = 1, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 100)")]
+        private int _limit = 100;
+
+        public override void ValidateArguments(string[] args)
+        {
+            var (named, positional) = ParseActionArguments(args);
+
+            _filter = GetNamedArgument(named, "f", null)
+                   ?? GetNamedArgument(named, "filter", null)
+                   ?? GetPositionalArgument(positional, 0, "");
+
+            string limitStr = GetNamedArgument(named, "l", null)
+                           ?? GetNamedArgument(named, "limit", null)
+                           ?? GetPositionalArgument(positional, 1);
+            if (!string.IsNullOrEmpty(limitStr))
+            {
+                _limit = int.Parse(limitStr);
+            }
+        }
+
+        public override object? Execute(DatabaseContext databaseContext)
+        {
+            string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
+            Logger.TaskNested($"Enumerating SCCM applications{filterMsg}");
+
+            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+
+            string[] requiredTables = { "v_ApplicationAssignment" };
+            var databases = sccmService.GetValidatedSccmDatabases(requiredTables, 1);
+
+            if (databases.Count == 0)
+            {
+                Logger.Warning("No SCCM databases found");
+                return null;
+            }
+
+            foreach (string db in databases)
+            {
+                string siteCode = SccmService.GetSiteCode(db);
+
+                Logger.NewLine();
+                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+
+                string filterClause = string.IsNullOrEmpty(_filter)
+                    ? ""
+                    : $"WHERE app.DisplayName LIKE '%{_filter}%'";
+
+                string query = $@"
+SELECT TOP {_limit}
+    app.CI_ID,
+    app.DisplayName,
+    app.SoftwareVersion,
+    app.Publisher,
+    app.IsDeployed,
+    app.IsEnabled,
+    app.IsExpired,
+    app.IsSuperseded,
+    app.NumberOfDeployments,
+    app.NumberOfDevicesWithApp,
+    app.NumberOfUsersWithApp,
+    app.CreatedBy,
+    app.DateCreated,
+    app.DateLastModified,
+    app.SourceSite,
+    dt.Technology AS DeploymentType,
+    dt.ContentLocation,
+    dt.InstallCommandLine,
+    dt.UninstallCommandLine,
+    dt.ExecutionContext
+FROM [{db}].dbo.v_ApplicationAssignment app
+LEFT JOIN [{db}].dbo.v_ConfigurationItems ci ON app.CI_ID = ci.CI_ID
+LEFT JOIN [{db}].dbo.v_DeploymentType dt ON ci.ModelName = dt.AppModelName
+{filterClause}
+ORDER BY app.DisplayName;
+";
+
+                DataTable result = databaseContext.QueryService.ExecuteTable(query);
+
+                if (result.Rows.Count == 0)
+                {
+                    Logger.Warning("No applications found");
+                    continue;
+                }
+
+                Logger.Success($"Found {result.Rows.Count} application(s)");
+                Console.WriteLine(OutputFormatter.ConvertDataTable(result));
+            }
+
+            Logger.Success("Application enumeration completed");
+            return null;
+        }
+    }
+}
