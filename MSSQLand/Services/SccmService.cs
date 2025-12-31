@@ -122,18 +122,28 @@ AND TABLE_SCHEMA = 'dbo';
         }
 
         /// <summary>
-        /// Checks if the SCCM database has vSMS_* views (newer versions) or uses base tables (SCCM 2016 and older).
-        /// Uses SQL Server version detection: SQL Server 2016 (version 13) and older use base tables.
-        /// ExecutionServer automatically represents the correct target (direct connection or last server in linked chain).
+        /// Checks if the SCCM database has vSMS_* views or uses base tables.
         /// </summary>
         public bool HasSccmViews()
         {
-            // Use execution server (handles both direct connection and linked server chains)
-            Server executionServer = _queryService.ExecutionServer;
-            bool usesViews = !executionServer.IsLegacy;
-            
-            Logger.Debug($"SQL Server version {executionServer.MajorVersion} (IsLegacy: {executionServer.IsLegacy}) - Using {(usesViews ? "vSMS_* views" : "base tables")}");
-            return usesViews;
+            try
+            {
+                var result = _queryService.ExecuteScalar(@"
+                    SELECT COUNT(*) 
+                    FROM sys.views 
+                    WHERE name LIKE 'vSMS_%'");
+        
+                int viewCount = Convert.ToInt32(result);
+                bool hasViews = viewCount > 0;
+        
+                Logger.Debug($"Found {viewCount} vSMS_* views - Using {(hasViews ? "views" : "base tables")}");
+                return hasViews;
+            }
+            catch
+            {
+                Logger.Debug("Failed to check for vSMS_* views, falling back to base tables");
+                return false;
+            }
         }
 
         /// <summary>
