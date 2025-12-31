@@ -43,6 +43,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
+                Logger.NewLine();
                 string siteCode = SccmService.GetSiteCode(db);
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
@@ -63,6 +64,7 @@ SELECT
 
                     if (appCount == 0)
                     {
+                        Logger.NewLine();
                         Logger.Warning("No Azure AD applications configured in SCCM");
                         continue;
                     }
@@ -92,6 +94,7 @@ ORDER BY a.LastUpdateTime DESC";
 
                     if (appsTable.Rows.Count == 0)
                     {
+                        Logger.NewLine();
                         Logger.Warning("No Azure AD applications found");
                         continue;
                     }
