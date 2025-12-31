@@ -80,6 +80,24 @@ namespace MSSQLand.Services
             }
 
             Server.Version = Connection.ServerVersion;
+            
+            // Query actual SQL Server name and set Server.Hostname
+            try
+            {
+                using (SqlCommand cmd = new SqlCommand("SELECT @@SERVERNAME", Connection))
+                {
+                    string serverName = cmd.ExecuteScalar()?.ToString();
+                    if (!string.IsNullOrEmpty(serverName))
+                    {
+                        // Extract hostname without instance name
+                        Server.Hostname = serverName.Split('\\')[0];
+                    }
+                }
+            }
+            catch
+            {
+                // Keep the original hostname if query fails
+            }
         }
 
         /// <summary>
@@ -105,7 +123,8 @@ namespace MSSQLand.Services
         /// <returns>A new AuthenticationService object with the same parameters.</returns>
         public AuthenticationService Duplicate()
         {
-            var duplicateService = new AuthenticationService(Server);
+            // Create a copy of the Server to avoid shared state
+            var duplicateService = new AuthenticationService(Server.Copy());
             duplicateService.Authenticate(_credentialsType, _sqlServer, _database, _username, _password, _domain, _connectionTimeout);
             return duplicateService;
         }

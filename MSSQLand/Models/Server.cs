@@ -66,6 +66,26 @@ namespace MSSQLand.Models
         public string SystemUser { get; set; }
 
         /// <summary>
+        /// Creates a copy of this Server instance.
+        /// </summary>
+        public Server Copy()
+        {
+            return new Server
+            {
+                Hostname = this.Hostname,
+                version = this.version,
+                MajorVersion = this.MajorVersion,
+                IsLegacy = this.IsLegacy,
+                IsAzureSQL = this.IsAzureSQL,
+                Port = this.Port,
+                Database = this.Database,
+                ImpersonationUser = this.ImpersonationUser,
+                MappedUser = this.MappedUser,
+                SystemUser = this.SystemUser
+            };
+        }
+
+        /// <summary>
         /// Parses the major version from the full version string.
         /// </summary>
         /// <param name="versionString">The full version string (e.g., "15.00.2000").</param>

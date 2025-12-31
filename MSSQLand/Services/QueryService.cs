@@ -137,14 +137,8 @@ SELECT @result AS Result, @error AS Error;";
         public QueryService(SqlConnection connection)
         {
             Connection = connection;
-            // Initialize ExecutionServer with basic connection info
-            // This will be replaced by the authenticated Server in DatabaseContext
+            // ExecutionServer will be set by DatabaseContext with authenticated Server
             // or by ComputeExecutionServer() when linked servers are configured
-            ExecutionServer = new Server 
-            { 
-                Hostname = GetServerName(),
-                Database = connection.Database 
-            };
         }
 
         /// <summary>
