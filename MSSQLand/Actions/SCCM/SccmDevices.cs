@@ -7,8 +7,8 @@ using System.Data;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// List known SCCM devices with ResourceID, name, online status, and last activity.
-    /// Queries v_R_System and BGB_ResStatus tables.
+    /// List known SCCM devices with ResourceID, name, online status, collections, and last activity.
+    /// Queries v_R_System, BGB_ResStatus, and CollectionMembers tables.
     /// </summary>
     internal class SccmDevices : BaseAction
     {
@@ -103,7 +103,14 @@ SELECT {topClause}
     sys.Last_Logon_Timestamp0 AS LastLogon,
     sys.Client_Version0 AS ClientVersion,
     sys.Client0 AS Client,
-    sys.Decommissioned0 AS Decommissioned
+    sys.Decommissioned0 AS Decommissioned,
+    STUFF((
+        SELECT ', ' + col.Name
+        FROM [{db}].dbo.CollectionMembers cm
+        INNER JOIN [{db}].dbo.Collections_G col ON cm.CollectionID = col.CollectionID
+        WHERE cm.ResourceID = sys.ResourceID AND col.CollectionType = 2
+        FOR XML PATH(''), TYPE
+    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS Collections
 FROM [{db}].dbo.v_R_System sys
 LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
 LEFT JOIN [{db}].dbo.v_RA_System_IPAddresses SYSIP ON sys.ResourceID = SYSIP.ResourceID
