@@ -21,6 +21,9 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 2, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 100)")]
         private int _limit = 50;
 
+        [ArgumentMetadata(ShortName = "wm", LongName = "with-members", Description = "Only show collections with members (MemberCount > 0)")]
+        private bool _withMembers = false;
+
         public override void ValidateArguments(string[] args)
         {
             var (named, positional) = ParseActionArguments(args);
@@ -40,6 +43,8 @@ namespace MSSQLand.Actions.SCCM
             {
                 _limit = int.Parse(limitStr);
             }
+
+            _withMembers = HasNamedArgument(named, "wm") || HasNamedArgument(named, "with-members");
         }
 
         public override object? Execute(DatabaseContext databaseContext)
@@ -88,6 +93,12 @@ namespace MSSQLand.Actions.SCCM
                         {
                             whereClause += " AND CollectionType = 2";
                         }
+                    }
+
+                    // Add with-members filter
+                    if (_withMembers)
+                    {
+                        whereClause += " AND MemberCount > 0";
                     }
 
                     string topClause = _limit > 0 ? $"TOP {_limit}" : "";
