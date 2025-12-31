@@ -15,13 +15,10 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by name, IP, or username")]
         private string _filter = "";
 
-        [ArgumentMetadata(Position = 1, ShortName = "fmt", LongName = "format", Description = "Output format (table, csv, markdown)")]
-        private string _format = "table";
-
-        [ArgumentMetadata(Position = 2, ShortName = "o", LongName = "online", Description = "Show only online devices (default: false)")]
+        [ArgumentMetadata(Position = 1, ShortName = "o", LongName = "online", Description = "Show only online devices (default: false)")]
         private bool _onlineOnly = false;
 
-        [ArgumentMetadata(Position = 3, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 2, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
@@ -32,10 +29,6 @@ namespace MSSQLand.Actions.SCCM
                    ?? GetNamedArgument(named, "filter", null)
                    ?? GetPositionalArgument(positional, 0, "");
 
-            _format = GetNamedArgument(named, "fmt", null)
-                   ?? GetNamedArgument(named, "format", null)
-                   ?? GetPositionalArgument(positional, 1, "table");
-
             string onlineStr = GetNamedArgument(named, "o", null)
                             ?? GetNamedArgument(named, "online", null);
             if (!string.IsNullOrEmpty(onlineStr))
@@ -45,7 +38,7 @@ namespace MSSQLand.Actions.SCCM
 
             string limitStr = GetNamedArgument(named, "l", null)
                            ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 2);
+                           ?? GetPositionalArgument(positional, 1);
             if (!string.IsNullOrEmpty(limitStr))
             {
                 _limit = int.Parse(limitStr);
@@ -134,8 +127,7 @@ ORDER BY sys.Name0";
                     Logger.Success($"Found {devicesTable.Rows.Count} device(s)");
                     Logger.NewLine();
 
-                    IOutputFormatter formatter = OutputFormatterFactory.GetFormatter(_format);
-                    Console.WriteLine(formatter.ConvertDataTable(devicesTable));
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(devicesTable));
                 }
                 catch (Exception ex)
                 {

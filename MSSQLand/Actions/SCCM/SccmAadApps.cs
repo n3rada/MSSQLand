@@ -16,9 +16,6 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by application name")]
         private string _filter = "";
 
-        [ArgumentMetadata(Position = 1, ShortName = "fmt", LongName = "format", Description = "Output format (table, csv, markdown)")]
-        private string _format = "table";
-
         public override void ValidateArguments(string[] args)
         {
             var (named, positional) = ParseActionArguments(args);
@@ -26,10 +23,6 @@ namespace MSSQLand.Actions.SCCM
             _filter = GetNamedArgument(named, "f", null)
                    ?? GetNamedArgument(named, "filter", null)
                    ?? GetPositionalArgument(positional, 0, "");
-
-            _format = GetNamedArgument(named, "fmt", null)
-                   ?? GetNamedArgument(named, "format", null)
-                   ?? GetPositionalArgument(positional, 1, "table");
         }
 
         public override object? Execute(DatabaseContext databaseContext)
@@ -87,8 +80,7 @@ ORDER BY a.LastUpdateTime DESC";
                     Logger.Success($"Found {appsTable.Rows.Count} Azure AD application(s)");
                     Logger.NewLine();
 
-                    IOutputFormatter formatter = OutputFormatterFactory.GetFormatter(_format);
-                    Console.WriteLine(formatter.ConvertDataTable(appsTable));
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(appsTable));
 
                     // Show decryption hint if secrets found
                     bool hasSecrets = false;

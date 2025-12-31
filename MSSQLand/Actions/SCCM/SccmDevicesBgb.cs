@@ -15,10 +15,7 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by name or IP address")]
         private string _filter = "";
 
-        [ArgumentMetadata(Position = 1, ShortName = "fmt", LongName = "format", Description = "Output format (table, csv, markdown)")]
-        private string _format = "table";
-
-        [ArgumentMetadata(Position = 2, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 1, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
@@ -29,13 +26,9 @@ namespace MSSQLand.Actions.SCCM
                    ?? GetNamedArgument(named, "filter", null)
                    ?? GetPositionalArgument(positional, 0, "");
 
-            _format = GetNamedArgument(named, "fmt", null)
-                   ?? GetNamedArgument(named, "format", null)
-                   ?? GetPositionalArgument(positional, 1, "table");
-
             string limitStr = GetNamedArgument(named, "l", null)
                            ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 2);
+                           ?? GetPositionalArgument(positional, 1);
             if (!string.IsNullOrEmpty(limitStr))
             {
                 _limit = int.Parse(limitStr);
@@ -104,8 +97,7 @@ ORDER BY brs.OnlineStatus DESC, sys.Name0";
                     Logger.Success($"Found {statusTable.Rows.Count} device(s) with BGB status");
                     Logger.NewLine();
 
-                    IOutputFormatter formatter = OutputFormatterFactory.GetFormatter(_format);
-                    Console.WriteLine(formatter.ConvertDataTable(statusTable));
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(statusTable));
                 }
                 catch (Exception ex)
                 {
