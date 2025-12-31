@@ -83,6 +83,7 @@
     <Compile Include="Actions\Database\AuthToken.cs" />
     <Compile Include="Actions\Database\Databases.cs" />
     <Compile Include="Actions\Database\ExtendedProcs.cs" />
+    <Compile Include="Actions\Database\Hashes.cs" />
     <Compile Include="Actions\Database\Impersonation.cs" />
     <Compile Include="Actions\Database\Info.cs" />
     <Compile Include="Actions\Database\LoginMap.cs" />

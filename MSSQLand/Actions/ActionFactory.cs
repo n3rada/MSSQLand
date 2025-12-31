@@ -33,6 +33,7 @@ namespace MSSQLand.Utilities
             { "procedures", (typeof(Procedures), "List, read, or execute stored procedures.") },
             { "xprocs", (typeof(ExtendedProcs), "Enumerate available extended stored procedures on the server.") },
             { "users", (typeof(Users), "List all database users.") },
+            { "hashes", (typeof(Hashes), "Dump SQL Server login password hashes in hashcat format.") },
             { "loginmap", (typeof(LoginMap), "Map server logins to database users across all accessible databases.") },
             { "roles", (typeof(Roles), "List all database roles and their members in the current database.") },
             { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).") },
