@@ -43,7 +43,7 @@ namespace MSSQLand.Actions.SCCM
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
-            string[] requiredTables = { "v_ApplicationAssignment" };
+            string[] requiredTables = { "v_ConfigurationItems" };
             var databases = sccmService.GetValidatedSccmDatabases(requiredTables, 1);
 
             if (databases.Count == 0)
@@ -60,36 +60,30 @@ namespace MSSQLand.Actions.SCCM
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
                 string filterClause = string.IsNullOrEmpty(_filter)
-                    ? "WHERE ci.CIType_ID = 10"
-                    : $"WHERE ci.CIType_ID = 10 AND ci.DisplayName LIKE '%{_filter}%'";
+                    ? "WHERE CIType_ID = 10"
+                    : $"WHERE CIType_ID = 10 AND DisplayName LIKE '%{_filter}%'";
 
                 string query = $@"
 SELECT TOP {_limit}
-    ci.CI_ID,
-    ci.DisplayName,
-    ci.Description,
-    ci.SoftwareVersion,
-    ci.Publisher,
-    ci.IsDeployed,
-    ci.IsEnabled,
-    ci.IsExpired,
-    ci.IsSuperseded,
-    ci.NumberOfDeployments,
-    ci.NumberOfDevicesWithApp,
-    ci.NumberOfUsersWithApp,
-    ci.CreatedBy,
-    ci.DateCreated,
-    ci.DateLastModified,
-    ci.SourceSite,
-    dt.Technology AS DeploymentTechnology,
-    dt.ContentLocation,
-    dt.InstallCommandLine,
-    dt.UninstallCommandLine,
-    dt.ExecutionContext
-FROM [{db}].dbo.v_ConfigurationItems ci
-LEFT JOIN [{db}].dbo.v_DeploymentType dt ON ci.ModelName = dt.AppModelName
+    CI_ID,
+    DisplayName,
+    Description,
+    SoftwareVersion,
+    Publisher,
+    IsDeployed,
+    IsEnabled,
+    IsExpired,
+    IsSuperseded,
+    NumberOfDeployments,
+    NumberOfDevicesWithApp,
+    NumberOfUsersWithApp,
+    CreatedBy,
+    DateCreated,
+    DateLastModified,
+    SourceSite
+FROM [{db}].dbo.v_ConfigurationItems
 {filterClause}
-ORDER BY ci.IsDeployed DESC, ci.DateCreated DESC;
+ORDER BY IsDeployed DESC, DateCreated DESC;
 ";
 
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
