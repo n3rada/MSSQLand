@@ -99,6 +99,7 @@ namespace MSSQLand.Utilities
             { "adsi-creds", (typeof(AdsiCredentialExtractor), "Extract credentials from ADSI linked servers by intercepting LDAP authentication.") },
             { "smbcoerce", (typeof(SmbCoerce), "Force SMB authentication to a specified UNC path to capture time-limited Net-NTLMv2 challenge/response.") },
 
+#if ENABLE_SCCM
             // ═══════════════════════════════════════════════════════════════════════════════
             // SCCM ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
@@ -114,6 +115,7 @@ namespace MSSQLand.Utilities
             { "sccm-script-status", (typeof(SccmScriptStatus), "Check the execution status of an SCCM script task.") },
             { "sccm-accounts", (typeof(SccmAccounts), "Enumerate SCCM stored credentials (NAA, Client Push, Task Sequence accounts).") },
             { "sccm-aad-apps", (typeof(SccmAadApps), "List Azure AD application configurations with encrypted secrets.") }
+#endif
         };
 
         public static BaseAction GetAction(string actionType, string[] actionArguments)

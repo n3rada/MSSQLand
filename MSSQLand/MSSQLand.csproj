@@ -23,6 +23,8 @@
     <Install>false</Install>
     <UpdateEnabled>false</UpdateEnabled>
     <SignManifests>false</SignManifests>
+    <!-- SCCM Feature Toggle: Set to false to exclude SCCM actions -->
+    <EnableSCCM Condition="'$(EnableSCCM)' == ''">true</EnableSCCM>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -30,7 +32,8 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants Condition="'$(EnableSCCM)' == 'true'">DEBUG;TRACE;ENABLE_SCCM</DefineConstants>
+    <DefineConstants Condition="'$(EnableSCCM)' != 'true'">DEBUG;TRACE</DefineConstants>
     <OutputPath>bin\Debug\</OutputPath>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -50,6 +53,7 @@
     <PathMap>$(MSBuildProjectDirectory)=.</PathMap>
     <OutputPath>bin\Release\</OutputPath>
     <WarningLevel>4</WarningLevel>
+    <DefineConstants Condition="'$(EnableSCCM)' == 'true'">ENABLE_SCCM</DefineConstants>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <PublicSign>false</PublicSign>
   </PropertyGroup>
@@ -130,18 +134,18 @@
     <Compile Include="Actions\Remote\RemoteProcedureCall.cs" />
     <Compile Include="Actions\Remote\SmbCoerce.cs" />
 
-    <Compile Include="Actions\SCCM\SccmInfo.cs" />
-    <Compile Include="Actions\SCCM\SccmAdmins.cs" />
-    <Compile Include="Actions\SCCM\SccmServers.cs" />
-    <Compile Include="Actions\SCCM\SccmDevices.cs" />
-    <Compile Include="Actions\SCCM\SccmDevicesBgb.cs" />
-    <Compile Include="Actions\SCCM\SccmScripts.cs" />
-    <Compile Include="Actions\SCCM\SccmScriptAdd.cs" />
-    <Compile Include="Actions\SCCM\SccmScriptDelete.cs" />
-    <Compile Include="Actions\SCCM\SccmScriptRun.cs" />
-    <Compile Include="Actions\SCCM\SccmScriptStatus.cs" />
-    <Compile Include="Actions\SCCM\SccmAccounts.cs" />
-    <Compile Include="Actions\SCCM\SccmAadApps.cs" />
+    <Compile Include="Actions\SCCM\SccmInfo.cs" Condition="'$(EnableSCCM)' == 'true'" />
+    <Compile Include="Actions\SCCM\SccmAdmins.cs" Condition="'$(EnableSCCM)' == 'true'" />
+    <Compile Include="Actions\SCCM\SccmServers.cs" Condition="'$(EnableSCCM)' == 'true'" />
+    <Compile Include="Actions\SCCM\SccmDevices.cs" Condition="'$(EnableSCCM)' == 'true'" />
+    <Compile Include="Actions\SCCM\SccmDevicesBgb.cs" Condition="'$(EnableSCCM)' == 'true'" />
+    <Compile Include="Actions\SCCM\SccmScripts.cs" Condition="'$(EnableSCCM)' == 'true'" />
+    <Compile Include="Actions\SCCM\SccmScriptAdd.cs" Condition="'$(EnableSCCM)' == 'true'" />
+    <Compile Include="Actions\SCCM\SccmScriptDelete.cs" Condition="'$(EnableSCCM)' == 'true'" />
+    <Compile Include="Actions\SCCM\SccmScriptRun.cs" Condition="'$(EnableSCCM)' == 'true'" />
+    <Compile Include="Actions\SCCM\SccmScriptStatus.cs" Condition="'$(EnableSCCM)' == 'true'" />
+    <Compile Include="Actions\SCCM\SccmAccounts.cs" Condition="'$(EnableSCCM)' == 'true'" />
+    <Compile Include="Actions\SCCM\SccmAadApps.cs" Condition="'$(EnableSCCM)' == 'true'" />
 
     <Compile Include="Exceptions\ActionNotFoundException.cs" />
     <Compile Include="Exceptions\AuthenticationFailedException.cs" />
@@ -161,7 +165,7 @@
     <Compile Include="Services\ConfigurationService.cs" />
     <Compile Include="Services\DatabaseContext.cs" />
     <Compile Include="Services\QueryService.cs" />
-    <Compile Include="Services\SccmService.cs" />
+    <Compile Include="Services\SccmService.cs" Condition="'$(EnableSCCM)' == 'true'" />
     <Compile Include="Services\UserService.cs" />
 
     <Compile Include="Services\Authentication\AuthenticationService.cs" />
