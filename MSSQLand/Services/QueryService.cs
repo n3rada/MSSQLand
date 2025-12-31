@@ -142,16 +142,6 @@ SELECT @result AS Result, @error AS Error;";
         }
 
         /// <summary>
-        /// Gets the local SQL Server hostname (without instance name).
-        /// </summary>
-        /// <returns>Short hostname.</returns>
-        private string GetServerName()
-        {
-            string serverName = ExecuteScalar("SELECT @@SERVERNAME")?.ToString();
-            return serverName?.Split('\\')[0] ?? "Unknown";
-        }
-
-        /// <summary>
         /// Executes a query and returns a reader.
         /// </summary>
         public SqlDataReader Execute(string query)
@@ -321,10 +311,10 @@ SELECT @result AS Result, @error AS Error;";
             Server last = _linkedServers.ServerChain.Last();
             ExecutionServer = last;
 
-            // Query the actual server name from the last chain
+            // Query the actual server name from the last linked server
             try
             {
-                ExecutionServer.Hostname = GetServerName();
+                ExecutionServer.Hostname = ExecuteScalar("SELECT @@SERVERNAME")?.ToString() ?? string.Empty;
             }
             catch
             {

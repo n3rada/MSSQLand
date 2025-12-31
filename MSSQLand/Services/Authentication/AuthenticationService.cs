@@ -81,7 +81,7 @@ namespace MSSQLand.Services
 
             Server.Version = Connection.ServerVersion;
             
-            // Query actual SQL Server name and set Server.Hostname
+            // Query actual SQL Server name and set Server.Hostname (includes instance name)
             try
             {
                 using (SqlCommand cmd = new SqlCommand("SELECT @@SERVERNAME", Connection))
@@ -89,8 +89,7 @@ namespace MSSQLand.Services
                     string serverName = cmd.ExecuteScalar()?.ToString();
                     if (!string.IsNullOrEmpty(serverName))
                     {
-                        // Extract hostname without instance name
-                        Server.Hostname = serverName.Split('\\')[0];
+                        Server.Hostname = serverName;
                     }
                 }
             }
