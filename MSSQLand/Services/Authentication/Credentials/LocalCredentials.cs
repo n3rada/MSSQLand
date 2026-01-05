@@ -12,7 +12,7 @@ namespace MSSQLand.Services.Credentials
         {
             // Encrypt by default for security best practices
             // TrustServerCertificate=True allows self-signed certs (common in on-premises)
-            var connectionString = $"Server={sqlServer}; Database={database}; Integrated Security=False; Encrypt=True; TrustServerCertificate=True; User Id={username}; Password={password};";
+            var connectionString = $"Server={sqlServer}; Database={database}; Integrated Security=False; User Id={username}; Password={password};";
             return CreateSqlConnection(connectionString);
         }
     }

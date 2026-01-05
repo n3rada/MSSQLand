@@ -215,21 +215,37 @@ namespace MSSQLand.Utilities
             argumentsTable.Columns.Add("Argument", typeof(string));
             argumentsTable.Columns.Add("Description", typeof(string));
 
+            // Positional Arguments
             argumentsTable.Rows.Add("<host>", "[Positional] Target SQL Server. Format: server,port (port defaults to 1433).");
             argumentsTable.Rows.Add("<action>", "[Positional] Action to execute (see list below).");
-            argumentsTable.Rows.Add("-c, --credentials", "Credential type (mandatory). See credential types below.");
-            argumentsTable.Rows.Add("-u, --username", "Username (if required by credential type).");
-            argumentsTable.Rows.Add("-p, --password", "Password (if required by credential type).");
-            argumentsTable.Rows.Add("-d, --domain", "Domain (if required by credential type).");
-            argumentsTable.Rows.Add("-l, --links", "Linked server chain. Format: server1:user1,server2:user2,...");
-            argumentsTable.Rows.Add("-o, --output", "Output format: table (default), csv, json, markdown.");
-            argumentsTable.Rows.Add("--timeout", "Connection timeout in seconds (default: 15).");
-            argumentsTable.Rows.Add("-s, --silent", "Enable silent mode. No logging, only results.");
-            argumentsTable.Rows.Add("--debug", "Enable debug mode for detailed logs.");
-            argumentsTable.Rows.Add("--trace", "Enable trace mode for verbose debugging logs.");
-            argumentsTable.Rows.Add("-h, --help", "Display help. Use with action for action-specific help.");
-            argumentsTable.Rows.Add("--version", "Display version information.");
-            argumentsTable.Rows.Add("--findsql <domain>", "Find SQL Servers in Active Directory (standalone utility).");
+            
+            // Authentication
+            argumentsTable.Rows.Add("-c, --credentials", "[Auth] Credential type (mandatory). See credential types below.");
+            argumentsTable.Rows.Add("-u, --username", "[Auth] Username (if required by credential type).");
+            argumentsTable.Rows.Add("-p, --password", "[Auth] Password (if required by credential type).");
+            argumentsTable.Rows.Add("-d, --domain", "[Auth] Domain (if required by credential type).");
+            
+            // Connection Settings
+            argumentsTable.Rows.Add("--timeout", "[Connection] Connection timeout in seconds (default: 5).");
+            argumentsTable.Rows.Add("--app-name", "[Connection] SQL application name (default: DataFactory).");
+            argumentsTable.Rows.Add("--workstation-id", "[Connection] SQL workstation ID (default: datafactory-runX).");
+            argumentsTable.Rows.Add("--packet-size", "[Connection] Network packet size in bytes (default: 8192).");
+            argumentsTable.Rows.Add("--no-encrypt", "[Connection] Disable connection encryption (default: enabled).");
+            argumentsTable.Rows.Add("--no-trust-cert", "[Connection] Disable server certificate trust (default: trusted).");
+            
+            // Server Options
+            argumentsTable.Rows.Add("-l, --links", "[Server] Linked server chain. Format: server1:user1,server2:user2,...");
+            
+            // Output & Logging
+            argumentsTable.Rows.Add("-o, --output", "[Output] Output format: table (default), csv, json, markdown.");
+            argumentsTable.Rows.Add("-s, --silent", "[Output] Enable silent mode. No logging, only results.");
+            argumentsTable.Rows.Add("--debug", "[Output] Enable debug mode for detailed logs.");
+            argumentsTable.Rows.Add("--trace", "[Output] Enable trace mode for verbose debugging logs.");
+            
+            // Help & Utilities
+            argumentsTable.Rows.Add("-h, --help", "[Help] Display help. Use with action for action-specific help.");
+            argumentsTable.Rows.Add("--version", "[Help] Display version information.");
+            argumentsTable.Rows.Add("--findsql <domain>", "[Utility] Find SQL Servers in Active Directory (standalone).");
 
             return argumentsTable;
         }

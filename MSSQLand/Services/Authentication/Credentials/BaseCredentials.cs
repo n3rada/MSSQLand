@@ -16,13 +16,34 @@ namespace MSSQLand.Services.Credentials
 
         /// <summary>
         /// The application name used for the SQL connection.
+        /// Default: "DataFactory" (mimics common data processing applications)
         /// </summary>
-        public string AppName { get; protected set; }
+        public string AppName { get; set; } = null;
 
         /// <summary>
         /// The workstation ID used for the SQL connection.
+        /// Default: null (will generate "datafactory-runX" where X is random 0-10)
         /// </summary>
-        public string WorkstationId { get; protected set; }
+        public string WorkstationId { get; set; } = null;
+
+        /// <summary>
+        /// Optional: Override encryption setting. Null uses the credential-specific default.
+        /// Default: true (enabled for security)
+        /// </summary>
+        public bool? EnableEncryption { get; set; } = true;
+
+        /// <summary>
+        /// Optional: Override server certificate validation.
+        /// Default: true (accepts self-signed certificates, common in pentesting)
+        /// </summary>
+        public bool? TrustServerCertificate { get; set; } = true;
+
+        /// <summary>
+        /// Network packet size in bytes.
+        /// Default: null (uses SQL Server default of 8192 bytes)
+        /// Set to 4096 if experiencing "Failed to reserve contiguous memory" errors
+        /// </summary>
+        public int? PacketSize { get; set; } = null;
 
         /// <summary>
         /// Sets the connection timeout in seconds.
@@ -46,12 +67,27 @@ namespace MSSQLand.Services.Credentials
         /// <exception cref="SqlException">Thrown for SQL-related issues (e.g., network errors, authentication issues).</exception>
         protected SqlConnection CreateSqlConnection(string connectionString)
         {
-            // Avoid leaving the default ".Net SqlClient Data Provider" application name
-            AppName = "DataFactory";
-            // Generate a random workstation ID  
-            WorkstationId = "datafactory-run" + Misc.GetRandomNumber(0, 10);
+            // Set defaults if not configured via command line
+            if (string.IsNullOrEmpty(AppName))
+                AppName = "DataFactory";
+            
+            if (string.IsNullOrEmpty(WorkstationId))
+                WorkstationId = "datafactory-run" + Misc.GetRandomNumber(0, 10);
 
             connectionString = $"{connectionString.TrimEnd(';')}; Connect Timeout={_connectTimeout}; Application Name={AppName}; Workstation Id={WorkstationId}";
+
+            // Apply optional connection string overrides (only when different from ADO.NET defaults)
+            // Add Encrypt if explicitly set (default varies by .NET version)
+            if (EnableEncryption.HasValue)
+                connectionString += $"; Encrypt={EnableEncryption.Value}";
+            
+            // Add TrustServerCertificate if explicitly set (ADO.NET default is False)
+            if (TrustServerCertificate.HasValue)
+                connectionString += $"; TrustServerCertificate={TrustServerCertificate.Value}";
+            
+            // Only add Packet Size if explicitly set (ADO.NET uses 8192 by default)
+            if (PacketSize.HasValue)
+                connectionString += $"; Packet Size={PacketSize.Value}";
 
             Logger.Debug($"Attempting connection with {GetName()}");
             Logger.DebugNested($"Connection timeout: {_connectTimeout} seconds");

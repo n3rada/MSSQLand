@@ -92,6 +92,9 @@ namespace MSSQLand.Utilities
             CommandArgs parsedArgs = new();
             string username = null, password = null, domain = null;
             int? connectionTimeout = null;
+            string appName = null, workstationId = null;
+            int? packetSize = null;
+            bool? enableEncryption = null, trustServerCertificate = null;
             string hostArg = null;
             string actionName = null;
             List<string> actionArgs = new List<string>();
@@ -259,6 +262,43 @@ namespace MSSQLand.Utilities
                         }
                         domain = ExtractFlagValue(arg, args, ref currentIndex);
                     }
+                    else if (IsGlobalArgument(arg, "app-name", null))
+                    {
+                        if (appName != null)
+                        {
+                            Logger.Warning($"--app-name specified multiple times. Using last value.");
+                        }
+                        appName = ExtractFlagValue(arg, args, ref currentIndex);
+                    }
+                    else if (IsGlobalArgument(arg, "workstation-id", null))
+                    {
+                        if (workstationId != null)
+                        {
+                            Logger.Warning($"--workstation-id specified multiple times. Using last value.");
+                        }
+                        workstationId = ExtractFlagValue(arg, args, ref currentIndex);
+                    }
+                    else if (IsGlobalArgument(arg, "packet-size", null))
+                    {
+                        if (packetSize.HasValue)
+                        {
+                            Logger.Warning($"--packet-size specified multiple times. Using last value.");
+                        }
+                        string packetSizeValue = ExtractFlagValue(arg, args, ref currentIndex);
+                        if (!int.TryParse(packetSizeValue, out int parsedPacketSize) || parsedPacketSize <= 0)
+                        {
+                            throw new ArgumentException($"Invalid packet-size value: {packetSizeValue}. Must be a positive integer (bytes).");
+                        }
+                        packetSize = parsedPacketSize;
+                    }
+                    else if (arg == "--no-encrypt" || arg == "--disable-encrypt")
+                    {
+                        enableEncryption = false;
+                    }
+                    else if (arg == "--no-trust-cert" || arg == "--disable-trust-cert")
+                    {
+                        trustServerCertificate = false;
+                    }
                     else
                     {
                         Logger.Error($"Unknown global argument: {arg}");
@@ -270,6 +310,11 @@ namespace MSSQLand.Utilities
                         Logger.InfoNested("-u, --username: Username for authentication");
                         Logger.InfoNested("-p, --password: Password for authentication");
                         Logger.InfoNested("-d, --domain: Domain for authentication");
+                        Logger.InfoNested("--app-name: SQL connection application name (default: DataFactory)");
+                        Logger.InfoNested("--workstation-id: SQL connection workstation ID (default: datafactory-runX)");
+                        Logger.InfoNested("--packet-size: Network packet size in bytes (default: 8192)");
+                        Logger.InfoNested("--no-encrypt: Disable connection encryption");
+                        Logger.InfoNested("--no-trust-cert: Disable server certificate trust");
                         throw new ArgumentException($"Unknown global argument: {arg}");
                     }
 
@@ -319,6 +364,18 @@ namespace MSSQLand.Utilities
                 {
                     parsedArgs.ConnectionTimeout = connectionTimeout.Value;
                 }
+
+                // Assign connection string customization parameters
+                parsedArgs.AppName = appName;
+                parsedArgs.WorkstationId = workstationId;
+                if (packetSize.HasValue)
+                {
+                    parsedArgs.PacketSize = packetSize.Value;
+                }
+                
+                // Assign connection string boolean overrides
+                parsedArgs.EnableEncryption = enableEncryption;
+                parsedArgs.TrustServerCertificate = trustServerCertificate;
 
                 // Validate the provided arguments against the selected credential type
                 ValidateCredentialArguments(parsedArgs.CredentialType, username, password, domain);

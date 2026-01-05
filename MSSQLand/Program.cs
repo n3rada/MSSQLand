@@ -61,7 +61,12 @@ namespace MSSQLand
                         username: arguments.Username,
                         password: arguments.Password,
                         domain: arguments.Domain,
-                        connectionTimeout: arguments.ConnectionTimeout
+                        connectionTimeout: arguments.ConnectionTimeout,
+                        appName: arguments.AppName,
+                        workstationId: arguments.WorkstationId,
+                        packetSize: arguments.PacketSize,
+                        enableEncryption: arguments.EnableEncryption,
+                        trustServerCertificate: arguments.TrustServerCertificate
                      );
                 }
                 catch (AuthenticationFailedException ex)

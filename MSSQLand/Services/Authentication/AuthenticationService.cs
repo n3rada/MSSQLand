@@ -21,6 +21,11 @@ namespace MSSQLand.Services
         private string _password;
         private string _domain;
         private int _connectionTimeout = 5;
+        private string _appName;
+        private string _workstationId;
+        private int? _packetSize;
+        private bool? _enableEncryption;
+        private bool? _trustServerCertificate;
         private BaseCredentials _credentials;
 
         /// <summary>
@@ -49,6 +54,11 @@ namespace MSSQLand.Services
         /// <param name="password">The password (optional).</param>
         /// <param name="domain">The domain for Windows authentication (optional).</param>
         /// <param name="connectionTimeout">The connection timeout in seconds (default: 5).</param>
+        /// <param name="appName">Custom application name (optional).</param>
+        /// <param name="workstationId">Custom workstation ID (optional).</param>
+        /// <param name="packetSize">Network packet size in bytes (optional).</param>
+        /// <param name="enableEncryption">Override encryption setting (optional).</param>
+        /// <param name="trustServerCertificate">Override server certificate trust (optional).</param>
         public void Authenticate(
             string credentialsType,
             string sqlServer,
@@ -56,7 +66,12 @@ namespace MSSQLand.Services
             string username = null,
             string password = null,
             string domain = null,
-            int connectionTimeout = 5)
+            int connectionTimeout = 5,
+            string appName = null,
+            string workstationId = null,
+            int? packetSize = null,
+            bool? enableEncryption = null,
+            bool? trustServerCertificate = null)
         {
             // Store authentication parameters
             _credentialsType = credentialsType;
@@ -66,10 +81,29 @@ namespace MSSQLand.Services
             _password = password;
             _domain = domain;
             _connectionTimeout = connectionTimeout;
+            _appName = appName;
+            _workstationId = workstationId;
+            _packetSize = packetSize;
+            _enableEncryption = enableEncryption;
+            _trustServerCertificate = trustServerCertificate;
 
             // Get the appropriate credentials service
             _credentials = CredentialsFactory.GetCredentials(credentialsType);
             _credentials.SetConnectionTimeout(connectionTimeout);
+            
+            // Apply connection string customization if provided
+            if (!string.IsNullOrEmpty(appName))
+                _credentials.AppName = appName;
+            if (!string.IsNullOrEmpty(workstationId))
+                _credentials.WorkstationId = workstationId;
+            if (packetSize.HasValue)
+                _credentials.PacketSize = packetSize;
+            
+            // Apply connection string boolean overrides if provided
+            if (enableEncryption.HasValue)
+                _credentials.EnableEncryption = enableEncryption;
+            if (trustServerCertificate.HasValue)
+                _credentials.TrustServerCertificate = trustServerCertificate;
 
             // Use the credentials service to authenticate and establish the connection
             Connection = _credentials.Authenticate(sqlServer, database, username, password, domain);
@@ -112,6 +146,21 @@ namespace MSSQLand.Services
 
             var credentials = CredentialsFactory.GetCredentials(_credentialsType);
             credentials.SetConnectionTimeout(_connectionTimeout);
+            
+            // Apply connection string customization if provided
+            if (!string.IsNullOrEmpty(_appName))
+                credentials.AppName = _appName;
+            if (!string.IsNullOrEmpty(_workstationId))
+                credentials.WorkstationId = _workstationId;
+            if (_packetSize.HasValue)
+                credentials.PacketSize = _packetSize;
+            
+            // Apply connection string boolean overrides if provided
+            if (_enableEncryption.HasValue)
+                credentials.EnableEncryption = _enableEncryption;
+            if (_trustServerCertificate.HasValue)
+                credentials.TrustServerCertificate = _trustServerCertificate;
+            
             return credentials.Authenticate(_sqlServer, _database, _username, _password, _domain);
         }
 
@@ -124,7 +173,7 @@ namespace MSSQLand.Services
         {
             // Create a copy of the Server to avoid shared state
             var duplicateService = new AuthenticationService(Server.Copy());
-            duplicateService.Authenticate(_credentialsType, _sqlServer, _database, _username, _password, _domain, _connectionTimeout);
+            duplicateService.Authenticate(_credentialsType, _sqlServer, _database, _username, _password, _domain, _connectionTimeout, _appName, _workstationId, _packetSize, _enableEncryption, _trustServerCertificate);
             return duplicateService;
         }
 

@@ -7,7 +7,11 @@ namespace MSSQLand.Services.Credentials
         public override SqlConnection Authenticate(string sqlServer, string database, string username, string password, string domain)
         {
             username = $"{username}@{domain}";
-            var connectionString = $"Server={sqlServer}; Database={database}; Authentication=Active Directory Password; Encrypt=True; TrustServerCertificate=False; User ID={username}; Password={password};";
+            
+            // Azure SQL requires proper certificate validation
+            TrustServerCertificate = false;
+            
+            var connectionString = $"Server={sqlServer}; Database={database}; Authentication=Active Directory Password; User ID={username}; Password={password};";
             return CreateSqlConnection(connectionString);
         }
     }

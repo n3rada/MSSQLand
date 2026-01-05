@@ -47,5 +47,30 @@ namespace MSSQLand.Models
         /// </summary>
         public int ConnectionTimeout { get; set; } = 5;
 
+        /// <summary>
+        /// Custom application name for SQL connection (optional).
+        /// </summary>
+        public string AppName { get; set; }
+
+        /// <summary>
+        /// Custom workstation ID for SQL connection (optional).
+        /// </summary>
+        public string WorkstationId { get; set; }
+
+        /// <summary>
+        /// Network packet size in bytes (optional).
+        /// </summary>
+        public int? PacketSize { get; set; }
+
+        /// <summary>
+        /// Override encryption setting (optional).
+        /// </summary>
+        public bool? EnableEncryption { get; set; }
+
+        /// <summary>
+        /// Override server certificate trust (optional).
+        /// </summary>
+        public bool? TrustServerCertificate { get; set; }
+
     }
 }
