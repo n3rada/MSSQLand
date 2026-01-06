@@ -59,7 +59,19 @@ namespace MSSQLand.Actions.SCCM
 
             string onlineStr = GetNamedArgument(named, "o", null)
                             ?? GetNamedArgument(named, "online", null);
-            if (!stnoUserStr = GetNamedArgument(named, "n", null)
+            if (!string.IsNullOrEmpty(onlineStr))
+            {
+                _onlineOnly = bool.Parse(onlineStr);
+            }
+
+            string requireLastUserStr = GetNamedArgument(named, "u", null)
+                                     ?? GetNamedArgument(named, "require-lastuser", null);
+            if (!string.IsNullOrEmpty(requireLastUserStr))
+            {
+                _requireLastUser = bool.Parse(requireLastUserStr);
+            }
+
+            string noUserStr = GetNamedArgument(named, "n", null)
                             ?? GetNamedArgument(named, "no-user", null);
             if (!string.IsNullOrEmpty(noUserStr))
             {
@@ -75,11 +87,7 @@ namespace MSSQLand.Actions.SCCM
             string activeOnlyStr = GetNamedArgument(named, "a", null)
                                 ?? GetNamedArgument(named, "active", null);
             if (!string.IsNullOrEmpty(activeOnlyStr))
-            string noUserMsg = _noUser ? " (no user)" : "";
-            string clientOnlyMsg = _clientOnly ? " (client only)" : "";
-            string activeOnlyMsg = _activeOnly ? " (active only)" : "";
-            string lastSeenMsg = _lastSeenDays > 0 ? $" (seen in last {_lastSeenDays} days)" : "";
-            Logger.TaskNested($"Enumerating SCCM devices{filterMsg}{domainMsg}{collectionMsg}{onlineMsg}{lastUserMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeen
+            {
                 _activeOnly = bool.Parse(activeOnlyStr);
             }
 
@@ -87,18 +95,6 @@ namespace MSSQLand.Actions.SCCM
             if (!string.IsNullOrEmpty(lastSeenDaysStr))
             {
                 _lastSeenDays = int.Parse(lastSeenDaysStr);
-            }
-
-            string ring.IsNullOrEmpty(onlineStr))
-            {
-                _onlineOnly = bool.Parse(onlineStr);
-            }
-
-            string requireLastUserStr = GetNamedArgument(named, "u", null)
-                                     ?? GetNamedArgument(named, "require-lastuser", null);
-            if (!string.IsNullOrEmpty(requireLastUserStr))
-            {
-                _requireLastUser = bool.Parse(requireLastUserStr);
             }
 
             string limitStr = GetNamedArgument(named, "l", null)
@@ -117,7 +113,11 @@ namespace MSSQLand.Actions.SCCM
             string collectionMsg = !string.IsNullOrEmpty(_collection) ? $" (collection: {_collection})" : "";
             string onlineMsg = _onlineOnly ? " (online only)" : "";
             string lastUserMsg = _requireLastUser ? " (with last user)" : "";
-            Logger.TaskNested($"Enumerating SCCM devices{filterMsg}{domainMsg}{collectionMsg}{onlineMsg}{lastUserMsg}");
+            string noUserMsg = _noUser ? " (no user)" : "";
+            string clientOnlyMsg = _clientOnly ? " (client only)" : "";
+            string activeOnlyMsg = _activeOnly ? " (active only)" : "";
+            string lastSeenMsg = _lastSeenDays > 0 ? $" (seen in last {_lastSeenDays} days)" : "";
+            Logger.TaskNested($"Enumerating SCCM devices{filterMsg}{domainMsg}{collectionMsg}{onlineMsg}{lastUserMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeenMsg}");
             Logger.TaskNested($"Limit: {_limit}");
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -137,31 +137,7 @@ namespace MSSQLand.Actions.SCCM
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
                 try
-                {// Add no user filter
-                    if (_noUser)
-                    {
-                        whereClause += " AND (sys.User_Name0 IS NULL OR sys.User_Name0 = '')";
-                    }
-
-                    // Add client-only filter
-                    if (_clientOnly)
-                    {
-                        whereClause += " AND sys.Client0 = 1";
-                    }
-
-                    // Add active-only filter (non-decommissioned)
-                    if (_activeOnly)
-                    {
-                        whereClause += " AND sys.Decommissioned0 = 0";
-                    }
-
-                    // Add last-seen-days filter
-                    if (_lastSeenDays > 0)
-                    {
-                        whereClause += $" AND bgb.LastOnlineTime >= DATEADD(DAY, -{_lastSeenDays}, GETDATE())";
-                    }
-
-                    
+                {
                     string whereClause = "WHERE 1=1";
                     
                     // Add filter conditions (name, IP, username, domain)
@@ -196,13 +172,35 @@ namespace MSSQLand.Actions.SCCM
                     {
                         whereClause += " AND bgb.OnlineStatus = 1";
                     }
-sys.Client0 DESC,
-    sys.Decommissioned0 ASC,
-    bgb.OnlineStatus DESC
+
                     // Add last user filter
                     if (_requireLastUser)
                     {
                         whereClause += " AND sys.User_Name0 IS NOT NULL AND sys.User_Name0 != ''";
+                    }
+
+                    // Add no user filter
+                    if (_noUser)
+                    {
+                        whereClause += " AND (sys.User_Name0 IS NULL OR sys.User_Name0 = '')";
+                    }
+
+                    // Add client-only filter
+                    if (_clientOnly)
+                    {
+                        whereClause += " AND sys.Client0 = 1";
+                    }
+
+                    // Add active-only filter (non-decommissioned)
+                    if (_activeOnly)
+                    {
+                        whereClause += " AND sys.Decommissioned0 = 0";
+                    }
+
+                    // Add last-seen-days filter
+                    if (_lastSeenDays > 0)
+                    {
+                        whereClause += $" AND bgb.LastOnlineTime >= DATEADD(DAY, -{_lastSeenDays}, GETDATE())";
                     }
 
                     string topClause = _limit > 0 ? $"TOP {_limit}" : "";
