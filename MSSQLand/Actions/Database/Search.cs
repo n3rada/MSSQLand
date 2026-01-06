@@ -115,7 +115,7 @@ namespace MSSQLand.Actions.Database
             if (!string.IsNullOrEmpty(_targetTable))
             {
                 string dbName = _limitDatabase ?? databaseContext.QueryService.ExecutionServer.Database;
-                Logger.TaskNested($"Looking inside [{dbName}].[{_targetSchema}].[{_targetTable}]");
+                Logger.TaskNested($"Looking inside {Misc.BuildQualifiedTableName(dbName, _targetSchema, _targetTable)}");
                 var (headerMatches, rowMatches, _) = SearchDatabase(databaseContext, dbName, _targetSchema, _targetTable);
                 
                 Logger.Success($"Search completed");
@@ -338,7 +338,7 @@ namespace MSSQLand.Actions.Database
                 // Search for the keyword in column name
                 if (column.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    headerMatches.Rows.Add($"[{database}].[{schema}].[{table}]", column, position);
+                    headerMatches.Rows.Add(Misc.BuildQualifiedTableName(database, schema, table), column, position);
                 }
             }
 
@@ -392,7 +392,7 @@ namespace MSSQLand.Actions.Database
                 // Get ALL matching rows without limit
                 string searchQuery = $@"
                     SELECT * 
-                    FROM [{database}].[{schema}].[{table}]
+                    FROM {Misc.BuildQualifiedTableName(database, schema, table)}
                     WHERE {whereClause};";
 
                 try
@@ -405,7 +405,7 @@ namespace MSSQLand.Actions.Database
                     {
                         rowMatchCount += resultTable.Rows.Count;
                         Logger.NewLine();
-                        Logger.Success($"Found {resultTable.Rows.Count} row(s) containing '{_keyword}' in [{database}].[{schema}].[{table}]:");
+                        Logger.Success($"Found {resultTable.Rows.Count} row(s) containing '{_keyword}' in {Misc.BuildQualifiedTableName(database, schema, table)}:");
                         Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
                     }
                 }

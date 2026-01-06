@@ -227,5 +227,37 @@ namespace MSSQLand.Utilities
             }
             return name;
         }
+
+        /// <summary>
+        /// Builds a fully qualified table name in SQL Server format.
+        /// Handles empty schema by using the double-dot notation (database..table).
+        /// </summary>
+        /// <param name="database">Database name (required).</param>
+        /// <param name="schema">Schema name (optional - if null/empty, uses double-dot notation).</param>
+        /// <param name="table">Table name (required).</param>
+        /// <returns>Fully qualified table name with proper bracket escaping.</returns>
+        /// <example>
+        /// BuildQualifiedTableName("CM_PSC", "dbo", "v_R_System") => "[CM_PSC].[dbo].[v_R_System]"
+        /// BuildQualifiedTableName("CM_PSC", null, "v_R_System") => "[CM_PSC]..[v_R_System]"
+        /// BuildQualifiedTableName("CM_PSC", "", "v_R_System") => "[CM_PSC]..[v_R_System]"
+        /// </example>
+        public static string BuildQualifiedTableName(string database, string schema, string table)
+        {
+            if (string.IsNullOrEmpty(database))
+                throw new ArgumentException("Database name cannot be null or empty.", nameof(database));
+            if (string.IsNullOrEmpty(table))
+                throw new ArgumentException("Table name cannot be null or empty.", nameof(table));
+
+            if (string.IsNullOrEmpty(schema))
+            {
+                // Format: [database]..[table] (no schema)
+                return $"[{database}]..[{table}]";
+            }
+            else
+            {
+                // Format: [database].[schema].[table]
+                return $"[{database}].[{schema}].[{table}]";
+            }
+        }
     }
 }
