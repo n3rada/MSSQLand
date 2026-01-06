@@ -17,7 +17,10 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 1, LongName = "username", Description = "Filter by username")]
         private string _username = "";
 
-        [ArgumentMetadata(Position = 2, LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 2, LongName = "domain", Description = "Filter by domain")]
+        private string _domain = "";
+
+        [ArgumentMetadata(Position = 3, LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
@@ -30,8 +33,11 @@ namespace MSSQLand.Actions.SCCM
             _username = GetNamedArgument(named, "username", null)
                      ?? GetPositionalArgument(positional, 1, "");
 
+            _domain = GetNamedArgument(named, "domain", null)
+                   ?? GetPositionalArgument(positional, 2, "");
+
             string limitStr = GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 2);
+                           ?? GetPositionalArgument(positional, 3);
             if (!string.IsNullOrEmpty(limitStr))
             {
                 _limit = int.Parse(limitStr);
@@ -42,7 +48,8 @@ namespace MSSQLand.Actions.SCCM
         {
             string deviceMsg = !string.IsNullOrEmpty(_device) ? $" (device: {_device})" : "";
             string usernameMsg = !string.IsNullOrEmpty(_username) ? $" (username: {_username})" : "";
-            Logger.TaskNested($"Enumerating SCCM device users{deviceMsg}{usernameMsg}");
+            string domainMsg = !string.IsNullOrEmpty(_domain) ? $" (domain: {_domain})" : "";
+            Logger.TaskNested($"Enumerating SCCM device users{deviceMsg}{usernameMsg}{domainMsg}");
             Logger.TaskNested($"Limit: {_limit}");
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -75,6 +82,12 @@ namespace MSSQLand.Actions.SCCM
                     if (!string.IsNullOrEmpty(_username))
                     {
                         whereClause += $" AND cu.SystemConsoleUser0 LIKE '%{_username.Replace("'", "''")}%'";
+                    }
+
+                    // Add domain filter
+                    if (!string.IsNullOrEmpty(_domain))
+                    {
+                        whereClause += $" AND sys.Resource_Domain_OR_Workgr0 LIKE '%{_domain.Replace("'", "''")}%'";
                     }
 
                     string topClause = _limit > 0 ? $"TOP {_limit}" : "";
