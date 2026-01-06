@@ -19,13 +19,16 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 1, ShortName = "d", LongName = "domain", Description = "Filter by domain")]
         private string _domain = "";
 
-        [ArgumentMetadata(Position = 2, ShortName = "o", LongName = "online", Description = "Show only online devices (default: false)")]
+        [ArgumentMetadata(Position = 2, ShortName = "c", LongName = "collection", Description = "Filter by collection name")]
+        private string _collection = "";
+
+        [ArgumentMetadata(Position = 3, ShortName = "o", LongName = "online", Description = "Show only online devices (default: false)")]
         private bool _onlineOnly = false;
 
         [ArgumentMetadata(Position = 3, ShortName = "u", LongName = "require-lastuser", Description = "Show only devices with a LastUser value (default: false)")]
         private bool _requireLastUser = false;
 
-        [ArgumentMetadata(Position = 4, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 5, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
@@ -39,6 +42,10 @@ namespace MSSQLand.Actions.SCCM
             _domain = GetNamedArgument(named, "d", null)
                    ?? GetNamedArgument(named, "domain", null)
                    ?? GetPositionalArgument(positional, 1, "");
+
+            _collection = GetNamedArgument(named, "c", null)
+                       ?? GetNamedArgument(named, "collection", null)
+                       ?? GetPositionalArgument(positional, 2, "");
 
             string onlineStr = GetNamedArgument(named, "o", null)
                             ?? GetNamedArgument(named, "online", null);
@@ -56,7 +63,7 @@ namespace MSSQLand.Actions.SCCM
 
             string limitStr = GetNamedArgument(named, "l", null)
                            ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 3);
+                           ?? GetPositionalArgument(positional, 4);
             if (!string.IsNullOrEmpty(limitStr))
             {
                 _limit = int.Parse(limitStr);
@@ -67,9 +74,10 @@ namespace MSSQLand.Actions.SCCM
         {
             string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
             string domainMsg = !string.IsNullOrEmpty(_domain) ? $" (domain: {_domain})" : "";
+            string collectionMsg = !string.IsNullOrEmpty(_collection) ? $" (collection: {_collection})" : "";
             string onlineMsg = _onlineOnly ? " (online only)" : "";
             string lastUserMsg = _requireLastUser ? " (with last user)" : "";
-            Logger.TaskNested($"Enumerating SCCM devices{filterMsg}{domainMsg}{onlineMsg}{lastUserMsg}");
+            Logger.TaskNested($"Enumerating SCCM devices{filterMsg}{domainMsg}{collectionMsg}{onlineMsg}{lastUserMsg}");
             Logger.TaskNested($"Limit: {_limit}");
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -105,6 +113,18 @@ namespace MSSQLand.Actions.SCCM
                     if (!string.IsNullOrEmpty(_domain))
                     {
                         whereClause += $" AND sys.Resource_Domain_OR_Workgr0 LIKE '%{_domain.Replace("'", "''")}%'";
+                    }
+
+                    // Add collection filter
+                    if (!string.IsNullOrEmpty(_collection))
+                    {
+                        whereClause += $@" AND EXISTS (
+                            SELECT 1 
+                            FROM [{db}].dbo.v_FullCollectionMembership cm_filter
+                            INNER JOIN [{db}].dbo.v_Collection col_filter ON cm_filter.CollectionID = col_filter.CollectionID
+                            WHERE cm_filter.ResourceID = sys.ResourceID 
+                            AND col_filter.Name LIKE '%{_collection.Replace("'", "''")}%'
+                        )";
                     }
 
                     // Add online status filter
