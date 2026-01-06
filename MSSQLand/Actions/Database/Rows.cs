@@ -102,7 +102,17 @@ namespace MSSQLand.Actions.Database
             }
 
             // Build the target table name
-            string targetTable = $"[{_database}].[{_schema}].[{_table}]";
+            string targetTable;
+            if (string.IsNullOrEmpty(_schema))
+            {
+                // Format: [database]..[table] (no schema)
+                targetTable = $"[{_database}]..[{_table}]";
+            }
+            else
+            {
+                // Format: [database].[schema].[table]
+                targetTable = $"[{_database}].[{_schema}].[{_table}]";
+            }
             
             Logger.TaskNested($"Retrieving rows from {targetTable}");
             
