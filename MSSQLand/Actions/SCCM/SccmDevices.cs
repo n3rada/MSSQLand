@@ -258,12 +258,12 @@ LEFT JOIN [{db}].dbo.v_Collection col ON cm.CollectionID = col.CollectionID AND 
 SELECT {topClause}
     bgb.OnlineStatus,
     bgb.LastOnlineTime,
+    sys.Last_Logon_Timestamp0 AS ComputerLastADAuth,
     sys.AD_Site_Name0 AS ADSite,
     sys.Resource_Domain_OR_Workgr0 AS Domain,
     sys.Name0 AS DeviceName,
     bgb.IPAddress,
-    sys.User_Name0 AS LastUser,
-    sys.Last_Logon_Timestamp0 AS LastLogon,
+    sys.User_Name0 AS LastInteractiveUser,
     sys.Operating_System_Name_and0 AS OperatingSystem,
     sys.Client0 AS Client,
     sys.Client_Version0 AS ClientVersion,
@@ -344,9 +344,16 @@ ORDER BY
                         }
                     }
 
-                    Console.WriteLine(OutputFormatter.ConvertDataTable(devicesTable));
+                    // If dataTables is not empty
+                    if (devicesTable.Rows.Count > 0)
+                    {
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(devicesTable));
 
-                    Logger.Success($"Found {devicesTable.Rows.Count} device(s)");
+                        Logger.Success($"Found {devicesTable.Rows.Count} device(s)");
+                    }
+                    else {
+                        Logger.Warning("No devices found");
+                    }
 
                 }
                 catch (Exception ex)
