@@ -176,7 +176,7 @@ SELECT {topClause}
     sys.Operating_System_Name_and0 AS OperatingSystem,
     sys.User_Name0 AS LastUser,
     sys.AD_Site_Name0 AS ADSite,
-    sys.Creation_Date0 AS FirstSeenSCCM,
+    sys.Creation_Date0 AS RegisteredDate,
     bgb.OnlineStatus,
     bgb.LastOnlineTime,
     bgb.LastOfflineTime,
