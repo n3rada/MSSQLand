@@ -24,6 +24,7 @@ namespace MSSQLand
             string timeZoneId = localTimeZone.Id;
             TimeSpan offset = localTimeZone.BaseUtcOffset;
             string formattedOffset = $"{(offset.Hours >= 0 ? "+" : "-")}{Math.Abs(offset.Hours)}:{Math.Abs(offset.Minutes):D2}";
+            int bannerWidth = 0;
 
             try
             {
@@ -89,7 +90,7 @@ namespace MSSQLand
                 }
 
                 // Show banner only after successful authentication
-                int bannerWidth = Logger.Banner($"Executing from: {Environment.MachineName}\nTime Zone ID: {timeZoneId}\nLocal Time: {localTime:HH:mm:ss}, UTC Offset: {formattedOffset}");
+                bannerWidth = Logger.Banner($"Executing from: {Environment.MachineName}\nTime Zone ID: {timeZoneId}\nLocal Time: {localTime:HH:mm:ss}, UTC Offset: {formattedOffset}");
                 Logger.NewLine();
 
                 Logger.Banner($"Start at {startTime:yyyy-MM-dd HH:mm:ss:fffff} UTC", totalWidth: bannerWidth);
@@ -205,11 +206,6 @@ namespace MSSQLand
                     Logger.Success("Connection test successful. No action specified.");
                 }
 
-                stopwatch.Stop();
-                DateTime endTime = DateTime.UtcNow;
-
-                Logger.NewLine();
-                Logger.Banner($"End at {endTime:yyyy-MM-dd HH:mm:ss:fffff} UTC\nTotal duration: {stopwatch.Elapsed.TotalSeconds:F2} seconds", totalWidth: bannerWidth);
                 return 0;
             }
             catch (Exception ex)
@@ -225,6 +221,17 @@ namespace MSSQLand
                 }
 
                 return 1;
+            }
+            finally
+            {
+                // Show end banner if start banner was displayed
+                if (bannerWidth > 0)
+                {
+                    stopwatch.Stop();
+                    DateTime endTime = DateTime.UtcNow;
+                    Logger.NewLine();
+                    Logger.Banner($"End at {endTime:yyyy-MM-dd HH:mm:ss:fffff} UTC\nTotal duration: {stopwatch.Elapsed.TotalSeconds:F2} seconds", totalWidth: bannerWidth);
+                }
             }
 
         }
