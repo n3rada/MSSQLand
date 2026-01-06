@@ -95,9 +95,9 @@ SELECT {topClause}
     us.LastErrorCode AS UpdateScanErrorCode,
     us.LastScanPackageLocation AS UpdateScanLocation,
     us.LastWUAVersion AS WindowsUpdateAgent
-FROM {Misc.BuildQualifiedTableName(db, "dbo", "v_R_System")} sys
-LEFT JOIN {Misc.BuildQualifiedTableName(db, "dbo", "v_CH_ClientSummary")} ch ON sys.ResourceID = ch.ResourceID
-LEFT JOIN {Misc.BuildQualifiedTableName(db, "dbo", "v_UpdateScanStatus")} us ON sys.ResourceID = us.ResourceID
+FROM [{db}].dbo.v_R_System sys
+LEFT JOIN [{db}].dbo.v_CH_ClientSummary ch ON sys.ResourceID = ch.ResourceID
+LEFT JOIN [{db}].dbo.v_UpdateScanStatus us ON sys.ResourceID = us.ResourceID
 {whereClause}
 ORDER BY ch.LastActiveTime DESC";
 
