@@ -8,6 +8,9 @@ using System.Linq;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
+    /// Enumerate SCCM-managed devices with filtering by attributes.
+    /// Use this for device discovery, inventory queries, and finding devices by location/user/collection.
+    /// For SCCM client health diagnostics and troubleshooting, use sccm-health instead.
     /// </summary>
     internal class SccmDevices : BaseAction
     {

@@ -7,8 +7,10 @@ using System.Data;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// Display SCCM client health status, check-in times, and inventory schedules.
-    /// Shows when devices last contacted SCCM and their configured check-in intervals.
+    /// Display SCCM client health diagnostics and communication status.
+    /// Use this for troubleshooting client issues: check-in times, inventory cycles, health evaluation results.
+    /// Shows when devices last contacted SCCM, inventory scan times, and policy request status.
+    /// For general device inventory and discovery, use sccm-devices instead.
     /// </summary>
     internal class SccmHealth : BaseAction
     {
