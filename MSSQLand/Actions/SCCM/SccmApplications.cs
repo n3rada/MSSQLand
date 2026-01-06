@@ -60,30 +60,30 @@ namespace MSSQLand.Actions.SCCM
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
                 string filterClause = string.IsNullOrEmpty(_filter)
-                    ? "WHERE CIType_ID = 10"
-                    : $"WHERE CIType_ID = 10 AND ModelName LIKE '%{_filter}%'";
+                    ? "WHERE ci.CIType_ID = 10"
+                    : $"WHERE ci.CIType_ID = 10 AND lp.DisplayName LIKE '%{_filter}%'";
 
                 string query = $@"
 SELECT TOP {_limit}
-    CI_ID,
-    ModelName,
-    CI_UniqueID,
-    CIVersion,
-    IsDeployed,
-    IsEnabled,
-    IsExpired,
-    IsSuperseded,
-    IsHidden,
-    IsUserDefined,
-    ContentSourcePath,
-    CreatedBy,
-    DateCreated,
-    LastModifiedBy,
-    DateLastModified,
-    SourceSite
-FROM [{db}].dbo.v_ConfigurationItems
+    ci.CI_ID,
+    lp.DisplayName,
+    ci.ModelName,
+    ci.CI_UniqueID,
+    ci.CIVersion,
+    ci.IsDeployed,
+    ci.IsEnabled,
+    ci.IsExpired,
+    ci.IsSuperseded,
+    ci.IsHidden,
+    ci.ContentSourcePath,
+    ci.CreatedBy,
+    ci.DateCreated,
+    ci.LastModifiedBy,
+    ci.DateLastModified
+FROM [{db}].dbo.v_ConfigurationItems ci
+LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON ci.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
 {filterClause}
-ORDER BY IsDeployed DESC, DateCreated DESC;
+ORDER BY ci.IsDeployed DESC, ci.DateCreated DESC;
 ";
 
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
