@@ -122,6 +122,9 @@ ORDER BY
                     Console.WriteLine(OutputFormatter.ConvertDataTable(usersTable));
 
                     Logger.Success($"Found {usersTable.Rows.Count} device-user relationship(s)");
+                    Logger.Info("SCCM data reflects periodic inventory cycles, not real-time sessions.");
+                    Logger.InfoNested("User login data updates during hardware inventory collection (typically 24h-7d cycles).");
+                    Logger.InfoNested("Currently logged-in users may differ from the data shown above.");
 
                 }
                 catch (Exception ex)
