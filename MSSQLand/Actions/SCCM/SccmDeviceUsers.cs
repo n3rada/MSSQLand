@@ -7,7 +7,10 @@ using System.Data;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// Shows all users who have logged into SCCM-managed devices with usage statistics
+    /// Shows all users who have logged into SCCM-managed devices with usage statistics.
+    /// 
+    /// Data reflects periodic hardware inventory cycles (typically 24h-7d), not real-time sessions.
+    /// Currently logged-in users may differ from inventory data shown.
     /// </summary>
     internal class SccmDeviceUsers : BaseAction
     {
@@ -122,9 +125,6 @@ ORDER BY
                     Console.WriteLine(OutputFormatter.ConvertDataTable(usersTable));
 
                     Logger.Success($"Found {usersTable.Rows.Count} device-user relationship(s)");
-                    Logger.Info("SCCM data reflects periodic inventory cycles, not real-time sessions.");
-                    Logger.InfoNested("User login data updates during hardware inventory collection (typically 24h-7d cycles).");
-                    Logger.InfoNested("Currently logged-in users may differ from the data shown above.");
 
                 }
                 catch (Exception ex)
