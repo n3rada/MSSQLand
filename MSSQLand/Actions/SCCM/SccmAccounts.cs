@@ -7,8 +7,12 @@ using System.Data;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// Enumerate SCCM stored credentials including Network Access Account (NAA), Client Push accounts, and task sequence accounts.
-    /// Shows which site server owns each account - critical for targeting decryption.
+    /// Enumerate SCCM stored credentials including Network Access Account (NAA), Client Push, and Task Sequence accounts.
+    /// Use this to identify encrypted credentials stored in the database that can be decrypted on the site server.
+    /// Shows account names, types, site ownership, and encrypted blobs.
+    /// NAA provides network access for clients without domain credentials.
+    /// Client Push accounts have local admin rights on target machines.
+    /// Requires access to site server for decryption - use with SharpSCCM or similar tools.
     /// </summary>
     internal class SccmAccounts : BaseAction
     {

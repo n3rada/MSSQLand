@@ -5,8 +5,11 @@ using System;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// Delete a script from the SCCM Scripts table by GUID.
-    /// Blocks deletion of the built-in CMPivot script (7DC6B6F1-E7F6-43C1-96E0-E1D16BC25C14).
+    /// Remove a script from SCCM's Scripts table by GUID to clean up after operations.
+    /// Use this to delete scripts added via sccm-script-add, removing evidence of custom payloads.
+    /// Requires script GUID - use sccm-scripts to find GUIDs.
+    /// Automatically blocks deletion of built-in CMPivot script to maintain SCCM functionality.
+    /// Useful for operational security and cleaning up test scripts.
     /// </summary>
     internal class SccmScriptDelete : BaseAction
     {

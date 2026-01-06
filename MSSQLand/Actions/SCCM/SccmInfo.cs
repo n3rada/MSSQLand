@@ -7,7 +7,9 @@ using System.Data;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// Retrieve global SCCM site information including site code, version, and URIs.
+    /// Display SCCM site information including site code, version, build, database server, and management point details.
+    /// Use this for initial reconnaissance to identify SCCM infrastructure components, site hierarchy, and installed version.
+    /// Shows distribution points, site systems, and component servers for infrastructure mapping.
     /// </summary>
     internal class SccmInfo : BaseAction
     {

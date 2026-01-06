@@ -7,9 +7,12 @@ using System.Data;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// List Azure AD application configurations stored in SCCM.
-    /// Shows tenant information, client IDs, and encrypted secret keys.
-    /// Requires decryption on Management Point for actual secrets.
+    /// Enumerate Azure AD application registrations stored in SCCM for cloud management gateway and co-management.
+    /// Use this to identify Azure AD tenants, application IDs, and encrypted secrets used for hybrid configurations.
+    /// Shows AAD tenant IDs, application (client) IDs, application names, and encrypted secret key blobs.
+    /// Secrets can be decrypted on the management point using DPAPI.
+    /// Compromising these credentials grants access to cloud-based SCCM infrastructure and Azure resources.
+    /// Critical for hybrid environment attacks and Azure tenant pivoting.
     /// </summary>
     internal class SccmAadApps : BaseAction
     {

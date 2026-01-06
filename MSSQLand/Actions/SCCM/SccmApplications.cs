@@ -7,8 +7,11 @@ using System.Data;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// Enumerate SCCM applications with installation details and requirements.
-    /// Applications are the newer deployment model compared to packages.
+    /// Enumerate SCCM applications with deployment types, installation commands, and detection methods.
+    /// Use this to identify deployed applications and their installation mechanisms for modification or monitoring.
+    /// Shows application names, install/uninstall commands, content locations, and deployment type technologies (MSI, Script, App-V).
+    /// Applications are the modern deployment model with complex detection rules and dependencies.
+    /// Reveals installation sources and command lines useful for deployment poisoning or lateral movement.
     /// </summary>
     internal class SccmApplications : BaseAction
     {

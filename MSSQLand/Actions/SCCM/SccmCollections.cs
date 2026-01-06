@@ -7,8 +7,11 @@ using System.Data;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// List SCCM collections with their properties and member counts.
-    /// Queries Collections_G table.
+    /// Enumerate SCCM collections with member counts, types, and properties.
+    /// Use this to identify device and user groupings for targeted deployment attacks.
+    /// Shows collection names, types (device/user), member counts, and collection IDs needed for deployment targeting.
+    /// Filter by name or type, and optionally show only collections with members.
+    /// Essential for understanding organizational structure and planning deployment-based attacks.
     /// </summary>
     internal class SccmCollections : BaseAction
     {

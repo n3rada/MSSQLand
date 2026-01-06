@@ -7,8 +7,11 @@ using System.Data;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// Enumerate SCCM distribution points with their content shares and properties.
-    /// Distribution points host the actual package/application content - prime targets for lateral movement.
+    /// Enumerate SCCM distribution points with content library paths and network shares.
+    /// Use this to identify servers hosting package content - primary targets for lateral movement and content poisoning.
+    /// Shows DP server names, content share paths (e.g., \\\\server\\SCCMContentLib$), NAL paths, and DP group memberships.
+    /// Distribution points store all deployed content and often have relaxed security for client access.
+    /// Critical for content modification attacks and identifying high-value file shares.
     /// </summary>
     internal class SccmDistributionPoints : BaseAction
     {

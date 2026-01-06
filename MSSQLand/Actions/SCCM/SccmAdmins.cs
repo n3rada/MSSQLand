@@ -7,7 +7,10 @@ using System.Data;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// Enumerate SCCM RBAC administrators.
+    /// Enumerate SCCM Role-Based Access Control (RBAC) administrators with their assigned roles and scopes.
+    /// Use this to identify privileged users who can manage SCCM infrastructure, deploy applications, or execute scripts.
+    /// Shows admin accounts, security roles (Full Administrator, Operations Administrator, etc.), and collection scopes.
+    /// Essential for privilege escalation paths and understanding administrative boundaries.
     /// </summary>
     internal class SccmAdmins : BaseAction
     {

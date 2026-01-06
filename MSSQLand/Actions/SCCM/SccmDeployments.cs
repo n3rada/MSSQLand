@@ -7,8 +7,11 @@ using System.Data;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// Enumerate SCCM deployments including applications, packages, task sequences, and software updates.
-    /// Shows what content is being deployed to which collections and deployment settings.
+    /// Enumerate SCCM deployments showing what content is being pushed to which collections.
+    /// Use this to identify active deployments for hijacking or monitoring deployed content.
+    /// Shows deployment names, target collections, deployment types (Available/Required), schedules, and content IDs.
+    /// Reveals which devices will receive which packages/applications, enabling deployment poisoning attacks.
+    /// Filter by deployment name to find specific campaigns.
     /// </summary>
     internal class SccmDeployments : BaseAction
     {

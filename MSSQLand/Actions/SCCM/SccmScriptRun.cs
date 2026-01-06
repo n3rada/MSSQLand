@@ -8,16 +8,13 @@ using System.Threading;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// Execute a PowerShell script on a target device via SCCM's BGB (Background) notification channel.
-    /// 
-    /// Workflow:
-    /// 1. Create BGB_Task entry (TemplateID=15 for script execution)
-    /// 2. Create BGB_ResTask entry to assign task to ResourceID
-    /// 3. Monitor ScriptsExecutionStatus for output
-    /// 
-    /// Requires:
-    /// - Script must exist in Scripts table (use sccm-script-add)
-    /// - Target device must be online with BGB channel active
+    /// Execute a PowerShell script on a target device through SCCM's Background (BGB) notification channel.
+    /// Use this to run commands or deploy payloads on managed devices using SCCM's legitimate script execution.
+    /// Requires script GUID (from sccm-scripts or sccm-script-add) and target ResourceID (from sccm-devices).
+    /// Creates BGB task entries to push script execution notification to online clients.
+    /// Returns Task ID for monitoring execution status with sccm-script-status.
+    /// Target device must be online with active BGB channel for immediate execution.
+    /// Bypasses traditional package deployment workflows - executes directly via client notification.
     /// </summary>
     internal class SccmScriptRun : BaseAction
     {

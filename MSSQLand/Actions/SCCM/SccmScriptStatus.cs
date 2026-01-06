@@ -6,8 +6,12 @@ using System.Data;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// Check the execution status of an SCCM script task.
-    /// Queries ScriptsExecutionStatus table for task completion and output.
+    /// Monitor execution status and retrieve output from scripts run via sccm-script-run.
+    /// Use this to check if script execution completed, failed, or is still pending on target devices.
+    /// Shows task state (Pending/Success/Failed), execution time, script output, and error messages.
+    /// Requires Task ID returned by sccm-script-run command.
+    /// Polls ScriptsExecutionStatus table which updates when client reports back to SCCM.
+    /// Essential for confirming command execution and retrieving command output from remote devices.
     /// </summary>
     internal class SccmScriptStatus : BaseAction
     {

@@ -9,6 +9,13 @@ using System.Text;
 
 namespace MSSQLand.Actions.SCCM
 {
+    /// <summary>
+    /// Enumerate PowerShell scripts stored in SCCM's Scripts table with metadata and content.
+    /// Use this to view existing scripts, extract their content, or identify script GUIDs for execution.
+    /// Shows script names, GUIDs, approval status, authors, last update times, and script parameters.
+    /// Can display full script content for specific GUIDs or filter by name.
+    /// Essential for identifying existing administrative scripts to execute or finding script GUIDs for sccm-script-run.
+    /// </summary>
     internal class SccmScripts : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by script name or GUID")]
