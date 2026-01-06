@@ -235,23 +235,23 @@ LEFT JOIN [{db}].dbo.v_Collection col ON cm.CollectionID = col.CollectionID AND 
 
                     string query = $@"
 SELECT {topClause}
-    sys.ResourceID,
-    sys.Resource_Domain_OR_Workgr0 AS Domain,
     sys.Name0 AS DeviceName,
-    sys.SMS_Unique_Identifier0 AS SMSID,
-    sys.Operating_System_Name_and0 AS OperatingSystem,
+    sys.Resource_Domain_OR_Workgr0 AS Domain,
+    bgb.IPAddress,
     sys.User_Name0 AS LastUser,
-    sys.AD_Site_Name0 AS ADSite,
-    sys.Creation_Date0 AS RegisteredDate,
     bgb.OnlineStatus,
     bgb.LastOnlineTime,
+    sys.Operating_System_Name_and0 AS OperatingSystem,
+    sys.Client0 AS Client,
+    sys.Client_Version0 AS ClientVersion,
+    sys.Decommissioned0 AS Decommissioned,
+    sys.Creation_Date0 AS RegisteredDate,
+    sys.AD_Site_Name0 AS ADSite,
     bgb.LastOfflineTime,
-    bgb.IPAddress,
     bgb.AccessMP,
     sys.Last_Logon_Timestamp0 AS LastLogon,
-    sys.Client_Version0 AS ClientVersion,
-    sys.Client0 AS Client,
-    sys.Decommissioned0 AS Decommissioned,
+    sys.ResourceID,
+    sys.SMS_Unique_Identifier0 AS SMSID,
     {collectionsSelect}
 FROM [{db}].dbo.v_R_System sys
 LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
