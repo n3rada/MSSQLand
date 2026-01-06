@@ -8,8 +8,6 @@ using System.Linq;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// List known SCCM devices with ResourceID, name, online status, collections, and last activity.
-    /// Queries v_R_System, BGB_ResStatus, and CollectionMembers tables.
     /// </summary>
     internal class SccmDevices : BaseAction
     {
@@ -141,77 +139,70 @@ namespace MSSQLand.Actions.SCCM
 
                     string topClause = _limit > 0 ? $"TOP {_limit}" : "";
 
-                    string query;
+                    // Collections aggregation - different for SQL Server 2016 vs 2017+
+                    string collectionsSelect;
+                    string collectionsJoins;
+                    string collectionsGroupBy;
+
                     if (databaseContext.QueryService.ExecutionServer.IsLegacy)
                     {
-                        // SQL Server 2016 and earlier: Use STUFF + FOR XML PATH
-                        query = $@"
-SELECT {topClause}
-    sys.ResourceID,
-    sys.Name0 AS DeviceName,
-    sys.Resource_Domain_OR_Workgr0 AS Domain,
-    sys.SMS_Unique_Identifier0 AS SMSID,
-    sys.Operating_System_Name_and0 AS OperatingSystem,
-    sys.User_Name0 AS LastUser,
-    sys.AD_Site_Name0 AS ADSite,
-    bgb.OnlineStatus,
-    bgb.LastOnlineTime,
-    sys.Last_Logon_Timestamp0 AS LastLogon,
-    sys.Client_Version0 AS ClientVersion,
-    sys.Client0 AS Client,
-    sys.Decommissioned0 AS Decommissioned,
-    STUFF((
+                        // SQL Server 2016 and earlier: Use STUFF + FOR XML PATH (no joins needed)
+                        collectionsSelect = $@"STUFF((
         SELECT ', ' + col.Name
         FROM [{db}].dbo.v_FullCollectionMembership cm
         INNER JOIN [{db}].dbo.v_Collection col ON cm.CollectionID = col.CollectionID
         WHERE cm.ResourceID = sys.ResourceID AND col.CollectionType = 2
         FOR XML PATH(''), TYPE
-    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS Collections
-FROM [{db}].dbo.v_R_System sys
-LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
-LEFT JOIN [{db}].dbo.v_RA_System_IPAddresses SYSIP ON sys.ResourceID = SYSIP.ResourceID
-{whereClause}
-GROUP BY sys.ResourceID, sys.Name0, sys.Resource_Domain_OR_Workgr0, sys.SMS_Unique_Identifier0,
-         sys.Operating_System_Name_and0, sys.User_Name0, sys.AD_Site_Name0, bgb.OnlineStatus,
-         bgb.LastOnlineTime, sys.Last_Logon_Timestamp0, sys.Client_Version0, sys.Client0, sys.Decommissioned0
-ORDER BY 
-    bgb.OnlineStatus,
-    sys.Resource_Domain_OR_Workgr0,
-    bgb.LastOnlineTime DESC";
+    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS Collections";
+                        collectionsJoins = "";
+                        collectionsGroupBy = "";
                     }
                     else
                     {
-                        // SQL Server 2017+: Use STRING_AGG
-                        query = $@"
+                        // SQL Server 2017+: Use STRING_AGG (requires joins and GROUP BY)
+                        collectionsSelect = "STRING_AGG(col.Name, ', ') AS Collections";
+                        collectionsJoins = $@"
+LEFT JOIN [{db}].dbo.v_FullCollectionMembership cm ON sys.ResourceID = cm.ResourceID
+LEFT JOIN [{db}].dbo.v_Collection col ON cm.CollectionID = col.CollectionID AND col.CollectionType = 2";
+                        collectionsGroupBy = "";
+                    }
+
+                    string query = $@"
 SELECT {topClause}
     sys.ResourceID,
-    sys.Name0 AS DeviceName,
     sys.Resource_Domain_OR_Workgr0 AS Domain,
+    sys.Name0 AS DeviceName,
     sys.SMS_Unique_Identifier0 AS SMSID,
     sys.Operating_System_Name_and0 AS OperatingSystem,
     sys.User_Name0 AS LastUser,
     sys.AD_Site_Name0 AS ADSite,
+    sys.Creation_Date0 AS FirstSeenSCCM,
+    sys.Last_DDR0 AS LastDiscovery,
+    sys.Last_Policy_Request0 AS LastPolicyRequest,
+    sys.Last_Hardware_Scan0 AS LastHardwareScan,
     bgb.OnlineStatus,
     bgb.LastOnlineTime,
+    bgb.LastOfflineTime,
+    bgb.IPAddress,
+    bgb.AccessMP,
     sys.Last_Logon_Timestamp0 AS LastLogon,
     sys.Client_Version0 AS ClientVersion,
     sys.Client0 AS Client,
     sys.Decommissioned0 AS Decommissioned,
-    STRING_AGG(col.Name, ', ') AS Collections
+    {collectionsSelect}
 FROM [{db}].dbo.v_R_System sys
 LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
-LEFT JOIN [{db}].dbo.v_RA_System_IPAddresses SYSIP ON sys.ResourceID = SYSIP.ResourceID
-LEFT JOIN [{db}].dbo.v_FullCollectionMembership cm ON sys.ResourceID = cm.ResourceID
-LEFT JOIN [{db}].dbo.v_Collection col ON cm.CollectionID = col.CollectionID AND col.CollectionType = 2
+LEFT JOIN [{db}].dbo.v_RA_System_IPAddresses SYSIP ON sys.ResourceID = SYSIP.ResourceID{collectionsJoins}
 {whereClause}
 GROUP BY sys.ResourceID, sys.Name0, sys.Resource_Domain_OR_Workgr0, sys.SMS_Unique_Identifier0,
-         sys.Operating_System_Name_and0, sys.User_Name0, sys.AD_Site_Name0, bgb.OnlineStatus,
-         bgb.LastOnlineTime, sys.Last_Logon_Timestamp0, sys.Client_Version0, sys.Client0, sys.Decommissioned0
+         sys.Operating_System_Name_and0, sys.User_Name0, sys.AD_Site_Name0, sys.Creation_Date0,
+         sys.Last_DDR0, sys.Last_Policy_Request0, sys.Last_Hardware_Scan0, bgb.OnlineStatus,
+         bgb.LastOnlineTime, bgb.LastOfflineTime, bgb.IPAddress, bgb.AccessMP,
+         sys.Last_Logon_Timestamp0, sys.Client_Version0, sys.Client0, sys.Decommissioned0{collectionsGroupBy}
 ORDER BY 
     bgb.OnlineStatus,
     sys.Resource_Domain_OR_Workgr0,
     bgb.LastOnlineTime DESC";
-                    }
 
                     DataTable devicesTable = databaseContext.QueryService.ExecuteTable(query);
 

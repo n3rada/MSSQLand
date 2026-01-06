@@ -108,7 +108,6 @@ namespace MSSQLand.Utilities
             { "sccm-servers", (typeof(SccmServers), "List servers in the hierarchy with associated database server and site code.") },
             { "sccm-collections", (typeof(SccmCollections), "List SCCM collections with properties and member counts.") },
             { "sccm-devices", (typeof(SccmDevices), "List known devices with ResourceID, name, online status, collections, and last activity.") },
-            { "sccm-devices-bgb", (typeof(SccmDevicesBgb), "List devices with BGB notification channel status (online/offline, last contact).") },
             { "sccm-deployments", (typeof(SccmDeployments), "Enumerate SCCM deployments with target collections and deployment settings.") },
             { "sccm-packages", (typeof(SccmPackages), "List SCCM packages with source paths and program details.") },
             { "sccm-apps", (typeof(SccmApplications), "Enumerate SCCM applications with installation commands and deployment types.") },
