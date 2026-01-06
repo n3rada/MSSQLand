@@ -23,10 +23,22 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 3, ShortName = "o", LongName = "online", Description = "Show only online devices (default: false)")]
         private bool _onlineOnly = false;
 
-        [ArgumentMetadata(Position = 3, ShortName = "u", LongName = "require-lastuser", Description = "Show only devices with a LastUser value (default: false)")]
+        [ArgumentMetadata(Position = 4, ShortName = "u", LongName = "require-lastuser", Description = "Show only devices with a LastUser value (default: false)")]
         private bool _requireLastUser = false;
 
-        [ArgumentMetadata(Position = 5, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 5, ShortName = "n", LongName = "no-user", Description = "Show only devices without a LastUser value (default: false)")]
+        private bool _noUser = false;
+
+        [ArgumentMetadata(Position = 6, LongName = "client-only", Description = "Show only devices with SCCM client installed (default: false)")]
+        private bool _clientOnly = false;
+
+        [ArgumentMetadata(Position = 7, ShortName = "a", LongName = "active", Description = "Show only active (non-decommissioned) devices (default: false)")]
+        private bool _activeOnly = false;
+
+        [ArgumentMetadata(Position = 8, LongName = "last-seen-days", Description = "Show devices seen online in last N days")]
+        private int _lastSeenDays = 0;
+
+        [ArgumentMetadata(Position = 9, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
@@ -47,7 +59,37 @@ namespace MSSQLand.Actions.SCCM
 
             string onlineStr = GetNamedArgument(named, "o", null)
                             ?? GetNamedArgument(named, "online", null);
-            if (!string.IsNullOrEmpty(onlineStr))
+            if (!stnoUserStr = GetNamedArgument(named, "n", null)
+                            ?? GetNamedArgument(named, "no-user", null);
+            if (!string.IsNullOrEmpty(noUserStr))
+            {
+                _noUser = bool.Parse(noUserStr);
+            }
+
+            string clientOnlyStr = GetNamedArgument(named, "client-only", null);
+            if (!string.IsNullOrEmpty(clientOnlyStr))
+            {
+                _clientOnly = bool.Parse(clientOnlyStr);
+            }
+
+            string activeOnlyStr = GetNamedArgument(named, "a", null)
+                                ?? GetNamedArgument(named, "active", null);
+            if (!string.IsNullOrEmpty(activeOnlyStr))
+            string noUserMsg = _noUser ? " (no user)" : "";
+            string clientOnlyMsg = _clientOnly ? " (client only)" : "";
+            string activeOnlyMsg = _activeOnly ? " (active only)" : "";
+            string lastSeenMsg = _lastSeenDays > 0 ? $" (seen in last {_lastSeenDays} days)" : "";
+            Logger.TaskNested($"Enumerating SCCM devices{filterMsg}{domainMsg}{collectionMsg}{onlineMsg}{lastUserMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeen
+                _activeOnly = bool.Parse(activeOnlyStr);
+            }
+
+            string lastSeenDaysStr = GetNamedArgument(named, "last-seen-days", null);
+            if (!string.IsNullOrEmpty(lastSeenDaysStr))
+            {
+                _lastSeenDays = int.Parse(lastSeenDaysStr);
+            }
+
+            string ring.IsNullOrEmpty(onlineStr))
             {
                 _onlineOnly = bool.Parse(onlineStr);
             }
@@ -95,7 +137,31 @@ namespace MSSQLand.Actions.SCCM
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
                 try
-                {
+                {// Add no user filter
+                    if (_noUser)
+                    {
+                        whereClause += " AND (sys.User_Name0 IS NULL OR sys.User_Name0 = '')";
+                    }
+
+                    // Add client-only filter
+                    if (_clientOnly)
+                    {
+                        whereClause += " AND sys.Client0 = 1";
+                    }
+
+                    // Add active-only filter (non-decommissioned)
+                    if (_activeOnly)
+                    {
+                        whereClause += " AND sys.Decommissioned0 = 0";
+                    }
+
+                    // Add last-seen-days filter
+                    if (_lastSeenDays > 0)
+                    {
+                        whereClause += $" AND bgb.LastOnlineTime >= DATEADD(DAY, -{_lastSeenDays}, GETDATE())";
+                    }
+
+                    
                     string whereClause = "WHERE 1=1";
                     
                     // Add filter conditions (name, IP, username, domain)
@@ -130,7 +196,9 @@ namespace MSSQLand.Actions.SCCM
                     {
                         whereClause += " AND bgb.OnlineStatus = 1";
                     }
-
+sys.Client0 DESC,
+    sys.Decommissioned0 ASC,
+    bgb.OnlineStatus DESC
                     // Add last user filter
                     if (_requireLastUser)
                     {
@@ -196,8 +264,9 @@ GROUP BY sys.ResourceID, sys.Name0, sys.Resource_Domain_OR_Workgr0, sys.SMS_Uniq
          bgb.OnlineStatus, bgb.LastOnlineTime, bgb.LastOfflineTime, bgb.IPAddress, bgb.AccessMP,
          sys.Last_Logon_Timestamp0, sys.Client_Version0, sys.Client0, sys.Decommissioned0{collectionsGroupBy}
 ORDER BY 
-    bgb.OnlineStatus,
-    sys.Resource_Domain_OR_Workgr0,
+    sys.Client0 DESC,
+    sys.Decommissioned0 ASC,
+    bgb.OnlineStatus DESC,
     bgb.LastOnlineTime DESC";
 
                     DataTable devicesTable = databaseContext.QueryService.ExecuteTable(query);
