@@ -11,11 +11,17 @@ namespace MSSQLand.Actions.SCCM
     /// </summary>
     internal class SccmDevices : BaseAction
     {
-        [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by name, IP, or username")]
-        private string _filter = "";
+        [ArgumentMetadata(Position = 0, LongName = "device", Description = "Filter by device name")]
+        private string _device = "";
 
         [ArgumentMetadata(Position = 1, ShortName = "d", LongName = "domain", Description = "Filter by domain")]
         private string _domain = "";
+
+        [ArgumentMetadata(Position = 10, LongName = "username", Description = "Filter by username")]
+        private string _username = "";
+
+        [ArgumentMetadata(Position = 11, ShortName = "i", LongName = "ip", Description = "Filter by IP address")]
+        private string _ip = "";
 
         [ArgumentMetadata(Position = 2, ShortName = "c", LongName = "collection", Description = "Filter by collection name")]
         private string _collection = "";
@@ -45,13 +51,17 @@ namespace MSSQLand.Actions.SCCM
         {
             var (named, positional) = ParseActionArguments(args);
 
-            _filter = GetNamedArgument(named, "f", null)
-                   ?? GetNamedArgument(named, "filter", null)
+            _device = GetNamedArgument(named, "device", null)
                    ?? GetPositionalArgument(positional, 0, "");
 
             _domain = GetNamedArgument(named, "d", null)
                    ?? GetNamedArgument(named, "domain", null)
                    ?? GetPositionalArgument(positional, 1, "");
+
+            _username = GetNamedArgument(named, "username", null) ?? "";
+
+            _ip = GetNamedArgument(named, "i", null)
+               ?? GetNamedArgument(named, "ip", null) ?? "";
 
             _collection = GetNamedArgument(named, "c", null)
                        ?? GetNamedArgument(named, "collection", null)
@@ -108,8 +118,10 @@ namespace MSSQLand.Actions.SCCM
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
+            string deviceMsg = !string.IsNullOrEmpty(_device) ? $" (device: {_device})" : "";
             string domainMsg = !string.IsNullOrEmpty(_domain) ? $" (domain: {_domain})" : "";
+            string usernameMsg = !string.IsNullOrEmpty(_username) ? $" (username: {_username})" : "";
+            string ipMsg = !string.IsNullOrEmpty(_ip) ? $" (ip: {_ip})" : "";
             string collectionMsg = !string.IsNullOrEmpty(_collection) ? $" (collection: {_collection})" : "";
             string onlineMsg = _onlineOnly ? " (online only)" : "";
             string lastUserMsg = _requireLastUser ? " (with last user)" : "";
@@ -117,7 +129,7 @@ namespace MSSQLand.Actions.SCCM
             string clientOnlyMsg = _clientOnly ? " (client only)" : "";
             string activeOnlyMsg = _activeOnly ? " (active only)" : "";
             string lastSeenMsg = _lastSeenDays > 0 ? $" (seen in last {_lastSeenDays} days)" : "";
-            Logger.TaskNested($"Enumerating SCCM devices{filterMsg}{domainMsg}{collectionMsg}{onlineMsg}{lastUserMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeenMsg}");
+            Logger.TaskNested($"Enumerating SCCM devices{deviceMsg}{domainMsg}{usernameMsg}{ipMsg}{collectionMsg}{onlineMsg}{lastUserMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeenMsg}");
             Logger.TaskNested($"Limit: {_limit}");
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -140,19 +152,28 @@ namespace MSSQLand.Actions.SCCM
                 {
                     string whereClause = "WHERE 1=1";
                     
-                    // Add filter conditions (name, IP, username, domain)
-                    if (!string.IsNullOrEmpty(_filter))
+                    // Add device name filter
+                    if (!string.IsNullOrEmpty(_device))
                     {
-                        whereClause += $" AND (sys.Name0 LIKE '%{_filter.Replace("'", "''")}%' " +
-                                      $"OR sys.User_Name0 LIKE '%{_filter.Replace("'", "''")}%' " +
-                                      $"OR sys.Resource_Domain_OR_Workgr0 LIKE '%{_filter.Replace("'", "''")}%' " +
-                                      $"OR SYSIP.IP_Addresses0 LIKE '{_filter.Replace("'", "''")}%')";
+                        whereClause += $" AND sys.Name0 LIKE '%{_device.Replace("'", "''")}%'";
                     }
 
                     // Add domain filter
                     if (!string.IsNullOrEmpty(_domain))
                     {
                         whereClause += $" AND sys.Resource_Domain_OR_Workgr0 LIKE '%{_domain.Replace("'", "''")}%'";
+                    }
+
+                    // Add username filter
+                    if (!string.IsNullOrEmpty(_username))
+                    {
+                        whereClause += $" AND sys.User_Name0 LIKE '%{_username.Replace("'", "''")}%'";
+                    }
+
+                    // Add IP address filter
+                    if (!string.IsNullOrEmpty(_ip))
+                    {
+                        whereClause += $" AND SYSIP.IP_Addresses0 LIKE '{_ip.Replace("'", "''")}%'";
                     }
 
                     // Add collection filter
