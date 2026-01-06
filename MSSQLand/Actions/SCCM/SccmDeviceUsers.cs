@@ -92,7 +92,9 @@ FROM [{db}].dbo.v_R_System sys
 INNER JOIN [{db}].dbo.v_GS_SYSTEM_CONSOLE_USER cu ON sys.ResourceID = cu.ResourceID
 {whereClause}
 ORDER BY 
-    sys.Name0,
+    sys.Resource_Domain_OR_Workgr0,
+    cu.LastConsoleUse0 DESC,
+    cu.NumberOfConsoleLogons0 DESC,
     cu.TotalUserConsoleMinutes0 DESC";
 
                     DataTable usersTable = databaseContext.QueryService.ExecuteTable(query);
