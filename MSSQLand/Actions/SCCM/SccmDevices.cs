@@ -258,6 +258,7 @@ LEFT JOIN [{db}].dbo.v_Collection col ON cm.CollectionID = col.CollectionID AND 
 SELECT {topClause}
     bgb.OnlineStatus,
     bgb.LastOnlineTime,
+    bgb.LastOfflineTime,
     sys.Last_Logon_Timestamp0 AS ComputerLastADAuth,
     sys.AD_Site_Name0 AS ADSite,
     sys.Resource_Domain_OR_Workgr0 AS Domain,
@@ -269,7 +270,6 @@ SELECT {topClause}
     sys.Client_Version0 AS ClientVersion,
     sys.Decommissioned0 AS Decommissioned,
     sys.Creation_Date0 AS RegisteredDate,
-    bgb.LastOfflineTime,
     bgb.AccessMP,
     sys.ResourceID,
     sys.SMS_Unique_Identifier0 AS SMSID,
