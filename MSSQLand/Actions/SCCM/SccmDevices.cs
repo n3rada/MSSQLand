@@ -17,7 +17,7 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 1, ShortName = "d", LongName = "domain", Description = "Filter by domain")]
         private string _domain = "";
 
-        [ArgumentMetadata(Position = 10, LongName = "username", Description = "Filter by username")]
+        [ArgumentMetadata(Position = 10, ShortName = "u", LongName = "username", Description = "Filter by username")]
         private string _username = "";
 
         [ArgumentMetadata(Position = 11, ShortName = "i", LongName = "ip", Description = "Filter by IP address")]
@@ -29,7 +29,7 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 3, ShortName = "o", LongName = "online", Description = "Show only online devices (default: false)")]
         private bool _onlineOnly = false;
 
-        [ArgumentMetadata(Position = 4, ShortName = "u", LongName = "require-lastuser", Description = "Show only devices with a LastUser value (default: false)")]
+        [ArgumentMetadata(Position = 4, LongName = "require-lastuser", Description = "Show only devices with a LastUser value (default: false)")]
         private bool _requireLastUser = false;
 
         [ArgumentMetadata(Position = 5, ShortName = "n", LongName = "no-user", Description = "Show only devices without a LastUser value (default: false)")]
@@ -58,7 +58,8 @@ namespace MSSQLand.Actions.SCCM
                    ?? GetNamedArgument(named, "domain", null)
                    ?? GetPositionalArgument(positional, 1, "");
 
-            _username = GetNamedArgument(named, "username", null) ?? "";
+            _username = GetNamedArgument(named, "u", null)
+                     ?? GetNamedArgument(named, "username", null) ?? "";
 
             _ip = GetNamedArgument(named, "i", null)
                ?? GetNamedArgument(named, "ip", null) ?? "";
@@ -74,8 +75,7 @@ namespace MSSQLand.Actions.SCCM
                 _onlineOnly = bool.Parse(onlineStr);
             }
 
-            string requireLastUserStr = GetNamedArgument(named, "u", null)
-                                     ?? GetNamedArgument(named, "require-lastuser", null);
+            string requireLastUserStr = GetNamedArgument(named, "require-lastuser", null);
             if (!string.IsNullOrEmpty(requireLastUserStr))
             {
                 _requireLastUser = bool.Parse(requireLastUserStr);
