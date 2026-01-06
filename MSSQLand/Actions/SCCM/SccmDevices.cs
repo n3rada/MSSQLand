@@ -177,9 +177,6 @@ SELECT {topClause}
     sys.User_Name0 AS LastUser,
     sys.AD_Site_Name0 AS ADSite,
     sys.Creation_Date0 AS FirstSeenSCCM,
-    sys.Last_DDR0 AS LastDiscovery,
-    sys.Last_Policy_Request0 AS LastPolicyRequest,
-    sys.Last_Hardware_Scan0 AS LastHardwareScan,
     bgb.OnlineStatus,
     bgb.LastOnlineTime,
     bgb.LastOfflineTime,
@@ -196,8 +193,7 @@ LEFT JOIN [{db}].dbo.v_RA_System_IPAddresses SYSIP ON sys.ResourceID = SYSIP.Res
 {whereClause}
 GROUP BY sys.ResourceID, sys.Name0, sys.Resource_Domain_OR_Workgr0, sys.SMS_Unique_Identifier0,
          sys.Operating_System_Name_and0, sys.User_Name0, sys.AD_Site_Name0, sys.Creation_Date0,
-         sys.Last_DDR0, sys.Last_Policy_Request0, sys.Last_Hardware_Scan0, bgb.OnlineStatus,
-         bgb.LastOnlineTime, bgb.LastOfflineTime, bgb.IPAddress, bgb.AccessMP,
+         bgb.OnlineStatus, bgb.LastOnlineTime, bgb.LastOfflineTime, bgb.IPAddress, bgb.AccessMP,
          sys.Last_Logon_Timestamp0, sys.Client_Version0, sys.Client0, sys.Decommissioned0{collectionsGroupBy}
 ORDER BY 
     bgb.OnlineStatus,
