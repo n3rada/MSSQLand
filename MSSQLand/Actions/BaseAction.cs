@@ -137,11 +137,33 @@ namespace MSSQLand.Actions
                                 flagValue = args[++i];
                             }
                         }
+                        
+                        // Only add to dictionary if:
+                        // 1. It's a boolean flag (can be without value)
+                        // 2. It's a non-boolean flag WITH a value
+                        if (!string.IsNullOrEmpty(flagName))
+                        {
+                            if (isBooleanFlag)
+                            {
+                                named[flagName] = flagValue ?? "true";
+                                Logger.TraceNested($"Parsed flag: {flagName} = {named[flagName]}");
+                            }
+                            else if (flagValue != null)
+                            {
+                                named[flagName] = flagValue;
+                                Logger.TraceNested($"Parsed flag: {flagName} = {named[flagName]}");
+                            }
+                            else
+                            {
+                                Logger.TraceNested($"Flag --{flagName} requires a value but none was provided. Ignoring.");
+                            }
+                        }
+                        continue;
                     }
 
                     if (!string.IsNullOrEmpty(flagName))
                     {
-                        named[flagName] = flagValue ?? "true"; // Boolean flags default to "true"
+                        named[flagName] = flagValue ?? "true"; // For inline value formats
                         Logger.TraceNested($"Parsed flag: {flagName} = {named[flagName]}");
                     }
                 }
