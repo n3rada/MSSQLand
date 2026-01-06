@@ -73,8 +73,7 @@ namespace MSSQLand.Services
                    s.Contains("SP_CONFIGURE") ||
                    s.Contains("RECONFIGURE") ||
                    s.Contains("XP_") ||
-                   s.Contains("CREATE ENDPOINT") ||
-                   s.Contains("SYS.SERVER_");
+                   s.Contains("CREATE ENDPOINT");
         }
 
         /// <summary>
