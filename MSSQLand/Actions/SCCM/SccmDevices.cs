@@ -17,34 +17,34 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 1, ShortName = "d", LongName = "domain", Description = "Filter by domain")]
         private string _domain = "";
 
-        [ArgumentMetadata(Position = 10, ShortName = "u", LongName = "username", Description = "Filter by username")]
+        [ArgumentMetadata(Position = 2, ShortName = "u", LongName = "username", Description = "Filter by username")]
         private string _username = "";
 
-        [ArgumentMetadata(Position = 11, ShortName = "i", LongName = "ip", Description = "Filter by IP address")]
+        [ArgumentMetadata(Position = 3, ShortName = "i", LongName = "ip", Description = "Filter by IP address")]
         private string _ip = "";
 
-        [ArgumentMetadata(Position = 2, ShortName = "c", LongName = "collection", Description = "Filter by collection name")]
+        [ArgumentMetadata(Position = 4, ShortName = "c", LongName = "collection", Description = "Filter by collection name")]
         private string _collection = "";
 
-        [ArgumentMetadata(Position = 3, ShortName = "o", LongName = "online", Description = "Show only online devices (default: false)")]
+        [ArgumentMetadata(Position = 5, ShortName = "o", LongName = "online", Description = "Show only online devices (default: false)")]
         private bool _onlineOnly = false;
 
-        [ArgumentMetadata(Position = 4, LongName = "require-lastuser", Description = "Show only devices with a LastUser value (default: false)")]
+        [ArgumentMetadata(Position = 6, LongName = "require-lastuser", Description = "Show only devices with a LastUser value (default: false)")]
         private bool _requireLastUser = false;
 
-        [ArgumentMetadata(Position = 5, ShortName = "n", LongName = "no-user", Description = "Show only devices without a LastUser value (default: false)")]
+        [ArgumentMetadata(Position = 7, ShortName = "n", LongName = "no-user", Description = "Show only devices without a LastUser value (default: false)")]
         private bool _noUser = false;
 
-        [ArgumentMetadata(Position = 6, LongName = "client-only", Description = "Show only devices with SCCM client installed (default: false)")]
+        [ArgumentMetadata(Position = 8, LongName = "client-only", Description = "Show only devices with SCCM client installed (default: false)")]
         private bool _clientOnly = false;
 
-        [ArgumentMetadata(Position = 7, ShortName = "a", LongName = "active", Description = "Show only active (non-decommissioned) devices (default: false)")]
+        [ArgumentMetadata(Position = 9, LongName = "active", Description = "Show only active (non-decommissioned) devices (default: false)")]
         private bool _activeOnly = false;
 
-        [ArgumentMetadata(Position = 8, LongName = "last-seen-days", Description = "Show devices seen online in last N days")]
+        [ArgumentMetadata(Position = 10, LongName = "last-seen-days", Description = "Show devices seen online in last N days")]
         private int _lastSeenDays = 0;
 
-        [ArgumentMetadata(Position = 9, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 11, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
