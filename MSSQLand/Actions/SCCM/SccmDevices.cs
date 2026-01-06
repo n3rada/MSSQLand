@@ -235,8 +235,8 @@ LEFT JOIN [{db}].dbo.v_Collection col ON cm.CollectionID = col.CollectionID AND 
 
                     string query = $@"
 SELECT {topClause}
-    bgb.LastOnlineTime,
     bgb.OnlineStatus,
+    bgb.LastOnlineTime,
     sys.AD_Site_Name0 AS ADSite,
     sys.Resource_Domain_OR_Workgr0 AS Domain,
     sys.Name0 AS DeviceName,
