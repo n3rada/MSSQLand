@@ -32,8 +32,7 @@ namespace MSSQLand.Actions.SCCM
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
-            string[] requiredTables = { "AAD_Application_Ex", "AAD_Tenant_Ex" };
-            var databases = sccmService.GetValidatedSccmDatabases(requiredTables, 2);
+            var databases = sccmService.GetSccmDatabases();
 
             if (databases.Count == 0)
             {

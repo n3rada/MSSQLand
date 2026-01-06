@@ -62,59 +62,7 @@ namespace MSSQLand.Services
             return databases;
         }
 
-        /// <summary>
-        /// Validates if a database is a valid SCCM database by checking for core tables.
-        /// </summary>
-        public bool ValidateSccmDatabase(string database, string[] requiredTables, int minimumTableCount = 2)
-        {
-            try
-            {
-                string tableList = string.Join("', '", requiredTables);
-                string validationQuery = $@"
-SELECT COUNT(*) AS TableCount
-FROM [{database}].INFORMATION_SCHEMA.TABLES
-WHERE TABLE_NAME IN ('{tableList}')
-AND TABLE_SCHEMA = 'dbo';
-";
 
-                var validation = _queryService.ExecuteTable(validationQuery);
-                int tableCount = Convert.ToInt32(validation.Rows[0]["TableCount"]);
-
-                return tableCount >= minimumTableCount;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Gets validated SCCM databases with specific table requirements.
-        /// </summary>
-        public List<string> GetValidatedSccmDatabases(string[] requiredTables, int minimumTableCount = 2)
-        {
-            var validDatabases = new List<string>();
-            var allDatabases = GetSccmDatabases();
-
-            foreach (string database in allDatabases)
-            {
-                string siteCode = GetSiteCode(database);
-                
-                Logger.Debug($"Validating database: {database}");
-
-                if (ValidateSccmDatabase(database, requiredTables, minimumTableCount))
-                {
-                    Logger.Debug($"Confirmed SCCM database: {database} (Site Code: {siteCode})");
-                    validDatabases.Add(database);
-                }
-                else
-                {
-                    Logger.Debug($"Database '{database}' does not appear to be a valid SCCM database (missing required tables)");
-                }
-            }
-
-            return validDatabases;
-        }
 
         /// <summary>
         /// Extracts the site code from an SCCM database name.

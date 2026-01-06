@@ -58,8 +58,7 @@ namespace MSSQLand.Actions.SCCM
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
-            string[] requiredTables = { "Scripts", "BGB_Task", "BGB_ResTask", "ScriptsExecutionStatus" };
-            var databases = sccmService.GetValidatedSccmDatabases(requiredTables, 4);
+            var databases = sccmService.GetSccmDatabases();
 
             if (databases.Count == 0)
             {

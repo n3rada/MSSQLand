@@ -56,8 +56,7 @@ namespace MSSQLand.Actions.SCCM
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
-            string[] requiredTables = { "Collections_G" };
-            var databases = sccmService.GetValidatedSccmDatabases(requiredTables, 1);
+            var databases = sccmService.GetSccmDatabases();
 
             if (databases.Count == 0)
             {

@@ -74,8 +74,7 @@ namespace MSSQLand.Actions.SCCM
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
-            string[] requiredTables = { "v_R_System", "BGB_ResStatus" };
-            var databases = sccmService.GetValidatedSccmDatabases(requiredTables, 2);
+            var databases = sccmService.GetSccmDatabases();
 
             if (databases.Count == 0)
             {

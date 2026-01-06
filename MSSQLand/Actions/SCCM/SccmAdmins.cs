@@ -24,9 +24,8 @@ namespace MSSQLand.Actions.SCCM
 
             try
             {
-                // Get and validate SCCM databases
-                string[] requiredTables = { "RBAC_Admins" };
-                var databases = sccmService.GetValidatedSccmDatabases(requiredTables, 1);
+                // Get SCCM databases
+                var databases = sccmService.GetSccmDatabases();
                 
                 if (databases.Count == 0)
                 {
