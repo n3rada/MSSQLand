@@ -32,7 +32,7 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 6, LongName = "require-lastuser", Description = "Show only devices with a LastUser value (default: false)")]
         private bool _requireLastUser = false;
 
-        [ArgumentMetadata(Position = 7, ShortName = "n", LongName = "no-user", Description = "Show only devices without a LastUser value (default: false)")]
+        [ArgumentMetadata(Position = 7, LongName = "no-user", Description = "Show only devices without a LastUser value (default: false)")]
         private bool _noUser = false;
 
         [ArgumentMetadata(Position = 8, LongName = "client-only", Description = "Show only devices with SCCM client installed (default: false)")]
