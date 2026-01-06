@@ -46,6 +46,8 @@ namespace MSSQLand.Actions.Remote
             else
             {
                 Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
+
+                Logger.Success($"Found {resultTable.Rows.Count} linked server(s).");
             }
 
             return resultTable;
