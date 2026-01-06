@@ -18,7 +18,7 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 1, ShortName = "t", LongName = "type", Description = "Filter by type: user (1) or device (2)")]
         private string _collectionType = "";
 
-        [ArgumentMetadata(Position = 2, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 100)")]
+        [ArgumentMetadata(Position = 2,  LongName = "limit", Description = "Limit number of results (default: 100)")]
         private int _limit = 50;
 
         [ArgumentMetadata(ShortName = "wm", LongName = "with-members", Description = "Only show collections with members (MemberCount > 0)")]

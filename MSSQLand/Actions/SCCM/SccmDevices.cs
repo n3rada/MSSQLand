@@ -44,7 +44,7 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 10, LongName = "last-seen-days", Description = "Show devices seen online in last N days")]
         private int _lastSeenDays = 0;
 
-        [ArgumentMetadata(Position = 11, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 11,  LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
