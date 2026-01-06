@@ -72,12 +72,31 @@ namespace MSSQLand.Actions
         /// <returns>Dictionary of named arguments and list of positional arguments.</returns>
         protected (Dictionary<string, string> Named, List<string> Positional) ParseActionArguments(string[] args)
         {
+            Logger.Trace($"Parsing action arguments: {string.Join(" ", args)}");
             var named = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var positional = new List<string>();
 
             if (args == null || args.Length == 0)
             {
                 return (named, positional);
+            }
+
+            // Build lookup of boolean fields from ArgumentMetadata
+            var booleanFlags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var fields = GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
+            foreach (var field in fields)
+            {
+                if (field.FieldType == typeof(bool))
+                {
+                    var metadata = field.GetCustomAttribute<ArgumentMetadataAttribute>();
+                    if (metadata != null)
+                    {
+                        if (!string.IsNullOrEmpty(metadata.ShortName))
+                            booleanFlags.Add(metadata.ShortName);
+                        if (!string.IsNullOrEmpty(metadata.LongName))
+                            booleanFlags.Add(metadata.LongName);
+                    }
+                }
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -102,24 +121,35 @@ namespace MSSQLand.Actions
                         // Flag without inline value: -flag value or --flag value
                         flagName = arg.StartsWith("--") ? arg.Substring(2) : arg.Substring(1);
                         
-                        // Check if next arg is the value (not another flag)
-                        if (i + 1 < args.Length && !args[i + 1].StartsWith("-"))
+                        // Check if this flag is boolean
+                        bool isBooleanFlag = booleanFlags.Contains(flagName);
+                        
+                        // Check if next arg is the value
+                        if (i + 1 < args.Length && !isBooleanFlag)
                         {
-                            flagValue = args[++i];
+                            string nextArg = args[i + 1];
+                            // For non-boolean flags, consume next arg as value unless it looks like a multi-character flag
+                            bool looksLikeFlag = nextArg.StartsWith("--") || 
+                                               (nextArg.StartsWith("-") && nextArg.Length > 2);
+                            
+                            if (!looksLikeFlag)
+                            {
+                                flagValue = args[++i];
+                            }
                         }
                     }
 
                     if (!string.IsNullOrEmpty(flagName))
                     {
                         named[flagName] = flagValue ?? "true"; // Boolean flags default to "true"
-                        Logger.Debug($"Parsed flag: {flagName} = {named[flagName]}");
+                        Logger.TraceNested($"Parsed flag: {flagName} = {named[flagName]}");
                     }
                 }
                 else
                 {
                     // Positional argument
                     positional.Add(arg);
-                    Logger.Debug($"Parsed positional arg: {arg}");
+                    Logger.TraceNested($"Parsed positional arg: {arg}");
                 }
             }
 

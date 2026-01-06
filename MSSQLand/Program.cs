@@ -89,6 +89,7 @@ namespace MSSQLand
                     return 1;
                 }
 
+                Logger.NewLine();
                 // Show banner only after successful authentication
                 bannerWidth = Logger.Banner($"Executing from: {Environment.MachineName}\nTime Zone ID: {timeZoneId}\nLocal Time: {localTime:HH:mm:ss}, UTC Offset: {formattedOffset}");
                 Logger.NewLine();
