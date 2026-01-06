@@ -74,18 +74,27 @@ SELECT {topClause}
     sys.Name0 AS DeviceName,
     sys.Resource_Domain_OR_Workgr0 AS Domain,
     ch.ClientActiveStatus,
-    ch.ClientVersion,
+    ch.ClientState,
+    ch.ClientStateDescription,
     ch.LastActiveTime,
-    ch.LastClientCheckTime,
+    ch.LastOnline,
     ch.LastDDR,
-    ch.LastHardwareScan,
+    ch.LastHW AS LastHardwareScan,
+    ch.LastSW AS LastSoftwareScan,
     ch.LastPolicyRequest,
-    ch.LastSoftwareScan,
     ch.LastStatusMessage,
-    ch.LastSuccessSyncTimeUTC AS LastSoftwareUpdateScan,
+    ch.LastHealthEvaluation,
+    ch.LastHealthEvaluationResult,
+    ch.LastEvaluationHealthy,
+    ch.IsActiveDDR,
+    ch.IsActiveHW,
+    ch.IsActiveSW,
+    ch.IsActivePolicyRequest,
+    ch.IsActiveStatusMessages,
     us.LastScanTime AS LastUpdateScanTime,
     us.LastErrorCode AS UpdateScanErrorCode,
-    us.LastScanPackageLocation AS UpdateScanLocation
+    us.LastScanPackageLocation AS UpdateScanLocation,
+    us.LastWUAVersion AS WindowsUpdateAgent
 FROM {Misc.BuildQualifiedTableName(db, "dbo", "v_R_System")} sys
 LEFT JOIN {Misc.BuildQualifiedTableName(db, "dbo", "v_CH_ClientSummary")} ch ON sys.ResourceID = ch.ResourceID
 LEFT JOIN {Misc.BuildQualifiedTableName(db, "dbo", "v_UpdateScanStatus")} us ON sys.ResourceID = us.ResourceID
