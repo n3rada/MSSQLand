@@ -7,11 +7,10 @@ using System.Data;
 namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
-    /// Enumerate SCCM packages with source paths, program details, and command lines.
-    /// Use this to identify network shares hosting package content for lateral movement or content modification.
-    /// Shows package names, source paths (UNC shares), program command lines, and installation behavior.
-    /// Packages are the legacy deployment model - reveals file shares that may have weak permissions.
-    /// Essential for finding writable network shares and understanding deployment mechanisms.
+    /// Enumerate SCCM packages with their properties, source locations, and program details.
+    /// Use this to view package inventory including names, descriptions, source paths, versions, and associated program counts.
+    /// Shows PackageID, name, source path (UNC or local), manufacturer, version, package type, and program count.
+    /// Packages are the legacy deployment model - use sccm-apps for modern application deployments.
     /// </summary>
     internal class SccmPackages : BaseAction
     {
