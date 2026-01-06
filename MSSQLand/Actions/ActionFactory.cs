@@ -103,24 +103,24 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             // SCCM ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "sccm-info", (typeof(SccmInfo), "Retrieve SCCM site information including site code, version, components, and distribution points.") },
-            { "sccm-admins", (typeof(SccmAdmins), "Enumerate SCCM RBAC administrators.") },
-            { "sccm-servers", (typeof(SccmServers), "List servers in the hierarchy with associated database server and site code.") },
-            { "sccm-collections", (typeof(SccmCollections), "List SCCM collections with properties and member counts.") },
-            { "sccm-devices", (typeof(SccmDevices), "List known devices with ResourceID, name, online status, collections, and last activity.") },
-            { "sccm-device-users", (typeof(SccmDeviceUsers), "Show all users who have logged into devices with usage statistics.") },
-            { "sccm-health", (typeof(SccmHealth), "Display client health status, check-in times, and inventory scan schedules.") },
-            { "sccm-deployments", (typeof(SccmDeployments), "Enumerate SCCM deployments with target collections and deployment settings.") },
-            { "sccm-packages", (typeof(SccmPackages), "List SCCM packages with source paths and program details.") },
-            { "sccm-apps", (typeof(SccmApplications), "Enumerate SCCM applications with installation commands and deployment types.") },
-            { "sccm-dp", (typeof(SccmDistributionPoints), "List distribution points with content shares and properties.") },
-            { "sccm-accounts", (typeof(SccmAccounts), "Enumerate SCCM stored credentials (NAA, Client Push, Task Sequence accounts).") },
-            { "sccm-aad-apps", (typeof(SccmAadApps), "List Azure AD application configurations with encrypted secrets.") },
-            { "sccm-scripts", (typeof(SccmScripts), "Enumerate SCCM scripts.") },
-            { "sccm-script-add", (typeof(SccmScriptAdd), "Add a PowerShell script to SCCM (auto-approved, hidden from console).") },
-            { "sccm-script-delete", (typeof(SccmScriptDelete), "Delete an SCCM script by GUID.") },
-            { "sccm-script-run", (typeof(SccmScriptRun), "Execute an SCCM script on a target device via BGB notification channel.") },
-            { "sccm-script-status", (typeof(SccmScriptStatus), "Check the execution status of an SCCM script task.") }
+            { "sccm-info", (typeof(SccmInfo), "Display SCCM site information (site code, version, build, database server, management points) for infrastructure mapping.") },
+            { "sccm-admins", (typeof(SccmAdmins), "Enumerate SCCM RBAC administrators with assigned roles and scopes to identify privileged users.") },
+            { "sccm-servers", (typeof(SccmServers), "Enumerate SCCM site servers, management points, and distribution points in the hierarchy for infrastructure mapping.") },
+            { "sccm-collections", (typeof(SccmCollections), "Enumerate device and user collections with member counts for targeted deployment attacks.") },
+            { "sccm-devices", (typeof(SccmDevices), "Enumerate managed devices with filtering by attributes for device discovery and inventory queries.") },
+            { "sccm-device-users", (typeof(SccmDeviceUsers), "Show historical user login patterns on devices with usage statistics from hardware inventory.") },
+            { "sccm-health", (typeof(SccmHealth), "Display client health diagnostics and communication status for troubleshooting client issues.") },
+            { "sccm-deployments", (typeof(SccmDeployments), "Enumerate active deployments showing what content is pushed to which collections for hijacking.") },
+            { "sccm-packages", (typeof(SccmPackages), "Enumerate packages with UNC source paths and program commands to identify writable network shares.") },
+            { "sccm-apps", (typeof(SccmApplications), "Enumerate applications with deployment types, install commands, and content locations for modification.") },
+            { "sccm-dp", (typeof(SccmDistributionPoints), "Enumerate distribution points with content library paths for lateral movement and content poisoning.") },
+            { "sccm-accounts", (typeof(SccmAccounts), "Enumerate encrypted credentials (NAA, Client Push, Task Sequence) for decryption on site server.") },
+            { "sccm-aad-apps", (typeof(SccmAadApps), "Enumerate Azure AD app registrations with encrypted secrets for cloud infrastructure access.") },
+            { "sccm-scripts", (typeof(SccmScripts), "Enumerate PowerShell scripts with content and metadata to identify script GUIDs for execution.") },
+            { "sccm-script-add", (typeof(SccmScriptAdd), "Upload PowerShell script to SCCM bypassing approval workflow (auto-approved, hidden from console).") },
+            { "sccm-script-delete", (typeof(SccmScriptDelete), "Remove script from SCCM by GUID to clean up operational artifacts.") },
+            { "sccm-script-run", (typeof(SccmScriptRun), "Execute PowerShell script on target device via BGB notification channel (requires ResourceID and script GUID).") },
+            { "sccm-script-status", (typeof(SccmScriptStatus), "Monitor script execution status and retrieve output from target devices by Task ID.") }
 #endif
         };
 
