@@ -226,34 +226,6 @@ namespace MSSQLand.Actions.SCCM
 
                     string topClause = _limit > 0 ? $"TOP {_limit}" : "";
 
-                    // Collections aggregation - different for SQL Server 2016 vs 2017+
-                    string collectionsSelect;
-                    string collectionsJoins;
-                    string collectionsGroupBy;
-
-                    if (databaseContext.QueryService.ExecutionServer.IsLegacy)
-                    {
-                        // SQL Server 2016 and earlier: Use STUFF + FOR XML PATH (no joins needed)
-                        collectionsSelect = $@"STUFF((
-        SELECT ', ' + col.Name
-        FROM [{db}].dbo.v_FullCollectionMembership cm
-        INNER JOIN [{db}].dbo.v_Collection col ON cm.CollectionID = col.CollectionID
-        WHERE cm.ResourceID = sys.ResourceID AND col.CollectionType = 2
-        FOR XML PATH(''), TYPE
-    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS Collections";
-                        collectionsJoins = "";
-                        collectionsGroupBy = "";
-                    }
-                    else
-                    {
-                        // SQL Server 2017+: Use STRING_AGG (requires joins and GROUP BY)
-                        collectionsSelect = "STRING_AGG(col.Name, ', ') AS Collections";
-                        collectionsJoins = $@"
-LEFT JOIN [{db}].dbo.v_FullCollectionMembership cm ON sys.ResourceID = cm.ResourceID
-LEFT JOIN [{db}].dbo.v_Collection col ON cm.CollectionID = col.CollectionID AND col.CollectionType = 2";
-                        collectionsGroupBy = "";
-                    }
-
                     string query = $@"
 SELECT {topClause}
     bgb.OnlineStatus,
@@ -273,15 +245,17 @@ SELECT {topClause}
     bgb.AccessMP,
     sys.ResourceID,
     sys.SMS_Unique_Identifier0 AS SMSID,
-    {collectionsSelect}
+    STUFF((
+        SELECT ', ' + col.Name
+        FROM [{db}].dbo.v_FullCollectionMembership cm
+        INNER JOIN [{db}].dbo.v_Collection col ON cm.CollectionID = col.CollectionID
+        WHERE cm.ResourceID = sys.ResourceID AND col.CollectionType = 2
+        FOR XML PATH(''), TYPE
+    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS Collections
 FROM [{db}].dbo.v_R_System sys
 LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
-LEFT JOIN [{db}].dbo.v_RA_System_IPAddresses SYSIP ON sys.ResourceID = SYSIP.ResourceID{collectionsJoins}
+LEFT JOIN [{db}].dbo.v_RA_System_IPAddresses SYSIP ON sys.ResourceID = SYSIP.ResourceID
 {whereClause}
-GROUP BY sys.ResourceID, sys.Name0, sys.Resource_Domain_OR_Workgr0, sys.SMS_Unique_Identifier0,
-         sys.Operating_System_Name_and0, sys.User_Name0, sys.AD_Site_Name0, sys.Creation_Date0,
-         bgb.OnlineStatus, bgb.LastOnlineTime, bgb.LastOfflineTime, bgb.IPAddress, bgb.AccessMP,
-         sys.Last_Logon_Timestamp0, sys.Client_Version0, sys.Client0, sys.Decommissioned0{collectionsGroupBy}
 ORDER BY 
     sys.Client0 DESC,
     sys.Decommissioned0 ASC,
