@@ -65,7 +65,7 @@ namespace MSSQLand.Actions.SCCM
                 string query = $@"
 SELECT TOP {_limit}
     ci.CI_ID,
-    lp.DisplayName,
+    COALESCE(lp.DisplayName, ci.ModelName) AS DisplayName,
     ci.ModelName,
     ci.CI_UniqueID,
     ci.CIVersion,
@@ -80,7 +80,12 @@ SELECT TOP {_limit}
     ci.LastModifiedBy,
     ci.DateLastModified
 FROM [{db}].dbo.v_ConfigurationItems ci
-LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON ci.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
+LEFT JOIN (
+    SELECT CI_ID, MIN(DisplayName) AS DisplayName
+    FROM [{db}].dbo.v_LocalizedCIProperties
+    WHERE DisplayName IS NOT NULL AND DisplayName != ''
+    GROUP BY CI_ID
+) lp ON ci.CI_ID = lp.CI_ID
 {filterClause}
 ORDER BY ci.IsDeployed DESC, ci.DateCreated DESC;
 ";
