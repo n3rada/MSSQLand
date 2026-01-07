@@ -22,7 +22,10 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 1, ShortName = "n", LongName = "name", Description = "Filter by program name")]
         private string _programName = "";
 
-        [ArgumentMetadata(Position = 2, LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 2, ShortName = "c", LongName = "commandline", Description = "Search within command line")]
+        private string _commandLine = "";
+
+        [ArgumentMetadata(Position = 3, LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
@@ -37,9 +40,13 @@ namespace MSSQLand.Actions.SCCM
                         ?? GetNamedArgument(named, "name", null)
                         ?? GetPositionalArgument(positional, 1, "");
 
+            _commandLine = GetNamedArgument(named, "c", null)
+                        ?? GetNamedArgument(named, "commandline", null)
+                        ?? GetPositionalArgument(positional, 2, "");
+
             string limitStr = GetNamedArgument(named, "l", null)
                            ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 2);
+                           ?? GetPositionalArgument(positional, 3);
             if (!string.IsNullOrEmpty(limitStr))
             {
                 _limit = int.Parse(limitStr);
@@ -53,6 +60,8 @@ namespace MSSQLand.Actions.SCCM
                 filterMsg += $" package: {_packageId}";
             if (!string.IsNullOrEmpty(_programName))
                 filterMsg += $" name: {_programName}";
+            if (!string.IsNullOrEmpty(_commandLine))
+                filterMsg += $" commandline: {_commandLine}";
 
             Logger.TaskNested($"Enumerating SCCM programs{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
@@ -84,6 +93,11 @@ namespace MSSQLand.Actions.SCCM
                 if (!string.IsNullOrEmpty(_programName))
                 {
                     filterClause += $" AND pr.ProgramName LIKE '%{_programName.Replace("'", "''")}%'";
+                }
+
+                if (!string.IsNullOrEmpty(_commandLine))
+                {
+                    filterClause += $" AND pr.CommandLine LIKE '%{_commandLine.Replace("'", "''")}%'";
                 }
 
                 string query = $@"
