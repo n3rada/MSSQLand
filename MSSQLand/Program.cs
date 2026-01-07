@@ -212,13 +212,13 @@ namespace MSSQLand
             catch (Exception ex)
             {
                 Logger.Error(ex.Message);
-                Logger.Debug($"Stack Trace: {ex.StackTrace}");
+                Logger.Trace($"Stack Trace:\n{ex.StackTrace}");
 
                 if (ex.InnerException != null)
                 {
-                    Logger.Error("Inner Exception:");
-                    Logger.Error($"Message: {ex.InnerException.Message}");
-                    Logger.Debug($"Stack Trace: {ex.InnerException.StackTrace}");
+                    Logger.Error("Inner Exception");
+                    Logger.ErrorNested($"Message: {ex.InnerException.Message}");
+                    Logger.Trace($"Stack Trace:\n{ex.InnerException.StackTrace}");
                 }
 
                 return 1;
