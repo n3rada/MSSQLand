@@ -129,8 +129,19 @@ ORDER BY pk.Name, pr.ProgramName;
                 {
                     if (row["ProgramFlags"] != DBNull.Value)
                     {
-                        uint flags = Convert.ToUInt32(row["ProgramFlags"]);
-                        row["DecodedFlags"] = DecodeProgramFlags(flags);
+                        try
+                        {
+                            // ProgramFlags is stored as INT (signed) in SQL Server
+                            // Convert to Int32 first, then cast to UInt32 for bitwise operations
+                            int signedFlags = Convert.ToInt32(row["ProgramFlags"]);
+                            uint flags = unchecked((uint)signedFlags);
+                            row["DecodedFlags"] = DecodeProgramFlags(flags);
+                        }
+                        catch (Exception ex)
+                        {
+                            row["DecodedFlags"] = $"Error: {ex.Message}";
+                            Logger.Debug($"Failed to decode flags for {row["ProgramName"]}: {ex.Message}");
+                        }
                     }
                 }
 
