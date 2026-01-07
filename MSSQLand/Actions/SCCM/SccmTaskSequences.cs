@@ -72,7 +72,7 @@ namespace MSSQLand.Actions.SCCM
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
-                string filterClause = "WHERE ts.Type = 4"; // Type 4 = Task Sequence
+                string filterClause = "WHERE ts.TS_Type = 2"; // TS_Type 2 = Task Sequence
 
                 if (!string.IsNullOrEmpty(_name))
                 {
@@ -97,24 +97,15 @@ SELECT TOP {_limit}
     ts.PkgSourcePath AS SourcePath,
     ts.StoredPkgPath,
     ts.LastRefreshTime,
-    CASE 
-        WHEN ts.BootImageID IS NOT NULL AND ts.BootImageID != '' 
-        THEN ts.BootImageID 
-        ELSE 'None' 
-    END AS BootImageID,
+    ts.BootImageID,
     bi.Name AS BootImageName,
-    CASE 
-        WHEN ts.SecuredScopeID IS NOT NULL 
-        THEN 'Yes' 
-        ELSE 'No' 
-    END AS IsSecured,
-    ts.SecuredScopeID,
+    ts.TS_Type,
+    ts.TS_Flags,
     (
         SELECT COUNT(*) 
         FROM [{db}].dbo.v_TaskSequenceReferencesInfo ref 
         WHERE ref.PackageID = ts.PackageID
-    ) AS ReferencedContentCount,
-    LEN(ts.Sequence) AS SequenceXMLSize
+    ) AS ReferencedContentCount
 FROM [{db}].dbo.v_TaskSequencePackage ts
 LEFT JOIN [{db}].dbo.v_BootImagePackage bi ON ts.BootImageID = bi.PackageID
 {filterClause}
@@ -133,20 +124,52 @@ ORDER BY ts.Name;
 
                 Logger.Success($"Found {result.Rows.Count} task sequence(s)");
 
-                // Show referenced content summary if available
+                // Show referenced content for each task sequence
                 foreach (DataRow row in result.Rows)
                 {
-                    int refCount = row["ReferencedContentCount"] != DBNull.Value ? Convert.ToInt32(row["ReferencedContentCount"]) : 0;
-                    if (refCount > 0)
+                    string pkgId = row["PackageID"].ToString();
+                    string name = row["Name"].ToString();
+                    
+                    Logger.NewLine();
+                    Logger.Info($"Task Sequence: {name} ({pkgId})");
+                    
+                    // Get referenced content
+                    string refQuery = $@"
+SELECT 
+    ref.ReferencePackageID,
+    CASE ref.ReferencePackageType
+        WHEN 0 THEN 'Package'
+        WHEN 3 THEN 'Driver Package'
+        WHEN 5 THEN 'Software Update Package'
+        WHEN 257 THEN 'Operating System Image'
+        WHEN 258 THEN 'Boot Image'
+        WHEN 259 THEN 'Operating System Installer'
+        WHEN 512 THEN 'Application'
+        ELSE 'Unknown (' + CAST(ref.ReferencePackageType AS VARCHAR) + ')'
+    END AS ContentType,
+    ref.ReferenceName AS ContentName,
+    ref.ReferenceVersion AS Version,
+    ref.ReferenceDescription AS Description,
+    ref.ReferenceProgramName AS ProgramName
+FROM [{db}].dbo.v_TaskSequenceReferencesInfo ref
+WHERE ref.PackageID = '{pkgId.Replace("'", "''")}'
+ORDER BY ref.ReferencePackageType, ref.ReferenceName;
+";
+
+                    DataTable refResult = databaseContext.QueryService.ExecuteTable(refQuery);
+                    
+                    if (refResult.Rows.Count > 0)
                     {
-                        string pkgId = row["PackageID"].ToString();
-                        string name = row["Name"].ToString();
-                        Logger.Info($"  {name} ({pkgId}) references {refCount} package(s)/application(s)");
+                        Logger.Info($"  Referenced Content ({refResult.Rows.Count} item(s)):");
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(refResult));
+                    }
+                    else
+                    {
+                        Logger.Warning("  No referenced content found");
                     }
                 }
             }
 
-            Logger.Success("Task sequence enumeration completed");
             return null;
         }
     }
