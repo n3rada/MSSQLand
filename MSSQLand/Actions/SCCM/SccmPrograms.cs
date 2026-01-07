@@ -157,6 +157,7 @@ ORDER BY pk.Name, pr.ProgramName;
 
         /// <summary>
         /// Decodes ProgramFlags bitmask into human-readable semicolon-separated string.
+        /// Extracted from https://learn.microsoft.com/en-us/intune/configmgr/develop/reference/core/servers/configure/sms_program-server-wmi-class
         /// </summary>
         private static string DecodeProgramFlags(uint flags)
         {
