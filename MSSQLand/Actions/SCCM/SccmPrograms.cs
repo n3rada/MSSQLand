@@ -96,7 +96,7 @@ SELECT TOP {_limit}
     pr.Comment,
     pr.ProgramFlags,
     pr.Duration,
-    pr.DiskSpaceReq,
+    pr.DiskSpaceRequired,
     pr.Requirements,
     pr.DependentProgram,
     pr.DriveLetter,
