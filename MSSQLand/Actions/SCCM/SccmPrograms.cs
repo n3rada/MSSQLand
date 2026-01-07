@@ -152,7 +152,6 @@ ORDER BY pk.Name, pr.ProgramName;
                 Logger.Success($"Found {result.Rows.Count} program(s)");
             }
 
-            Logger.Success("Program enumeration completed");
             return null;
         }
 
