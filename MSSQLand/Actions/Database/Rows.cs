@@ -125,6 +125,8 @@ namespace MSSQLand.Actions.Database
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(rows));
 
+            Logger.Success($"Extracted {rows.Rows.Count} row(s)");
+
             return rows;
         }
     }
