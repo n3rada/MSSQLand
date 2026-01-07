@@ -113,6 +113,7 @@ namespace MSSQLand.Utilities
             { "sccm-deployments", (typeof(SccmDeployments), "Enumerate active deployments showing what content is pushed to which collections for hijacking.") },
             { "sccm-packages", (typeof(SccmPackages), "Enumerate SCCM packages with source paths, versions, and program counts.") },
             { "sccm-programs", (typeof(SccmPrograms), "Enumerate programs for legacy packages with command lines and decoded execution flags.") },
+            { "sccm-tasksequences", (typeof(SccmTaskSequences), "Enumerate task sequences for OS deployment and automated workflows with referenced content.") },
             { "sccm-apps", (typeof(SccmApplications), "Enumerate applications with deployment types, install commands, and content locations for modification.") },
             { "sccm-dp", (typeof(SccmDistributionPoints), "Enumerate distribution points with content library paths for lateral movement and content poisoning.") },
             { "sccm-accounts", (typeof(SccmAccounts), "Enumerate encrypted credentials (NAA, Client Push, Task Sequence) for decryption on site server.") },
