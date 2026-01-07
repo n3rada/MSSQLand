@@ -8,30 +8,39 @@ namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
     /// Enumerate SCCM applications with deployment types, installation commands, and detection methods.
-    /// Use this to identify deployed applications and their installation mechanisms for modification or monitoring.
-    /// Shows application names, install/uninstall commands, content locations, and deployment type technologies (MSI, Script, App-V).
-    /// Applications are the modern deployment model with complex detection rules and dependencies.
-    /// Reveals installation sources and command lines useful for deployment poisoning or lateral movement.
+    /// Use this to view application inventory including DisplayName, ModelName, deployment status, and content paths.
+    /// Applications are the modern deployment model (since SCCM 2012) with detection rules, dependencies, and supersedence.
+    /// For legacy package deployments, use sccm-packages instead.
+    /// 
+    /// Note: Install/uninstall command lines are stored in the SDMPackageXML column (XML format).
+    /// Query v_ConfigurationItems.SDMPackageXML to extract deployment type command lines and detection methods.
     /// </summary>
     internal class SccmApplications : BaseAction
     {
-        [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by application name")]
-        private string _filter = "";
+        [ArgumentMetadata(Position = 0, ShortName = "n", LongName = "displayname", Description = "Filter by DisplayName")]
+        private string _displayName = "";
 
-        [ArgumentMetadata(Position = 1,  LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 1, ShortName = "m", LongName = "modelname", Description = "Filter by ModelName")]
+        private string _modelName = "";
+
+        [ArgumentMetadata(Position = 2, LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
         {
             var (named, positional) = ParseActionArguments(args);
 
-            _filter = GetNamedArgument(named, "f", null)
-                   ?? GetNamedArgument(named, "filter", null)
-                   ?? GetPositionalArgument(positional, 0, "");
+            _displayName = GetNamedArgument(named, "n", null)
+                        ?? GetNamedArgument(named, "displayname", null)
+                        ?? GetPositionalArgument(positional, 0, "");
+
+            _modelName = GetNamedArgument(named, "m", null)
+                      ?? GetNamedArgument(named, "modelname", null)
+                      ?? GetPositionalArgument(positional, 1, "");
 
             string limitStr = GetNamedArgument(named, "l", null)
                            ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 1);
+                           ?? GetPositionalArgument(positional, 2);
             if (!string.IsNullOrEmpty(limitStr))
             {
                 _limit = int.Parse(limitStr);
@@ -40,8 +49,13 @@ namespace MSSQLand.Actions.SCCM
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
-            Logger.TaskNested($"Enumerating SCCM applications{filterMsg}");
+            string filterMsg = "";
+            if (!string.IsNullOrEmpty(_displayName))
+                filterMsg += $" displayname: {_displayName}";
+            if (!string.IsNullOrEmpty(_modelName))
+                filterMsg += $" modelname: {_modelName}";
+            
+            Logger.TaskNested($"Enumerating SCCM applications{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -61,9 +75,17 @@ namespace MSSQLand.Actions.SCCM
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
-                string filterClause = string.IsNullOrEmpty(_filter)
-                    ? "WHERE ci.CIType_ID = 10"
-                    : $"WHERE ci.CIType_ID = 10 AND lp.DisplayName LIKE '%{_filter}%'";
+                string filterClause = "WHERE ci.CIType_ID = 10";
+                
+                if (!string.IsNullOrEmpty(_displayName))
+                {
+                    filterClause += $" AND lp.DisplayName LIKE '%{_displayName.Replace("'", "''")}%'";
+                }
+                
+                if (!string.IsNullOrEmpty(_modelName))
+                {
+                    filterClause += $" AND ci.ModelName LIKE '%{_modelName.Replace("'", "''")}%'";
+                }
 
                 string query = $@"
 SELECT TOP {_limit}
