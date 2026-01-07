@@ -122,8 +122,10 @@ ORDER BY pk.Name, pr.ProgramName;
                     continue;
                 }
 
-                // Add decoded flags column
-                result.Columns.Add("DecodedFlags", typeof(string));
+                // Add decoded flags column before ProgramFlags
+                DataColumn decodedFlagsColumn = result.Columns.Add("DecodedFlags", typeof(string));
+                int programFlagsIndex = result.Columns["ProgramFlags"].Ordinal;
+                decodedFlagsColumn.SetOrdinal(programFlagsIndex);
 
                 foreach (DataRow row in result.Rows)
                 {
