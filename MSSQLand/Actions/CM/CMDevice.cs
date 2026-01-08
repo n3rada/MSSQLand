@@ -77,10 +77,9 @@ SELECT
     ws.LastHWScan,
     chs.LastPolicyRequest,
     chs.LastDDR,
-    chs.LastSoftwareScan,
+    chs.LastSW AS LastSoftwareScan,
     uss.LastScanTime AS LastUpdateScan,
     uss.LastErrorCode AS UpdateScanErrorCode,
-    chs.PolicyRequestInterval,
     sys.Creation_Date0 AS CreationDate
 FROM [{db}].dbo.v_R_System sys
 LEFT JOIN [{db}].dbo.v_GS_OPERATING_SYSTEM os ON sys.ResourceID = os.ResourceID
@@ -203,17 +202,6 @@ WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}';";
                 else
                 {
                     Logger.InfoNested($"Last Policy Request: (Never requested)");
-                }
-                
-                // Policy Request Interval: NULL = default interval (60 minutes)
-                if (device["PolicyRequestInterval"] != DBNull.Value)
-                {
-                    int intervalMinutes = Convert.ToInt32(device["PolicyRequestInterval"]);
-                    Logger.InfoNested($"Policy Request Interval: Every {intervalMinutes} minutes");
-                }
-                else
-                {
-                    Logger.InfoNested($"Policy Request Interval: Every 60 minutes (default)");
                 }
                 
                 // Last Heartbeat Discovery (DDR): NULL = heartbeat never sent
