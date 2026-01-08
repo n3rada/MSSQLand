@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Enumerate SCCM applications with deployment types, installation commands, and detection methods.
@@ -15,7 +15,7 @@ namespace MSSQLand.Actions.SCCM
     /// Note: Install/uninstall command lines are stored in the SDMPackageXML column (XML format).
     /// Query v_ConfigurationItems.SDMPackageXML to extract deployment type command lines and detection methods.
     /// </summary>
-    internal class SccmApplications : BaseAction
+    internal class CMApplications : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "n", LongName = "displayname", Description = "Filter by DisplayName")]
         private string _displayName = "";
@@ -58,7 +58,7 @@ namespace MSSQLand.Actions.SCCM
             Logger.TaskNested($"Enumerating SCCM applications{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -70,7 +70,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");

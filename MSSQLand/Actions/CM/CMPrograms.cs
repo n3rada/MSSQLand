@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Enumerate SCCM programs (legacy package execution configurations) with command lines and run behavior.
@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.SCCM
     /// Programs define how packages are executed - shows command lines, user context, UI mode, and restart behavior.
     /// For modern application deployments, use sccm-apps instead.
     /// </summary>
-    internal class SccmPrograms : BaseAction
+    internal class CMPrograms : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "p", LongName = "package", Description = "Filter by PackageID")]
         private string _packageId = "";
@@ -66,7 +66,7 @@ namespace MSSQLand.Actions.SCCM
             Logger.TaskNested($"Enumerating SCCM programs{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -78,7 +78,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
@@ -151,7 +151,7 @@ ORDER BY pk.Name, pr.ProgramName;
                             // Convert to Int32 first, then cast to UInt32 for bitwise operations
                             int signedFlags = Convert.ToInt32(row["ProgramFlags"]);
                             uint flags = unchecked((uint)signedFlags);
-                            row["DecodedFlags"] = SccmService.DecodeProgramFlags(flags);
+                            row["DecodedFlags"] = CMService.DecodeProgramFlags(flags);
                         }
                         catch (Exception ex)
                         {

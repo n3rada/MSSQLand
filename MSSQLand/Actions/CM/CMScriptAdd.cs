@@ -4,7 +4,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Upload a PowerShell script to SCCM's Scripts table for later execution via sccm-script-run.
@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.SCCM
     /// Bypasses normal script approval process requiring multiple administrator roles.
     /// Returns script GUID needed for sccm-script-run command.
     /// </summary>
-    internal class SccmScriptAdd : BaseAction
+    internal class CMScriptAdd : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "file", Description = "PowerShell script file path", Required = true)]
         private string _scriptFile;
@@ -61,7 +61,7 @@ namespace MSSQLand.Actions.SCCM
         {
             Logger.TaskNested($"Adding SCCM script: {_scriptName}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -85,7 +85,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
                 try

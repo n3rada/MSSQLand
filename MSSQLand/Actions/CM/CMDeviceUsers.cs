@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Shows all users who have logged into SCCM-managed devices with usage statistics.
@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.SCCM
     /// Data reflects periodic hardware inventory cycles (typically 24h-7d), not real-time sessions.
     /// Currently logged-in users may differ from inventory data shown.
     /// </summary>
-    internal class SccmDeviceUsers : BaseAction
+    internal class CMDeviceUsers : BaseAction
     {
         [ArgumentMetadata(Position = 0, LongName = "device", Description = "Filter by device name")]
         private string _device = "";
@@ -55,7 +55,7 @@ namespace MSSQLand.Actions.SCCM
             Logger.TaskNested($"Enumerating SCCM device users{deviceMsg}{usernameMsg}{domainMsg}");
             Logger.TaskNested($"Limit: {_limit}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -68,7 +68,7 @@ namespace MSSQLand.Actions.SCCM
             foreach (string db in databases)
             {
                 Logger.NewLine();
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
                 try

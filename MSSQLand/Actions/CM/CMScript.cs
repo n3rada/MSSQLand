@@ -4,12 +4,12 @@ using System.Text;
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Display detailed information for a specific SCCM PowerShell script including full content and parameters.
     /// </summary>
-    internal class SccmScript : BaseAction
+    internal class CMScript : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "Script GUID to retrieve")]
         private string _scriptGuid = "";
@@ -33,7 +33,7 @@ namespace MSSQLand.Actions.SCCM
         {
             Logger.TaskNested($"Retrieving SCCM script: {_scriptGuid}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -47,7 +47,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
 
                 string query = $@"SELECT * FROM [{db}].dbo.Scripts WHERE ScriptGuid = '{_scriptGuid.Replace("'", "''")}';";
 

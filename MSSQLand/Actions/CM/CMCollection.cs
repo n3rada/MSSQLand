@@ -4,14 +4,14 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Display comprehensive information about a specific SCCM collection including all member devices.
     /// Shows collection details, membership rules, and complete list of devices/users in the collection.
     /// Use this to understand what devices are targeted by a specific collection.
     /// </summary>
-    internal class SccmCollection : BaseAction
+    internal class CMCollection : BaseAction
     {
         [ArgumentMetadata(Position = 0, Description = "Collection ID to retrieve details for (e.g., SMS00001)")]
         private string _collectionId = "";
@@ -35,7 +35,7 @@ namespace MSSQLand.Actions.SCCM
         {
             Logger.TaskNested($"Retrieving comprehensive collection information for: {_collectionId}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -49,7 +49,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");

@@ -5,7 +5,7 @@ using System.Data;
 using System.Text;
 using System.Threading;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Execute a PowerShell script on a target device through SCCM's Background (BGB) notification channel.
@@ -16,7 +16,7 @@ namespace MSSQLand.Actions.SCCM
     /// Target device must be online with active BGB channel for immediate execution.
     /// Bypasses traditional package deployment workflows - executes directly via client notification.
     /// </summary>
-    internal class SccmScriptRun : BaseAction
+    internal class CMScriptRun : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "r", LongName = "resourceid", Description = "Target device ResourceID", Required = true)]
         private string _resourceId;
@@ -53,7 +53,7 @@ namespace MSSQLand.Actions.SCCM
         {
             Logger.TaskNested($"Executing SCCM script on ResourceID: {_resourceId}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -65,7 +65,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
                 try

@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Enumerate SCCM Task Sequences with their properties and referenced content.
@@ -28,7 +28,7 @@ namespace MSSQLand.Actions.SCCM
     /// applications, scripts) that are distributed to distribution points and downloaded during execution.
     /// Use 'sccm-tasksequence <PackageID>' to view all referenced content for a specific sequence.
     /// </summary>
-    internal class SccmTaskSequences : BaseAction
+    internal class CMTaskSequences : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "n", LongName = "name", Description = "Filter by task sequence name")]
         private string _name = "";
@@ -80,7 +80,7 @@ namespace MSSQLand.Actions.SCCM
             Logger.TaskNested($"Enumerating SCCM task sequences{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -92,7 +92,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");

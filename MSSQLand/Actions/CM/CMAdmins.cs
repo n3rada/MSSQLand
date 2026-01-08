@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Enumerate SCCM Role-Based Access Control (RBAC) administrators with their assigned roles and scopes.
@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.SCCM
     /// Shows admin accounts, security roles (Full Administrator, Operations Administrator, etc.), and collection scopes.
     /// Essential for privilege escalation paths and understanding administrative boundaries.
     /// </summary>
-    internal class SccmAdmins : BaseAction
+    internal class CMAdmins : BaseAction
     {
         public override void ValidateArguments(string[] args)
         {
@@ -23,7 +23,7 @@ namespace MSSQLand.Actions.SCCM
         {
             Logger.TaskNested("Enumerating SCCM RBAC administrators");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             try
             {
@@ -39,7 +39,7 @@ namespace MSSQLand.Actions.SCCM
                 // Process each validated SCCM database
                 foreach (string sccmDatabase in databases)
                 {
-                    string siteCode = SccmService.GetSiteCode(sccmDatabase);
+                    string siteCode = CMService.GetSiteCode(sccmDatabase);
                     Logger.NewLine();
                     Logger.Info($"Enumerating RBAC admins from: {sccmDatabase} (Site Code: {siteCode})");
 

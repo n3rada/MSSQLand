@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Enumerate SCCM collections with member counts, types, and properties.
@@ -13,7 +13,7 @@ namespace MSSQLand.Actions.SCCM
     /// Filter by name or type, and optionally show only collections with members.
     /// Essential for understanding organizational structure and planning deployment-based attacks.
     /// </summary>
-    internal class SccmCollections : BaseAction
+    internal class CMCollections : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by collection name")]
         private string _filter = "";
@@ -57,7 +57,7 @@ namespace MSSQLand.Actions.SCCM
             Logger.TaskNested($"Enumerating SCCM collections{filterMsg}{typeMsg}");
             Logger.TaskNested($"Limit: {_limit}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -70,7 +70,7 @@ namespace MSSQLand.Actions.SCCM
             foreach (string db in databases)
             {
                 Logger.NewLine();
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
                 try

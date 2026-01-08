@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Enumerate SCCM stored credentials including Network Access Account (NAA), Client Push, and Task Sequence accounts.
@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.SCCM
     /// Client Push accounts have local admin rights on target machines.
     /// Requires access to site server for decryption - use with SharpSCCM or similar tools.
     /// </summary>
-    internal class SccmAccounts : BaseAction
+    internal class CMAccounts : BaseAction
     {
         public override void ValidateArguments(string[] args)
         {
@@ -25,7 +25,7 @@ namespace MSSQLand.Actions.SCCM
         {
             Logger.TaskNested("Enumerating SCCM stored credentials");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -37,7 +37,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");

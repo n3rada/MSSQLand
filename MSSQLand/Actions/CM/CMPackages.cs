@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Enumerate SCCM packages with their properties, source locations, and program details.
@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.SCCM
     /// Shows PackageID, name, source path (UNC or local), manufacturer, version, package type, and program count.
     /// Packages are the legacy deployment model - use sccm-apps for modern application deployments.
     /// </summary>
-    internal class SccmPackages : BaseAction
+    internal class CMPackages : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by package name")]
         private string _filter = "";
@@ -55,7 +55,7 @@ namespace MSSQLand.Actions.SCCM
             Logger.TaskNested($"Enumerating SCCM packages{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -67,7 +67,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");

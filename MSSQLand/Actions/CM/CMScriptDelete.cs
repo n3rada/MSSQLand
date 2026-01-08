@@ -2,7 +2,7 @@ using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Remove a script from SCCM's Scripts table by GUID to clean up after operations.
@@ -11,7 +11,7 @@ namespace MSSQLand.Actions.SCCM
     /// Automatically blocks deletion of built-in CMPivot script to maintain SCCM functionality.
     /// Useful for operational security and cleaning up test scripts.
     /// </summary>
-    internal class SccmScriptDelete : BaseAction
+    internal class CMScriptDelete : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "g", LongName = "guid", Description = "Script GUID to delete")]
         private string _scriptGuid;
@@ -50,7 +50,7 @@ namespace MSSQLand.Actions.SCCM
         {
             Logger.TaskNested($"Deleting SCCM script: {_scriptGuid}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -62,7 +62,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
                 try

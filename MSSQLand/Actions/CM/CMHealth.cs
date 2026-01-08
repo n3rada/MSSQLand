@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Display SCCM client health diagnostics and communication status.
@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.SCCM
     /// Shows when devices last contacted SCCM, inventory scan times, and policy request status.
     /// For general device inventory and discovery, use sccm-devices instead.
     /// </summary>
-    internal class SccmHealth : BaseAction
+    internal class CMHealth : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by device name")]
         private string _filter = "";
@@ -43,7 +43,7 @@ namespace MSSQLand.Actions.SCCM
             Logger.TaskNested($"Enumerating SCCM client health{filterMsg}");
             Logger.TaskNested($"Limit: {_limit}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -56,7 +56,7 @@ namespace MSSQLand.Actions.SCCM
             foreach (string db in databases)
             {
                 Logger.NewLine();
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
                 try

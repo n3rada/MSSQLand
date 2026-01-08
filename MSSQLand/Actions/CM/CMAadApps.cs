@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Enumerate Azure AD application registrations stored in SCCM for cloud management gateway and co-management.
@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.SCCM
     /// Compromising these credentials grants access to cloud-based SCCM infrastructure and Azure resources.
     /// Critical for hybrid environment attacks and Azure tenant pivoting.
     /// </summary>
-    internal class SccmAadApps : BaseAction
+    internal class CMAadApps : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by application name")]
         private string _filter = "";
@@ -33,7 +33,7 @@ namespace MSSQLand.Actions.SCCM
             string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
             Logger.TaskNested($"Enumerating Azure AD applications{filterMsg}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -46,7 +46,7 @@ namespace MSSQLand.Actions.SCCM
             foreach (string db in databases)
             {
                 Logger.NewLine();
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
                 try

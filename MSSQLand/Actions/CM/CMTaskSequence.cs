@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Display detailed information about a specific SCCM Task Sequence including all referenced content.
@@ -15,7 +15,7 @@ namespace MSSQLand.Actions.SCCM
     /// Shows packages, drivers, applications, OS images, and boot images used in the task sequence.
     /// Use this to analyze what content is deployed by a specific task sequence.
     /// </summary>
-    internal class SccmTaskSequence : BaseAction
+    internal class CMTaskSequence : BaseAction
     {
         [ArgumentMetadata(Position = 0, Description = "Task Sequence PackageID (e.g., PSC002C0)")]
         private string _packageId = "";
@@ -36,7 +36,7 @@ namespace MSSQLand.Actions.SCCM
         {
             Logger.TaskNested($"Retrieving task sequence details for: {_packageId}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -48,7 +48,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");

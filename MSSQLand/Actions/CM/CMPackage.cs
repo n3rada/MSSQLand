@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Display comprehensive information about a specific SCCM package including programs and deployments.
@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.SCCM
     /// Shows package details, all programs with command lines and execution flags, and deployment information.
     /// Use this to analyze what a specific package does and where it's deployed.
     /// </summary>
-    internal class SccmPackage : BaseAction
+    internal class CMPackage : BaseAction
     {
         [ArgumentMetadata(Position = 0, Description = "Package PackageID to retrieve details for (e.g., PSC004BF)")]
         private string _packageId = "";
@@ -36,7 +36,7 @@ namespace MSSQLand.Actions.SCCM
         {
             Logger.TaskNested($"Retrieving comprehensive package information for: {_packageId}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -50,7 +50,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
@@ -179,7 +179,7 @@ ORDER BY pr.ProgramName;";
                         {
                             int signedFlags = Convert.ToInt32(row["ProgramFlags"]);
                             uint flags = unchecked((uint)signedFlags);
-                            row["DecodedFlags"] = SccmService.DecodeProgramFlags(flags);
+                            row["DecodedFlags"] = CMService.DecodeProgramFlags(flags);
                         }
                     }
                     
@@ -220,7 +220,7 @@ ORDER BY adv.PresentTime DESC;";
 
                     foreach (DataRow row in advertisementsResult.Rows)
                     {
-                        row["DecodedFlags"] = SccmService.DecodeAdvertFlags(row["AdvertFlags"]);
+                        row["DecodedFlags"] = CMService.DecodeAdvertFlags(row["AdvertFlags"]);
                     }
 
                     Console.WriteLine(OutputFormatter.ConvertDataTable(advertisementsResult));

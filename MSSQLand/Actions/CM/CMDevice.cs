@@ -4,14 +4,14 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Display comprehensive information about a specific SCCM-managed device.
     /// Shows device details, collection memberships, deployments, and all targeted content.
     /// Use this to understand everything happening on a specific device.
     /// </summary>
-    internal class SccmDevice : BaseAction
+    internal class CMDevice : BaseAction
     {
         [ArgumentMetadata(Position = 0, Description = "Device name to retrieve details for")]
         private string _deviceName = "";
@@ -35,7 +35,7 @@ namespace MSSQLand.Actions.SCCM
         {
             Logger.TaskNested($"Retrieving comprehensive device information for: {_deviceName}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -49,7 +49,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");

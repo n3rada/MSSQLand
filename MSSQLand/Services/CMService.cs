@@ -1,4 +1,4 @@
-// MSSQLand/Services/SccmService.cs
+// MSSQLand/Services/CMService.cs
 
 using MSSQLand.Models;
 using MSSQLand.Utilities;
@@ -12,7 +12,7 @@ namespace MSSQLand.Services
     /// <summary>
     /// Service for SCCM database detection and common operations.
     /// </summary>
-    public class SccmService
+    public class CMService
     {
         private readonly QueryService _queryService;
         private readonly Server _server;
@@ -22,7 +22,7 @@ namespace MSSQLand.Services
         /// </summary>
         private readonly ConcurrentDictionary<string, bool> _hasSccmViewsCache = new();
 
-        public SccmService(QueryService queryService, Server server)
+        public CMService(QueryService queryService, Server server)
         {
             _queryService = queryService;
             _server = server;

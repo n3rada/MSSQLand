@@ -5,14 +5,14 @@ using System;
 using System.Data;
 using System.Linq;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Enumerate SCCM-managed devices with filtering by attributes.
     /// Use this for device discovery, inventory queries, and finding devices by location/user/collection.
     /// For SCCM client health diagnostics and troubleshooting, use sccm-health instead.
     /// </summary>
-    internal class SccmDevices : BaseAction
+    internal class CMDevices : BaseAction
     {
         [ArgumentMetadata(Position = 0, LongName = "device", Description = "Filter by device name")]
         private string _device = "";
@@ -135,7 +135,7 @@ namespace MSSQLand.Actions.SCCM
             Logger.TaskNested($"Enumerating SCCM devices{deviceMsg}{domainMsg}{usernameMsg}{ipMsg}{collectionMsg}{onlineMsg}{lastUserMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeenMsg}");
             Logger.TaskNested($"Limit: {_limit}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -148,7 +148,7 @@ namespace MSSQLand.Actions.SCCM
             foreach (string db in databases)
             {
                 Logger.NewLine();
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
                 try

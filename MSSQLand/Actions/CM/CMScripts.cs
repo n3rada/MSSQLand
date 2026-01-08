@@ -4,14 +4,14 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Enumerate PowerShell scripts stored in SCCM with metadata overview.
     /// Use 'sccm-script <GUID>' to view full details and script content for a specific script.
     /// Shows script names, GUIDs, approval status, authors, versions, and last update times.
     /// </summary>
-    internal class SccmScripts : BaseAction
+    internal class CMScripts : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "n", LongName = "name", Description = "Filter by script name")]
         private string _name = "";
@@ -30,7 +30,7 @@ namespace MSSQLand.Actions.SCCM
             string filterMsg = !string.IsNullOrEmpty(_name) ? " (filtered)" : "";
             Logger.TaskNested($"Enumerating SCCM scripts{filterMsg}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -42,7 +42,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");

@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Enumerate SCCM deployments showing what content is being pushed to which collections.
@@ -13,7 +13,7 @@ namespace MSSQLand.Actions.SCCM
     /// Reveals which devices will receive which packages/applications, enabling deployment poisoning attacks.
     /// Filter by deployment name, collection, type, or intent to find specific campaigns.
     /// </summary>
-    internal class SccmDeployments : BaseAction
+    internal class CMDeployments : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "n", LongName = "name", Description = "Filter by software/deployment name")]
         private string _name = "";
@@ -87,7 +87,7 @@ namespace MSSQLand.Actions.SCCM
             Logger.TaskNested($"Enumerating SCCM deployments{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -99,7 +99,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");

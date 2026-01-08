@@ -7,7 +7,7 @@ using MSSQLand.Actions.FileSystem;
 using MSSQLand.Actions.Execution;
 using MSSQLand.Actions.Domain;
 using MSSQLand.Actions.Administration;
-using MSSQLand.Actions.SCCM;
+using MSSQLand.Actions.CM;
 using MSSQLand.Exceptions;
 
 namespace MSSQLand.Utilities
@@ -99,35 +99,38 @@ namespace MSSQLand.Utilities
             { "adsi-creds", (typeof(AdsiCredentialExtractor), "Extract credentials from ADSI linked servers by intercepting LDAP authentication.") },
             { "smbcoerce", (typeof(SmbCoerce), "Force SMB authentication to a specified UNC path to capture time-limited Net-NTLMv2 challenge/response.") },
 
-#if ENABLE_SCCM
+#if ENABLE_CM
             // ═══════════════════════════════════════════════════════════════════════════════
-            // SCCM ACTIONS
+            // CONFIGURATION MANAGER ACTIONS (Microsoft Configuration Manager / ConfigMgr)
+            // Uses "cm-" prefix to align with Microsoft's official PowerShell cmdlet naming (Get-CM*, Set-CM*, etc.)
+            // Formerly known as: System Center Configuration Manager (SCCM), MECM, SMS
+            // Microsoft's current official names: Configuration Manager, ConfigMgr, MCM
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "sccm-info", (typeof(SccmInfo), "Display SCCM site information (site code, version, build, database server, management points) for infrastructure mapping.") },
-            { "sccm-admins", (typeof(SccmAdmins), "Enumerate SCCM RBAC administrators with assigned roles and scopes to identify privileged users.") },
-            { "sccm-servers", (typeof(SccmServers), "Enumerate SCCM site servers, management points, and distribution points in the hierarchy for infrastructure mapping.") },
-            { "sccm-collections", (typeof(SccmCollections), "Enumerate device and user collections with member counts for targeted deployment attacks.") },
-            { "sccm-collection", (typeof(SccmCollection), "Display comprehensive information about a specific collection including all member devices and deployments.") },
-            { "sccm-devices", (typeof(SccmDevices), "Enumerate managed devices with filtering by attributes for device discovery and inventory queries.") },
-            { "sccm-device", (typeof(SccmDevice), "Display comprehensive information about a specific device including all deployments and targeted content.") },
-            { "sccm-device-users", (typeof(SccmDeviceUsers), "Show historical user login patterns on devices with usage statistics from hardware inventory.") },
-            { "sccm-health", (typeof(SccmHealth), "Display client health diagnostics and communication status for troubleshooting client issues.") },
-            { "sccm-deployments", (typeof(SccmDeployments), "Enumerate active deployments showing what content is pushed to which collections for hijacking.") },
-            { "sccm-packages", (typeof(SccmPackages), "Enumerate SCCM packages with source paths, versions, and program counts.") },
-            { "sccm-package", (typeof(SccmPackage), "Display comprehensive information about a specific package including programs and deployments.") },
-            { "sccm-programs", (typeof(SccmPrograms), "Enumerate programs for legacy packages with command lines and decoded execution flags.") },
-            { "sccm-tasksequences", (typeof(SccmTaskSequences), "Enumerate all task sequences with summary information.") },
-            { "sccm-tasksequence", (typeof(SccmTaskSequence), "Display detailed information for a specific task sequence including all referenced content.") },
-            { "sccm-apps", (typeof(SccmApplications), "Enumerate applications with deployment types, install commands, and content locations for modification.") },
-            { "sccm-dp", (typeof(SccmDistributionPoints), "Enumerate distribution points with content library paths for lateral movement and content poisoning.") },
-            { "sccm-accounts", (typeof(SccmAccounts), "Enumerate encrypted credentials (NAA, Client Push, Task Sequence) for decryption on site server.") },
-            { "sccm-aad-apps", (typeof(SccmAadApps), "Enumerate Azure AD app registrations with encrypted secrets for cloud infrastructure access.") },
-            { "sccm-scripts", (typeof(SccmScripts), "Enumerate PowerShell scripts with metadata overview (excludes script content).") },
-            { "sccm-script", (typeof(SccmScript), "Display detailed information for a specific script including full content and parameters.") },
-            { "sccm-script-add", (typeof(SccmScriptAdd), "Upload PowerShell script to SCCM bypassing approval workflow (auto-approved, hidden from console).") },
-            { "sccm-script-delete", (typeof(SccmScriptDelete), "Remove script from SCCM by GUID to clean up operational artifacts.") },
-            { "sccm-script-run", (typeof(SccmScriptRun), "Execute PowerShell script on target device via BGB notification channel (requires ResourceID and script GUID).") },
-            { "sccm-script-status", (typeof(SccmScriptStatus), "Monitor script execution status and retrieve output from target devices by Task ID.") }
+            { "cm-info", (typeof(CMInfo), "Display ConfigMgr site information (site code, version, build, database server, management points) for infrastructure mapping.") },
+            { "cm-admins", (typeof(CMAdmins), "Enumerate ConfigMgr RBAC administrators with assigned roles and scopes to identify privileged users.") },
+            { "cm-servers", (typeof(CMServers), "Enumerate ConfigMgr site servers, management points, and distribution points in the hierarchy for infrastructure mapping.") },
+            { "cm-collections", (typeof(CMCollections), "Enumerate device and user collections with member counts for targeted deployment attacks.") },
+            { "cm-collection", (typeof(CMCollection), "Display comprehensive information about a specific collection including all member devices and deployments.") },
+            { "cm-devices", (typeof(CMDevices), "Enumerate managed devices with filtering by attributes for device discovery and inventory queries.") },
+            { "cm-device", (typeof(CMDevice), "Display comprehensive information about a specific device including all deployments and targeted content.") },
+            { "cm-device-users", (typeof(CMDeviceUsers), "Show historical user login patterns on devices with usage statistics from hardware inventory.") },
+            { "cm-health", (typeof(CMHealth), "Display client health diagnostics and communication status for troubleshooting client issues.") },
+            { "cm-deployments", (typeof(CMDeployments), "Enumerate active deployments showing what content is pushed to which collections for hijacking.") },
+            { "cm-packages", (typeof(CMPackages), "Enumerate ConfigMgr packages with source paths, versions, and program counts.") },
+            { "cm-package", (typeof(CMPackage), "Display comprehensive information about a specific package including programs and deployments.") },
+            { "cm-programs", (typeof(CMPrograms), "Enumerate programs for legacy packages with command lines and decoded execution flags.") },
+            { "cm-tasksequences", (typeof(CMTaskSequences), "Enumerate all task sequences with summary information.") },
+            { "cm-tasksequence", (typeof(CMTaskSequence), "Display detailed information for a specific task sequence including all referenced content.") },
+            { "cm-apps", (typeof(CMApplications), "Enumerate applications with deployment types, install commands, and content locations for modification.") },
+            { "cm-dp", (typeof(CMDistributionPoints), "Enumerate distribution points with content library paths for lateral movement and content poisoning.") },
+            { "cm-accounts", (typeof(CMAccounts), "Enumerate encrypted credentials (NAA, Client Push, Task Sequence) for decryption on site server.") },
+            { "cm-aad-apps", (typeof(CMAadApps), "Enumerate Azure AD app registrations with encrypted secrets for cloud infrastructure access.") },
+            { "cm-scripts", (typeof(CMScripts), "Enumerate PowerShell scripts with metadata overview (excludes script content).") },
+            { "cm-script", (typeof(CMScript), "Display detailed information for a specific script including full content and parameters.") },
+            { "cm-script-add", (typeof(CMScriptAdd), "Upload PowerShell script to ConfigMgr bypassing approval workflow (auto-approved, hidden from console).") },
+            { "cm-script-delete", (typeof(CMScriptDelete), "Remove script from ConfigMgr by GUID to clean up operational artifacts.") },
+            { "cm-script-run", (typeof(CMScriptRun), "Execute PowerShell script on target device via BGB notification channel (requires ResourceID and script GUID).") },
+            { "cm-script-status", (typeof(CMScriptStatus), "Monitor script execution status and retrieve output from target devices by Task ID.") }
 #endif
         };
 

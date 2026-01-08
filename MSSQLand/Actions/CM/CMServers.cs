@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Enumerate SCCM servers in the site hierarchy including site servers, management points, and distribution points.
@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.SCCM
     /// Shows site codes, server roles, database servers, and installation paths.
     /// Essential for understanding the SCCM topology and identifying high-value targets.
     /// </summary>
-    internal class SccmServers : BaseAction
+    internal class CMServers : BaseAction
     {
         public override void ValidateArguments(string[] args)
         {
@@ -23,7 +23,7 @@ namespace MSSQLand.Actions.SCCM
         {
             Logger.TaskNested("Enumerating SCCM servers in hierarchy");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -35,7 +35,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
                 try

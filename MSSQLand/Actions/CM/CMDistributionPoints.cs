@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Enumerate SCCM distribution points with content library paths and network shares.
@@ -13,7 +13,7 @@ namespace MSSQLand.Actions.SCCM
     /// Distribution points store all deployed content and often have relaxed security for client access.
     /// Critical for content modification attacks and identifying high-value file shares.
     /// </summary>
-    internal class SccmDistributionPoints : BaseAction
+    internal class CMDistributionPoints : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by DP name")]
         private string _filter = "";
@@ -32,7 +32,7 @@ namespace MSSQLand.Actions.SCCM
             string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
             Logger.TaskNested($"Enumerating SCCM distribution points{filterMsg}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -44,7 +44,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");

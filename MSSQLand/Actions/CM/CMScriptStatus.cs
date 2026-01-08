@@ -3,7 +3,7 @@ using MSSQLand.Utilities;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.SCCM
+namespace MSSQLand.Actions.CM
 {
     /// <summary>
     /// Monitor execution status and retrieve output from scripts run via sccm-script-run.
@@ -13,7 +13,7 @@ namespace MSSQLand.Actions.SCCM
     /// Polls ScriptsExecutionStatus table which updates when client reports back to SCCM.
     /// Essential for confirming command execution and retrieving command output from remote devices.
     /// </summary>
-    internal class SccmScriptStatus : BaseAction
+    internal class CMScriptStatus : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "t", LongName = "taskid", Description = "Task ID to check", Required = true)]
         private string _taskId;
@@ -37,7 +37,7 @@ namespace MSSQLand.Actions.SCCM
         {
             Logger.TaskNested($"Checking status for Task ID: {_taskId}");
 
-            SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
+            CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             var databases = sccmService.GetSccmDatabases();
 
@@ -49,7 +49,7 @@ namespace MSSQLand.Actions.SCCM
 
             foreach (string db in databases)
             {
-                string siteCode = SccmService.GetSiteCode(db);
+                string siteCode = CMService.GetSiteCode(db);
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
                 try
