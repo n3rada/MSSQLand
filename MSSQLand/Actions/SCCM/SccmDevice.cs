@@ -61,8 +61,8 @@ SELECT
     sys.Name0 AS DeviceName,
     sys.Resource_Domain_OR_Workgr0 AS Domain,
     sys.User_Name0 AS LastUser,
-    SYSIP.IP_Addresses0 AS IPAddress,
-    os.Caption0 AS OperatingSystem,
+    bgb.IPAddress,
+    sys.Operating_System_Name_and0 AS OperatingSystem,
     os.Version0 AS OSVersion,
     sys.Client0 AS HasClient,
     sys.Client_Version0 AS ClientVersion,
@@ -70,17 +70,15 @@ SELECT
     sys.Decommissioned0 AS Decommissioned,
     cs.Manufacturer0 AS Manufacturer,
     cs.Model0 AS Model,
-    bgb.CNIsOnline AS OnlineStatus,
-    bgb.CNLastOnlineTime AS LastOnlineTime,
-    bgb.CNLastOfflineTime AS LastOfflineTime,
-    bgb.CNAccessMP AS AccessMP
+    bgb.OnlineStatus,
+    bgb.LastOnlineTime,
+    bgb.LastOfflineTime,
+    bgb.AccessMP
 FROM [{db}].dbo.v_R_System sys
 LEFT JOIN [{db}].dbo.v_GS_OPERATING_SYSTEM os ON sys.ResourceID = os.ResourceID
 LEFT JOIN [{db}].dbo.v_GS_COMPUTER_SYSTEM cs ON sys.ResourceID = cs.ResourceID
-LEFT JOIN [{db}].dbo.v_RA_System_IPAddresses SYSIP ON sys.ResourceID = SYSIP.ResourceID
-LEFT JOIN [{db}].dbo.v_ClientMachines bgb ON sys.ResourceID = bgb.ResourceID
-WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}'
-ORDER BY SYSIP.InsertionTime0 DESC;";
+LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
+WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}';";
 
                 DataTable deviceResult = databaseContext.QueryService.ExecuteTable(deviceQuery);
 
@@ -101,9 +99,19 @@ ORDER BY SYSIP.InsertionTime0 DESC;";
                 Logger.Info($"Operating System: {device["OperatingSystem"]} ({device["OSVersion"]})");
                 Logger.Info($"Manufacturer: {device["Manufacturer"]} | Model: {device["Model"]}");
                 Logger.Info($"Client Installed: {(Convert.ToInt32(device["HasClient"]) == 1 ? "Yes" : "No")} | Version: {device["ClientVersion"]}");
-                Logger.Info($"Online Status: {(Convert.ToInt32(device["OnlineStatus"]) == 1 ? "Online" : "Offline")}");
+                
+                int onlineStatus = device["OnlineStatus"] != DBNull.Value ? Convert.ToInt32(device["OnlineStatus"]) : 0;
+                Logger.Info($"Online Status: {(onlineStatus == 1 ? "Online" : "Offline")}");
+                
+                if (device["LastOnlineTime"] != DBNull.Value)
+                {
+                    Logger.Info($"Last Online: {Convert.ToDateTime(device["LastOnlineTime"]):yyyy-MM-dd HH:mm:ss}");
+                }
+                
                 Logger.Info($"Last User: {device["LastUser"]}");
                 Logger.Info($"AD Site: {device["ADSite"]}");
+                Logger.Info($"Access MP: {device["AccessMP"]}");
+                Logger.Info($"Decommissioned: {(Convert.ToInt32(device["Decommissioned"]) == 1 ? "Yes" : "No")}");
 
                 // Get collection memberships
                 Logger.NewLine();
