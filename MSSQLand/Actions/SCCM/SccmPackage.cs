@@ -142,8 +142,11 @@ ORDER BY pr.ProgramName;";
 
                     DataTable programsResult = databaseContext.QueryService.ExecuteTable(programsQuery);
                     
-                    // Add decoded ProgramFlags column
-                    programsResult.Columns.Add("DecodedFlags", typeof(string));
+                    // Add decoded ProgramFlags column before ProgramFlags
+                    DataColumn decodedFlagsColumn = programsResult.Columns.Add("DecodedFlags", typeof(string));
+                    int programFlagsIndex = programsResult.Columns["ProgramFlags"].Ordinal;
+                    decodedFlagsColumn.SetOrdinal(programFlagsIndex);
+
                     foreach (DataRow row in programsResult.Rows)
                     {
                         if (row["ProgramFlags"] != DBNull.Value)
@@ -188,8 +191,11 @@ ORDER BY adv.PresentTime DESC;";
                 
                 if (advertisementsResult.Rows.Count > 0)
                 {
-                    // Add decoded AdvertFlags column
-                    advertisementsResult.Columns.Add("DecodedFlags", typeof(string));
+                    // Add decoded AdvertFlags column before AdvertFlags
+                    DataColumn decodedAdvertColumn = advertisementsResult.Columns.Add("DecodedFlags", typeof(string));
+                    int advertFlagsIndex = advertisementsResult.Columns["AdvertFlags"].Ordinal;
+                    decodedAdvertColumn.SetOrdinal(advertFlagsIndex);
+
                     foreach (DataRow row in advertisementsResult.Rows)
                     {
                         row["DecodedFlags"] = SccmService.DecodeAdvertFlags(row["AdvertFlags"]);
