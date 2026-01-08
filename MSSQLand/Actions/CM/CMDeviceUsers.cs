@@ -17,7 +17,7 @@ namespace MSSQLand.Actions.CM
         [ArgumentMetadata(Position = 0, LongName = "device", Description = "Filter by device name")]
         private string _device = "";
 
-        [ArgumentMetadata(Position = 1, LongName = "username", Description = "Filter by username")]
+        [ArgumentMetadata(Position = 1, LongName = "user", Description = "Filter by username")]
         private string _username = "";
 
         [ArgumentMetadata(Position = 2, LongName = "domain", Description = "Filter by domain")]

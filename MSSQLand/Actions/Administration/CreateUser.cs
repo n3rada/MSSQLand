@@ -11,7 +11,7 @@ namespace MSSQLand.Actions.Administration
     /// </summary>
     internal class UserAdd : BaseAction
     {
-        [ArgumentMetadata(Position = 0, ShortName = "u", LongName = "username", Description = "SQL login username")]
+        [ArgumentMetadata(Position = 0, ShortName = "u", LongName = "user", Description = "SQL login username")]
         private string _username = "backup_usr";
 
         [ArgumentMetadata(Position = 1, ShortName = "p", LongName = "password", Description = "SQL login password")]

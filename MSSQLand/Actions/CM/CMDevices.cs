@@ -22,7 +22,7 @@ namespace MSSQLand.Actions.CM
         [ArgumentMetadata(Position = 1, ShortName = "d", LongName = "domain", Description = "Filter by domain")]
         private string _domain = "";
 
-        [ArgumentMetadata(Position = 2, ShortName = "u", LongName = "username", Description = "Filter by username")]
+        [ArgumentMetadata(Position = 2, ShortName = "u", LongName = "user", Description = "Filter by username")]
         private string _username = "";
 
         [ArgumentMetadata(Position = 3, ShortName = "i", LongName = "ip", Description = "Filter by IP address")]
