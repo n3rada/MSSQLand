@@ -264,6 +264,7 @@ ORDER BY
     sys.Client0 DESC,
     sys.Decommissioned0 ASC,
     bgb.OnlineStatus DESC,
+    chs.LastPolicyRequest DESC,
     bgb.LastOnlineTime DESC";
 
                     DataTable devicesTable = databaseContext.QueryService.ExecuteTable(query);
