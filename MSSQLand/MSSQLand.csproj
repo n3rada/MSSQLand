@@ -152,6 +152,7 @@
     <Compile Include="Actions\CM\CMAccounts.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\CM\CMAadApps.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\CM\CMDeployments.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\CM\CMDeployment.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\CM\CMPackages.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\CM\CMPackage.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\CM\CMPrograms.cs" Condition="'$(EnableCM)' == 'true'" />
