@@ -94,26 +94,57 @@ WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}';";
                 // Display device details
                 Logger.NewLine();
                 Logger.Info($"Device: {device["DeviceName"]} (ResourceID: {resourceId})");
-                Logger.InfoNested($"Domain: {device["Domain"]}");
-                Logger.InfoNested($"IP Address: {device["IPAddress"]}");
-                Logger.InfoNested($"Operating System: {device["OperatingSystem"]} ({device["OSVersion"]})");
-                Logger.InfoNested($"Manufacturer: {device["Manufacturer"]} | Model: {device["Model"]}");
                 
+                // Domain: NULL = device not domain-joined (workgroup or standalone)
+                string domain = device["Domain"] != DBNull.Value ? device["Domain"].ToString() : "(Not domain-joined)";
+                Logger.InfoNested($"Domain: {domain}");
+                
+                // IPAddress: NULL = device never reported IP or not connected to network
+                string ipAddress = device["IPAddress"] != DBNull.Value ? device["IPAddress"].ToString() : "(No IP reported)";
+                Logger.InfoNested($"IP Address: {ipAddress}");
+                
+                // Operating System: NULL = OS inventory not yet collected
+                string os = device["OperatingSystem"] != DBNull.Value ? device["OperatingSystem"].ToString() : "(Unknown)";
+                string osVersion = device["OSVersion"] != DBNull.Value ? device["OSVersion"].ToString() : "(Unknown version)";
+                Logger.InfoNested($"Operating System: {os} ({osVersion})");
+                
+                // Manufacturer/Model: NULL = hardware inventory not run or failed
+                string manufacturer = device["Manufacturer"] != DBNull.Value ? device["Manufacturer"].ToString() : "(Unknown)";
+                string model = device["Model"] != DBNull.Value ? device["Model"].ToString() : "(Unknown)";
+                Logger.InfoNested($"Manufacturer: {manufacturer} | Model: {model}");
+                
+                // Client: NULL = client not installed or not reporting
                 int hasClient = device["HasClient"] != DBNull.Value ? Convert.ToInt32(device["HasClient"]) : 0;
-                Logger.InfoNested($"Client Installed: {(hasClient == 1 ? "Yes" : "No")} | Version: {device["ClientVersion"]}");
+                string clientVersion = device["ClientVersion"] != DBNull.Value ? device["ClientVersion"].ToString() : "(No client)";
+                Logger.InfoNested($"Client Installed: {(hasClient == 1 ? "Yes" : "No")} | Version: {clientVersion}");
                 
+                // OnlineStatus: NULL = device never connected to management point
                 int onlineStatus = device["OnlineStatus"] != DBNull.Value ? Convert.ToInt32(device["OnlineStatus"]) : 0;
                 Logger.InfoNested($"Online Status: {(onlineStatus == 1 ? "Online" : "Offline")}");
                 
+                // LastOnlineTime: NULL = device never reported online status
                 if (device["LastOnlineTime"] != DBNull.Value)
                 {
                     Logger.InfoNested($"Last Online: {Convert.ToDateTime(device["LastOnlineTime"]):yyyy-MM-dd HH:mm:ss}");
                 }
+                else
+                {
+                    Logger.InfoNested($"Last Online: (Never connected)");
+                }
                 
-                Logger.InfoNested($"Last User: {device["LastUser"]}");
-                Logger.InfoNested($"AD Site: {device["ADSite"]}");
-                Logger.InfoNested($"Access MP: {device["AccessMP"]}");
+                // LastUser: NULL = no user ever logged in or user tracking disabled
+                string lastUser = device["LastUser"] != DBNull.Value ? device["LastUser"].ToString() : "(No user logged in)";
+                Logger.InfoNested($"Last User: {lastUser}");
                 
+                // ADSite: NULL = device not in Active Directory site or AD discovery disabled
+                string adSite = device["ADSite"] != DBNull.Value ? device["ADSite"].ToString() : "(No AD site)";
+                Logger.InfoNested($"AD Site: {adSite}");
+                
+                // AccessMP: NULL = no management point assigned or device never contacted MP
+                string accessMP = device["AccessMP"] != DBNull.Value ? device["AccessMP"].ToString() : "(No MP assigned)";
+                Logger.InfoNested($"Access MP: {accessMP}");
+                
+                // Decommissioned: NULL = not decommissioned (default to 0)
                 int decommissioned = device["Decommissioned"] != DBNull.Value ? Convert.ToInt32(device["Decommissioned"]) : 0;
                 Logger.InfoNested($"Decommissioned: {(decommissioned == 1 ? "Yes" : "No")}");
 
