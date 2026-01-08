@@ -238,11 +238,18 @@ SELECT DISTINCT {topClause}
     sys.Last_Logon_Timestamp0 AS ComputerLastADAuth,
     sys.AD_Site_Name0 AS ADSite,
     sys.Resource_Domain_OR_Workgr0 AS Domain,
+    sys.Operating_System_Name_and0 AS OperatingSystem,
     sys.Name0 AS DeviceName,
     sys.ResourceID,
     bgb.IPAddress,
     sys.User_Name0 AS LastInteractiveUser,
-    sys.Operating_System_Name_and0 AS OperatingSystem,
+    STUFF((
+        SELECT ', ' + cu.SystemConsoleUser0
+        FROM [{db}].dbo.v_GS_SYSTEM_CONSOLE_USER cu
+        WHERE cu.ResourceID = sys.ResourceID
+        ORDER BY cu.LastConsoleUse0 DESC
+        FOR XML PATH(''), TYPE
+    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS Users,
     sys.Client0 AS Client,
     sys.Client_Version0 AS ClientVersion,
     sys.Decommissioned0 AS Decommissioned,
