@@ -36,7 +36,10 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 1, ShortName = "i", LongName = "packageid", Description = "Filter by PackageID")]
         private string _packageId = "";
 
-        [ArgumentMetadata(Position = 2, LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 2, ShortName = "d", LongName = "description", Description = "Filter by description")]
+        private string _description = "";
+
+        [ArgumentMetadata(Position = 3, LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
@@ -51,9 +54,13 @@ namespace MSSQLand.Actions.SCCM
                       ?? GetNamedArgument(named, "packageid", null)
                       ?? GetPositionalArgument(positional, 1, "");
 
+            _description = GetNamedArgument(named, "d", null)
+                        ?? GetNamedArgument(named, "description", null)
+                        ?? GetPositionalArgument(positional, 2, "");
+
             string limitStr = GetNamedArgument(named, "l", null)
                            ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 2);
+                           ?? GetPositionalArgument(positional, 3);
             if (!string.IsNullOrEmpty(limitStr))
             {
                 _limit = int.Parse(limitStr);
@@ -67,6 +74,8 @@ namespace MSSQLand.Actions.SCCM
                 filterMsg += $" name: {_name}";
             if (!string.IsNullOrEmpty(_packageId))
                 filterMsg += $" packageid: {_packageId}";
+            if (!string.IsNullOrEmpty(_description))
+                filterMsg += $" description: {_description}";
 
             Logger.TaskNested($"Enumerating SCCM task sequences{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
@@ -99,6 +108,11 @@ namespace MSSQLand.Actions.SCCM
                 if (!string.IsNullOrEmpty(_packageId))
                 {
                     filterClause += $" AND ts.PackageID LIKE '%{_packageId.Replace("'", "''")}%'";
+                }
+
+                if (!string.IsNullOrEmpty(_description))
+                {
+                    filterClause += $" AND ts.Description LIKE '%{_description.Replace("'", "''")}%'";
                 }
 
                 string query = $@"
