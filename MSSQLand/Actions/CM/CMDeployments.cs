@@ -162,8 +162,6 @@ namespace MSSQLand.Actions.CM
 SELECT TOP {_limit}
     ds.AssignmentID,
     ds.SoftwareName,
-    ds.PackageID,
-    ds.ProgramName,
     ds.CollectionID,
     c.Name AS CollectionName,
     CASE ds.FeatureType
