@@ -255,7 +255,49 @@ WHERE ds.AssignmentID = {_assignmentId.Replace("'", "''")}";
                 }
 
                 // Get specific device status for this assignment
-                string deviceStatusQuery = $@"
+                string deviceStatusQuery;
+                
+                // Check if this is a Configuration Item/Application deployment or Advertisement
+                if (assignmentResult.Columns.Contains("AssignmentType"))
+                {
+                    // Configuration Item/Application - use v_AppIntentAssetData or v_AssignmentState_Combined
+                    deviceStatusQuery = $@"
+SELECT TOP 100
+    sys.Name0 AS DeviceName,
+    sys.ResourceID,
+    asd.ComplianceState,
+    CASE asd.ComplianceState
+        WHEN 1 THEN 'Compliant'
+        WHEN 2 THEN 'Non-Compliant'
+        WHEN 3 THEN 'Conflict'
+        WHEN 4 THEN 'Error'
+        ELSE CAST(asd.ComplianceState AS VARCHAR)
+    END AS ComplianceStateName,
+    asd.EnforcementState,
+    CASE asd.EnforcementState
+        WHEN 1000 THEN 'Success'
+        WHEN 1001 THEN 'Already compliant'
+        WHEN 2000 THEN 'In progress'
+        WHEN 2001 THEN 'Waiting for content'
+        WHEN 2002 THEN 'Installing'
+        WHEN 2003 THEN 'Restart pending'
+        WHEN 2004 THEN 'Waiting for maintenance window'
+        WHEN 2005 THEN 'Scheduled'
+        WHEN 2008 THEN 'Failed'
+        ELSE CAST(asd.EnforcementState AS VARCHAR)
+    END AS EnforcementStateName,
+    asd.LastComplianceMessageTime,
+    asd.LastEnforcementMessageTime,
+    asd.LastStatusMessageTime
+FROM [{db}].dbo.v_AssignmentState_Combined asd
+INNER JOIN [{db}].dbo.v_R_System sys ON asd.ResourceID = sys.ResourceID
+WHERE asd.AssignmentID = {_assignmentId.Replace("'", "''")}
+ORDER BY asd.LastStatusMessageTime DESC";
+                }
+                else
+                {
+                    // Advertisement (Package/Task Sequence) - use v_ClientAdvertisementStatus
+                    deviceStatusQuery = $@"
 SELECT TOP 100
     sys.Name0 AS DeviceName,
     sys.ResourceID,
@@ -272,6 +314,7 @@ FROM [{db}].dbo.v_ClientAdvertisementStatus aas
 INNER JOIN [{db}].dbo.v_R_System sys ON aas.ResourceID = sys.ResourceID
 WHERE aas.AdvertisementID = '{_assignmentId.Replace("'", "''")}'
 ORDER BY aas.LastStatusTime DESC";
+                }
 
                 DataTable deviceStatusResult = databaseContext.QueryService.ExecuteTable(deviceStatusQuery);
                 
