@@ -227,7 +227,7 @@ ORDER BY ds.DeploymentTime DESC;";
 
                 string rulesQuery = $@"
 SELECT 
-    cr.RuleName,
+    cr.QueryName AS RuleName,
     CASE cr.RuleType
         WHEN 1 THEN 'Direct'
         WHEN 2 THEN 'Query'
@@ -235,12 +235,13 @@ SELECT
         WHEN 4 THEN 'Exclude'
         ELSE CAST(cr.RuleType AS VARCHAR)
     END AS RuleType,
-    cr.QueryExpression,
-    cr.IncludeCollectionID,
-    cr.ExcludeCollectionID
-FROM [{db}].dbo.v_CollectionRuleName cr
+    crs.WQL AS QueryExpression,
+    CASE WHEN cr.RuleType = 3 THEN cr.ReferencedCollectionID ELSE NULL END AS IncludeCollectionID,
+    CASE WHEN cr.RuleType = 4 THEN cr.ReferencedCollectionID ELSE NULL END AS ExcludeCollectionID
+FROM [{db}].dbo.Collection_Rules cr
+LEFT JOIN [{db}].dbo.Collection_Rules_SQL crs ON cr.QueryKey = crs.QueryKey
 WHERE cr.CollectionID = '{_collectionId.Replace("'", "''")}'
-ORDER BY cr.RuleType, cr.RuleName;";
+ORDER BY cr.RuleType, cr.QueryName;";
 
                 DataTable rulesResult = databaseContext.QueryService.ExecuteTable(rulesQuery);
                 
