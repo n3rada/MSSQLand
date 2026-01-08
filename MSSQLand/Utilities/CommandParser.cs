@@ -148,7 +148,7 @@ namespace MSSQLand.Utilities
                     {
                         Logger.MinimumLogLevel = LogLevel.Debug;
                     }
-                    else if (args[i] == "-s" || args[i] == "--silent")
+                    else if (args[i] == "--silent")
                     {
                         Logger.IsSilentModeEnabled = true;
                     }
