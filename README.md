@@ -81,6 +81,12 @@ Chain multiple SQL servers using the `-l` flag with **semicolon (`;`) as the sep
 - `-h search_term` - Filter actions (e.g., `-h adsi` shows all ADSI-related actions)
 - `localhost -c token createuser -h` - Show detailed help for a specific action
 
+## 🔧 Configuration Manager (ConfigMgr) Support
+
+MSSQLand includes comprehensive support for **Microsoft Configuration Manager** (formerly SCCM/MECM) exploitation and reconnaissance. When you have access to a ConfigMgr database server, you can leverage specialized actions for device intelligence (e.g., `cm-devices`) or infrastructure mapping.
+
+All ConfigMgr actions use the `cm-` prefix (e.g., `cm-scripts`, `cm-package`) to align with Microsoft's [official PowerShell cmdlet](https://learn.microsoft.com/en-us/powershell/module/configurationmanager/?view=sccm-ps) naming convention (`Get-CM*`, `Set-CM*`, etc.). The legacy "SCCM" branding is still widely recognized.
+
 ## 📸 Clean Output for Clean Reports
 
 The tool's output, enriched with timestamps and valuable contextual information, is designed to produce visually appealing and professional results, making it ideal for capturing high-quality screenshots for any of your reports (e.g., customer deliverable, internal report, red team assessments).
