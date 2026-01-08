@@ -262,38 +262,19 @@ WHERE ds.AssignmentID = {_assignmentId.Replace("'", "''")}";
 SELECT TOP 100
     sys.Name0 AS DeviceName,
     sys.ResourceID,
-    CASE aas.ComplianceState
-        WHEN 0 THEN 'Detection state unknown'
-        WHEN 1 THEN 'Compliant (installed successfully)'
-        WHEN 2 THEN 'Non-Compliant (not installed or failed)'
-        WHEN 3 THEN 'Conflict'
-        WHEN 4 THEN 'Error'
-        WHEN 5 THEN 'Unknown'
-        ELSE CAST(aas.ComplianceState AS VARCHAR)
-    END AS Status,
-    CASE aas.EnforcementState
-        WHEN 1000 THEN 'Success'
-        WHEN 1001 THEN 'Already compliant'
-        WHEN 1002 THEN 'Simulated success'
-        WHEN 2000 THEN 'In Progress'
-        WHEN 2001 THEN 'Waiting for content'
-        WHEN 2002 THEN 'Installing'
-        WHEN 2003 THEN 'Restart required'
-        WHEN 2004 THEN 'Waiting maintenance window'
-        WHEN 2005 THEN 'Scheduled'
-        WHEN 2006 THEN 'Download in progress'
-        WHEN 2007 THEN 'Download complete'
-        WHEN 2008 THEN 'Failed'
-        WHEN 2009 THEN 'Pending verification'
-        ELSE CAST(aas.EnforcementState AS VARCHAR)
-    END AS EnforcementState,
-    aas.LastComplianceMessageTime,
-    aas.LastEnforcementMessageTime,
-    aas.LastStatusCheckTime
+    aas.LastState,
+    aas.LastStateName,
+    aas.LastStatusTime,
+    aas.LastAcceptanceState,
+    aas.LastAcceptanceStateName,
+    aas.LastAcceptanceStatusTime,
+    aas.LastExecutionResult,
+    aas.LastStatusMessageIDName,
+    aas.LastAcceptanceMessageIDName
 FROM [{db}].dbo.v_ClientAdvertisementStatus aas
 INNER JOIN [{db}].dbo.v_R_System sys ON aas.ResourceID = sys.ResourceID
 WHERE aas.AdvertisementID = '{_assignmentId.Replace("'", "''")}'
-ORDER BY aas.LastStatusCheckTime DESC";
+ORDER BY aas.LastStatusTime DESC";
 
                 DataTable deviceStatusResult = databaseContext.QueryService.ExecuteTable(deviceStatusQuery);
                 
