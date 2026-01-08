@@ -238,7 +238,7 @@ ORDER BY c.MemberCount DESC, c.Name;";
                         }
                         
                         Logger.Success($"Package is deployed to {targetedCollectionsResult.Rows.Count} collection(s) with approximately {totalDevices} device(s)");
-                        Logger.Info($"Use 'sccm-collection <CollectionID>' to see device members in each collection");
+                        Logger.SuccessNested($"Use 'sccm-collection <CollectionID>' to see device members in each collection");
                     }
                     else
                     {
