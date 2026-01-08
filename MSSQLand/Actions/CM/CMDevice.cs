@@ -73,11 +73,22 @@ SELECT
     bgb.OnlineStatus,
     bgb.LastOnlineTime,
     bgb.LastOfflineTime,
-    bgb.AccessMP
+    bgb.AccessMP,
+    ws.LastHWScan,
+    chs.LastPolicyRequest,
+    chs.LastDDR,
+    chs.LastSoftwareScan,
+    uss.LastScanTime AS LastUpdateScan,
+    uss.LastErrorCode AS UpdateScanErrorCode,
+    chs.PolicyRequestInterval,
+    sys.Creation_Date0 AS CreationDate
 FROM [{db}].dbo.v_R_System sys
 LEFT JOIN [{db}].dbo.v_GS_OPERATING_SYSTEM os ON sys.ResourceID = os.ResourceID
 LEFT JOIN [{db}].dbo.v_GS_COMPUTER_SYSTEM cs ON sys.ResourceID = cs.ResourceID
 LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
+LEFT JOIN [{db}].dbo.v_GS_WORKSTATION_STATUS ws ON sys.ResourceID = ws.ResourceID
+LEFT JOIN [{db}].dbo.v_CH_ClientSummary chs ON sys.ResourceID = chs.ResourceID
+LEFT JOIN [{db}].dbo.v_UpdateScanStatus uss ON sys.ResourceID = uss.ResourceID
 WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}';";
 
                 DataTable deviceResult = databaseContext.QueryService.ExecuteTable(deviceQuery);
@@ -147,6 +158,92 @@ WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}';";
                 // Decommissioned: NULL = not decommissioned (default to 0)
                 int decommissioned = device["Decommissioned"] != DBNull.Value ? Convert.ToInt32(device["Decommissioned"]) : 0;
                 Logger.InfoNested($"Decommissioned: {(decommissioned == 1 ? "Yes" : "No")}");
+
+                // Device record creation date
+                if (device["CreationDate"] != DBNull.Value)
+                {
+                    Logger.InfoNested($"First Discovered: {Convert.ToDateTime(device["CreationDate"]):yyyy-MM-dd HH:mm:ss} UTC");
+                }
+
+                // Information Refresh Status
+                Logger.NewLine();
+                Logger.Info("Information Refresh Status (All times in UTC):");
+                
+                // Last Hardware Scan: NULL = hardware inventory never run or client not reporting
+                if (device["LastHWScan"] != DBNull.Value)
+                {
+                    DateTime lastHWScan = Convert.ToDateTime(device["LastHWScan"]);
+                    TimeSpan hwAge = DateTime.UtcNow - lastHWScan;
+                    Logger.InfoNested($"Last Hardware Scan: {lastHWScan:yyyy-MM-dd HH:mm:ss} UTC ({hwAge.Days}d {hwAge.Hours}h {hwAge.Minutes}m ago)");
+                }
+                else
+                {
+                    Logger.InfoNested($"Last Hardware Scan: (Never run)");
+                }
+                
+                // Last Software Scan: NULL = software inventory never run
+                if (device["LastSoftwareScan"] != DBNull.Value)
+                {
+                    DateTime lastSwScan = Convert.ToDateTime(device["LastSoftwareScan"]);
+                    TimeSpan swAge = DateTime.UtcNow - lastSwScan;
+                    Logger.InfoNested($"Last Software Scan: {lastSwScan:yyyy-MM-dd HH:mm:ss} UTC ({swAge.Days}d {swAge.Hours}h {swAge.Minutes}m ago)");
+                }
+                else
+                {
+                    Logger.InfoNested($"Last Software Scan: (Never run)");
+                }
+                
+                // Last Policy Request: NULL = client never requested policy or not installed
+                if (device["LastPolicyRequest"] != DBNull.Value)
+                {
+                    DateTime lastPolicy = Convert.ToDateTime(device["LastPolicyRequest"]);
+                    TimeSpan policyAge = DateTime.UtcNow - lastPolicy;
+                    Logger.InfoNested($"Last Policy Request: {lastPolicy:yyyy-MM-dd HH:mm:ss} UTC ({policyAge.Days}d {policyAge.Hours}h {policyAge.Minutes}m ago)");
+                }
+                else
+                {
+                    Logger.InfoNested($"Last Policy Request: (Never requested)");
+                }
+                
+                // Policy Request Interval: NULL = default interval (60 minutes)
+                if (device["PolicyRequestInterval"] != DBNull.Value)
+                {
+                    int intervalMinutes = Convert.ToInt32(device["PolicyRequestInterval"]);
+                    Logger.InfoNested($"Policy Request Interval: Every {intervalMinutes} minutes");
+                }
+                else
+                {
+                    Logger.InfoNested($"Policy Request Interval: Every 60 minutes (default)");
+                }
+                
+                // Last Heartbeat Discovery (DDR): NULL = heartbeat never sent
+                if (device["LastDDR"] != DBNull.Value)
+                {
+                    DateTime lastDDR = Convert.ToDateTime(device["LastDDR"]);
+                    TimeSpan ddrAge = DateTime.UtcNow - lastDDR;
+                    Logger.InfoNested($"Last Heartbeat (DDR): {lastDDR:yyyy-MM-dd HH:mm:ss} UTC ({ddrAge.Days}d {ddrAge.Hours}h {ddrAge.Minutes}m ago)");
+                }
+                else
+                {
+                    Logger.InfoNested($"Last Heartbeat (DDR): (Never sent)");
+                }
+                
+                // Last Update Scan: NULL = software update scan never run or WSUS not configured
+                if (device["LastUpdateScan"] != DBNull.Value)
+                {
+                    DateTime lastUpdateScan = Convert.ToDateTime(device["LastUpdateScan"]);
+                    TimeSpan updateAge = DateTime.UtcNow - lastUpdateScan;
+                    
+                    // Check for scan errors
+                    int errorCode = device["UpdateScanErrorCode"] != DBNull.Value ? Convert.ToInt32(device["UpdateScanErrorCode"]) : 0;
+                    string errorInfo = errorCode != 0 ? $" (Error: 0x{errorCode:X8})" : "";
+                    
+                    Logger.InfoNested($"Last Update Scan: {lastUpdateScan:yyyy-MM-dd HH:mm:ss} UTC ({updateAge.Days}d {updateAge.Hours}h {updateAge.Minutes}m ago){errorInfo}");
+                }
+                else
+                {
+                    Logger.InfoNested($"Last Update Scan: (Never run or not configured)");
+                }
 
                 // Get collection memberships
                 Logger.NewLine();
