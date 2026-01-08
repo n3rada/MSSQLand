@@ -8,9 +8,25 @@ namespace MSSQLand.Actions.SCCM
 {
     /// <summary>
     /// Enumerate SCCM Task Sequences with their properties and referenced content.
-    /// Use this to view OS deployment workflows, imaging sequences, and automated installation procedures.
-    /// Task sequences contain multiple steps (install OS, drivers, applications, scripts) executed in order.
-    /// Shows sequence names, boot images, referenced packages/applications, and execution settings.
+    /// 
+    /// Task Sequences in SCCM are ordered sets of automated steps used to perform complex IT operations.
+    /// They are primarily used for OS deployment (bare-metal, refresh, replace scenarios) but can also
+    /// automate software installation, patching, migrations, and configuration management.
+    /// 
+    /// A typical task sequence can contain hundreds of steps executed in order:
+    /// - Boot into WinPE environment (using boot images)
+    /// - Partition and format disks
+    /// - Apply OS images (WIM files)
+    /// - Install device drivers (driver packages)
+    /// - Join domain and configure settings
+    /// - Install applications and packages
+    /// - Run PowerShell scripts
+    /// - Apply Windows updates
+    /// - Restart computer as needed
+    /// 
+    /// Task sequences reference multiple content types (boot images, OS images, driver packages, 
+    /// applications, scripts) that are distributed to distribution points and downloaded during execution.
+    /// Use 'sccm-tasksequence <PackageID>' to view all referenced content for a specific sequence.
     /// </summary>
     internal class SccmTaskSequences : BaseAction
     {
@@ -72,7 +88,8 @@ namespace MSSQLand.Actions.SCCM
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
-                string filterClause = "WHERE ts.TS_Type = 2"; // TS_Type 2 = Task Sequence
+                // TS_Type: 1 = Sequence (internal), 2 = Task Sequence (standard), 3 = Server Task Sequence (deprecated)
+                string filterClause = "WHERE 1=1"; // Show all TS_Type values
 
                 if (!string.IsNullOrEmpty(_name))
                 {
@@ -123,51 +140,7 @@ ORDER BY ts.Name;
                 Console.WriteLine(OutputFormatter.ConvertDataTable(result));
 
                 Logger.Success($"Found {result.Rows.Count} task sequence(s)");
-
-                // Show referenced content for each task sequence
-                foreach (DataRow row in result.Rows)
-                {
-                    string pkgId = row["PackageID"].ToString();
-                    string name = row["Name"].ToString();
-                    
-                    Logger.NewLine();
-                    Logger.Info($"Task Sequence: {name} ({pkgId})");
-                    
-                    // Get referenced content
-                    string refQuery = $@"
-SELECT 
-    ref.ReferencePackageID,
-    CASE ref.ReferencePackageType
-        WHEN 0 THEN 'Package'
-        WHEN 3 THEN 'Driver Package'
-        WHEN 5 THEN 'Software Update Package'
-        WHEN 257 THEN 'Operating System Image'
-        WHEN 258 THEN 'Boot Image'
-        WHEN 259 THEN 'Operating System Installer'
-        WHEN 512 THEN 'Application'
-        ELSE 'Unknown (' + CAST(ref.ReferencePackageType AS VARCHAR) + ')'
-    END AS ContentType,
-    ref.ReferenceName AS ContentName,
-    ref.ReferenceVersion AS Version,
-    ref.ReferenceDescription AS Description,
-    ref.ReferenceProgramName AS ProgramName
-FROM [{db}].dbo.v_TaskSequenceReferencesInfo ref
-WHERE ref.PackageID = '{pkgId.Replace("'", "''")}'
-ORDER BY ref.ReferencePackageType, ref.ReferenceName;
-";
-
-                    DataTable refResult = databaseContext.QueryService.ExecuteTable(refQuery);
-                    
-                    if (refResult.Rows.Count > 0)
-                    {
-                        Logger.Info($"  Referenced Content ({refResult.Rows.Count} item(s)):");
-                        Console.WriteLine(OutputFormatter.ConvertDataTable(refResult));
-                    }
-                    else
-                    {
-                        Logger.Warning("  No referenced content found");
-                    }
-                }
+                Logger.SuccessNested("Use 'sccm-tasksequence <PackageID>' to view detailed referenced content for a specific task sequence");
             }
 
             return null;
