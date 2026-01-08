@@ -255,9 +255,6 @@ WHERE ds.AssignmentID = {_assignmentId.Replace("'", "''")}";
                 }
 
                 // Get specific device status for this assignment
-                Logger.NewLine();
-                Logger.Info("Device Status (showing recent activity):");
-
                 string deviceStatusQuery = $@"
 SELECT TOP 100
     sys.Name0 AS DeviceName,
@@ -280,12 +277,15 @@ ORDER BY aas.LastStatusTime DESC";
                 
                 if (deviceStatusResult.Rows.Count > 0)
                 {
+                    Logger.NewLine();
+                    Logger.Info("Device Status (showing recent activity):");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(deviceStatusResult));
                     Logger.Info($"Showing {deviceStatusResult.Rows.Count} device status records (most recent first)");
                 }
                 else
                 {
-                    Logger.Info("No device status information available");
+                    Logger.NewLine();
+                    Logger.Warning("No device status information available");
                 }
 
                 break; // Found assignment, no need to check other databases
