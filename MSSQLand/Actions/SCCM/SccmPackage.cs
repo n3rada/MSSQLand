@@ -230,14 +230,15 @@ ORDER BY c.MemberCount DESC, c.Name;";
                     {
                         Console.WriteLine(OutputFormatter.ConvertDataTable(targetedCollectionsResult));
                         
-                        int totalDevices = 0;
+                        int totalMemberships = 0;
                         foreach (DataRow row in targetedCollectionsResult.Rows)
                         {
                             if (row["MemberCount"] != DBNull.Value)
-                                totalDevices += Convert.ToInt32(row["MemberCount"]);
+                                totalMemberships += Convert.ToInt32(row["MemberCount"]);
                         }
                         
-                        Logger.Success($"Package is deployed to {targetedCollectionsResult.Rows.Count} collection(s) with approximately {totalDevices} device(s)");
+                        Logger.Success($"Package is deployed to {targetedCollectionsResult.Rows.Count} collection(s) with {totalMemberships} total membership(s)");
+                        Logger.SuccessNested($"Note: Same device may appear in multiple collections");
                         Logger.SuccessNested($"Use 'sccm-collection <CollectionID>' to see device members in each collection");
                     }
                     else
