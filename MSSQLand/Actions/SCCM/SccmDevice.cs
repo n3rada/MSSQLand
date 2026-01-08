@@ -174,9 +174,6 @@ ORDER BY c.CollectionID;";
                 {
                     Console.WriteLine(OutputFormatter.ConvertDataTable(collectionsResult));
                     Logger.Success($"Device is member of {collectionsResult.Rows.Count} collection(s)");
-
-                    Logger.NewLine();
-                    Logger.Info($"To remove the device from a collection, use: Remove-CMDeviceCollectionDirectMembershipRule -ResourceId \"{resourceId}\" -CollectionId \"\"");
                 }
                 else
                 {
