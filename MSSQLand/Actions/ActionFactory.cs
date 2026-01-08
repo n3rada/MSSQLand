@@ -108,6 +108,7 @@ namespace MSSQLand.Utilities
             { "sccm-servers", (typeof(SccmServers), "Enumerate SCCM site servers, management points, and distribution points in the hierarchy for infrastructure mapping.") },
             { "sccm-collections", (typeof(SccmCollections), "Enumerate device and user collections with member counts for targeted deployment attacks.") },
             { "sccm-devices", (typeof(SccmDevices), "Enumerate managed devices with filtering by attributes for device discovery and inventory queries.") },
+            { "sccm-device", (typeof(SccmDevice), "Display comprehensive information about a specific device including all deployments and targeted content.") },
             { "sccm-device-users", (typeof(SccmDeviceUsers), "Show historical user login patterns on devices with usage statistics from hardware inventory.") },
             { "sccm-health", (typeof(SccmHealth), "Display client health diagnostics and communication status for troubleshooting client issues.") },
             { "sccm-deployments", (typeof(SccmDeployments), "Enumerate active deployments showing what content is pushed to which collections for hijacking.") },
