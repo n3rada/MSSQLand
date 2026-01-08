@@ -314,12 +314,17 @@ ORDER BY ds.DeploymentTime DESC;";
 
                 DataTable deploymentsResult = databaseContext.QueryService.ExecuteTable(deploymentsQuery);
                 
+                Logger.NewLine();
+                Logger.Info("Deployments targeting this device:");
+                
                 if (deploymentsResult.Rows.Count > 0)
                 {
-                    Logger.NewLine();
-                    Logger.Info("Deployments Targeting This Device:");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(deploymentsResult));
                     Logger.Success($"Found {deploymentsResult.Rows.Count} deployment(s) targeting this device");
+                }
+                else
+                {
+                    Logger.Warning("No deployments targeting this device");
                 }
 
                 // Get deployed packages
@@ -341,12 +346,17 @@ ORDER BY p.Name;";
 
                 DataTable packagesResult = databaseContext.QueryService.ExecuteTable(packagesQuery);
                 
+                Logger.NewLine();
+                Logger.Info("Packages deployed to this device:");
+                
                 if (packagesResult.Rows.Count > 0)
                 {
-                    Logger.NewLine();
-                    Logger.Info("Packages Deployed to This Device:");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(packagesResult));
                     Logger.Success($"Found {packagesResult.Rows.Count} package(s)");
+                }
+                else
+                {
+                    Logger.Warning("No packages deployed to this device");
                 }
 
                 // Get deployed applications
@@ -375,12 +385,17 @@ ORDER BY ApplicationName;";
 
                 DataTable applicationsResult = databaseContext.QueryService.ExecuteTable(applicationsQuery);
                 
+                Logger.NewLine();
+                Logger.Info("Applications deployed to this device:");
+                
                 if (applicationsResult.Rows.Count > 0)
                 {
-                    Logger.NewLine();
-                    Logger.Info("Applications Deployed to This Device:");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(applicationsResult));
                     Logger.Success($"Found {applicationsResult.Rows.Count} application(s)");
+                }
+                else
+                {
+                    Logger.Warning("No applications deployed to this device");
                 }
 
                 // Get task sequences
@@ -400,12 +415,17 @@ ORDER BY ts.Name;";
 
                 DataTable taskSequencesResult = databaseContext.QueryService.ExecuteTable(taskSequencesQuery);
                 
+                Logger.NewLine();
+                Logger.Info("Task sequences deployed to this device:");
+                
                 if (taskSequencesResult.Rows.Count > 0)
                 {
-                    Logger.NewLine();
-                    Logger.Info("Task Sequences Deployed to This Device:");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(taskSequencesResult));
                     Logger.Success($"Found {taskSequencesResult.Rows.Count} task sequence(s)");
+                }
+                else
+                {
+                    Logger.Warning("No task sequences deployed to this device");
                 }
 
                 break; // Found device, no need to check other databases
