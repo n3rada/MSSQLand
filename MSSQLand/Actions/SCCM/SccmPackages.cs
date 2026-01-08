@@ -77,9 +77,14 @@ SELECT TOP {_limit}
     p.SourceVersion,
     p.SourceDate,
     p.LastRefreshTime,
-    COUNT(pr.ProgramName) AS ProgramCount
+    COUNT(DISTINCT pr.ProgramName) AS ProgramCount,
+    COUNT(DISTINCT adv.AdvertisementID) AS DeploymentCount,
+    MAX(CASE WHEN adv.AdvertFlags & 0x00000020 = 0x00000020 THEN 1 ELSE 0 END) AS HasRequired,
+    MAX(CASE WHEN adv.AdvertFlags & 0x00400000 = 0x00400000 THEN 1 ELSE 0 END) AS HasWakeOnLAN,
+    MAX(CASE WHEN adv.AdvertFlags & 0x00100000 = 0x00100000 THEN 1 ELSE 0 END) AS OverrideServiceWindows
 FROM [{db}].dbo.v_Package p
 LEFT JOIN [{db}].dbo.v_Program pr ON p.PackageID = pr.PackageID
+LEFT JOIN [{db}].dbo.v_Advertisement adv ON p.PackageID = adv.PackageID
 {filterClause}
 GROUP BY 
     p.PackageID, p.Name, p.Description, p.PkgSourcePath, 

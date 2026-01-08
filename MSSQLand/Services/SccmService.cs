@@ -78,6 +78,91 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
+        /// Decodes AdvertFlags bitmask into human-readable comma-separated string.
+        /// See: https://learn.microsoft.com/en-us/intune/configmgr/develop/reference/core/servers/configure/sms_advertisement-server-wmi-class#advertflags
+        /// </summary>
+        public static string DecodeAdvertFlags(object advertFlagsObj)
+        {
+            if (advertFlagsObj == DBNull.Value)
+                return "None";
+
+            int advertFlags = Convert.ToInt32(advertFlagsObj);
+            var flags = new List<string>();
+
+            if ((advertFlags & 0x00000020) == 0x00000020) flags.Add("IMMEDIATE");
+            if ((advertFlags & 0x00000100) == 0x00000100) flags.Add("ONSYSTEMSTARTUP");
+            if ((advertFlags & 0x00000200) == 0x00000200) flags.Add("ONUSERLOGON");
+            if ((advertFlags & 0x00000400) == 0x00000400) flags.Add("ONUSERLOGOFF");
+            if ((advertFlags & 0x00001000) == 0x00001000) flags.Add("OPTIONALPREDOWNLOAD");
+            if ((advertFlags & 0x00008000) == 0x00008000) flags.Add("WINDOWS_CE");
+            if ((advertFlags & 0x00010000) == 0x00010000) flags.Add("ENABLE_PEER_CACHING");
+            if ((advertFlags & 0x00020000) == 0x00020000) flags.Add("DONOT_FALLBACK");
+            if ((advertFlags & 0x00040000) == 0x00040000) flags.Add("ENABLE_TS_FROM_CD_AND_PXE");
+            if ((advertFlags & 0x00080000) == 0x00080000) flags.Add("APTSINTRANETONLY");
+            if ((advertFlags & 0x00100000) == 0x00100000) flags.Add("OVERRIDE_SERVICE_WINDOWS");
+            if ((advertFlags & 0x00200000) == 0x00200000) flags.Add("REBOOT_OUTSIDE_OF_SERVICE_WINDOWS");
+            if ((advertFlags & 0x00400000) == 0x00400000) flags.Add("WAKE_ON_LAN_ENABLED");
+            if ((advertFlags & 0x00800000) == 0x00800000) flags.Add("SHOW_PROGRESS");
+            if ((advertFlags & 0x02000000) == 0x02000000) flags.Add("NO_DISPLAY");
+            if ((advertFlags & 0x04000000) == 0x04000000) flags.Add("ONSLOWNET");
+            if ((advertFlags & 0x10000000) == 0x10000000) flags.Add("TARGETTOWINPE");
+            if ((advertFlags & 0x20000000) == 0x20000000) flags.Add("HIDDENINWINPE");
+
+            return flags.Count > 0 ? string.Join(", ", flags) : "None";
+        }
+
+        /// <summary>
+        /// Decodes ProgramFlags bitmask into human-readable semicolon-separated string.
+        /// See: https://learn.microsoft.com/en-us/intune/configmgr/develop/reference/core/servers/configure/sms_program-server-wmi-class
+        /// </summary>
+        public static string DecodeProgramFlags(uint flags)
+        {
+            var flagsList = new List<string>();
+
+            var flagDefinitions = new Dictionary<uint, string>
+            {
+                { 0x00000001, "AUTHORIZED_DYNAMIC_INSTALL" },
+                { 0x00000002, "USECUSTOMPROGRESSMSG" },
+                { 0x00000010, "DEFAULT_PROGRAM" },
+                { 0x00000020, "DISABLEMOMALERTONRUNNING" },
+                { 0x00000040, "MOMALERTONFAIL" },
+                { 0x00000080, "RUN_DEPENDANT_ALWAYS" },
+                { 0x00000100, "WINDOWS_CE" },
+                { 0x00000400, "COUNTDOWN" },
+                { 0x00001000, "DISABLED" },
+                { 0x00002000, "UNATTENDED" },
+                { 0x00004000, "USERCONTEXT" },
+                { 0x00008000, "ADMINRIGHTS" },
+                { 0x00010000, "EVERYUSER" },
+                { 0x00020000, "NOUSERLOGGEDIN" },
+                { 0x00040000, "OKTOQUIT" },
+                { 0x00080000, "OKTOREBOOT" },
+                { 0x00100000, "USEUNCPATH" },
+                { 0x00200000, "PERSISTCONNECTION" },
+                { 0x00400000, "RUNMINIMIZED" },
+                { 0x00800000, "RUNMAXIMIZED" },
+                { 0x01000000, "HIDEWINDOW" },
+                { 0x02000000, "OKTOLOGOFF" },
+                { 0x04000000, "RUNACCOUNT" },
+                { 0x08000000, "ANY_PLATFORM" },
+                { 0x10000000, "STILL_RUNNING" },
+                { 0x20000000, "SUPPORT_UNINSTALL" },
+                { 0x40000000, "PLATFORM_NOT_SUPPORTED" },
+                { 0x80000000, "SHOW_IN_ARP" }
+            };
+
+            foreach (var kvp in flagDefinitions)
+            {
+                if ((flags & kvp.Key) == kvp.Key)
+                {
+                    flagsList.Add(kvp.Value);
+                }
+            }
+
+            return flagsList.Count > 0 ? string.Join("; ", flagsList) : "None";
+        }
+
+        /// <summary>
         /// Checks if the SCCM database has vSMS_* views or uses base tables.
         /// Result is cached per execution server.
         /// </summary>

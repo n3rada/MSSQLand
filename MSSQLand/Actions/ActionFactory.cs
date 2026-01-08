@@ -113,6 +113,7 @@ namespace MSSQLand.Utilities
             { "sccm-health", (typeof(SccmHealth), "Display client health diagnostics and communication status for troubleshooting client issues.") },
             { "sccm-deployments", (typeof(SccmDeployments), "Enumerate active deployments showing what content is pushed to which collections for hijacking.") },
             { "sccm-packages", (typeof(SccmPackages), "Enumerate SCCM packages with source paths, versions, and program counts.") },
+            { "sccm-package", (typeof(SccmPackage), "Display comprehensive information about a specific package including programs and deployments.") },
             { "sccm-programs", (typeof(SccmPrograms), "Enumerate programs for legacy packages with command lines and decoded execution flags.") },
             { "sccm-tasksequences", (typeof(SccmTaskSequences), "Enumerate all task sequences with summary information.") },
             { "sccm-tasksequence", (typeof(SccmTaskSequence), "Display detailed information for a specific task sequence including all referenced content.") },
