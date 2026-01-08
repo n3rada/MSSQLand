@@ -75,15 +75,15 @@ namespace MSSQLand.Actions.SCCM
                 string description = row.Field<string>("ScriptDescription") ?? "";
 
                 Logger.NewLine();
-                Logger.Success($"{scriptName} ({scriptGuid})");
+                Logger.Info($"{scriptName} ({scriptGuid})");
                 
                 if (!string.IsNullOrEmpty(description))
                 {
-                    Logger.Info($"Description: {description}");
+                    Logger.InfoNested($"Description: {description}");
                 }
                 
-                Logger.Info($"Author: {author}");
-                Logger.Info($"Version: {scriptVersion}");
+                Logger.InfoNested($"Author: {author}");
+                Logger.InfoNested($"Version: {scriptVersion}");
                 
                 string approvalStateStr = approvalState switch
                 {
@@ -92,16 +92,16 @@ namespace MSSQLand.Actions.SCCM
                     3 => "Approved",
                     _ => approvalState.ToString()
                 };
-                Logger.Info($"Approval State: {approvalStateStr}");
+                Logger.InfoNested($"Approval State: {approvalStateStr}");
                 
                 if (!string.IsNullOrEmpty(approver))
                 {
-                    Logger.Info($"Approver: {approver}");
+                    Logger.InfoNested($"Approver: {approver}");
                 }
                 
                 if (lastUpdate != DateTime.MinValue)
                 {
-                    Logger.Info($"Last Updated: {lastUpdate:yyyy-MM-dd HH:mm:ss}");
+                    Logger.InfoNested($"Last Updated: {lastUpdate:yyyy-MM-dd HH:mm:ss}");
                 }
 
                 // Display script parameters if available
