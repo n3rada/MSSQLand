@@ -237,8 +237,8 @@ namespace MSSQLand.Utilities
             argumentsTable.Rows.Add("-l, --links", "[Server] Linked server chain. Format: server1:user1,server2:user2,...");
             
             // Output & Logging
-            argumentsTable.Rows.Add("-o, --output", "[Output] Output format: table (default), csv, json, markdown.");
-            argumentsTable.Rows.Add("-s, --silent", "[Output] Enable silent mode. No logging, only results.");
+            argumentsTable.Rows.Add("--output, --output-format", "[Output] Output format: table (default), csv, json, markdown.");
+            argumentsTable.Rows.Add("--silent", "[Output] Enable silent mode. No logging, only results.");
             argumentsTable.Rows.Add("--debug", "[Output] Enable debug mode for detailed logs.");
             argumentsTable.Rows.Add("--trace", "[Output] Enable trace mode for verbose debugging logs.");
             
