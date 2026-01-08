@@ -176,8 +176,8 @@ SELECT
         ELSE CAST(cr.RuleType AS VARCHAR)
     END AS RuleType,
     crs.WQL AS QueryExpression,
-    CASE WHEN cr.RuleType = 3 THEN cr.ReferencedCollectionID ELSE NULL END AS IncludeCollectionID,
-    CASE WHEN cr.RuleType = 4 THEN cr.ReferencedCollectionID ELSE NULL END AS ExcludeCollectionID
+    CASE WHEN cr.RuleType = 3 THEN CAST(cr.ReferencedCollectionID AS VARCHAR) ELSE NULL END AS IncludeCollectionID,
+    CASE WHEN cr.RuleType = 4 THEN CAST(cr.ReferencedCollectionID AS VARCHAR) ELSE NULL END AS ExcludeCollectionID
 FROM [{db}].dbo.Collection_Rules cr
 LEFT JOIN [{db}].dbo.Collection_Rules_SQL crs ON cr.QueryKey = crs.QueryKey
 WHERE cr.CollectionID = '{_collectionId.Replace("'", "''")}'
