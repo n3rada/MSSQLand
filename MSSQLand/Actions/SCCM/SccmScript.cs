@@ -25,7 +25,7 @@ namespace MSSQLand.Actions.SCCM
 
             if (string.IsNullOrWhiteSpace(_scriptGuid))
             {
-                throw new Exceptions.MissingRequiredArgumentException("Script GUID is required");
+                throw new ArgumentException("Script GUID is required");
             }
         }
 
