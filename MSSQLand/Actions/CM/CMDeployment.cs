@@ -231,7 +231,7 @@ WHERE adv.AdvertisementID = '{_assignmentId.Replace("'", "''")}'";
 SELECT 
     ds.CollectionID,
     ds.SoftwareName,
-    ds.NumberTargeted,
+    ds.NumberTotal,
     ds.NumberSuccess,
     ds.NumberInProgress,
     ds.NumberErrors,
