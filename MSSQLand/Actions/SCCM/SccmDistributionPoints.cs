@@ -53,12 +53,7 @@ namespace MSSQLand.Actions.SCCM
                     ? ""
                     : $"WHERE ServerNALPath LIKE '%{_filter}%'";
 
-                string query = $@"
-SELECT *
-FROM [{db}].dbo.v_DistributionPoint
-{filterClause}
-ORDER BY ServerNALPath;
-";
+                string query = $@"SELECT * FROM [{db}].dbo.v_DistributionPoint {filterClause} ORDER BY ServerNALPath;";
 
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
 
