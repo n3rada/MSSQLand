@@ -126,7 +126,6 @@ ORDER BY p.Name;
                 Logger.Success($"Found {result.Rows.Count} package(s)");
             }
 
-            Logger.Success("Package enumeration completed");
             return null;
         }
     }
