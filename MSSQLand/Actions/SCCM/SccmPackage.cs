@@ -159,15 +159,8 @@ ORDER BY pr.ProgramName;";
                     
                     Console.WriteLine(OutputFormatter.ConvertDataTable(programsResult));
                 }
-                else
-                {
-                    Logger.Warning("No programs found for this package");
-                }
 
                 // Get advertisements/deployments for this package
-                Logger.NewLine();
-                Logger.Info("Advertisements/Deployments:");
-
                 string advertisementsQuery = $@"
 SELECT 
     adv.AdvertisementID,
@@ -191,6 +184,9 @@ ORDER BY adv.PresentTime DESC;";
                 
                 if (advertisementsResult.Rows.Count > 0)
                 {
+                    Logger.NewLine();
+                    Logger.Info("Advertisements/Deployments:");
+                    
                     // Add decoded AdvertFlags column before AdvertFlags
                     DataColumn decodedAdvertColumn = advertisementsResult.Columns.Add("DecodedFlags", typeof(string));
                     int advertFlagsIndex = advertisementsResult.Columns["AdvertFlags"].Ordinal;
@@ -241,14 +237,6 @@ ORDER BY c.MemberCount DESC, c.Name;";
                         Logger.SuccessNested($"Note: Same device may appear in multiple collections");
                         Logger.SuccessNested($"Use 'sccm-collection <CollectionID>' to see device members in each collection");
                     }
-                    else
-                    {
-                        Logger.Info("No collections targeted (no advertisements configured)");
-                    }
-                }
-                else
-                {
-                    Logger.Info("No advertisements/deployments found for this package");
                 }
 
                 // Get package distribution status summary
@@ -273,16 +261,13 @@ ORDER BY psd.SiteCode;";
                 
                 if (statusResult.Rows.Count > 0)
                 {
+                    Logger.NewLine();
+                    Logger.Info("Package Distribution Status:");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(statusResult));
                     Logger.Info($"Distribution status across {statusResult.Rows.Count} site(s)");
                 }
-                else
-                {
-                    Logger.Info("No distribution status found for this package");
-                }
 
                 // Get distribution points where this package is distributed
-                Logger.NewLine();
                 Logger.Info("Distribution Points:");
 
                 string distributionQuery = $@"
