@@ -166,7 +166,7 @@ WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}';";
 
                 // Information Refresh Status
                 Logger.NewLine();
-                Logger.Info("Information Refresh Status:");
+                Logger.Info("Information Refresh Status");
                 
                 // === CLIENT COMMUNICATION ===
                 // Last Policy Request: NULL = client never requested policy or not installed
@@ -245,7 +245,7 @@ WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}';";
 
                 // Get collection memberships
                 Logger.NewLine();
-                Logger.Info("Collection Memberships:");
+                Logger.Info("Collection Memberships");
 
                 string collectionsQuery = $@"
 SELECT 
@@ -315,7 +315,7 @@ ORDER BY ds.DeploymentTime DESC;";
                 DataTable deploymentsResult = databaseContext.QueryService.ExecuteTable(deploymentsQuery);
                 
                 Logger.NewLine();
-                Logger.Info("Deployments Targeting This Device:");
+                Logger.Info("Deployments Targeting This Device");
                 
                 if (deploymentsResult.Rows.Count > 0)
                 {
@@ -347,7 +347,7 @@ ORDER BY p.Name;";
                 DataTable packagesResult = databaseContext.QueryService.ExecuteTable(packagesQuery);
                 
                 Logger.NewLine();
-                Logger.Info("Packages Deployed to This Device:");
+                Logger.Info("Packages Deployed to This Device");
                 
                 if (packagesResult.Rows.Count > 0)
                 {
@@ -386,7 +386,7 @@ ORDER BY ApplicationName;";
                 DataTable applicationsResult = databaseContext.QueryService.ExecuteTable(applicationsQuery);
                 
                 Logger.NewLine();
-                Logger.Info("Applications Deployed to This Device:");
+                Logger.Info("Applications Deployed to This Device");
                 
                 if (applicationsResult.Rows.Count > 0)
                 {
@@ -416,7 +416,7 @@ ORDER BY ts.Name;";
                 DataTable taskSequencesResult = databaseContext.QueryService.ExecuteTable(taskSequencesQuery);
                 
                 Logger.NewLine();
-                Logger.Info("Task Sequences Deployed to This Device:");
+                Logger.Info("Task Sequences Deployed to This Device");
                 
                 if (taskSequencesResult.Rows.Count > 0)
                 {

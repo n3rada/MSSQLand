@@ -166,7 +166,7 @@ namespace MSSQLand.Actions.Database
                 totalTablesSearched += tablesSearched;
             }
 
-            Logger.Success($"Search completed across {databasesToSearch.Count} database(s) and {totalTablesSearched} table(s):");
+            Logger.Success($"Search completed across {databasesToSearch.Count} database(s) and {totalTablesSearched} table(s)");
             Logger.TaskNested($"Column header matches: {totalHeaderMatches}");
             Logger.TaskNested($"Row matches: {totalRowMatches}");
 
@@ -255,7 +255,7 @@ namespace MSSQLand.Actions.Database
 
             if (totalMatches > 0)
             {
-                Logger.Success($"Found {totalMatches} column(s) containing '{_keyword}':");
+                Logger.Success($"Found {totalMatches} column(s) containing '{_keyword}'");
                 Console.WriteLine(OutputFormatter.ConvertDataTable(allMatches));
             }
             else
@@ -349,7 +349,7 @@ namespace MSSQLand.Actions.Database
             // Log header matches
             if (headerMatchCount > 0)
             {
-                Logger.Success($"Found {headerMatchCount} column header match(es) containing '{_keyword}':");
+                Logger.Success($"Found {headerMatchCount} column header match(es) containing '{_keyword}'");
                 Console.WriteLine(OutputFormatter.ConvertDataTable(headerMatches));
             }
 
@@ -405,7 +405,7 @@ namespace MSSQLand.Actions.Database
                     {
                         rowMatchCount += resultTable.Rows.Count;
                         Logger.NewLine();
-                        Logger.Success($"Found {resultTable.Rows.Count} row(s) containing '{_keyword}' in {Misc.BuildQualifiedTableName(database, schema, table)}:");
+                        Logger.Success($"Found {resultTable.Rows.Count} row(s) containing '{_keyword}' in {Misc.BuildQualifiedTableName(database, schema, table)}");
                         Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
                     }
                 }

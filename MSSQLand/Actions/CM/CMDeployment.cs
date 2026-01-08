@@ -175,14 +175,14 @@ WHERE adv.AdvertisementID = '{_assignmentId.Replace("'", "''")}'";
                 Logger.Info($"Intent: {assignment["Intent"]}");
 
                 Logger.NewLine();
-                Logger.Info("Targeted Collection:");
+                Logger.Info("Targeted Collection");
                 Logger.InfoNested($"Collection ID: {assignment["CollectionID"]}");
                 Logger.InfoNested($"Collection Name: {assignment["CollectionName"]}");
                 Logger.InfoNested($"Member Count: {assignment["MemberCount"]}");
                 Logger.InfoNested($"Use 'cm-collection {assignment["CollectionID"]}' to see member devices");
 
                 Logger.NewLine();
-                Logger.Info("Assignment Properties:");
+                Logger.Info("Assignment Properties");
                 Console.WriteLine(OutputFormatter.ConvertDataTable(assignmentResult));
 
                 // Check for rerun behavior if it's an advertisement
@@ -191,7 +191,7 @@ WHERE adv.AdvertisementID = '{_assignmentId.Replace("'", "''")}'";
                     int advertFlags = assignment["AdvertFlags"] != DBNull.Value ? Convert.ToInt32(assignment["AdvertFlags"]) : 0;
                     
                     Logger.NewLine();
-                    Logger.Info("Deployment Behavior Analysis:");
+                    Logger.Info("Deployment Behavior Analysis");
                     
                     if ((advertFlags & 0x00000020) == 0x00000020)
                     {
@@ -225,7 +225,7 @@ WHERE adv.AdvertisementID = '{_assignmentId.Replace("'", "''")}'";
 
                 // Get deployment statistics
                 Logger.NewLine();
-                Logger.Info("Deployment Statistics:");
+                Logger.Info("Deployment Statistics");
 
                 string statsQuery = $@"
 SELECT 
@@ -278,7 +278,7 @@ ORDER BY aas.LastStatusTime DESC";
                 if (deviceStatusResult.Rows.Count > 0)
                 {
                     Logger.NewLine();
-                    Logger.Info("Device Status (showing recent activity):");
+                    Logger.Info("Device Status (showing recent activity)");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(deviceStatusResult));
                     Logger.Info($"Showing {deviceStatusResult.Rows.Count} device status records (most recent first)");
                 }

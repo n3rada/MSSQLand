@@ -132,7 +132,7 @@ WHERE p.PackageID = '{_packageId.Replace("'", "''")}'";
                 Logger.InfoNested($"Priority: {priority}");
 
                 Logger.NewLine();
-                Logger.Info("Package Properties:");
+                Logger.Info("Package Properties");
                 Console.WriteLine(OutputFormatter.ConvertDataTable(packageResult));
 
                 // Get programs for this package
@@ -141,7 +141,7 @@ WHERE p.PackageID = '{_packageId.Replace("'", "''")}'";
                 if (programCount > 0)
                 {
                     Logger.NewLine();
-                    Logger.Info($"Programs ({programCount}):");
+                    Logger.Info($"Programs ({programCount})");
 
                     string programsQuery = $@"
 SELECT 
@@ -211,7 +211,7 @@ ORDER BY adv.PresentTime DESC;";
                 if (advertisementsResult.Rows.Count > 0)
                 {
                     Logger.NewLine();
-                    Logger.Info("Advertisements/Deployments:");
+                    Logger.Info("Advertisements/Deployments");
                     
                     // Add decoded AdvertFlags column before AdvertFlags
                     DataColumn decodedAdvertColumn = advertisementsResult.Columns.Add("DecodedFlags", typeof(string));
@@ -228,7 +228,7 @@ ORDER BY adv.PresentTime DESC;";
 
                     // Get targeted collections summary
                     Logger.NewLine();
-                    Logger.Info("Targeted Collections Summary:");
+                    Logger.Info("Targeted Collections Summary");
 
                     string targetedCollectionsQuery = $@"
 SELECT DISTINCT
@@ -267,7 +267,7 @@ ORDER BY c.MemberCount DESC, c.Name;";
 
                 // Get package distribution status summary
                 Logger.NewLine();
-                Logger.Info("Package Distribution Status:");
+                Logger.Info("Package Distribution Status");
 
                 string statusQuery = $@"
 SELECT 
@@ -288,13 +288,13 @@ ORDER BY psd.SiteCode;";
                 if (statusResult.Rows.Count > 0)
                 {
                     Logger.NewLine();
-                    Logger.Info("Package Distribution Status:");
+                    Logger.Info("Package Distribution Status");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(statusResult));
                     Logger.Info($"Distribution status across {statusResult.Rows.Count} site(s)");
                 }
 
                 // Get distribution points where this package is distributed
-                Logger.Info("Distribution Points:");
+                Logger.Info("Distribution Points");
 
                 string distributionQuery = $@"
 SELECT *

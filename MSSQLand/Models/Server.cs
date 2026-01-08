@@ -213,7 +213,7 @@ namespace MSSQLand.Models
                 if (string.IsNullOrWhiteSpace(component))
                 {
                     if (firstDelimiter == ':')
-                        throw new ArgumentException("Port cannot be empty after :");
+                        throw new ArgumentException("Port cannot be empty after ");
                     else if (firstDelimiter == '/')
                         throw new ArgumentException("Impersonation user cannot be empty after /");
                     else

@@ -109,7 +109,7 @@ namespace MSSQLand.Actions.CM
                 if (!string.IsNullOrWhiteSpace(scriptParamsDefinition))
                 {
                     Logger.NewLine();
-                    Logger.Info("Script Parameters:");
+                    Logger.Info("Script Parameters");
                     try
                     {
                         string decodedParams = Encoding.ASCII.GetString(Convert.FromBase64String(scriptParamsDefinition));
@@ -123,7 +123,7 @@ namespace MSSQLand.Actions.CM
 
                 // Display script content
                 Logger.NewLine();
-                Logger.Info("Script Content:");
+                Logger.Info("Script Content");
                 Logger.NewLine();
 
                 byte[] scriptBlob = row.Field<byte[]>("Script") ?? Array.Empty<byte>();

@@ -123,7 +123,7 @@ ORDER BY a.LastUpdateTime DESC";
                     if (hasSecrets)
                     {
                         Logger.NewLine();
-                        Logger.InfoNested("Encrypted secrets found. Decrypt on Management Point with:");
+                        Logger.InfoNested("Encrypted secrets found. Decrypt on Management Point with");
                         Logger.InfoNested("sccm-script-run --resourceid <MP_ID> --scriptguid <decrypt_script>");
                     }
                 }

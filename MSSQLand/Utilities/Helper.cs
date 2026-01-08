@@ -60,9 +60,9 @@ namespace MSSQLand.Utilities
 
             // Usage instruction
             Console.WriteLine("Usage: <host> [options] <action> [action-options]\n");
-            Console.WriteLine("Examples:");
+            Console.WriteLine("Examples");
             Console.WriteLine("  localhost -c token whoami");
-            Console.WriteLine("\nQuick Help:");
+            Console.WriteLine("\nQuick Help");
             Console.WriteLine("  -h, --help           - Show this basic help");
             Console.WriteLine("  -h <keyword>         - Search for actions matching keyword");
             Console.WriteLine("  <host> <action> -h   - Show help for specific action");
@@ -70,17 +70,17 @@ namespace MSSQLand.Utilities
 
             // Provide a quick reference of top-level arguments or usage
             Console.WriteLine();
-            Console.WriteLine("CLI arguments:");
+            Console.WriteLine("CLI arguments");
             Console.WriteLine(formatter.ConvertDataTable(getArguments()));
 
             // Provide credential types
             Console.WriteLine();
-            Console.WriteLine("Credential types:");
+            Console.WriteLine("Credential types");
             Console.WriteLine(formatter.ConvertDataTable(getCredentialTypes()));
 
             // Add Utilities Section
             Console.WriteLine();
-            Console.WriteLine("Standalones (no database connection needed):");
+            Console.WriteLine("Standalones (no database connection needed)");
             Console.WriteLine("  --findsql <domain>   - Search for MS SQL Servers in Active Directory.");
             Console.WriteLine();
             Console.WriteLine("For a complete list of actions, run without specifying an action.");
@@ -166,7 +166,7 @@ namespace MSSQLand.Utilities
 
             if (action.Arguments != null && action.Arguments.Any())
             {
-                Console.WriteLine("Arguments:");
+                Console.WriteLine("Arguments");
                 foreach (var arg in action.Arguments)
                 {
                     Console.WriteLine($"  > {arg}");

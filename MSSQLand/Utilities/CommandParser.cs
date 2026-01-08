@@ -38,14 +38,14 @@ namespace MSSQLand.Utilities
         private static bool IsGlobalArgument(string arg, string longName, string shortName = null)
         {
             // Check long form: --longname:value, --longname=value, or --longname (for space-separated)
-            if (arg.StartsWith($"--{longName}:", StringComparison.OrdinalIgnoreCase) ||
+            if (arg.StartsWith($"--{longName}", StringComparison.OrdinalIgnoreCase) ||
                 arg.StartsWith($"--{longName}=", StringComparison.OrdinalIgnoreCase) ||
                 arg.Equals($"--{longName}", StringComparison.OrdinalIgnoreCase))
                 return true;
             
             // Check short form: -s:value, -s=value, or -s (for space-separated)
             if (shortName != null && 
-                (arg.StartsWith($"-{shortName}:", StringComparison.OrdinalIgnoreCase) ||
+                (arg.StartsWith($"-{shortName}", StringComparison.OrdinalIgnoreCase) ||
                  arg.StartsWith($"-{shortName}=", StringComparison.OrdinalIgnoreCase) ||
                  arg.Equals($"-{shortName}", StringComparison.OrdinalIgnoreCase)))
                 return true;
@@ -302,7 +302,7 @@ namespace MSSQLand.Utilities
                     else
                     {
                         Logger.Error($"Unknown global argument: {arg}");
-                        Logger.Info("Available global arguments:");
+                        Logger.Info("Available global arguments");
                         Logger.InfoNested("-c, --credentials: Credential type for authentication");
                         Logger.InfoNested("-l, --links: Linked server chain");
                         Logger.InfoNested("--output-format, --output: Output format (table, csv, json, markdown)");

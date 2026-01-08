@@ -103,7 +103,7 @@ WHERE ses.TaskID = {_taskId}";
                     if (!string.IsNullOrEmpty(scriptOutput))
                     {
                         Logger.NewLine();
-                        Logger.TaskNested("Script Output:");
+                        Logger.TaskNested("Script Output");
                         Logger.NewLine();
 
                         try

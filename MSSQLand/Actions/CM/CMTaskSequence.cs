@@ -103,14 +103,14 @@ WHERE ts.PackageID = '{_packageId.Replace("'", "''")}'
                 Logger.Info($"Referenced Content Count: {refCount}");
 
                 Logger.NewLine();
-                Logger.Info("Task Sequence Properties:");
+                Logger.Info("Task Sequence Properties");
                 Console.WriteLine(OutputFormatter.ConvertDataTable(tsResult));
 
                 // Get referenced content
                 if (refCount > 0)
                 {
                     Logger.NewLine();
-                    Logger.Info($"Referenced Content ({refCount} item(s)):");
+                    Logger.Info($"Referenced Content ({refCount} item(s))");
 
                     string refQuery = $@"
 SELECT 
@@ -139,7 +139,7 @@ ORDER BY ref.ReferencePackageType, ref.ReferenceName;
 
                     // Summary by content type
                     Logger.NewLine();
-                    Logger.Info("Content Summary by Type:");
+                    Logger.Info("Content Summary by Type");
                     string summaryQuery = $@"
 SELECT 
     CASE ref.ReferencePackageType
@@ -169,7 +169,7 @@ ORDER BY COUNT(*) DESC;
 
                 // Get deployments/advertisements for this task sequence
                 Logger.NewLine();
-                Logger.Info("Task Sequence Deployments:");
+                Logger.Info("Task Sequence Deployments");
 
                 string deploymentsQuery = $@"
 SELECT 
@@ -221,7 +221,7 @@ ORDER BY adv.PresentTime DESC;";
 
                 // Get deployment status summary
                 Logger.NewLine();
-                Logger.Info("Deployment Status Summary:");
+                Logger.Info("Deployment Status Summary");
 
                 string statusQuery = $@"
 SELECT 

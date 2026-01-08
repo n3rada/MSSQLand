@@ -105,7 +105,7 @@ WHERE c.CollectionID = '{_collectionId.Replace("'", "''")}';";
                 Logger.InfoNested($"Evaluation Start: {collection["EvaluationStartTime"]}");
 
                 Logger.NewLine();
-                Logger.Info("Collection Properties:");
+                Logger.Info("Collection Properties");
                 Console.WriteLine(OutputFormatter.ConvertDataTable(collectionResult));
 
                 int memberCount = collection["MemberCount"] != DBNull.Value ? Convert.ToInt32(collection["MemberCount"]) : 0;
@@ -113,7 +113,7 @@ WHERE c.CollectionID = '{_collectionId.Replace("'", "''")}';";
 
                 // Get deployments targeting this collection
                 Logger.NewLine();
-                Logger.Info("Deployments Targeting This Collection:");
+                Logger.Info("Deployments Targeting This Collection");
 
                 string deploymentsQuery = $@"
 SELECT 
@@ -163,7 +163,7 @@ ORDER BY ds.DeploymentTime DESC;";
 
                 // Get collection membership rules
                 Logger.NewLine();
-                Logger.Info("Collection Membership Rules:");
+                Logger.Info("Collection Membership Rules");
 
                 string rulesQuery = $@"
 SELECT 
@@ -197,7 +197,7 @@ ORDER BY cr.RuleType, cr.QueryName;";
 
                 // Get collection members (at end for better visibility)
                 Logger.NewLine();
-                Logger.Info($"Collection Members ({memberCount}):");
+                Logger.Info($"Collection Members ({memberCount})");
 
                 if (memberCount > 0)
                 {

@@ -72,7 +72,7 @@ namespace MSSQLand.Services
                 }
 
                 // Log all trusted assemblies for debugging
-                Logger.Debug("Trusted assemblies:");
+                Logger.Debug("Trusted assemblies");
                 foreach (DataRow row in trustedAssembliesTable.Rows)
                 {
                     string description = row["description"].ToString();
@@ -114,7 +114,7 @@ namespace MSSQLand.Services
                 }
 
                 // Log all trusted assemblies for debugging
-                Logger.Debug("Procedures:");
+                Logger.Debug("Procedures");
                 foreach (DataRow row in trustedAssembliesTable.Rows)
                 {
                     string name = row["name"].ToString();

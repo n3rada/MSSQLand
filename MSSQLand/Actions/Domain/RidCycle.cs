@@ -178,7 +178,7 @@ namespace MSSQLand.Actions.Domain
                     if (_bashOutput)
                     {
                         // Output in bash associative array format
-                        Logger.Info("Bash associative array format:");
+                        Logger.Info("Bash associative array format");
                         Console.WriteLine();
                         Console.WriteLine("declare -A rid_users=(");
                         
@@ -196,7 +196,7 @@ namespace MSSQLand.Actions.Domain
                     else if (_pythonOutput)
                     {
                         // Output in Python dictionary format
-                        Logger.Info("Python dictionary format:");
+                        Logger.Info("Python dictionary format");
                         Console.WriteLine();
                         Console.WriteLine("rid_users = {");
                         

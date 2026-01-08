@@ -62,9 +62,9 @@ namespace MSSQLand.Models
         /// <returns>SHA-256 hash representing the execution state.</returns>
         public string GetStateHash()
         {
-            string stateString = $"{Hostname?.ToUpperInvariant() ?? ""}:" +
-                                $"{MappedUser?.ToUpperInvariant() ?? ""}:" +
-                                $"{SystemUser?.ToUpperInvariant() ?? ""}:" +
+            string stateString = $"{Hostname?.ToUpperInvariant() ?? ""}" +
+                                $"{MappedUser?.ToUpperInvariant() ?? ""}" +
+                                $"{SystemUser?.ToUpperInvariant() ?? ""}" +
                                 $"{IsSysadmin}";
             
             return Misc.ComputeSHA256(stateString);

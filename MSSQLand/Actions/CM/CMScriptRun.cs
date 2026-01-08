@@ -164,7 +164,7 @@ WHERE TaskID = {taskId}";
 
                         Logger.NewLine();
                         Logger.Success($"Script execution completed (Exit Code: {exitCode})");
-                        Logger.TaskNested("Script Output:");
+                        Logger.TaskNested("Script Output");
                         Logger.NewLine();
 
                         if (!string.IsNullOrEmpty(scriptOutput))
