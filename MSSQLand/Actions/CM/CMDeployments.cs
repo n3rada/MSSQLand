@@ -162,6 +162,8 @@ namespace MSSQLand.Actions.CM
 SELECT TOP {_limit}
     ds.AssignmentID,
     ds.SoftwareName,
+    ds.PackageID,
+    ds.ProgramName,
     ds.CollectionID,
     c.Name AS CollectionName,
     CASE ds.FeatureType
@@ -184,14 +186,17 @@ SELECT TOP {_limit}
         WHEN 3 THEN 'Simulate'
         ELSE CAST(ds.DeploymentIntent AS VARCHAR)
     END AS DeploymentIntent,
+    ds.NumberTotal,
     ds.NumberSuccess,
     ds.NumberInProgress,
     ds.NumberErrors,
     ds.NumberOther,
     ds.NumberUnknown,
+    ds.Enabled,
     ds.DeploymentTime,
     ds.CreationTime,
-    ds.ModificationTime
+    ds.ModificationTime,
+    ds.SummarizationTime
 FROM [{db}].dbo.v_DeploymentSummary ds
 LEFT JOIN [{db}].dbo.v_Collection c ON ds.CollectionID = c.CollectionID
 {filterClause}
