@@ -111,69 +111,9 @@ WHERE c.CollectionID = '{_collectionId.Replace("'", "''")}';";
                 int memberCount = collection["MemberCount"] != DBNull.Value ? Convert.ToInt32(collection["MemberCount"]) : 0;
                 int collectionType = Convert.ToInt32(collection["CollectionType"]);
 
-                // Get collection members
-                if (memberCount > 0)
-                {
-                    Logger.NewLine();
-                    Logger.Info($"Collection Members ({memberCount}):");
-
-                    string membersQuery;
-                    
-                    if (collectionType == 2) // Device collection
-                    {
-                        membersQuery = $@"
-SELECT 
-    sys.Name0 AS DeviceName,
-    sys.ResourceID,
-    sys.Resource_Domain_OR_Workgr0 AS Domain,
-    sys.User_Name0 AS LastUser,
-    sys.Operating_System_Name_and0 AS OperatingSystem,
-    sys.Client0 AS HasClient,
-    sys.Client_Version0 AS ClientVersion,
-    sys.AD_Site_Name0 AS ADSite,
-    cm.IsDirect
-FROM [{db}].dbo.v_FullCollectionMembership cm
-INNER JOIN [{db}].dbo.v_R_System sys ON cm.ResourceID = sys.ResourceID
-WHERE cm.CollectionID = '{_collectionId.Replace("'", "''")}'
-ORDER BY sys.Name0;";
-                    }
-                    else // User collection
-                    {
-                        membersQuery = $@"
-SELECT 
-    usr.Unique_User_Name0 AS UserName,
-                            usr.Full_User_Name0 AS FullName,
-                            usr.User_Principal_Name0 AS UPN,
-                            usr.Mail0 AS Email,
-                            usr.department0 AS Department,
-                            usr.title0 AS Title,
-                            cm.IsDirect
-FROM [{db}].dbo.v_FullCollectionMembership cm
-INNER JOIN [{db}].dbo.v_R_User usr ON cm.ResourceID = usr.ResourceID
-WHERE cm.CollectionID = '{_collectionId.Replace("'", "''")}'
-ORDER BY usr.Unique_User_Name0;";
-                    }
-
-                    DataTable membersResult = databaseContext.QueryService.ExecuteTable(membersQuery);
-                    
-                    if (membersResult.Rows.Count > 0)
-                    {
-                        Console.WriteLine(OutputFormatter.ConvertDataTable(membersResult));
-                        Logger.Success($"Listed {membersResult.Rows.Count} member(s)");
-                    }
-                    else
-                    {
-                        Logger.Warning("No members found (member count may be stale)");
-                    }
-                }
-                else
-                {
-                    Logger.Warning("Collection has no members");
-                }
-
                 // Get deployments targeting this collection
                 Logger.NewLine();
-                Logger.Info("Deployments Targeting This Collection:");
+                Logger.Info("Deployments targeting this collection:");
 
                 string deploymentsQuery = $@"
 SELECT 
@@ -218,12 +158,12 @@ ORDER BY ds.DeploymentTime DESC;";
                 }
                 else
                 {
-                    Logger.Info("No deployments targeting this collection");
+                    Logger.Warning("No deployments targeting this collection");
                 }
 
                 // Get collection membership rules
                 Logger.NewLine();
-                Logger.Info("Collection Membership Rules:");
+                Logger.Info("Collection membership rules:");
 
                 string rulesQuery = $@"
 SELECT 
@@ -252,7 +192,67 @@ ORDER BY cr.RuleType, cr.QueryName;";
                 }
                 else
                 {
-                    Logger.Info("No membership rules found");
+                    Logger.Warning("No membership rules found");
+                }
+
+                // Get collection members (at end for better visibility)
+                Logger.NewLine();
+                Logger.Info($"Collection members ({memberCount}):");
+
+                if (memberCount > 0)
+                {
+                    string membersQuery;
+                    
+                    if (collectionType == 2) // Device collection
+                    {
+                        membersQuery = $@"
+SELECT 
+    sys.Name0 AS DeviceName,
+    sys.ResourceID,
+    sys.Resource_Domain_OR_Workgr0 AS Domain,
+    sys.User_Name0 AS LastUser,
+    sys.Operating_System_Name_and0 AS OperatingSystem,
+    sys.Client0 AS HasClient,
+    sys.Client_Version0 AS ClientVersion,
+    sys.AD_Site_Name0 AS ADSite,
+    cm.IsDirect
+FROM [{db}].dbo.v_FullCollectionMembership cm
+INNER JOIN [{db}].dbo.v_R_System sys ON cm.ResourceID = sys.ResourceID
+WHERE cm.CollectionID = '{_collectionId.Replace("'", "''")}'
+ORDER BY sys.Name0;";
+                    }
+                    else // User collection
+                    {
+                        membersQuery = $@"
+SELECT 
+    usr.Unique_User_Name0 AS UserName,
+    usr.Full_User_Name0 AS FullName,
+    usr.User_Principal_Name0 AS UPN,
+    usr.Mail0 AS Email,
+    usr.department0 AS Department,
+    usr.title0 AS Title,
+    cm.IsDirect
+FROM [{db}].dbo.v_FullCollectionMembership cm
+INNER JOIN [{db}].dbo.v_R_User usr ON cm.ResourceID = usr.ResourceID
+WHERE cm.CollectionID = '{_collectionId.Replace("'", "''")}'
+ORDER BY usr.Unique_User_Name0;";
+                    }
+
+                    DataTable membersResult = databaseContext.QueryService.ExecuteTable(membersQuery);
+                    
+                    if (membersResult.Rows.Count > 0)
+                    {
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(membersResult));
+                        Logger.Success($"Listed {membersResult.Rows.Count} member(s)");
+                    }
+                    else
+                    {
+                        Logger.Warning("No members found (member count may be stale)");
+                    }
+                }
+                else
+                {
+                    Logger.Warning("Collection has no members");
                 }
 
                 break; // Found collection, no need to check other databases
