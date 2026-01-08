@@ -203,6 +203,47 @@ ORDER BY adv.PresentTime DESC;";
 
                     Console.WriteLine(OutputFormatter.ConvertDataTable(advertisementsResult));
                     Logger.Success($"Found {advertisementsResult.Rows.Count} advertisement(s)/deployment(s)");
+
+                    // Get targeted collections summary
+                    Logger.NewLine();
+                    Logger.Info("Targeted Collections Summary:");
+
+                    string targetedCollectionsQuery = $@"
+SELECT DISTINCT
+    c.CollectionID,
+    c.Name AS CollectionName,
+    c.MemberCount,
+    adv.AdvertisementName,
+    adv.ProgramName,
+    CASE 
+        WHEN adv.AdvertFlags & 0x00000020 = 0x00000020 THEN 'Required'
+        ELSE 'Available'
+    END AS DeploymentType
+FROM [{db}].dbo.v_Advertisement adv
+INNER JOIN [{db}].dbo.v_Collection c ON adv.CollectionID = c.CollectionID
+WHERE adv.PackageID = '{_packageId.Replace("'", "''")}'
+ORDER BY c.MemberCount DESC, c.Name;";
+
+                    DataTable targetedCollectionsResult = databaseContext.QueryService.ExecuteTable(targetedCollectionsQuery);
+                    
+                    if (targetedCollectionsResult.Rows.Count > 0)
+                    {
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(targetedCollectionsResult));
+                        
+                        int totalDevices = 0;
+                        foreach (DataRow row in targetedCollectionsResult.Rows)
+                        {
+                            if (row["MemberCount"] != DBNull.Value)
+                                totalDevices += Convert.ToInt32(row["MemberCount"]);
+                        }
+                        
+                        Logger.Success($"Package is deployed to {targetedCollectionsResult.Rows.Count} collection(s) with approximately {totalDevices} device(s)");
+                        Logger.Info($"Use 'sccm-collection <CollectionID>' to see device members in each collection");
+                    }
+                    else
+                    {
+                        Logger.Info("No collections targeted (no advertisements configured)");
+                    }
                 }
                 else
                 {

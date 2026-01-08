@@ -107,6 +107,7 @@ namespace MSSQLand.Utilities
             { "sccm-admins", (typeof(SccmAdmins), "Enumerate SCCM RBAC administrators with assigned roles and scopes to identify privileged users.") },
             { "sccm-servers", (typeof(SccmServers), "Enumerate SCCM site servers, management points, and distribution points in the hierarchy for infrastructure mapping.") },
             { "sccm-collections", (typeof(SccmCollections), "Enumerate device and user collections with member counts for targeted deployment attacks.") },
+            { "sccm-collection", (typeof(SccmCollection), "Display comprehensive information about a specific collection including all member devices and deployments.") },
             { "sccm-devices", (typeof(SccmDevices), "Enumerate managed devices with filtering by attributes for device discovery and inventory queries.") },
             { "sccm-device", (typeof(SccmDevice), "Display comprehensive information about a specific device including all deployments and targeted content.") },
             { "sccm-device-users", (typeof(SccmDeviceUsers), "Show historical user login patterns on devices with usage statistics from hardware inventory.") },
