@@ -17,7 +17,10 @@ namespace MSSQLand.Actions.SCCM
         [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by package name")]
         private string _filter = "";
 
-        [ArgumentMetadata(Position = 1,  LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 1, ShortName = "s", LongName = "source", Description = "Filter by package source path")]
+        private string _sourcePath = "";
+
+        [ArgumentMetadata(Position = 2,  LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
@@ -28,9 +31,13 @@ namespace MSSQLand.Actions.SCCM
                    ?? GetNamedArgument(named, "filter", null)
                    ?? GetPositionalArgument(positional, 0, "");
 
+            _sourcePath = GetNamedArgument(named, "s", null)
+                       ?? GetNamedArgument(named, "source", null)
+                       ?? GetPositionalArgument(positional, 1, "");
+
             string limitStr = GetNamedArgument(named, "l", null)
                            ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 1);
+                           ?? GetPositionalArgument(positional, 2);
             if (!string.IsNullOrEmpty(limitStr))
             {
                 _limit = int.Parse(limitStr);
@@ -39,8 +46,13 @@ namespace MSSQLand.Actions.SCCM
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
-            Logger.TaskNested($"Enumerating SCCM packages{filterMsg}");
+            string filterMsg = "";
+            if (!string.IsNullOrEmpty(_filter))
+                filterMsg += $" name: {_filter}";
+            if (!string.IsNullOrEmpty(_sourcePath))
+                filterMsg += $" source: {_sourcePath}";
+
+            Logger.TaskNested($"Enumerating SCCM packages{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}")
             Logger.TaskNested($"Limit: {_limit}");
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -60,9 +72,17 @@ namespace MSSQLand.Actions.SCCM
                 Logger.NewLine();
                 Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
 
-                string filterClause = string.IsNullOrEmpty(_filter)
-                    ? ""
-                    : $"WHERE p.Name LIKE '%{_filter}%'";
+                string filterClause = "WHERE 1=1";
+
+                if (!string.IsNullOrEmpty(_filter))
+                {
+                    filterClause += $" AND p.Name LIKE '%{_filter.Replace("'", "''")}%'";
+                }
+
+                if (!string.IsNullOrEmpty(_sourcePath))
+                {
+                    filterClause += $" AND p.PkgSourcePath LIKE '%{_sourcePath.Replace("'", "''")}%'";
+                }
 
                 string query = $@"
 SELECT TOP {_limit}
