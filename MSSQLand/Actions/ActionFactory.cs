@@ -116,6 +116,7 @@ namespace MSSQLand.Utilities
             { "cm-device-users", (typeof(CMDeviceUsers), "Show historical user login patterns on devices with usage statistics from hardware inventory.") },
             { "cm-health", (typeof(CMHealth), "Display client health diagnostics and communication status for troubleshooting client issues.") },
             { "cm-deployments", (typeof(CMDeployments), "Enumerate active deployments showing what content is pushed to which collections for hijacking.") },
+            { "cm-deployment", (typeof(CMDeployment), "Display detailed information about a specific deployment including rerun behavior and device status.") },
             { "cm-packages", (typeof(CMPackages), "Enumerate ConfigMgr packages with source paths, versions, and program counts.") },
             { "cm-package", (typeof(CMPackage), "Display comprehensive information about a specific package including programs and deployments.") },
             { "cm-programs", (typeof(CMPrograms), "Enumerate programs for legacy packages with command lines and decoded execution flags.") },
