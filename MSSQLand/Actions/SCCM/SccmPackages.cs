@@ -52,7 +52,7 @@ namespace MSSQLand.Actions.SCCM
             if (!string.IsNullOrEmpty(_sourcePath))
                 filterMsg += $" source: {_sourcePath}";
 
-            Logger.TaskNested($"Enumerating SCCM packages{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}")
+            Logger.TaskNested($"Enumerating SCCM packages{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
 
             SccmService sccmService = new(databaseContext.QueryService, databaseContext.Server);
