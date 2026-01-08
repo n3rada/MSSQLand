@@ -98,7 +98,9 @@ WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}';";
                 Logger.InfoNested($"IP Address: {device["IPAddress"]}");
                 Logger.InfoNested($"Operating System: {device["OperatingSystem"]} ({device["OSVersion"]})");
                 Logger.InfoNested($"Manufacturer: {device["Manufacturer"]} | Model: {device["Model"]}");
-                Logger.InfoNested($"Client Installed: {(Convert.ToInt32(device["HasClient"]) == 1 ? "Yes" : "No")} | Version: {device["ClientVersion"]}");
+                
+                int hasClient = device["HasClient"] != DBNull.Value ? Convert.ToInt32(device["HasClient"]) : 0;
+                Logger.InfoNested($"Client Installed: {(hasClient == 1 ? "Yes" : "No")} | Version: {device["ClientVersion"]}");
                 
                 int onlineStatus = device["OnlineStatus"] != DBNull.Value ? Convert.ToInt32(device["OnlineStatus"]) : 0;
                 Logger.InfoNested($"Online Status: {(onlineStatus == 1 ? "Online" : "Offline")}");
@@ -111,7 +113,9 @@ WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}';";
                 Logger.InfoNested($"Last User: {device["LastUser"]}");
                 Logger.InfoNested($"AD Site: {device["ADSite"]}");
                 Logger.InfoNested($"Access MP: {device["AccessMP"]}");
-                Logger.InfoNested($"Decommissioned: {(Convert.ToInt32(device["Decommissioned"]) == 1 ? "Yes" : "No")}");
+                
+                int decommissioned = device["Decommissioned"] != DBNull.Value ? Convert.ToInt32(device["Decommissioned"]) : 0;
+                Logger.InfoNested($"Decommissioned: {(decommissioned == 1 ? "Yes" : "No")}");
 
                 // Get collection memberships
                 Logger.NewLine();
