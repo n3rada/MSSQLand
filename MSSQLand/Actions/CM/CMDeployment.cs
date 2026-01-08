@@ -62,14 +62,14 @@ SELECT
     a.CollectionID,
     c.Name AS CollectionName,
     c.MemberCount,
-    a.ApplicationName AS SoftwareName,
+    a.AssignmentType,
     CASE a.AssignmentType
         WHEN 1 THEN 'Application'
         WHEN 2 THEN 'Configuration Item'
         WHEN 5 THEN 'Software Update'
         WHEN 6 THEN 'Baseline'
         ELSE 'Other (' + CAST(a.AssignmentType AS VARCHAR) + ')'
-    END AS AssignmentType,
+    END AS AssignmentTypeDescription,
     CASE a.DesiredConfigType
         WHEN 1 THEN 'Install'
         WHEN 2 THEN 'Uninstall'
@@ -103,7 +103,6 @@ SELECT
         ELSE CAST(a.UseGMTTimes AS VARCHAR)
     END AS TimeZone,
     a.SuppressReboot,
-    a.ApplyToSubTargets,
     a.AssignmentAction,
     a.AssignmentEnabled,
     a.SourceSite
@@ -172,8 +171,7 @@ WHERE adv.AdvertisementID = '{_assignmentId.Replace("'", "''")}'";
                 // Display assignment details
                 Logger.NewLine();
                 Logger.Success($"Assignment: {assignment["AssignmentName"]} (ID: {_assignmentId})");
-                Logger.Info($"Type: {assignment["AssignmentType"]}");
-                Logger.Info($"Software: {assignment["SoftwareName"]}");
+                Logger.Info($"Type: {assignment["AssignmentTypeDescription"]}");
                 Logger.Info($"Intent: {assignment["Intent"]}");
 
                 Logger.NewLine();
