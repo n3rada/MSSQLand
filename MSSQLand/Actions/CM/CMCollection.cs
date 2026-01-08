@@ -113,7 +113,7 @@ WHERE c.CollectionID = '{_collectionId.Replace("'", "''")}';";
 
                 // Get deployments targeting this collection
                 Logger.NewLine();
-                Logger.Info("Deployments targeting this collection:");
+                Logger.Info("Deployments Targeting This Collection:");
 
                 string deploymentsQuery = $@"
 SELECT 
@@ -163,7 +163,7 @@ ORDER BY ds.DeploymentTime DESC;";
 
                 // Get collection membership rules
                 Logger.NewLine();
-                Logger.Info("Collection membership rules:");
+                Logger.Info("Collection Membership Rules:");
 
                 string rulesQuery = $@"
 SELECT 
@@ -197,7 +197,7 @@ ORDER BY cr.RuleType, cr.QueryName;";
 
                 // Get collection members (at end for better visibility)
                 Logger.NewLine();
-                Logger.Info($"Collection members ({memberCount}):");
+                Logger.Info($"Collection Members ({memberCount}):");
 
                 if (memberCount > 0)
                 {
