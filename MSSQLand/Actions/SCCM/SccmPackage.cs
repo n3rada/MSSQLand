@@ -70,7 +70,6 @@ SELECT
     p.SourceVersion,
     p.SourceDate,
     p.LastRefreshTime,
-    p.PackageSize,
     p.Priority,
     p.PkgFlags,
     p.PreferredAddressType,
@@ -102,7 +101,6 @@ WHERE p.PackageID = '{_packageId.Replace("'", "''")}'";
                 Logger.InfoNested($"Package Type: {package["PackageType"]}");
                 Logger.InfoNested($"Source Path: {package["PkgSourcePath"]}");
                 Logger.InfoNested($"Stored Package Path: {package["StoredPkgPath"]}");
-                Logger.InfoNested($"Package Size: {package["PackageSize"]} KB");
                 Logger.InfoNested($"Source Version: {package["SourceVersion"]} | Source Date: {package["SourceDate"]}");
                 Logger.InfoNested($"Last Refresh: {package["LastRefreshTime"]}");
                 Logger.InfoNested($"Priority: {package["Priority"]}");
@@ -205,6 +203,36 @@ ORDER BY adv.PresentTime DESC;";
                     Logger.Info("No advertisements/deployments found for this package");
                 }
 
+                // Get package distribution status summary
+                Logger.NewLine();
+                Logger.Info("Package Distribution Status:");
+
+                string statusQuery = $@"
+SELECT 
+    psd.SiteCode,
+    psd.SiteName,
+    psd.SourceVersion,
+    psd.Targeted,
+    psd.Installed,
+    psd.Retrying,
+    psd.Failed,
+    psd.SummaryDate
+FROM [{db}].dbo.v_PackageStatusDetailSumm psd
+WHERE psd.PackageID = '{_packageId.Replace("'", "''")}'
+ORDER BY psd.SiteCode;";
+
+                DataTable statusResult = databaseContext.QueryService.ExecuteTable(statusQuery);
+                
+                if (statusResult.Rows.Count > 0)
+                {
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(statusResult));
+                    Logger.Info($"Distribution status across {statusResult.Rows.Count} site(s)");
+                }
+                else
+                {
+                    Logger.Info("No distribution status found for this package");
+                }
+
                 // Get distribution points where this package is distributed
                 Logger.NewLine();
                 Logger.Info("Distribution Points:");
@@ -224,7 +252,7 @@ ORDER BY dp.ServerNALPath;";
                 if (distributionResult.Rows.Count > 0)
                 {
                     Console.WriteLine(OutputFormatter.ConvertDataTable(distributionResult));
-                    Logger.Info($"Package distributed to {distributionResult.Rows.Count} distribution point(s)");
+                    Logger.Success($"Package distributed to {distributionResult.Rows.Count} distribution point(s)");
                 }
                 else
                 {
