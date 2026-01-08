@@ -166,57 +166,66 @@ WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}';";
 
                 // Information Refresh Status
                 Logger.NewLine();
-                Logger.Info("Information Refresh Status (All times in UTC):");
+                Logger.Info("Information Refresh Status:");
                 
-                // Last Hardware Scan: NULL = hardware inventory never run or client not reporting
-                if (device["LastHWScan"] != DBNull.Value)
-                {
-                    DateTime lastHWScan = Convert.ToDateTime(device["LastHWScan"]);
-                    TimeSpan hwAge = DateTime.UtcNow - lastHWScan;
-                    Logger.InfoNested($"Last Hardware Scan: {lastHWScan:yyyy-MM-dd HH:mm:ss} UTC ({hwAge.Days}d {hwAge.Hours}h {hwAge.Minutes}m ago)");
-                }
-                else
-                {
-                    Logger.InfoNested($"Last Hardware Scan: (Never run)");
-                }
-                
-                // Last Software Scan: NULL = software inventory never run
-                if (device["LastSoftwareScan"] != DBNull.Value)
-                {
-                    DateTime lastSwScan = Convert.ToDateTime(device["LastSoftwareScan"]);
-                    TimeSpan swAge = DateTime.UtcNow - lastSwScan;
-                    Logger.InfoNested($"Last Software Scan: {lastSwScan:yyyy-MM-dd HH:mm:ss} UTC ({swAge.Days}d {swAge.Hours}h {swAge.Minutes}m ago)");
-                }
-                else
-                {
-                    Logger.InfoNested($"Last Software Scan: (Never run)");
-                }
-                
+                // === CLIENT COMMUNICATION ===
                 // Last Policy Request: NULL = client never requested policy or not installed
+                // Policy requests occur every 60 minutes by default - this is the heartbeat of client communication
                 if (device["LastPolicyRequest"] != DBNull.Value)
                 {
                     DateTime lastPolicy = Convert.ToDateTime(device["LastPolicyRequest"]);
                     TimeSpan policyAge = DateTime.UtcNow - lastPolicy;
-                    Logger.InfoNested($"Last Policy Request: {lastPolicy:yyyy-MM-dd HH:mm:ss} UTC ({policyAge.Days}d {policyAge.Hours}h {policyAge.Minutes}m ago)");
+                    Logger.InfoNested($"Policy Request (checks for new deployments and settings): {lastPolicy:yyyy-MM-dd HH:mm:ss} UTC ({policyAge.Days}d {policyAge.Hours}h {policyAge.Minutes}m ago)");
                 }
                 else
                 {
-                    Logger.InfoNested($"Last Policy Request: (Never requested)");
+                    Logger.InfoNested($"Policy Request (checks for new deployments and settings): Never requested");
                 }
                 
+                // === DISCOVERY ===
                 // Last Heartbeat Discovery (DDR): NULL = heartbeat never sent
+                // DDR proves device is alive and updates AD site, IP subnet - runs every 7 days or on schedule change
                 if (device["LastDDR"] != DBNull.Value)
                 {
                     DateTime lastDDR = Convert.ToDateTime(device["LastDDR"]);
                     TimeSpan ddrAge = DateTime.UtcNow - lastDDR;
-                    Logger.InfoNested($"Last Heartbeat (DDR): {lastDDR:yyyy-MM-dd HH:mm:ss} UTC ({ddrAge.Days}d {ddrAge.Hours}h {ddrAge.Minutes}m ago)");
+                    Logger.InfoNested($"Heartbeat DDR (proves device alive, updates AD site): {lastDDR:yyyy-MM-dd HH:mm:ss} UTC ({ddrAge.Days}d {ddrAge.Hours}h {ddrAge.Minutes}m ago)");
                 }
                 else
                 {
-                    Logger.InfoNested($"Last Heartbeat (DDR): (Never sent)");
+                    Logger.InfoNested($"Heartbeat DDR (proves device alive, updates AD site): Never sent");
                 }
                 
+                // === INVENTORY ===
+                // Last Hardware Scan: NULL = hardware inventory never run or client not reporting
+                // Hardware inventory collects: manufacturer, model, RAM, CPU, disk, BIOS, etc.
+                if (device["LastHWScan"] != DBNull.Value)
+                {
+                    DateTime lastHWScan = Convert.ToDateTime(device["LastHWScan"]);
+                    TimeSpan hwAge = DateTime.UtcNow - lastHWScan;
+                    Logger.InfoNested($"Hardware Inventory (collects manufacturer, model, RAM, CPU, disk): {lastHWScan:yyyy-MM-dd HH:mm:ss} UTC ({hwAge.Days}d {hwAge.Hours}h {hwAge.Minutes}m ago)");
+                }
+                else
+                {
+                    Logger.InfoNested($"Hardware Inventory (collects manufacturer, model, RAM, CPU, disk): Never run");
+                }
+                
+                // Last Software Scan: NULL = software inventory never run
+                // Software inventory collects: installed applications, files, registry keys
+                if (device["LastSoftwareScan"] != DBNull.Value)
+                {
+                    DateTime lastSwScan = Convert.ToDateTime(device["LastSoftwareScan"]);
+                    TimeSpan swAge = DateTime.UtcNow - lastSwScan;
+                    Logger.InfoNested($"Software Inventory (collects installed applications and files): {lastSwScan:yyyy-MM-dd HH:mm:ss} UTC ({swAge.Days}d {swAge.Hours}h {swAge.Minutes}m ago)");
+                }
+                else
+                {
+                    Logger.InfoNested($"Software Inventory (collects installed applications and files): Never run");
+                }
+                
+                // === COMPLIANCE ===
                 // Last Update Scan: NULL = software update scan never run or WSUS not configured
+                // Update scan checks for missing patches against WSUS/SUP - critical for security compliance
                 if (device["LastUpdateScan"] != DBNull.Value)
                 {
                     DateTime lastUpdateScan = Convert.ToDateTime(device["LastUpdateScan"]);
@@ -226,12 +235,13 @@ WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}';";
                     int errorCode = device["UpdateScanErrorCode"] != DBNull.Value ? Convert.ToInt32(device["UpdateScanErrorCode"]) : 0;
                     string errorInfo = errorCode != 0 ? $" (Error: 0x{errorCode:X8})" : "";
                     
-                    Logger.InfoNested($"Last Update Scan: {lastUpdateScan:yyyy-MM-dd HH:mm:ss} UTC ({updateAge.Days}d {updateAge.Hours}h {updateAge.Minutes}m ago){errorInfo}");
+                    Logger.InfoNested($"Update Scan (scans for missing Windows patches): {lastUpdateScan:yyyy-MM-dd HH:mm:ss} UTC ({updateAge.Days}d {updateAge.Hours}h {updateAge.Minutes}m ago){errorInfo}");
                 }
                 else
                 {
-                    Logger.InfoNested($"Last Update Scan: (Never run or not configured)");
+                    Logger.InfoNested($"Update Scan (scans for missing Windows patches): Never run or WSUS not configured");
                 }
+
 
                 // Get collection memberships
                 Logger.NewLine();
