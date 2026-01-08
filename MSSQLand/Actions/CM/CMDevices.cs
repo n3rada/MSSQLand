@@ -238,6 +238,7 @@ SELECT DISTINCT {topClause}
     sys.AD_Site_Name0 AS ADSite,
     sys.Resource_Domain_OR_Workgr0 AS Domain,
     sys.Name0 AS DeviceName,
+    sys.ResourceID,
     bgb.IPAddress,
     sys.User_Name0 AS LastInteractiveUser,
     sys.Operating_System_Name_and0 AS OperatingSystem,
@@ -246,7 +247,6 @@ SELECT DISTINCT {topClause}
     sys.Decommissioned0 AS Decommissioned,
     sys.Creation_Date0 AS RegisteredDate,
     bgb.AccessMP,
-    sys.ResourceID,
     sys.SMS_Unique_Identifier0 AS SMSID,
     STUFF((
         SELECT ', ' + col.Name
