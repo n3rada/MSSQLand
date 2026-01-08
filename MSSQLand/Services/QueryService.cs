@@ -194,7 +194,7 @@ SELECT @result AS Result, @error AS Error;";
             }
             catch (Exception ex)
             {
-                Logger.Debug($"Execution error: {ex.Message}");
+                Logger.Debug($"Execution error:\n{ex.Message}");
 
                 if (ex.Message.Contains("not configured for RPC"))
                 {

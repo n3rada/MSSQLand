@@ -211,7 +211,7 @@ namespace MSSQLand
             }
             catch (Exception ex)
             {
-                Logger.Error(ex.Message);
+                Logger.Error($"An error occurred during action execution: {ex.Message}");
                 Logger.Trace($"Stack Trace:\n{ex.StackTrace}");
 
                 if (ex.InnerException != null)
