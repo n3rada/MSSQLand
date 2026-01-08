@@ -10,7 +10,7 @@ namespace MSSQLand.Actions.CM
     /// Use this to check if script execution completed, failed, or is still pending on target devices.
     /// Shows task state (Pending/Success/Failed), execution time, script output, and error messages.
     /// Requires Task ID returned by sccm-script-run command.
-    /// Polls ScriptsExecutionStatus table which updates when client reports back to SCCM.
+    /// Polls ScriptsExecutionStatus table which updates when client reports back to ConfigMgr.
     /// Essential for confirming command execution and retrieving command output from remote devices.
     /// </summary>
     internal class CMScriptStatus : BaseAction
@@ -43,14 +43,14 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
             foreach (string db in databases)
             {
                 string siteCode = CMService.GetSiteCode(db);
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 try
                 {

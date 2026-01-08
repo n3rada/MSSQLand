@@ -7,7 +7,7 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Display detailed information about a specific SCCM Task Sequence including all referenced content.
+    /// Display detailed information about a specific ConfigMgr Task Sequence including all referenced content.
     /// 
     /// PackageID uniquely identifies a task sequence (1:1 relationship). Task sequences are packages 
     /// and each has a unique PackageID (e.g., PSC00001) that serves as the primary key.
@@ -42,7 +42,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -51,7 +51,7 @@ namespace MSSQLand.Actions.CM
                 string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 // Get task sequence details
                 string tsQuery = $@"

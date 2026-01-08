@@ -7,7 +7,7 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Display comprehensive information about a specific SCCM-managed device.
+    /// Display comprehensive information about a specific ConfigMgr-managed device.
     /// Shows device details, collection memberships, deployments, and all targeted content.
     /// Use this to understand everything happening on a specific device.
     /// </summary>
@@ -41,7 +41,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -52,7 +52,7 @@ namespace MSSQLand.Actions.CM
                 string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 // Get device details
                 string deviceQuery = $@"
@@ -318,7 +318,7 @@ ORDER BY ts.Name;";
 
             if (!deviceFound)
             {
-                Logger.Warning($"Device '{_deviceName}' not found in any SCCM database");
+                Logger.Warning($"Device '{_deviceName}' not found in any ConfigMgr database");
             }
 
             return null;

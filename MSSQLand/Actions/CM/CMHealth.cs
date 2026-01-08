@@ -7,9 +7,9 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Display SCCM client health diagnostics and communication status.
+    /// Display ConfigMgr client health diagnostics and communication status.
     /// Use this for troubleshooting client issues: check-in times, inventory cycles, health evaluation results.
-    /// Shows when devices last contacted SCCM, inventory scan times, and policy request status.
+    /// Shows when devices last contacted ConfigMgr, inventory scan times, and policy request status.
     /// For general device inventory and discovery, use sccm-devices instead.
     /// </summary>
     internal class CMHealth : BaseAction
@@ -40,7 +40,7 @@ namespace MSSQLand.Actions.CM
         public override object? Execute(DatabaseContext databaseContext)
         {
             string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
-            Logger.TaskNested($"Enumerating SCCM client health{filterMsg}");
+            Logger.TaskNested($"Enumerating ConfigMgr client health{filterMsg}");
             Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -49,7 +49,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -57,7 +57,7 @@ namespace MSSQLand.Actions.CM
             {
                 Logger.NewLine();
                 string siteCode = CMService.GetSiteCode(db);
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 try
                 {

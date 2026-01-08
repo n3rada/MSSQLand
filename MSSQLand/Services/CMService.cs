@@ -10,7 +10,7 @@ using System.Data;
 namespace MSSQLand.Services
 {
     /// <summary>
-    /// Service for SCCM database detection and common operations.
+    /// Service for ConfigMgr database detection and common operations.
     /// </summary>
     public class CMService
     {
@@ -29,23 +29,23 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
-        /// Gets all SCCM databases on the server.
-        /// If the current execution database is an SCCM database, returns only that one.
+        /// Gets all ConfigMgr databases on the server.
+        /// If the current execution database is an ConfigMgr database, returns only that one.
         /// </summary>
         public List<string> GetSccmDatabases()
         {
             var databases = new List<string>();
 
-            // Check if current execution database is an SCCM database
+            // Check if current execution database is an ConfigMgr database
             string currentDb = _queryService.ExecutionServer.Database;
             if (!string.IsNullOrEmpty(currentDb) && currentDb.StartsWith("CM_", StringComparison.OrdinalIgnoreCase))
             {
-                Logger.Debug($"Current execution database '{currentDb}' is an SCCM database");
+                Logger.Debug($"Current execution database '{currentDb}' is an ConfigMgr database");
                 databases.Add(currentDb);
                 return databases;
             }
 
-            // Query for all SCCM databases
+            // Query for all ConfigMgr databases
             try
             {
                 var result = _queryService.ExecuteTable("SELECT name FROM sys.databases WHERE name LIKE 'CM_%';");
@@ -56,7 +56,7 @@ namespace MSSQLand.Services
             }
             catch (Exception ex)
             {
-                Logger.Debug($"Failed to enumerate SCCM databases: {ex.Message}");
+                Logger.Debug($"Failed to enumerate ConfigMgr databases: {ex.Message}");
             }
 
             return databases;
@@ -65,7 +65,7 @@ namespace MSSQLand.Services
 
 
         /// <summary>
-        /// Extracts the site code from an SCCM database name.
+        /// Extracts the site code from an ConfigMgr database name.
         /// </summary>
         public static string GetSiteCode(string databaseName)
         {
@@ -163,7 +163,7 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
-        /// Checks if the SCCM database has vSMS_* views or uses base tables.
+        /// Checks if the ConfigMgr database has vSMS_* views or uses base tables.
         /// Result is cached per execution server.
         /// </summary>
         public bool HasSccmViews()
@@ -203,11 +203,11 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
-        /// Gets component status information, automatically using views or base tables depending on SCCM version.
+        /// Gets component status information, automatically using views or base tables depending on ConfigMgr version.
         /// </summary>
         public DataTable GetComponentStatus(string database)
         {
-            // Try views first (newer SCCM versions)
+            // Try views first (newer ConfigMgr versions)
             if (HasSccmViews())
             {
                 try
@@ -225,7 +225,7 @@ ORDER BY ComponentName;
                 }
             }
 
-            // Fallback to base tables (SCCM 2016 and older)
+            // Fallback to base tables (ConfigMgr 2016 and older)
             Logger.Debug("Querying component status using SC_Component base table");
             return _queryService.ExecuteTable($@"
 SELECT 
@@ -244,11 +244,11 @@ ORDER BY ComponentName;
         }
 
         /// <summary>
-        /// Gets site system roles, automatically using views or base tables depending on SCCM version.
+        /// Gets site system roles, automatically using views or base tables depending on ConfigMgr version.
         /// </summary>
         public DataTable GetSiteSystemRoles(string database)
         {
-            // Try views first (newer SCCM versions)
+            // Try views first (newer ConfigMgr versions)
             if (HasSccmViews())
             {
                 try
@@ -266,7 +266,7 @@ ORDER BY ServerName, RoleName;
                 }
             }
 
-            // Fallback to base tables (SCCM 2016 and older)
+            // Fallback to base tables (ConfigMgr 2016 and older)
             Logger.Debug("Querying site system roles using SC_SysResUse base table");
             return _queryService.ExecuteTable($@"
 SELECT 
@@ -297,11 +297,11 @@ ORDER BY sr.NALPath, sr.RoleTypeID;
         }
 
         /// <summary>
-        /// Gets network boundaries, automatically using views or base tables depending on SCCM version.
+        /// Gets network boundaries, automatically using views or base tables depending on ConfigMgr version.
         /// </summary>
         public DataTable GetBoundaries(string database)
         {
-            // Try views first (newer SCCM versions)
+            // Try views first (newer ConfigMgr versions)
             if (HasSccmViews())
             {
                 try
@@ -319,7 +319,7 @@ ORDER BY BoundaryType, DisplayName;
                 }
             }
 
-            // Fallback to base tables (SCCM 2016 and older)
+            // Fallback to base tables (ConfigMgr 2016 and older)
             Logger.Debug("Querying boundaries using BoundaryEx base table");
             return _queryService.ExecuteTable($@"
 SELECT 
@@ -342,11 +342,11 @@ ORDER BY b.BoundaryType, b.Name;
         }
 
         /// <summary>
-        /// Gets distribution points, automatically using views or base tables depending on SCCM version.
+        /// Gets distribution points, automatically using views or base tables depending on ConfigMgr version.
         /// </summary>
         public DataTable GetDistributionPoints(string database)
         {
-            // Try views first (newer SCCM versions)
+            // Try views first (newer ConfigMgr versions)
             if (HasSccmViews())
             {
                 try
@@ -364,7 +364,7 @@ ORDER BY ServerName;
                 }
             }
 
-            // Fallback to base tables (SCCM 2016 and older)
+            // Fallback to base tables (ConfigMgr 2016 and older)
             Logger.Debug("Querying distribution points using DistributionPoints base table");
             return _queryService.ExecuteTable($@"
 SELECT 

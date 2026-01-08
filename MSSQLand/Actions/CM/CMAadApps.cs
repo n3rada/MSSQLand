@@ -7,11 +7,11 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Enumerate Azure AD application registrations stored in SCCM for cloud management gateway and co-management.
+    /// Enumerate Azure AD application registrations stored in ConfigMgr for cloud management gateway and co-management.
     /// Use this to identify Azure AD tenants, application IDs, and encrypted secrets used for hybrid configurations.
     /// Shows AAD tenant IDs, application (client) IDs, application names, and encrypted secret key blobs.
     /// Secrets can be decrypted on the management point using DPAPI.
-    /// Compromising these credentials grants access to cloud-based SCCM infrastructure and Azure resources.
+    /// Compromising these credentials grants access to cloud-based ConfigMgr infrastructure and Azure resources.
     /// Critical for hybrid environment attacks and Azure tenant pivoting.
     /// </summary>
     internal class CMAadApps : BaseAction
@@ -39,7 +39,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found with Azure AD configuration");
+                Logger.Warning("No ConfigMgr databases found with Azure AD configuration");
                 return null;
             }
 
@@ -47,7 +47,7 @@ namespace MSSQLand.Actions.CM
             {
                 Logger.NewLine();
                 string siteCode = CMService.GetSiteCode(db);
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 try
                 {
@@ -67,7 +67,7 @@ SELECT
                     if (appCount == 0)
                     {
                         Logger.NewLine();
-                        Logger.Warning("No Azure AD applications configured in SCCM");
+                        Logger.Warning("No Azure AD applications configured in ConfigMgr");
                         continue;
                     }
 

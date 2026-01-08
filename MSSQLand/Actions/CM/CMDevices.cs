@@ -8,9 +8,9 @@ using System.Linq;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Enumerate SCCM-managed devices with filtering by attributes.
+    /// Enumerate ConfigMgr-managed devices with filtering by attributes.
     /// Use this for device discovery, inventory queries, and finding devices by location/user/collection.
-    /// For SCCM client health diagnostics and troubleshooting, use sccm-health instead.
+    /// For ConfigMgr client health diagnostics and troubleshooting, use sccm-health instead.
     /// </summary>
     internal class CMDevices : BaseAction
     {
@@ -38,7 +38,7 @@ namespace MSSQLand.Actions.CM
         [ArgumentMetadata(Position = 7, LongName = "no-user", Description = "Show only devices without a LastUser value (default: false)")]
         private bool _noUser = false;
 
-        [ArgumentMetadata(Position = 8, LongName = "client-only", Description = "Show only devices with SCCM client installed (default: false)")]
+        [ArgumentMetadata(Position = 8, LongName = "client-only", Description = "Show only devices with ConfigMgr client installed (default: false)")]
         private bool _clientOnly = false;
 
         [ArgumentMetadata(Position = 9, LongName = "active", Description = "Show only active (non-decommissioned) devices (default: false)")]
@@ -132,7 +132,7 @@ namespace MSSQLand.Actions.CM
             string clientOnlyMsg = _clientOnly ? " (client only)" : "";
             string activeOnlyMsg = _activeOnly ? " (active only)" : "";
             string lastSeenMsg = _lastSeenDays > 0 ? $" (seen in last {_lastSeenDays} days)" : "";
-            Logger.TaskNested($"Enumerating SCCM devices{deviceMsg}{domainMsg}{usernameMsg}{ipMsg}{collectionMsg}{onlineMsg}{lastUserMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeenMsg}");
+            Logger.TaskNested($"Enumerating ConfigMgr devices{deviceMsg}{domainMsg}{usernameMsg}{ipMsg}{collectionMsg}{onlineMsg}{lastUserMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeenMsg}");
             Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -141,7 +141,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -149,7 +149,7 @@ namespace MSSQLand.Actions.CM
             {
                 Logger.NewLine();
                 string siteCode = CMService.GetSiteCode(db);
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 try
                 {

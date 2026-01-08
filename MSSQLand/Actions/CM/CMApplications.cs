@@ -7,9 +7,9 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Enumerate SCCM applications with deployment types, installation commands, and detection methods.
+    /// Enumerate ConfigMgr applications with deployment types, installation commands, and detection methods.
     /// Use this to view application inventory including DisplayName, ModelName, deployment status, and content paths.
-    /// Applications are the modern deployment model (since SCCM 2012) with detection rules, dependencies, and supersedence.
+    /// Applications are the modern deployment model (since ConfigMgr 2012) with detection rules, dependencies, and supersedence.
     /// For legacy package deployments, use sccm-packages instead.
     /// 
     /// Note: Install/uninstall command lines are stored in the SDMPackageXML column (XML format).
@@ -55,7 +55,7 @@ namespace MSSQLand.Actions.CM
             if (!string.IsNullOrEmpty(_modelName))
                 filterMsg += $" modelname: {_modelName}";
             
-            Logger.TaskNested($"Enumerating SCCM applications{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
+            Logger.TaskNested($"Enumerating ConfigMgr applications{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -64,7 +64,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -73,7 +73,7 @@ namespace MSSQLand.Actions.CM
                 string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 string filterClause = "WHERE ci.CIType_ID = 10";
                 

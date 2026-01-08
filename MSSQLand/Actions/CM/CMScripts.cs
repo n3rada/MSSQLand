@@ -7,7 +7,7 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Enumerate PowerShell scripts stored in SCCM with metadata overview.
+    /// Enumerate PowerShell scripts stored in ConfigMgr with metadata overview.
     /// Use 'sccm-script <GUID>' to view full details and script content for a specific script.
     /// Shows script names, GUIDs, approval status, authors, versions, and last update times.
     /// </summary>
@@ -28,7 +28,7 @@ namespace MSSQLand.Actions.CM
         public override object? Execute(DatabaseContext databaseContext)
         {
             string filterMsg = !string.IsNullOrEmpty(_name) ? " (filtered)" : "";
-            Logger.TaskNested($"Enumerating SCCM scripts{filterMsg}");
+            Logger.TaskNested($"Enumerating ConfigMgr scripts{filterMsg}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -36,7 +36,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -45,7 +45,7 @@ namespace MSSQLand.Actions.CM
                 string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 // Build WHERE clause - exclude CMPivot built-in script
                 string whereClause = "WHERE ScriptGuid != '7DC6B6F1-E7F6-43C1-96E0-E1D16BC25C14'";

@@ -7,8 +7,8 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Enumerate SCCM Role-Based Access Control (RBAC) administrators with their assigned roles and scopes.
-    /// Use this to identify privileged users who can manage SCCM infrastructure, deploy applications, or execute scripts.
+    /// Enumerate ConfigMgr Role-Based Access Control (RBAC) administrators with their assigned roles and scopes.
+    /// Use this to identify privileged users who can manage ConfigMgr infrastructure, deploy applications, or execute scripts.
     /// Shows admin accounts, security roles (Full Administrator, Operations Administrator, etc.), and collection scopes.
     /// Essential for privilege escalation paths and understanding administrative boundaries.
     /// </summary>
@@ -21,29 +21,29 @@ namespace MSSQLand.Actions.CM
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Enumerating SCCM RBAC administrators");
+            Logger.TaskNested("Enumerating ConfigMgr RBAC administrators");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             try
             {
-                // Get SCCM databases
+                // Get ConfigMgr databases
                 var databases = sccmService.GetSccmDatabases();
                 
                 if (databases.Count == 0)
                 {
-                    Logger.Warning("No valid SCCM databases found");
+                    Logger.Warning("No valid ConfigMgr databases found");
                     return null;
                 }
 
-                // Process each validated SCCM database
+                // Process each validated ConfigMgr database
                 foreach (string sccmDatabase in databases)
                 {
                     string siteCode = CMService.GetSiteCode(sccmDatabase);
                     Logger.NewLine();
                     Logger.Info($"Enumerating RBAC admins from: {sccmDatabase} (Site Code: {siteCode})");
 
-                    // Get SCCM RBAC administrators
+                    // Get ConfigMgr RBAC administrators
                     string rbacAdminsQuery = $@"
 SELECT *
 FROM [{sccmDatabase}].dbo.RBAC_Admins
@@ -54,7 +54,7 @@ ORDER BY CreatedDate DESC;
                     
                     if (rbacAdmins.Rows.Count > 0)
                     {
-                        Logger.Success($"SCCM RBAC Administrators ({rbacAdmins.Rows.Count} total)");
+                        Logger.Success($"ConfigMgr RBAC Administrators ({rbacAdmins.Rows.Count} total)");
                         Console.WriteLine(OutputFormatter.ConvertDataTable(rbacAdmins));
                     }
                     else
@@ -64,13 +64,13 @@ ORDER BY CreatedDate DESC;
                 }
 
                 Logger.NewLine();
-                Logger.Success($"Successfully enumerated RBAC admins from {databases.Count} SCCM database(s)");
+                Logger.Success($"Successfully enumerated RBAC admins from {databases.Count} ConfigMgr database(s)");
 
                 return null;
             }
             catch (Exception ex)
             {
-                Logger.Error($"Failed to enumerate SCCM RBAC administrators: {ex.Message}");
+                Logger.Error($"Failed to enumerate ConfigMgr RBAC administrators: {ex.Message}");
                 Logger.Debug($"Stack trace: {ex.StackTrace}");
                 return null;
             }

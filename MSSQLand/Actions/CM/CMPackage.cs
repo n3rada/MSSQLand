@@ -7,7 +7,7 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Display comprehensive information about a specific SCCM package including programs and deployments.
+    /// Display comprehensive information about a specific ConfigMgr package including programs and deployments.
     /// PackageID uniquely identifies a package (1:1 relationship).
     /// Shows package details, all programs with command lines and execution flags, and deployment information.
     /// Use this to analyze what a specific package does and where it's deployed.
@@ -42,7 +42,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -53,7 +53,7 @@ namespace MSSQLand.Actions.CM
                 string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 // Get package details
                 string packageQuery = $@"
@@ -319,7 +319,7 @@ ORDER BY dp.ServerNALPath;";
 
             if (!packageFound)
             {
-                Logger.Warning($"Package with PackageID '{_packageId}' not found in any SCCM database");
+                Logger.Warning($"Package with PackageID '{_packageId}' not found in any ConfigMgr database");
             }
 
             return null;

@@ -7,7 +7,7 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Enumerate SCCM stored credentials including Network Access Account (NAA), Client Push, and Task Sequence accounts.
+    /// Enumerate ConfigMgr stored credentials including Network Access Account (NAA), Client Push, and Task Sequence accounts.
     /// Use this to identify encrypted credentials stored in the database that can be decrypted on the site server.
     /// Shows account names, types, site ownership, and encrypted blobs.
     /// NAA provides network access for clients without domain credentials.
@@ -23,7 +23,7 @@ namespace MSSQLand.Actions.CM
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Enumerating SCCM stored credentials");
+            Logger.TaskNested("Enumerating ConfigMgr stored credentials");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -31,7 +31,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -40,7 +40,7 @@ namespace MSSQLand.Actions.CM
                 string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 string query = $@"
 SELECT

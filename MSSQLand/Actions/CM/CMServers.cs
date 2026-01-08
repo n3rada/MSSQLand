@@ -7,10 +7,10 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Enumerate SCCM servers in the site hierarchy including site servers, management points, and distribution points.
-    /// Use this to map the SCCM infrastructure and identify key servers for lateral movement targets.
+    /// Enumerate ConfigMgr servers in the site hierarchy including site servers, management points, and distribution points.
+    /// Use this to map the ConfigMgr infrastructure and identify key servers for lateral movement targets.
     /// Shows site codes, server roles, database servers, and installation paths.
-    /// Essential for understanding the SCCM topology and identifying high-value targets.
+    /// Essential for understanding the ConfigMgr topology and identifying high-value targets.
     /// </summary>
     internal class CMServers : BaseAction
     {
@@ -21,7 +21,7 @@ namespace MSSQLand.Actions.CM
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Enumerating SCCM servers in hierarchy");
+            Logger.TaskNested("Enumerating ConfigMgr servers in hierarchy");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -29,14 +29,14 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
             foreach (string db in databases)
             {
                 string siteCode = CMService.GetSiteCode(db);
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 try
                 {

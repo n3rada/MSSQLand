@@ -9,7 +9,7 @@ using System.Text;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Enumerate SCCM programs (legacy package execution configurations) with command lines and run behavior.
+    /// Enumerate ConfigMgr programs (legacy package execution configurations) with command lines and run behavior.
     /// Use this to view program details including install commands, working directories, and execution flags.
     /// Programs define how packages are executed - shows command lines, user context, UI mode, and restart behavior.
     /// For modern application deployments, use sccm-apps instead.
@@ -63,7 +63,7 @@ namespace MSSQLand.Actions.CM
             if (!string.IsNullOrEmpty(_commandLine))
                 filterMsg += $" commandline: {_commandLine}";
 
-            Logger.TaskNested($"Enumerating SCCM programs{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
+            Logger.TaskNested($"Enumerating ConfigMgr programs{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -72,7 +72,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -81,7 +81,7 @@ namespace MSSQLand.Actions.CM
                 string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 string filterClause = "WHERE 1=1";
 

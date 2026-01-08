@@ -7,7 +7,7 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Enumerate SCCM deployments showing what content is being pushed to which collections.
+    /// Enumerate ConfigMgr deployments showing what content is being pushed to which collections.
     /// Use this to identify active deployments for hijacking or monitoring deployed content.
     /// Shows deployment names, target collections, deployment types (Available/Required), schedules, and content IDs.
     /// Reveals which devices will receive which packages/applications, enabling deployment poisoning attacks.
@@ -84,7 +84,7 @@ namespace MSSQLand.Actions.CM
             if (_inProgress)
                 filterMsg += " in-progress";
 
-            Logger.TaskNested($"Enumerating SCCM deployments{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
+            Logger.TaskNested($"Enumerating ConfigMgr deployments{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -93,7 +93,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -102,7 +102,7 @@ namespace MSSQLand.Actions.CM
                 string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 string filterClause = "WHERE 1=1";
                 

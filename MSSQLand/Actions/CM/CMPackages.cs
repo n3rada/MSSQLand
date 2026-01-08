@@ -7,7 +7,7 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Enumerate SCCM packages with their properties, source locations, and program details.
+    /// Enumerate ConfigMgr packages with their properties, source locations, and program details.
     /// Use this to view package inventory including names, descriptions, source paths, versions, and associated program counts.
     /// Shows PackageID, name, source path (UNC or local), manufacturer, version, package type, and program count.
     /// Packages are the legacy deployment model - use sccm-apps for modern application deployments.
@@ -52,7 +52,7 @@ namespace MSSQLand.Actions.CM
             if (!string.IsNullOrEmpty(_sourcePath))
                 filterMsg += $" source: {_sourcePath}";
 
-            Logger.TaskNested($"Enumerating SCCM packages{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
+            Logger.TaskNested($"Enumerating ConfigMgr packages{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -61,7 +61,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -70,7 +70,7 @@ namespace MSSQLand.Actions.CM
                 string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 string filterClause = "WHERE 1=1";
 

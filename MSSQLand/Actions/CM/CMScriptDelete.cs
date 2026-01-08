@@ -5,10 +5,10 @@ using System;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Remove a script from SCCM's Scripts table by GUID to clean up after operations.
+    /// Remove a script from ConfigMgr's Scripts table by GUID to clean up after operations.
     /// Use this to delete scripts added via sccm-script-add, removing evidence of custom payloads.
     /// Requires script GUID - use sccm-scripts to find GUIDs.
-    /// Automatically blocks deletion of built-in CMPivot script to maintain SCCM functionality.
+    /// Automatically blocks deletion of built-in CMPivot script to maintain ConfigMgr functionality.
     /// Useful for operational security and cleaning up test scripts.
     /// </summary>
     internal class CMScriptDelete : BaseAction
@@ -48,7 +48,7 @@ namespace MSSQLand.Actions.CM
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Deleting SCCM script: {_scriptGuid}");
+            Logger.TaskNested($"Deleting ConfigMgr script: {_scriptGuid}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -56,14 +56,14 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
             foreach (string db in databases)
             {
                 string siteCode = CMService.GetSiteCode(db);
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 try
                 {

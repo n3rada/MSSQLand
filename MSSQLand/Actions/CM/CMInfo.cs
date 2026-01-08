@@ -7,8 +7,8 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Display SCCM site information including site code, version, build, database server, and management point details.
-    /// Use this for initial reconnaissance to identify SCCM infrastructure components, site hierarchy, and installed version.
+    /// Display ConfigMgr site information including site code, version, build, database server, and management point details.
+    /// Use this for initial reconnaissance to identify ConfigMgr infrastructure components, site hierarchy, and installed version.
     /// Shows distribution points, site systems, and component servers for infrastructure mapping.
     /// </summary>
     internal class CMInfo : BaseAction
@@ -20,36 +20,36 @@ namespace MSSQLand.Actions.CM
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Detecting SCCM databases");
+            Logger.TaskNested("Detecting ConfigMgr databases");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
             try
             {
-                // Get SCCM databases
+                // Get ConfigMgr databases
                 var databases = sccmService.GetSccmDatabases();
                 
                 if (databases.Count == 0)
                 {
-                    Logger.Warning("No valid SCCM databases found");
+                    Logger.Warning("No valid ConfigMgr databases found");
                     return null;
                 }
 
                 if (databases.Count > 1)
                 {
-                    Logger.TaskNested($"Multiple SCCM databases detected: {databases.Count}");
+                    Logger.TaskNested($"Multiple ConfigMgr databases detected: {databases.Count}");
                     foreach (string db in databases)
                     {
                         Logger.InfoNested($"- {db}");
                     }
                 }
 
-                // Process each validated SCCM database
+                // Process each validated ConfigMgr database
                 foreach (string sccmDatabase in databases)
                 {
                     Logger.NewLine();
                     string siteCode = CMService.GetSiteCode(sccmDatabase);
-                    Logger.Info($"Enumerating SCCM database: {sccmDatabase} (Site Code: {siteCode})");
+                    Logger.Info($"Enumerating ConfigMgr database: {sccmDatabase} (Site Code: {siteCode})");
 
                     // Get site information
                     string siteInfoQuery = $"SELECT * FROM [{sccmDatabase}].dbo.Sites;";
@@ -91,13 +91,13 @@ namespace MSSQLand.Actions.CM
                         
                         if (components.Rows.Count > 0)
                         {
-                            Logger.Success("SCCM Components");
+                            Logger.Success("ConfigMgr Components");
                             Console.WriteLine(OutputFormatter.ConvertDataTable(components));
                         }
                     }
                     catch (Exception ex)
                     {
-                        Logger.Debug($"Could not query SCCM components: {ex.Message}");
+                        Logger.Debug($"Could not query ConfigMgr components: {ex.Message}");
                     }
 
                     // Get site system roles (handles both views and base tables)
@@ -149,13 +149,13 @@ namespace MSSQLand.Actions.CM
                     }
                 }
 
-                Logger.Success($"Successfully enumerated {databases.Count} SCCM database(s)");
+                Logger.Success($"Successfully enumerated {databases.Count} ConfigMgr database(s)");
 
                 return null;
             }
             catch (Exception ex)
             {
-                Logger.Error($"Failed to enumerate SCCM databases: {ex.Message}");
+                Logger.Error($"Failed to enumerate ConfigMgr databases: {ex.Message}");
                 Logger.Trace($"Stack trace: {ex.StackTrace}");
                 return null;
             }

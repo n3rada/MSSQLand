@@ -7,7 +7,7 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Enumerate SCCM distribution points with content library paths and network shares.
+    /// Enumerate ConfigMgr distribution points with content library paths and network shares.
     /// Use this to identify servers hosting package content - primary targets for lateral movement and content poisoning.
     /// Shows DP server names, content share paths (e.g., \\\\server\\SCCMContentLib$), NAL paths, and DP group memberships.
     /// Distribution points store all deployed content and often have relaxed security for client access.
@@ -30,7 +30,7 @@ namespace MSSQLand.Actions.CM
         public override object? Execute(DatabaseContext databaseContext)
         {
             string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
-            Logger.TaskNested($"Enumerating SCCM distribution points{filterMsg}");
+            Logger.TaskNested($"Enumerating ConfigMgr distribution points{filterMsg}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -38,7 +38,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -47,7 +47,7 @@ namespace MSSQLand.Actions.CM
                 string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 string filterClause = string.IsNullOrEmpty(_filter)
                     ? ""

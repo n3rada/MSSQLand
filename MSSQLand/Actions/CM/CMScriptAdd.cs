@@ -7,7 +7,7 @@ using System.Text;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Upload a PowerShell script to SCCM's Scripts table for later execution via sccm-script-run.
+    /// Upload a PowerShell script to ConfigMgr's Scripts table for later execution via sccm-script-run.
     /// Use this to deploy custom payloads or administrative scripts without admin console approval workflow.
     /// Automatically sets script to approved state and hides it from console UI.
     /// Generates unique GUID for script identification or accepts custom GUID.
@@ -59,7 +59,7 @@ namespace MSSQLand.Actions.CM
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Adding SCCM script: {_scriptName}");
+            Logger.TaskNested($"Adding ConfigMgr script: {_scriptName}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -67,7 +67,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -86,7 +86,7 @@ namespace MSSQLand.Actions.CM
             foreach (string db in databases)
             {
                 string siteCode = CMService.GetSiteCode(db);
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 try
                 {

@@ -7,7 +7,7 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Enumerate SCCM collections with member counts, types, and properties.
+    /// Enumerate ConfigMgr collections with member counts, types, and properties.
     /// Use this to identify device and user groupings for targeted deployment attacks.
     /// Shows collection names, types (device/user), member counts, and collection IDs needed for deployment targeting.
     /// Filter by name or type, and optionally show only collections with members.
@@ -54,7 +54,7 @@ namespace MSSQLand.Actions.CM
         {
             string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
             string typeMsg = !string.IsNullOrEmpty(_collectionType) ? $" (type: {_collectionType})" : "";
-            Logger.TaskNested($"Enumerating SCCM collections{filterMsg}{typeMsg}");
+            Logger.TaskNested($"Enumerating ConfigMgr collections{filterMsg}{typeMsg}");
             Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -63,7 +63,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -71,7 +71,7 @@ namespace MSSQLand.Actions.CM
             {
                 Logger.NewLine();
                 string siteCode = CMService.GetSiteCode(db);
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 try
                 {

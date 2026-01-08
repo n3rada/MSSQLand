@@ -7,7 +7,7 @@ using MSSQLand.Utilities;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Display detailed information for a specific SCCM PowerShell script including full content and parameters.
+    /// Display detailed information for a specific ConfigMgr PowerShell script including full content and parameters.
     /// </summary>
     internal class CMScript : BaseAction
     {
@@ -31,7 +31,7 @@ namespace MSSQLand.Actions.CM
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Retrieving SCCM script: {_scriptGuid}");
+            Logger.TaskNested($"Retrieving ConfigMgr script: {_scriptGuid}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -39,7 +39,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -62,7 +62,7 @@ namespace MSSQLand.Actions.CM
                 DataRow row = result.Rows[0];
 
                 Logger.NewLine();
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 // Display script metadata
                 string scriptName = row.Field<string>("ScriptName") ?? "";
@@ -143,7 +143,7 @@ namespace MSSQLand.Actions.CM
 
             if (!foundScript)
             {
-                Logger.Warning($"Script with GUID '{_scriptGuid}' not found in any SCCM database");
+                Logger.Warning($"Script with GUID '{_scriptGuid}' not found in any ConfigMgr database");
             }
 
             return null;

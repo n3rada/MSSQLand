@@ -7,9 +7,9 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Enumerate SCCM Task Sequences with their properties and referenced content.
+    /// Enumerate ConfigMgr Task Sequences with their properties and referenced content.
     /// 
-    /// Task Sequences in SCCM are ordered sets of automated steps used to perform complex IT operations.
+    /// Task Sequences in ConfigMgr are ordered sets of automated steps used to perform complex IT operations.
     /// They are primarily used for OS deployment (bare-metal, refresh, replace scenarios) but can also
     /// automate software installation, patching, migrations, and configuration management.
     /// 
@@ -77,7 +77,7 @@ namespace MSSQLand.Actions.CM
             if (!string.IsNullOrEmpty(_description))
                 filterMsg += $" description: {_description}";
 
-            Logger.TaskNested($"Enumerating SCCM task sequences{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
+            Logger.TaskNested($"Enumerating ConfigMgr task sequences{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -86,7 +86,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -95,7 +95,7 @@ namespace MSSQLand.Actions.CM
                 string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 // TS_Type: 1 = Sequence (internal), 2 = Task Sequence (standard), 3 = Server Task Sequence (deprecated)
                 string filterClause = "WHERE 1=1"; // Show all TS_Type values

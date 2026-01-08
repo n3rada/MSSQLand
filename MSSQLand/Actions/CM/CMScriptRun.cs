@@ -8,8 +8,8 @@ using System.Threading;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Execute a PowerShell script on a target device through SCCM's Background (BGB) notification channel.
-    /// Use this to run commands or deploy payloads on managed devices using SCCM's legitimate script execution.
+    /// Execute a PowerShell script on a target device through ConfigMgr's Background (BGB) notification channel.
+    /// Use this to run commands or deploy payloads on managed devices using ConfigMgr's legitimate script execution.
     /// Requires script GUID (from sccm-scripts or sccm-script-add) and target ResourceID (from sccm-devices).
     /// Creates BGB task entries to push script execution notification to online clients.
     /// Returns Task ID for monitoring execution status with sccm-script-status.
@@ -51,7 +51,7 @@ namespace MSSQLand.Actions.CM
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Executing SCCM script on ResourceID: {_resourceId}");
+            Logger.TaskNested($"Executing ConfigMgr script on ResourceID: {_resourceId}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -59,14 +59,14 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
             foreach (string db in databases)
             {
                 string siteCode = CMService.GetSiteCode(db);
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 try
                 {

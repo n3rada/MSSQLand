@@ -7,7 +7,7 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Shows all users who have logged into SCCM-managed devices with usage statistics.
+    /// Shows all users who have logged into ConfigMgr-managed devices with usage statistics.
     /// 
     /// Data reflects periodic hardware inventory cycles (typically 24h-7d), not real-time sessions.
     /// Currently logged-in users may differ from inventory data shown.
@@ -52,7 +52,7 @@ namespace MSSQLand.Actions.CM
             string deviceMsg = !string.IsNullOrEmpty(_device) ? $" (device: {_device})" : "";
             string usernameMsg = !string.IsNullOrEmpty(_username) ? $" (username: {_username})" : "";
             string domainMsg = !string.IsNullOrEmpty(_domain) ? $" (domain: {_domain})" : "";
-            Logger.TaskNested($"Enumerating SCCM device users{deviceMsg}{usernameMsg}{domainMsg}");
+            Logger.TaskNested($"Enumerating ConfigMgr device users{deviceMsg}{usernameMsg}{domainMsg}");
             Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -61,7 +61,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -69,7 +69,7 @@ namespace MSSQLand.Actions.CM
             {
                 Logger.NewLine();
                 string siteCode = CMService.GetSiteCode(db);
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 try
                 {

@@ -7,7 +7,7 @@ using System.Data;
 namespace MSSQLand.Actions.CM
 {
     /// <summary>
-    /// Display comprehensive information about a specific SCCM collection including all member devices.
+    /// Display comprehensive information about a specific ConfigMgr collection including all member devices.
     /// Shows collection details, membership rules, and complete list of devices/users in the collection.
     /// Use this to understand what devices are targeted by a specific collection.
     /// </summary>
@@ -41,7 +41,7 @@ namespace MSSQLand.Actions.CM
 
             if (databases.Count == 0)
             {
-                Logger.Warning("No SCCM databases found");
+                Logger.Warning("No ConfigMgr databases found");
                 return null;
             }
 
@@ -52,7 +52,7 @@ namespace MSSQLand.Actions.CM
                 string siteCode = CMService.GetSiteCode(db);
 
                 Logger.NewLine();
-                Logger.Info($"SCCM database: {db} (Site Code: {siteCode})");
+                Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 // Get collection details
                 string collectionQuery = $@"
@@ -259,7 +259,7 @@ ORDER BY cr.RuleType, cr.RuleName;";
 
             if (!collectionFound)
             {
-                Logger.Warning($"Collection with ID '{_collectionId}' not found in any SCCM database");
+                Logger.Warning($"Collection with ID '{_collectionId}' not found in any ConfigMgr database");
             }
 
             return null;
