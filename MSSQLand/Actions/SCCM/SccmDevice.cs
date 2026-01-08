@@ -131,7 +131,7 @@ SELECT
 FROM [{db}].dbo.v_FullCollectionMembership cm
 INNER JOIN [{db}].dbo.v_Collection c ON cm.CollectionID = c.CollectionID
 WHERE cm.ResourceID = {resourceId}
-ORDER BY c.CollectionType, c.Name;";
+ORDER BY c.CollectionID;";
 
                 DataTable collectionsResult = databaseContext.QueryService.ExecuteTable(collectionsQuery);
                 
