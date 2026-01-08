@@ -230,7 +230,7 @@ namespace MSSQLand.Actions.SCCM
                     string topClause = _limit > 0 ? $"TOP {_limit}" : "";
 
                     string query = $@"
-SELECT {topClause}
+SELECT DISTINCT {topClause}
     bgb.OnlineStatus,
     bgb.LastOnlineTime,
     bgb.LastOfflineTime,
