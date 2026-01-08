@@ -10,6 +10,8 @@ namespace MSSQLand.Actions.CM
     /// <summary>
     /// Enumerate ConfigMgr-managed devices with filtering by attributes.
     /// Use this for device discovery, inventory queries, and finding devices by location/user/collection.
+    /// InventoriedUsers column shows all users from hardware inventory (console, RDP, scheduled tasks, services).
+    /// For detailed user statistics (logon counts, time spent), use cm-device-users.
     /// For ConfigMgr client health diagnostics and troubleshooting, use sccm-health instead.
     /// </summary>
     internal class CMDevices : BaseAction
@@ -242,14 +244,14 @@ SELECT DISTINCT {topClause}
     sys.Name0 AS DeviceName,
     sys.ResourceID,
     bgb.IPAddress,
-    sys.User_Name0 AS LastInteractiveUser,
+    sys.User_Name0 AS LastConsoleUser,
     STUFF((
         SELECT ', ' + cu.SystemConsoleUser0
         FROM [{db}].dbo.v_GS_SYSTEM_CONSOLE_USER cu
         WHERE cu.ResourceID = sys.ResourceID
         ORDER BY cu.LastConsoleUse0 DESC
         FOR XML PATH(''), TYPE
-    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS Users,
+    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS InventoriedUsers,
     sys.Client0 AS Client,
     sys.Client_Version0 AS ClientVersion,
     sys.Decommissioned0 AS Decommissioned,
