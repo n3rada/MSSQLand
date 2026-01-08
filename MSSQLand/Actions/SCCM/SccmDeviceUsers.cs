@@ -109,6 +109,7 @@ INNER JOIN [{db}].dbo.v_GS_SYSTEM_CONSOLE_USER cu ON sys.ResourceID = cu.Resourc
 {whereClause}
 ORDER BY 
     sys.Resource_Domain_OR_Workgr0,
+    cu.TimeStamp DESC,
     cu.LastConsoleUse0 DESC,
     cu.NumberOfConsoleLogons0 DESC,
     cu.TotalUserConsoleMinutes0 DESC";
