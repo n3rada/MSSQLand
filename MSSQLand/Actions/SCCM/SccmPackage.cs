@@ -238,11 +238,7 @@ ORDER BY psd.SiteCode;";
                 Logger.Info("Distribution Points:");
 
                 string distributionQuery = $@"
-SELECT 
-    dp.ServerNALPath,
-    dp.PackageID,
-    dp.LastRefreshTime,
-    dp.SourceVersion
+SELECT *
 FROM [{db}].dbo.v_DistributionPoint dp
 WHERE dp.PackageID = '{_packageId.Replace("'", "''")}'
 ORDER BY dp.ServerNALPath;";
