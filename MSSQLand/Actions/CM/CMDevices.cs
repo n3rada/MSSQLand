@@ -346,6 +346,7 @@ ORDER BY
                         Console.WriteLine(OutputFormatter.ConvertDataTable(devicesTable));
 
                         Logger.Success($"Found {devicesTable.Rows.Count} device(s)");
+                        Logger.SuccessNested("Use 'cm-device-users' to see detailed user logon statistics per device");
                     }
                     else {
                         Logger.Warning("No devices found");
