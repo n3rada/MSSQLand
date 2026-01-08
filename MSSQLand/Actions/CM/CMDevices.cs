@@ -234,6 +234,7 @@ SELECT DISTINCT {topClause}
     bgb.OnlineStatus,
     bgb.LastOnlineTime,
     bgb.LastOfflineTime,
+    chs.LastPolicyRequest,
     sys.Last_Logon_Timestamp0 AS ComputerLastADAuth,
     sys.AD_Site_Name0 AS ADSite,
     sys.Resource_Domain_OR_Workgr0 AS Domain,
@@ -258,6 +259,7 @@ SELECT DISTINCT {topClause}
 FROM [{db}].dbo.v_R_System sys
 LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
 LEFT JOIN [{db}].dbo.v_RA_System_IPAddresses SYSIP ON sys.ResourceID = SYSIP.ResourceID
+LEFT JOIN [{db}].dbo.v_CH_ClientSummary chs ON sys.ResourceID = chs.ResourceID
 {whereClause}
 ORDER BY 
     sys.Client0 DESC,
