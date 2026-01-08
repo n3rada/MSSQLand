@@ -166,6 +166,98 @@ ORDER BY COUNT(*) DESC;
                 {
                     Logger.Warning("No referenced content found");
                 }
+
+                // Get deployments/advertisements for this task sequence
+                Logger.NewLine();
+                Logger.Info("Task Sequence Deployments:");
+
+                string deploymentsQuery = $@"
+SELECT 
+    adv.AdvertisementID,
+    adv.AdvertisementName,
+    adv.CollectionID,
+    c.Name AS CollectionName,
+    c.MemberCount,
+    adv.PresentTime,
+    adv.ExpirationTime,
+    CASE 
+        WHEN adv.AdvertFlags & 0x00000020 = 0x00000020 THEN 'Required'
+        ELSE 'Available'
+    END AS DeploymentType,
+    CASE 
+        WHEN adv.AdvertFlags & 0x00000400 = 0x00000400 THEN 'Yes'
+        ELSE 'No'
+    END AS AllowUsersToRunIndependently,
+    CASE 
+        WHEN adv.AdvertFlags & 0x00008000 = 0x00008000 THEN 'Yes'
+        ELSE 'No'
+    END AS RerunBehavior
+FROM [{db}].dbo.v_Advertisement adv
+LEFT JOIN [{db}].dbo.v_Collection c ON adv.CollectionID = c.CollectionID
+WHERE adv.PackageID = '{_packageId.Replace("'", "''")}'
+ORDER BY adv.PresentTime DESC;";
+
+                DataTable deploymentsResult = databaseContext.QueryService.ExecuteTable(deploymentsQuery);
+                
+                if (deploymentsResult.Rows.Count > 0)
+                {
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(deploymentsResult));
+                    Logger.Success($"Task sequence deployed to {deploymentsResult.Rows.Count} collection(s)");
+                    
+                    // Show total potential reach
+                    int totalMembers = 0;
+                    foreach (DataRow row in deploymentsResult.Rows)
+                    {
+                        if (row["MemberCount"] != DBNull.Value)
+                            totalMembers += Convert.ToInt32(row["MemberCount"]);
+                    }
+                    Logger.Info($"Total devices potentially targeted: {totalMembers}");
+                    Logger.InfoNested("Use 'cm-collection <CollectionID>' to see which devices are in each collection");
+                }
+                else
+                {
+                    Logger.Warning("Task sequence not deployed to any collections");
+                }
+
+                // Get deployment status summary
+                Logger.NewLine();
+                Logger.Info("Deployment Status Summary:");
+
+                string statusQuery = $@"
+SELECT 
+    ds.SoftwareName,
+    ds.CollectionID,
+    c.Name AS CollectionName,
+    CASE ds.DeploymentIntent
+        WHEN 1 THEN 'Required'
+        WHEN 2 THEN 'Available'
+        WHEN 3 THEN 'Simulate'
+        ELSE CAST(ds.DeploymentIntent AS VARCHAR)
+    END AS Intent,
+    ds.NumberSuccess,
+    ds.NumberInProgress,
+    ds.NumberErrors,
+    ds.NumberUnknown,
+    ds.DeploymentTime,
+    ds.ModificationTime
+FROM [{db}].dbo.v_DeploymentSummary ds
+LEFT JOIN [{db}].dbo.v_Collection c ON ds.CollectionID = c.CollectionID
+WHERE ds.PackageID = '{_packageId.Replace("'", "''")}'
+    AND ds.FeatureType = 7
+ORDER BY ds.DeploymentTime DESC;";
+
+                DataTable statusResult = databaseContext.QueryService.ExecuteTable(statusQuery);
+                
+                if (statusResult.Rows.Count > 0)
+                {
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(statusResult));
+                }
+                else
+                {
+                    Logger.Info("No deployment status information available");
+                }
+
+                break; // Found task sequence, no need to check other databases
             }
 
             return null;
