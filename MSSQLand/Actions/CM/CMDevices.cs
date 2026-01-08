@@ -169,10 +169,18 @@ namespace MSSQLand.Actions.CM
                         whereClause += $" AND sys.Resource_Domain_OR_Workgr0 LIKE '%{_domain.Replace("'", "''")}%'";
                     }
 
-                    // Add username filter
+                    // Add username filter (searches both LastConsoleUser and InventoriedUsers)
                     if (!string.IsNullOrEmpty(_username))
                     {
-                        whereClause += $" AND sys.User_Name0 LIKE '%{_username.Replace("'", "''")}%'";
+                        whereClause += $@" AND (
+                            sys.User_Name0 LIKE '%{_username.Replace("'", "''")}%' 
+                            OR EXISTS (
+                                SELECT 1 
+                                FROM [{db}].dbo.v_GS_SYSTEM_CONSOLE_USER cu_filter
+                                WHERE cu_filter.ResourceID = sys.ResourceID 
+                                AND cu_filter.SystemConsoleUser0 LIKE '%{_username.Replace("'", "''")}%'
+                            )
+                        )";
                     }
 
                     // Add IP address filter
