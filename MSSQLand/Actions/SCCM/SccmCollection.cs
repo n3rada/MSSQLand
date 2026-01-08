@@ -70,13 +70,9 @@ SELECT
     c.LastRefreshTime,
     c.LastMemberChangeTime,
     c.LastChangeTime,
-    c.IsBuiltIn,
-    c.IsReferenceCollection,
-    c.OwnedByThisSite,
-    c.LimitToCollectionID,
-    c.LimitToCollectionName,
+    c.EvaluationStartTime,
     c.RefreshType,
-    c.RefreshSchedule,
+    c.CurrentStatus,
     c.MemberClassName
 FROM [{db}].dbo.v_Collection c
 WHERE c.CollectionID = '{_collectionId.Replace("'", "''")}';";
@@ -102,10 +98,11 @@ WHERE c.CollectionID = '{_collectionId.Replace("'", "''")}';";
                 
                 Logger.InfoNested($"Type: {collection["TypeName"]} (CollectionType: {collection["CollectionType"]})");
                 Logger.InfoNested($"Member Count: {collection["MemberCount"]}");
-                Logger.InfoNested($"Is Built-In: {(Convert.ToInt32(collection["IsBuiltIn"]) == 1 ? "Yes" : "No")}");
-                Logger.InfoNested($"Limiting Collection: {collection["LimitToCollectionName"]} ({collection["LimitToCollectionID"]})");
+                Logger.InfoNested($"Refresh Type: {collection["RefreshType"]}");
+                Logger.InfoNested($"Current Status: {collection["CurrentStatus"]}");
                 Logger.InfoNested($"Last Refresh: {collection["LastRefreshTime"]}");
                 Logger.InfoNested($"Last Member Change: {collection["LastMemberChangeTime"]}");
+                Logger.InfoNested($"Evaluation Start: {collection["EvaluationStartTime"]}");
 
                 Logger.NewLine();
                 Logger.Info("Collection Properties:");
