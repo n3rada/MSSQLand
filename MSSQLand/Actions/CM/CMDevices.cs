@@ -176,7 +176,7 @@ namespace MSSQLand.Actions.CM
                     // Add IP address filter
                     if (!string.IsNullOrEmpty(_ip))
                     {
-                        whereClause += $" AND SYSIP.IP_Addresses0 LIKE '{_ip.Replace("'", "''")}%'";
+                        whereClause += $" AND bgb.IPAddress LIKE '{_ip.Replace("'", "''")}%'";
                     }
 
                     // Add collection filter
@@ -258,7 +258,6 @@ SELECT DISTINCT {topClause}
     ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS Collections
 FROM [{db}].dbo.v_R_System sys
 LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
-LEFT JOIN [{db}].dbo.v_RA_System_IPAddresses SYSIP ON sys.ResourceID = SYSIP.ResourceID
 LEFT JOIN [{db}].dbo.v_CH_ClientSummary chs ON sys.ResourceID = chs.ResourceID
 {whereClause}
 ORDER BY 
