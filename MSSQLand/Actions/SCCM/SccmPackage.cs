@@ -91,19 +91,45 @@ WHERE p.PackageID = '{_packageId.Replace("'", "''")}'";
                 Logger.NewLine();
                 Logger.Info($"Package: {package["Name"]} ({_packageId})");
                 
-                if (!string.IsNullOrEmpty(package["Description"].ToString()))
+                // Description: NULL = no description provided
+                if (package["Description"] != DBNull.Value && !string.IsNullOrEmpty(package["Description"].ToString()))
                 {
                     Logger.InfoNested($"Description: {package["Description"]}");
                 }
                 
-                Logger.InfoNested($"Manufacturer: {package["Manufacturer"]} | Version: {package["Version"]}");
-                Logger.InfoNested($"Language: {package["Language"]}");
-                Logger.InfoNested($"Package Type: {package["PackageType"]}");
-                Logger.InfoNested($"Source Path: {package["PkgSourcePath"]}");
-                Logger.InfoNested($"Stored Package Path: {package["StoredPkgPath"]}");
-                Logger.InfoNested($"Source Version: {package["SourceVersion"]} | Source Date: {package["SourceDate"]}");
-                Logger.InfoNested($"Last Refresh: {package["LastRefreshTime"]}");
-                Logger.InfoNested($"Priority: {package["Priority"]}");
+                // Manufacturer/Version: NULL = not specified
+                string manufacturer = package["Manufacturer"] != DBNull.Value ? package["Manufacturer"].ToString() : "(Not specified)";
+                string version = package["Version"] != DBNull.Value ? package["Version"].ToString() : "(Not specified)";
+                Logger.InfoNested($"Manufacturer: {manufacturer} | Version: {version}");
+                
+                // Language: NULL = language-neutral or not specified
+                string language = package["Language"] != DBNull.Value ? package["Language"].ToString() : "(Not specified)";
+                Logger.InfoNested($"Language: {language}");
+                
+                // PackageType: NULL = standard package (0)
+                string packageType = package["PackageType"] != DBNull.Value ? package["PackageType"].ToString() : "0 (Standard)";
+                Logger.InfoNested($"Package Type: {packageType}");
+                
+                // Source Path: NULL = no source files (virtual package or legacy)
+                string sourcePath = package["PkgSourcePath"] != DBNull.Value ? package["PkgSourcePath"].ToString() : "(No source path)";
+                Logger.InfoNested($"Source Path: {sourcePath}");
+                
+                // Stored Package Path: NULL = not stored on distribution points yet
+                string storedPath = package["StoredPkgPath"] != DBNull.Value ? package["StoredPkgPath"].ToString() : "(Not stored)";
+                Logger.InfoNested($"Stored Package Path: {storedPath}");
+                
+                // Source Version/Date: NULL = never refreshed from source
+                string sourceVersion = package["SourceVersion"] != DBNull.Value ? package["SourceVersion"].ToString() : "(Not available)";
+                string sourceDate = package["SourceDate"] != DBNull.Value ? Convert.ToDateTime(package["SourceDate"]).ToString("yyyy-MM-dd HH:mm:ss") : "(Not available)";
+                Logger.InfoNested($"Source Version: {sourceVersion} | Source Date: {sourceDate}");
+                
+                // Last Refresh: NULL = never refreshed
+                string lastRefresh = package["LastRefreshTime"] != DBNull.Value ? Convert.ToDateTime(package["LastRefreshTime"]).ToString("yyyy-MM-dd HH:mm:ss") : "(Never refreshed)";
+                Logger.InfoNested($"Last Refresh: {lastRefresh}");
+                
+                // Priority: NULL = default priority (2 - Normal)
+                string priority = package["Priority"] != DBNull.Value ? package["Priority"].ToString() : "2 (Normal)";
+                Logger.InfoNested($"Priority: {priority}");
 
                 Logger.NewLine();
                 Logger.Info("Package Properties:");
