@@ -93,25 +93,25 @@ WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}';";
 
                 // Display device details
                 Logger.NewLine();
-                Logger.Success($"Device: {device["DeviceName"]} (ResourceID: {resourceId})");
-                Logger.Info($"Domain: {device["Domain"]}");
-                Logger.Info($"IP Address: {device["IPAddress"]}");
-                Logger.Info($"Operating System: {device["OperatingSystem"]} ({device["OSVersion"]})");
-                Logger.Info($"Manufacturer: {device["Manufacturer"]} | Model: {device["Model"]}");
-                Logger.Info($"Client Installed: {(Convert.ToInt32(device["HasClient"]) == 1 ? "Yes" : "No")} | Version: {device["ClientVersion"]}");
+                Logger.Info($"Device: {device["DeviceName"]} (ResourceID: {resourceId})");
+                Logger.InfoNested($"Domain: {device["Domain"]}");
+                Logger.InfoNested($"IP Address: {device["IPAddress"]}");
+                Logger.InfoNested($"Operating System: {device["OperatingSystem"]} ({device["OSVersion"]})");
+                Logger.InfoNested($"Manufacturer: {device["Manufacturer"]} | Model: {device["Model"]}");
+                Logger.InfoNested($"Client Installed: {(Convert.ToInt32(device["HasClient"]) == 1 ? "Yes" : "No")} | Version: {device["ClientVersion"]}");
                 
                 int onlineStatus = device["OnlineStatus"] != DBNull.Value ? Convert.ToInt32(device["OnlineStatus"]) : 0;
-                Logger.Info($"Online Status: {(onlineStatus == 1 ? "Online" : "Offline")}");
+                Logger.InfoNested($"Online Status: {(onlineStatus == 1 ? "Online" : "Offline")}");
                 
                 if (device["LastOnlineTime"] != DBNull.Value)
                 {
-                    Logger.Info($"Last Online: {Convert.ToDateTime(device["LastOnlineTime"]):yyyy-MM-dd HH:mm:ss}");
+                    Logger.InfoNested($"Last Online: {Convert.ToDateTime(device["LastOnlineTime"]):yyyy-MM-dd HH:mm:ss}");
                 }
                 
-                Logger.Info($"Last User: {device["LastUser"]}");
-                Logger.Info($"AD Site: {device["ADSite"]}");
-                Logger.Info($"Access MP: {device["AccessMP"]}");
-                Logger.Info($"Decommissioned: {(Convert.ToInt32(device["Decommissioned"]) == 1 ? "Yes" : "No")}");
+                Logger.InfoNested($"Last User: {device["LastUser"]}");
+                Logger.InfoNested($"AD Site: {device["ADSite"]}");
+                Logger.InfoNested($"Access MP: {device["AccessMP"]}");
+                Logger.InfoNested($"Decommissioned: {(Convert.ToInt32(device["Decommissioned"]) == 1 ? "Yes" : "No")}");
 
                 // Get collection memberships
                 Logger.NewLine();
