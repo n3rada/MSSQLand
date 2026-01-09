@@ -167,23 +167,37 @@ namespace MSSQLand.Actions.ConfigMgr
                     filterClause += " AND ds.NumberInProgress > 0";
                 }
 
-                // Always join deployment types for Applications (FeatureType = 1)
-                // This allows showing deployment type GUIDs in output
-                string deploymentTypeJoin = $@"
+                // Build deployment type joins based on whether filtering is needed
+                string deploymentTypeJoin = "";
+                string deploymentTypeColumns = "";
+                
+                if (!string.IsNullOrEmpty(_deploymentType))
+                {
+                    // When filtering by deployment type, use INNER JOINs to only show matching deployments
+                    deploymentTypeJoin = $@"
+JOIN [{db}].dbo.v_CIAssignment cia ON ds.AssignmentID = cia.AssignmentID AND ds.FeatureType = 1
+JOIN [{db}].dbo.CI_ConfigurationItems app ON cia.LocalCollectionID = app.CI_ID
+JOIN [{db}].dbo.CI_ConfigurationItems dt ON dt.CI_UniqueID LIKE app.CI_UniqueID + '/%' AND dt.CIType_ID = 21
+LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON dt.CI_ID = lp.CI_ID
+";
+                    deploymentTypeColumns = @",
+    dt.CI_UniqueID AS DeploymentTypeGUID,
+    COALESCE(lp.DisplayName, dt.CI_UniqueID) AS DeploymentTypeName";
+                    
+                    filterClause += $" AND dt.CI_UniqueID LIKE '%{_deploymentType.Replace("'", "''")}%'";
+                }
+                else
+                {
+                    // When not filtering, use LEFT JOINs to show all deployments with optional deployment type info
+                    deploymentTypeJoin = $@"
 LEFT JOIN [{db}].dbo.v_CIAssignment cia ON ds.AssignmentID = cia.AssignmentID AND ds.FeatureType = 1
 LEFT JOIN [{db}].dbo.CI_ConfigurationItems app ON cia.LocalCollectionID = app.CI_ID
 LEFT JOIN [{db}].dbo.CI_ConfigurationItems dt ON dt.CI_UniqueID LIKE app.CI_UniqueID + '/%' AND dt.CIType_ID = 21
 LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON dt.CI_ID = lp.CI_ID
 ";
-                
-                string deploymentTypeColumns = @",
+                    deploymentTypeColumns = @",
     dt.CI_UniqueID AS DeploymentTypeGUID,
     COALESCE(lp.DisplayName, dt.CI_UniqueID) AS DeploymentTypeName";
-                
-                // Add filter if deployment type specified
-                if (!string.IsNullOrEmpty(_deploymentType))
-                {
-                    filterClause += $" AND dt.CI_UniqueID LIKE '%{_deploymentType.Replace("'", "''")}%'";
                 }
 
                 string query = $@"
