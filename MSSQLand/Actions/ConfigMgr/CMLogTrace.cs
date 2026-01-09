@@ -241,10 +241,10 @@ WHERE a.AssignmentID IN (
                 string sdmPackageDigestXML = dtDetailsResult.Rows[0]["SDMPackageDigest"].ToString();
 
                 Logger.Info("Extracted XML Snippets");
-                Logger.InfoNested("Policy Platform Document Body (for AppDiscovery.log, AppIntentEval.log)");
+                Logger.InfoNested("\n---- Policy Platform Document Body (for AppDiscovery.log, AppIntentEval.log)\n");
                 Console.WriteLine(documentStoreBodyXML);
-                Logger.NewLine();
-                Logger.InfoNested("SDM Package Digest (System Definition Model representation)");
+
+                Logger.InfoNested("\n---- SDM Package Digest (System Definition Model representation)\n");
                 Console.WriteLine(sdmPackageDigestXML);
 
                 break; // Found it, no need to check other databases
