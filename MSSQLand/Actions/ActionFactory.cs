@@ -45,7 +45,7 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             // DATABASE ACTIONS - OPERATIONS
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "search", (typeof(Search), "Search for keywords in column names and data across databases.", null) },
+            { "search", (typeof(Search), "Search for keywords in column names and data across databases.", new[] { "find" }) },
             { "query", (typeof(Query), "Execute a custom T-SQL query.", null) },
             { "queryall", (typeof(QueryAll), "Execute a custom T-SQL query across all databases using sp_MSforeachdb.", null) },
             { "monitor", (typeof(Monitor), "Display currently running SQL commands and active sessions.", null) },
