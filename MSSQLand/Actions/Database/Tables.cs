@@ -65,8 +65,8 @@ namespace MSSQLand.Actions.Database
             // Build USE statement if specific database is provided
             string useStatement = string.IsNullOrEmpty(_database) ? "" : $"USE [{_database}];";
 
-            // Build WHERE clause with filter
-            string whereClause = "WHERE t.type IN ('U', 'V') AND p.index_id IN (0, 1)";
+            // Build WHERE clause with filter (partition filter is inside OUTER APPLY)
+            string whereClause = "WHERE t.type IN ('U', 'V')";
             if (!string.IsNullOrEmpty(_name))
             {
                 whereClause += $" AND t.name LIKE '%{_name.Replace("'", "''")}%'";
