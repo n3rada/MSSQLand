@@ -21,6 +21,9 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(ShortName = "c", LongName = "column", Description = "Filter tables containing a column name pattern (supports wildcards %)")]
         private string _columnFilter = "";
 
+        [ArgumentMetadata(ShortName = "r", LongName = "with-rows", Description = "Filter out tables with 0 rows")]
+        private bool _withRows = false;
+
         public override void ValidateArguments(string[] args)
         {
             var (namedArgs, positionalArgs) = ParseActionArguments(args);
@@ -52,6 +55,10 @@ namespace MSSQLand.Actions.Database
             {
                 _showColumns = true;
             }
+
+            // Check for with-rows flag
+            _withRows = namedArgs.ContainsKey("with-rows")
+                     || namedArgs.ContainsKey("r");
             
             // If still null, will use current database in Execute()
         }
@@ -66,7 +73,8 @@ namespace MSSQLand.Actions.Database
             string filterMsg = !string.IsNullOrEmpty(_name) ? $" (name: {_name})" : "";
             string columnsMsg = _showColumns ? " with columns" : "";
             string columnMsg = !string.IsNullOrEmpty(_columnFilter) ? $" with column containing '{_columnFilter}'" : "";
-            Logger.TaskNested($"Retrieving tables from [{targetDatabase}]{filterMsg}{columnsMsg}{columnMsg}");
+            string rowsMsg = _withRows ? " (rows > 0)" : "";
+            Logger.TaskNested($"Retrieving tables from [{targetDatabase}]{filterMsg}{columnsMsg}{columnMsg}{rowsMsg}");
 
             // Build USE statement if specific database is provided
             string useStatement = string.IsNullOrEmpty(_database) ? "" : $"USE [{_database}];";
@@ -81,6 +89,11 @@ namespace MSSQLand.Actions.Database
             if (!string.IsNullOrEmpty(_columnFilter))
             {
                 whereClause += $" AND EXISTS (SELECT 1 FROM sys.columns c WHERE c.object_id = t.object_id AND c.name LIKE '%{_columnFilter.Replace("'", "''")}%')";
+            }
+
+            if (_withRows)
+            {
+                whereClause += " AND EXISTS (SELECT 1 FROM sys.partitions p WHERE p.object_id = t.object_id AND p.index_id IN (0, 1) AND p.rows > 0)";
             }
 
             string query = $@"
