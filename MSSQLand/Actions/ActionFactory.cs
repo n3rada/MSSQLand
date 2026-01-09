@@ -117,6 +117,7 @@ namespace MSSQLand.Utilities
             { "cm-health", (typeof(CMHealth), "Display client health diagnostics and communication status for troubleshooting client issues.", null) },
             { "cm-deployments", (typeof(CMDeployments), "Enumerate active deployments showing what content is pushed to which collections for hijacking.", new[] { "cm-assignments" }) },
             { "cm-deployment", (typeof(CMDeployment), "Display detailed information about a specific deployment including rerun behavior and device status.", new[] { "cm-assignment" }) },
+            { "cm-trace", (typeof(CMLogTrace), "Trace a deployment type GUID from client logs back to assignments and collections.", new[] { "cm-find-assignments", "cm-log-trace" }) },
             { "cm-packages", (typeof(CMPackages), "Enumerate ConfigMgr packages with source paths, versions, and program counts.", null) },
             { "cm-package", (typeof(CMPackage), "Display comprehensive information about a specific package including programs and deployments.", null) },
             { "cm-programs", (typeof(CMPrograms), "Enumerate programs for legacy packages with command lines and decoded execution flags.", null) },
