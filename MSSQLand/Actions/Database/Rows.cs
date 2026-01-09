@@ -11,8 +11,11 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(Position = 0, Required = true, Description = "Table name in format: [table], [schema.table], or [database.schema.table]")]
         private string _fqtn; // Store the full qualified table name argument
 
-        [ArgumentMetadata(Position = 1, ShortName = "t", LongName = "top", Description = "Maximum number of rows to retrieve (default: no limit)")]
-        private int _top = 0; // 0 = no limit
+        [ArgumentMetadata(Position = 1, ShortName = "l", LongName = "limit", Description = "Maximum number of rows to retrieve (default: 50)")]
+        private int _limit = 50;
+
+        [ArgumentMetadata(Position = 2, LongName = "all", Description = "Retrieve all rows without limit")]
+        private bool _all = false;
 
         [ExcludeFromArguments]
         private string _database;
@@ -79,17 +82,26 @@ namespace MSSQLand.Actions.Database
                 throw new ArgumentException("Table name cannot be empty.");
             }
 
-            // Parse top from named arguments or second positional argument
-            string topStr = GetNamedArgument(namedArgs, "top", GetNamedArgument(namedArgs, "t", GetPositionalArgument(positionalArgs, 1, "0")));
-            if (!int.TryParse(topStr, out _top))
+            // Parse limit from named arguments or second positional argument
+            string limitStr = GetNamedArgument(namedArgs, "limit", GetNamedArgument(namedArgs, "l", GetPositionalArgument(positionalArgs, 1, "50")));
+            if (!int.TryParse(limitStr, out _limit))
             {
-                throw new ArgumentException($"Invalid top value: {topStr}. Top must be an integer.");
+                throw new ArgumentException($"Invalid limit value: {limitStr}. Limit must be an integer.");
             }
 
-            // Validate top
-            if (_top < 0)
+            // Check for --all flag
+            _all = namedArgs.ContainsKey("all");
+
+            // If --all is specified, set limit to 0 (no limit)
+            if (_all)
             {
-                throw new ArgumentException($"Invalid top value: {_top}. Top must be a non-negative integer.");
+                _limit = 0;
+            }
+
+            // Validate limit
+            if (_limit < 0)
+            {
+                throw new ArgumentException($"Invalid limit value: {_limit}. Limit must be a non-negative integer.");
             }
         }
 
@@ -106,17 +118,21 @@ namespace MSSQLand.Actions.Database
             
             Logger.TaskNested($"Retrieving rows from {targetTable}");
             
-            if (_top > 0)
+            if (_limit > 0)
             {
-                Logger.TaskNested($"Limiting to {_top} row(s)");
+                Logger.TaskNested($"Limiting to {_limit} row(s)");
+            }
+            else
+            {
+                Logger.TaskNested("Retrieving all rows (no limit)");
             }
 
             // Build query with optional TOP
             string query = $"SELECT";
             
-            if (_top > 0)
+            if (_limit > 0)
             {
-                query += $" TOP ({_top})";
+                query += $" TOP ({_limit})";
             }
             
             query += $" * FROM {targetTable};";
