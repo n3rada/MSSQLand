@@ -11,6 +11,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// Takes a ScopeId/DeploymentType GUID from logs and follows the relationship chain:
     /// Log GUID → Document → CI → Parent Application → Assignments → Collections
     /// Use this to understand which deployments are causing software to be installed/reinstalled.
+    /// Example: cm-trace "ScopeId_0072A515-CC53-4FD2-9B92-0A3F0518595C.DeploymentType_af7c1e90-5fdb-4be1-b0dd-701165673d2c"
     /// </summary>
     internal class CMLogTrace : BaseAction
     {
@@ -114,16 +115,28 @@ ORDER BY Document_ID DESC";
 
                 // Get deployment type details
                 string dtDetailsQuery = $@"
-SELECT * 
-FROM [{db}].dbo.CI_ConfigurationItems ci
-LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON ci.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
-WHERE ci.CI_ID = {deploymentTypeCiId}";
+SELECT
+    lcp.Title AS DisplayName,
+    ci.*,
+    lcp.Description,,
+    lcp.Publisher,
+    lcp.Version,
+    lcp.ReleaseDate,
+    lcp.Icon,
+    lcp.InfoUrl,
+    lcp.InfoUrlText,
+    lcp.PrivacyUrl,
+    lcp.UserCategories,
+    lcp.Tags
+FROM [{db}].dbo.CI_ConfigurationItems AS ci
+LEFT JOIN [{db}].dbo.CI_ApplicationModelInfo AS ami ON ci.CI_ID = ami.CI_ID
+LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties AS lcp ON ci.CI_ID = lcp.CI_ID
+WHERE ci.CI_ID = {deploymentTypeCiId};";
 
                 DataTable dtDetailsResult = databaseContext.QueryService.ExecuteTable(dtDetailsQuery);
                 
                 if (dtDetailsResult.Rows.Count > 0)
                 {
-                    Logger.SuccessNested($"Display Name: {dtDetailsResult.Rows[0]["DisplayName"]}");
                     Logger.SuccessNested($"Enabled: {dtDetailsResult.Rows[0]["IsEnabled"]}");
                     Logger.SuccessNested($"Expired: {dtDetailsResult.Rows[0]["IsExpired"]}");
                 }
@@ -208,7 +221,7 @@ FROM [{db}].dbo.v_CIAssignment a
 LEFT JOIN [{db}].dbo.v_Collection c ON a.CollectionID = c.CollectionID
 WHERE a.AssignmentID IN (
     SELECT atc.AssignmentID
-    FROM CM_PSC.dbo.v_CIAssignmentToCI AS atc
+    FROM [{db}].dbo.v_CIAssignmentToCI AS atc
     WHERE atc.CI_ID = {applicationCiId}
 );";
 
