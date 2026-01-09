@@ -14,90 +14,90 @@ namespace MSSQLand.Utilities
 {
     public static class ActionFactory
     {
-        private static readonly Dictionary<string, (Type ActionClass, string Description)> ActionMetadata =
+        private static readonly Dictionary<string, (Type ActionClass, string Description, string[] Aliases)> ActionMetadata =
         new()
         {
             // ═══════════════════════════════════════════════════════════════════════════════
             // DATABASE ACTIONS - BASIC INFO & AUTHENTICATION
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "info", (typeof(Info), "Retrieve detailed information about the SQL Server instance.") },
-            { "whoami", (typeof(Whoami), "Display current user context, roles, and accessible databases.") },
-            { "authtoken", (typeof(AuthToken), "Display all groups from the Windows authentication token (AD, BUILTIN, NT AUTHORITY, etc.).") },
+            { "info", (typeof(Info), "Retrieve detailed information about the SQL Server instance.", null) },
+            { "whoami", (typeof(Whoami), "Display current user context, roles, and accessible databases.", null) },
+            { "authtoken", (typeof(AuthToken), "Display all groups from the Windows authentication token (AD, BUILTIN, NT AUTHORITY, etc.).", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // DATABASE ACTIONS - ENUMERATION
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "databases", (typeof(Databases), "List all available databases.") },
-            { "tables", (typeof(Tables), "List all tables in a specified database.") },
-            { "rows", (typeof(Rows), "Retrieve and display rows from a specified table.") },
-            { "procedures", (typeof(Procedures), "List, read, or execute stored procedures.") },
-            { "xprocs", (typeof(ExtendedProcs), "Enumerate available extended stored procedures on the server.") },
-            { "users", (typeof(Users), "List all database users.") },
-            { "hashes", (typeof(Hashes), "Dump SQL Server login password hashes in hashcat format.") },
-            { "loginmap", (typeof(LoginMap), "Map server logins to database users across all accessible databases.") },
-            { "roles", (typeof(Roles), "List all database roles and their members in the current database.") },
-            { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).") },
-            { "permissions", (typeof(Permissions), "Enumerate user and role permissions.") },
-            { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.") },
-            { "trustworthy", (typeof(Trustworthy), "Detect and exploit privilege escalation via TRUSTWORTHY database setting (db_owner → sysadmin).") },
-            { "oledb-providers", (typeof(OleDbProvidersInfo), "Retrieve information about installed OLE DB providers and their configurations.") },
+            { "databases", (typeof(Databases), "List all available databases.", null) },
+            { "tables", (typeof(Tables), "List all tables in a specified database.", null) },
+            { "rows", (typeof(Rows), "Retrieve and display rows from a specified table.", null) },
+            { "procedures", (typeof(Procedures), "List, read, or execute stored procedures.", null) },
+            { "xprocs", (typeof(ExtendedProcs), "Enumerate available extended stored procedures on the server.", null) },
+            { "users", (typeof(Users), "List all database users.", null) },
+            { "hashes", (typeof(Hashes), "Dump SQL Server login password hashes in hashcat format.", null) },
+            { "loginmap", (typeof(LoginMap), "Map server logins to database users across all accessible databases.", null) },
+            { "roles", (typeof(Roles), "List all database roles and their members in the current database.", null) },
+            { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).", null) },
+            { "permissions", (typeof(Permissions), "Enumerate user and role permissions.", null) },
+            { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.", null) },
+            { "trustworthy", (typeof(Trustworthy), "Detect and exploit privilege escalation via TRUSTWORTHY database setting (db_owner → sysadmin).", null) },
+            { "oledb-providers", (typeof(OleDbProvidersInfo), "Retrieve information about installed OLE DB providers and their configurations.", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // DATABASE ACTIONS - OPERATIONS
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "search", (typeof(Search), "Search for keywords in column names and data across databases.") },
-            { "query", (typeof(Query), "Execute a custom T-SQL query.") },
-            { "queryall", (typeof(QueryAll), "Execute a custom T-SQL query across all databases using sp_MSforeachdb.") },
-            { "monitor", (typeof(Monitor), "Display currently running SQL commands and active sessions.") },
+            { "search", (typeof(Search), "Search for keywords in column names and data across databases.", null) },
+            { "query", (typeof(Query), "Execute a custom T-SQL query.", null) },
+            { "queryall", (typeof(QueryAll), "Execute a custom T-SQL query across all databases using sp_MSforeachdb.", null) },
+            { "monitor", (typeof(Monitor), "Display currently running SQL commands and active sessions.", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // ADMINISTRATION ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "config", (typeof(Config), "List security-sensitive configuration options or set their values using sp_configure.") },
-            { "user-add", (typeof(UserAdd), "Create a SQL login with specified server role privileges (default: sysadmin).") },
-            { "sessions", (typeof(Sessions), "Display active SQL Server sessions with login and connection information.") },
-            { "kill", (typeof(Kill), "Terminate SQL Server sessions by session ID or kill all running sessions.") },
+            { "config", (typeof(Config), "List security-sensitive configuration options or set their values using sp_configure.", null) },
+            { "user-add", (typeof(UserAdd), "Create a SQL login with specified server role privileges (default: sysadmin).", null) },
+            { "sessions", (typeof(Sessions), "Display active SQL Server sessions with login and connection information.", null) },
+            { "kill", (typeof(Kill), "Terminate SQL Server sessions by session ID or kill all running sessions.", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // DOMAIN ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "ad-domain", (typeof(AdDomain), "Retrieve the domain SID using DEFAULT_DOMAIN() and SUSER_SID().") },
-            { "ad-sid", (typeof(AdSid), "Retrieve the current user's SID using SUSER_SID().") },
-            { "ad-groups", (typeof(AdGroups), "Retrieve Active Directory domain groups with SQL Server principals that the user is a member of.") },
-            { "ad-members", (typeof(AdMembers), "Retrieve members of an Active Directory group.") },
-            { "ridcycle", (typeof(RidCycle), "Enumerate domain users by RID cycling using SUSER_SNAME().") },
+            { "ad-domain", (typeof(AdDomain), "Retrieve the domain SID using DEFAULT_DOMAIN() and SUSER_SID().", null) },
+            { "ad-sid", (typeof(AdSid), "Retrieve the current user's SID using SUSER_SID().", null) },
+            { "ad-groups", (typeof(AdGroups), "Retrieve Active Directory domain groups with SQL Server principals that the user is a member of.", null) },
+            { "ad-members", (typeof(AdMembers), "Retrieve members of an Active Directory group.", null) },
+            { "ridcycle", (typeof(RidCycle), "Enumerate domain users by RID cycling using SUSER_SNAME().", null) },
             
             // ═══════════════════════════════════════════════════════════════════════════════
             // EXECUTION ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "exec", (typeof(XpCmd), "Execute operating system commands.") },
-            { "pwsh", (typeof(PowerShell), "Execute PowerShell scripts.") },
-            { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a remote PowerShell script from a URL.") },
-            { "ole", (typeof(ObjectLinkingEmbedding), "Execute operating system commands via procedures.") },
-            { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.") },
-            { "agents", (typeof(Agents), "Manage and interact with SQL Server Agent jobs.") },
-            { "run", (typeof(Run), "Execute a remote file on the SQL Server.") },
+            { "exec", (typeof(XpCmd), "Execute operating system commands.", null) },
+            { "pwsh", (typeof(PowerShell), "Execute PowerShell scripts.", null) },
+            { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a remote PowerShell script from a URL.", null) },
+            { "ole", (typeof(ObjectLinkingEmbedding), "Execute operating system commands via procedures.", null) },
+            { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.", null) },
+            { "agents", (typeof(Agents), "Manage and interact with SQL Server Agent jobs.", null) },
+            { "run", (typeof(Run), "Execute a remote file on the SQL Server.", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // FILESYSTEM ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "read", (typeof(FileRead), "Read file contents from the server's file system.") },
-            { "tree", (typeof(Tree), "Display directory tree structure in Linux tree-style format.") },
-            { "upload", (typeof(Upload), "Upload a local file to the SQL Server filesystem.") },
+            { "read", (typeof(FileRead), "Read file contents from the server's file system.", null) },
+            { "tree", (typeof(Tree), "Display directory tree structure in Linux tree-style format.", null) },
+            { "upload", (typeof(Upload), "Upload a local file to the SQL Server filesystem.", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // REMOTE DATA ACCESS ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "links", (typeof(Links), "Enumerate linked servers and their configuration.") },
-            { "linkmap", (typeof(LinkMap), "Map all possible linked server chains and execution paths.") },
-            { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.") },
-            { "ext-sources", (typeof(ExternalSources), "Enumerate External Data Sources (Azure SQL Database, Synapse, PolyBase).") },
-            { "ext-creds", (typeof(ExternalCredentials), "Enumerate database-scoped credentials used by External Data Sources.") },
-            { "ext-tables", (typeof(ExternalTables), "Enumerate external tables and their remote data locations.") },
-            { "adsi-manager", (typeof(AdsiManager), "Manage ADSI linked servers: list, create, or delete ADSI providers.") },
-            { "adsi-query", (typeof(AdsiQuery), "Query Active Directory via ADSI using fully qualified domain name (auto-creates temp server if needed).") },
-            { "adsi-creds", (typeof(AdsiCredentialExtractor), "Extract credentials from ADSI linked servers by intercepting LDAP authentication.") },
-            { "smbcoerce", (typeof(SmbCoerce), "Force SMB authentication to a specified UNC path to capture time-limited Net-NTLMv2 challenge/response.") },
+            { "links", (typeof(Links), "Enumerate linked servers and their configuration.", null) },
+            { "linkmap", (typeof(LinkMap), "Map all possible linked server chains and execution paths.", null) },
+            { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.", null) },
+            { "ext-sources", (typeof(ExternalSources), "Enumerate External Data Sources (Azure SQL Database, Synapse, PolyBase).", null) },
+            { "ext-creds", (typeof(ExternalCredentials), "Enumerate database-scoped credentials used by External Data Sources.", null) },
+            { "ext-tables", (typeof(ExternalTables), "Enumerate external tables and their remote data locations.", null) },
+            { "adsi-manager", (typeof(AdsiManager), "Manage ADSI linked servers: list, create, or delete ADSI providers.", null) },
+            { "adsi-query", (typeof(AdsiQuery), "Query Active Directory via ADSI using fully qualified domain name (auto-creates temp server if needed).", null) },
+            { "adsi-creds", (typeof(AdsiCredentialExtractor), "Extract credentials from ADSI linked servers by intercepting LDAP authentication.", null) },
+            { "smbcoerce", (typeof(SmbCoerce), "Force SMB authentication to a specified UNC path to capture time-limited Net-NTLMv2 challenge/response.", null) },
 
 #if ENABLE_CM
             // ═══════════════════════════════════════════════════════════════════════════════
@@ -106,38 +106,70 @@ namespace MSSQLand.Utilities
             // Formerly known as: System Center Configuration Manager (SCCM), MECM, SMS
             // Microsoft's current official names: Configuration Manager, ConfigMgr, MCM
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "cm-info", (typeof(CMInfo), "Display ConfigMgr site information (site code, version, build, database server, management points) for infrastructure mapping.") },
-            { "cm-admins", (typeof(CMAdmins), "Enumerate ConfigMgr RBAC administrators with assigned roles and scopes to identify privileged users.") },
-            { "cm-servers", (typeof(CMServers), "Enumerate ConfigMgr site servers, management points, and distribution points in the hierarchy for infrastructure mapping.") },
-            { "cm-collections", (typeof(CMCollections), "Enumerate device and user collections with member counts for targeted deployment attacks.") },
-            { "cm-collection", (typeof(CMCollection), "Display comprehensive information about a specific collection including all member devices and deployments.") },
-            { "cm-devices", (typeof(CMDevices), "Enumerate managed devices with filtering by attributes for device discovery and inventory queries.") },
-            { "cm-device", (typeof(CMDevice), "Display comprehensive information about a specific device including all deployments and targeted content.") },
-            { "cm-device-users", (typeof(CMDeviceUsers), "Show historical user login patterns on devices with usage statistics from hardware inventory.") },
-            { "cm-health", (typeof(CMHealth), "Display client health diagnostics and communication status for troubleshooting client issues.") },
-            { "cm-deployments", (typeof(CMDeployments), "Enumerate active deployments showing what content is pushed to which collections for hijacking.") },
-            { "cm-deployment", (typeof(CMDeployment), "Display detailed information about a specific deployment including rerun behavior and device status.") },
-            { "cm-packages", (typeof(CMPackages), "Enumerate ConfigMgr packages with source paths, versions, and program counts.") },
-            { "cm-package", (typeof(CMPackage), "Display comprehensive information about a specific package including programs and deployments.") },
-            { "cm-programs", (typeof(CMPrograms), "Enumerate programs for legacy packages with command lines and decoded execution flags.") },
-            { "cm-tasksequences", (typeof(CMTaskSequences), "Enumerate all task sequences with summary information.") },
-            { "cm-tasksequence", (typeof(CMTaskSequence), "Display detailed information for a specific task sequence including all referenced content.") },
-            { "cm-apps", (typeof(CMApplications), "Enumerate applications with deployment types, install commands, and content locations for modification.") },
-            { "cm-dp", (typeof(CMDistributionPoints), "Enumerate distribution points with content library paths for lateral movement and content poisoning.") },
-            { "cm-accounts", (typeof(CMAccounts), "Enumerate encrypted credentials (NAA, Client Push, Task Sequence) for decryption on site server.") },
-            { "cm-aad-apps", (typeof(CMAadApps), "Enumerate Azure AD app registrations with encrypted secrets for cloud infrastructure access.") },
-            { "cm-scripts", (typeof(CMScripts), "Enumerate PowerShell scripts with metadata overview (excludes script content).") },
-            { "cm-script", (typeof(CMScript), "Display detailed information for a specific script including full content and parameters.") },
-            { "cm-script-add", (typeof(CMScriptAdd), "Upload PowerShell script to ConfigMgr bypassing approval workflow (auto-approved, hidden from console).") },
-            { "cm-script-delete", (typeof(CMScriptDelete), "Remove script from ConfigMgr by GUID to clean up operational artifacts.") },
-            { "cm-script-run", (typeof(CMScriptRun), "Execute PowerShell script on target device via BGB notification channel (requires ResourceID and script GUID).") },
-            { "cm-script-status", (typeof(CMScriptStatus), "Monitor script execution status and retrieve output from target devices by Task ID.") }
+            { "cm-info", (typeof(CMInfo), "Display ConfigMgr site information (site code, version, build, database server, management points) for infrastructure mapping.", null) },
+            { "cm-admins", (typeof(CMAdmins), "Enumerate ConfigMgr RBAC administrators with assigned roles and scopes to identify privileged users.", null) },
+            { "cm-servers", (typeof(CMServers), "Enumerate ConfigMgr site servers, management points, and distribution points in the hierarchy for infrastructure mapping.", null) },
+            { "cm-collections", (typeof(CMCollections), "Enumerate device and user collections with member counts for targeted deployment attacks.", null) },
+            { "cm-collection", (typeof(CMCollection), "Display comprehensive information about a specific collection including all member devices and deployments.", null) },
+            { "cm-devices", (typeof(CMDevices), "Enumerate managed devices with filtering by attributes for device discovery and inventory queries.", null) },
+            { "cm-device", (typeof(CMDevice), "Display comprehensive information about a specific device including all deployments and targeted content.", null) },
+            { "cm-device-users", (typeof(CMDeviceUsers), "Show historical user login patterns on devices with usage statistics from hardware inventory.", null) },
+            { "cm-health", (typeof(CMHealth), "Display client health diagnostics and communication status for troubleshooting client issues.", null) },
+            { "cm-deployments", (typeof(CMDeployments), "Enumerate active deployments showing what content is pushed to which collections for hijacking.", null) },
+            { "cm-deployment", (typeof(CMDeployment), "Display detailed information about a specific deployment including rerun behavior and device status.", null) },
+            { "cm-packages", (typeof(CMPackages), "Enumerate ConfigMgr packages with source paths, versions, and program counts.", null) },
+            { "cm-package", (typeof(CMPackage), "Display comprehensive information about a specific package including programs and deployments.", null) },
+            { "cm-programs", (typeof(CMPrograms), "Enumerate programs for legacy packages with command lines and decoded execution flags.", null) },
+            { "cm-tasksequences", (typeof(CMTaskSequences), "Enumerate all task sequences with summary information.", new[] { "cm-ts" }) },
+            { "cm-tasksequence", (typeof(CMTaskSequence), "Display detailed information for a specific task sequence including all referenced content.", null) },
+            { "cm-applications", (typeof(CMApplications), "Enumerate applications with deployment types, install commands, and content locations for modification.", new[] { "cm-apps" }) },
+            { "cm-distribution-points", (typeof(CMDistributionPoints), "Enumerate distribution points with content library paths for lateral movement and content poisoning.", new[] { "cm-dp" }) },
+            { "cm-accounts", (typeof(CMAccounts), "Enumerate encrypted credentials (NAA, Client Push, Task Sequence) for decryption on site server.", null) },
+            { "cm-aad-apps", (typeof(CMAadApps), "Enumerate Azure AD app registrations with encrypted secrets for cloud infrastructure access.", new[] { "cm-aad" }) },
+            { "cm-scripts", (typeof(CMScripts), "Enumerate PowerShell scripts with metadata overview (excludes script content).", null) },
+            { "cm-script", (typeof(CMScript), "Display detailed information for a specific script including full content and parameters.", null) },
+            { "cm-script-add", (typeof(CMScriptAdd), "Upload PowerShell script to ConfigMgr bypassing approval workflow (auto-approved, hidden from console).", null) },
+            { "cm-script-delete", (typeof(CMScriptDelete), "Remove script from ConfigMgr by GUID to clean up operational artifacts.", null) },
+            { "cm-script-run", (typeof(CMScriptRun), "Execute PowerShell script on target device via BGB notification channel (requires ResourceID and script GUID).", null) },
+            { "cm-script-status", (typeof(CMScriptStatus), "Monitor script execution status and retrieve output from target devices by Task ID.", null) }
 #endif
         };
 
+        // Lazy-initialized alias lookup dictionary
+        private static Dictionary<string, string> _aliasLookup;
+        private static Dictionary<string, string> AliasLookup
+        {
+            get
+            {
+                if (_aliasLookup == null)
+                {
+                    _aliasLookup = new Dictionary<string, string>();
+                    foreach (var action in ActionMetadata)
+                    {
+                        if (action.Value.Aliases != null)
+                        {
+                            foreach (var alias in action.Value.Aliases)
+                            {
+                                _aliasLookup[alias.ToLower()] = action.Key;
+                            }
+                        }
+                    }
+                }
+                return _aliasLookup;
+            }
+        }
+
         public static BaseAction GetAction(string actionType, string[] actionArguments)
         {
-            if (!ActionMetadata.TryGetValue(actionType.ToLower(), out var metadata))
+            string actionName = actionType.ToLower();
+            
+            // Resolve alias if it exists
+            if (AliasLookup.TryGetValue(actionName, out string canonicalName))
+            {
+                actionName = canonicalName;
+            }
+
+            if (!ActionMetadata.TryGetValue(actionName, out var metadata))
             {
                 throw new ActionNotFoundException(actionType);
             }
@@ -176,7 +208,15 @@ namespace MSSQLand.Utilities
         /// <returns>The Type of the action class, or null if not found.</returns>
         public static Type GetActionType(string actionName)
         {
-            if (ActionMetadata.TryGetValue(actionName.ToLower(), out var metadata))
+            string name = actionName.ToLower();
+            
+            // Resolve alias if it exists
+            if (AliasLookup.TryGetValue(name, out string canonicalName))
+            {
+                name = canonicalName;
+            }
+
+            if (ActionMetadata.TryGetValue(name, out var metadata))
             {
                 return metadata.ActionClass;
             }
@@ -193,11 +233,24 @@ namespace MSSQLand.Utilities
             var matches = new List<(string ActionName, string Description)>();
             string lowerPrefix = prefix.ToLower();
 
+            // Check main actions
             foreach (var action in ActionMetadata)
             {
                 if (action.Key.StartsWith(lowerPrefix, StringComparison.OrdinalIgnoreCase))
                 {
                     matches.Add((action.Key, action.Value.Description));
+                }
+            }
+
+            // Check aliases
+            foreach (var alias in AliasLookup)
+            {
+                if (alias.Key.StartsWith(lowerPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (ActionMetadata.TryGetValue(alias.Value, out var metadata))
+                    {
+                        matches.Add((alias.Key, $"{metadata.Description} (alias for {alias.Value})"));
+                    }
                 }
             }
 
