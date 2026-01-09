@@ -116,7 +116,7 @@ ORDER BY Document_ID DESC";
                 // Get deployment type details
                 string dtDetailsQuery = $@"
 SELECT
-    lcp.Title AS DisplayName,
+    lcp.Title,
     ci.*,
     lcp.Description,,
     lcp.Publisher,
@@ -135,11 +135,10 @@ WHERE ci.CI_ID = {deploymentTypeCiId};";
 
                 DataTable dtDetailsResult = databaseContext.QueryService.ExecuteTable(dtDetailsQuery);
                 
-                if (dtDetailsResult.Rows.Count > 0)
-                {
-                    Logger.SuccessNested($"Enabled: {dtDetailsResult.Rows[0]["IsEnabled"]}");
-                    Logger.SuccessNested($"Expired: {dtDetailsResult.Rows[0]["IsExpired"]}");
-                }
+                Logger.SuccessNested($"Title: {dtDetailsResult.Rows[0]["Title"]}");
+                Logger.SuccessNested($"Description: {dtDetailsResult.Rows[0]["Description"]}");
+                Logger.SuccessNested($"Enabled: {dtDetailsResult.Rows[0]["IsEnabled"]}");
+                Logger.SuccessNested($"Expired: {dtDetailsResult.Rows[0]["IsExpired"]}");
 
                 // Step 3: Find parent Application CI
                 Logger.NewLine();
