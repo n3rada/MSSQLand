@@ -254,6 +254,169 @@ WHERE ds.AssignmentID = {_assignmentId.Replace("'", "''")}";
                     Logger.Info("No statistics available for this assignment");
                 }
 
+                // For Application deployments, get application and deployment type details
+                if (assignmentResult.Columns.Contains("AssignmentType") && !assignmentResult.Columns.Contains("AdvertFlags"))
+                {
+                    Logger.NewLine();
+                    Logger.Info("Application Details");
+
+                    string appDetailsQuery = $@"
+SELECT 
+    cia.CI_ID AS ApplicationCI_ID,
+    ci.CI_UniqueID AS ApplicationUniqueID,
+    ci.ModelId,
+    COALESCE(lp.DisplayName, ci.CI_UniqueID) AS ApplicationDisplayName,
+    ci.CIType_ID,
+    ci.IsEnabled,
+    ci.IsExpired,
+    ci.DateCreated,
+    ci.DateLastModified
+FROM [{db}].dbo.v_CIAssignment cia
+INNER JOIN [{db}].dbo.CI_ConfigurationItems ci ON cia.CI_ID = ci.CI_ID
+LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON ci.CI_ID = lp.CI_ID
+WHERE cia.AssignmentID = {_assignmentId.Replace("'", "''")}";
+
+                    DataTable appDetailsResult = databaseContext.QueryService.ExecuteTable(appDetailsQuery);
+
+                    if (appDetailsResult.Rows.Count > 0)
+                    {
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(appDetailsResult));
+
+                        DataRow appDetails = appDetailsResult.Rows[0];
+                        string appUniqueID = appDetails["ApplicationUniqueID"].ToString();
+
+                        // Get deployment types for this application
+                        Logger.NewLine();
+                        Logger.Info("Deployment Types");
+
+                        string deploymentTypesQuery = $@"
+SELECT 
+    dt.CI_ID,
+    dt.CI_UniqueID,
+    COALESCE(lp.DisplayName, dt.CI_UniqueID) AS DeploymentTypeName,
+    dt.CIType_ID,
+    dt.IsEnabled,
+    dt.IsExpired,
+    dt.DateCreated
+FROM [{db}].dbo.CI_ConfigurationItems dt
+LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON dt.CI_ID = lp.CI_ID
+WHERE dt.CI_UniqueID LIKE '{appUniqueID.Replace("'", "''")}/%'
+    AND dt.CIType_ID = 21
+ORDER BY dt.DateCreated DESC";
+
+                        DataTable deploymentTypesResult = databaseContext.QueryService.ExecuteTable(deploymentTypesQuery);
+
+                        if (deploymentTypesResult.Rows.Count > 0)
+                        {
+                            Console.WriteLine(OutputFormatter.ConvertDataTable(deploymentTypesResult));
+                            Logger.Info($"Found {deploymentTypesResult.Rows.Count} deployment type(s)");
+
+                            // Get detection methods for each deployment type
+                            Logger.NewLine();
+                            Logger.Info("Detection Methods");
+
+                            foreach (DataRow dtRow in deploymentTypesResult.Rows)
+                            {
+                                string dtUniqueID = dtRow["CI_UniqueID"].ToString();
+                                string dtName = dtRow["DeploymentTypeName"].ToString();
+
+                                Logger.NewLine();
+                                Logger.InfoNested($"Deployment Type: {dtName}");
+                                Logger.InfoNested($"UniqueID: {dtUniqueID}");
+
+                                string detectionQuery = $@"
+SELECT 
+    CAST(SDMPackageDigest AS NVARCHAR(MAX)) AS DetectionXML
+FROM [{db}].dbo.CI_ConfigurationItems
+WHERE CI_UniqueID = '{dtUniqueID.Replace("'", "''")}' 
+    AND SDMPackageDigest IS NOT NULL";
+
+                                DataTable detectionResult = databaseContext.QueryService.ExecuteTable(detectionQuery);
+
+                                if (detectionResult.Rows.Count > 0 && detectionResult.Rows[0]["DetectionXML"] != DBNull.Value)
+                                {
+                                    string detectionXml = detectionResult.Rows[0]["DetectionXML"].ToString();
+                                    
+                                    // Try to extract key detection info from XML (simplified parsing)
+                                    if (detectionXml.Contains("<File"))
+                                    {
+                                        Logger.InfoNested("Detection Method: File-based detection");
+                                        
+                                        // Extract file path if present
+                                        int pathStart = detectionXml.IndexOf("Path=\"");
+                                        if (pathStart > 0)
+                                        {
+                                            pathStart += 6;
+                                            int pathEnd = detectionXml.IndexOf("\"", pathStart);
+                                            if (pathEnd > pathStart)
+                                            {
+                                                string filePath = detectionXml.Substring(pathStart, pathEnd - pathStart);
+                                                Logger.InfoNested($"  Checks for file: {filePath}");
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (detectionXml.Contains("<RegistryKey"))
+                                    {
+                                        Logger.InfoNested("Detection Method: Registry-based detection");
+                                        
+                                        // Extract registry key if present
+                                        int keyStart = detectionXml.IndexOf("Key=\"");
+                                        if (keyStart > 0)
+                                        {
+                                            keyStart += 5;
+                                            int keyEnd = detectionXml.IndexOf("\"", keyStart);
+                                            if (keyEnd > keyStart)
+                                            {
+                                                string regKey = detectionXml.Substring(keyStart, keyEnd - keyStart);
+                                                Logger.InfoNested($"  Checks registry: {regKey}");
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (detectionXml.Contains("<Script"))
+                                    {
+                                        Logger.InfoNested("Detection Method: Script-based detection");
+                                        Logger.InfoNested("  Uses custom PowerShell/VBScript");
+                                    }
+
+                                    if (detectionXml.Contains("ProductCode"))
+                                    {
+                                        Logger.InfoNested("Detection Method: MSI Product Code detection");
+                                        
+                                        // Extract product code if present
+                                        int codeStart = detectionXml.IndexOf("ProductCode>");
+                                        if (codeStart > 0)
+                                        {
+                                            codeStart += 12;
+                                            int codeEnd = detectionXml.IndexOf("<", codeStart);
+                                            if (codeEnd > codeStart)
+                                            {
+                                                string productCode = detectionXml.Substring(codeStart, codeEnd - codeStart);
+                                                Logger.InfoNested($"  Product Code: {productCode}");
+                                            }
+                                        }
+                                    }
+
+                                    Logger.InfoNested($"Use 'query \"SELECT CAST(SDMPackageDigest AS NVARCHAR(MAX)) FROM CM_PSC.dbo.CI_ConfigurationItems WHERE CI_UniqueID = '{dtUniqueID}'\"' to see full XML");
+                                }
+                                else
+                                {
+                                    Logger.InfoNested("No detection method XML found");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Logger.Info("No deployment types found for this application");
+                        }
+                    }
+                    else
+                    {
+                        Logger.Info("Could not retrieve application details");
+                    }
+                }
+
                 // Get specific device status for this assignment
                 string deviceStatusQuery;
                 
