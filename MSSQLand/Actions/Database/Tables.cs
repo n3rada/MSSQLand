@@ -46,6 +46,12 @@ namespace MSSQLand.Actions.Database
             _showColumns = namedArgs.ContainsKey("show-columns")
                         || namedArgs.ContainsKey("sc")
                         || namedArgs.ContainsKey("columns");
+
+            // If a column filter is provided, automatically show columns
+            if (!string.IsNullOrEmpty(_columnFilter))
+            {
+                _showColumns = true;
+            }
             
             // If still null, will use current database in Execute()
         }
