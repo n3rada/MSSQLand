@@ -36,7 +36,10 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 6, ShortName = "d", LongName = "deployment-type", Description = "Filter by deployment type GUID (partial match)")]
         private string _deploymentType = "";
 
-        [ArgumentMetadata(Position = 7, LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 7, LongName = "deployment-type-only", Description = "Show only deployments with deployment types (Applications)")]
+        private bool _deploymentTypeOnly = false;
+
+        [ArgumentMetadata(Position = 8, LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
@@ -63,6 +66,7 @@ namespace MSSQLand.Actions.ConfigMgr
                            ?? GetNamedArgument(named, "deployment-type", null)
                            ?? GetPositionalArgument(positional, 4, "");
 
+            _deploymentTypeOnly = named.ContainsKey("deployment-type-only");
             _withErrors = named.ContainsKey("with-errors");
             _inProgress = named.ContainsKey("in-progress");
 
@@ -171,9 +175,9 @@ namespace MSSQLand.Actions.ConfigMgr
                 string deploymentTypeJoin = "";
                 string deploymentTypeColumns = "";
                 
-                if (!string.IsNullOrEmpty(_deploymentType))
+                if (!string.IsNullOrEmpty(_deploymentType) || _deploymentTypeOnly)
                 {
-                    // When filtering by deployment type, use INNER JOINs to only show matching deployments
+                    // When filtering by deployment type or showing only deployments with types, use INNER JOINs
                     deploymentTypeJoin = $@"
 JOIN [{db}].dbo.v_CIAssignment cia ON ds.AssignmentID = cia.AssignmentID AND ds.FeatureType = 1
 JOIN [{db}].dbo.CI_ConfigurationItems app ON cia.LocalCollectionID = app.CI_ID
@@ -184,7 +188,10 @@ LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON dt.CI_ID = lp.CI_ID
     dt.CI_UniqueID AS DeploymentTypeGUID,
     COALESCE(lp.DisplayName, dt.CI_UniqueID) AS DeploymentTypeName";
                     
-                    filterClause += $" AND dt.CI_UniqueID LIKE '%{_deploymentType.Replace("'", "''")}%'";
+                    if (!string.IsNullOrEmpty(_deploymentType))
+                    {
+                        filterClause += $" AND dt.CI_UniqueID LIKE '%{_deploymentType.Replace("'", "''")}%'";
+                    }
                 }
                 else
                 {
