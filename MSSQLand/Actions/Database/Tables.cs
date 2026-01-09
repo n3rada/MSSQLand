@@ -108,27 +108,9 @@ namespace MSSQLand.Actions.Database
                 permissionsDict[key].Add(permission);
             }
 
-            // Add a column for permissions
-            tables.Columns.Add("Permissions", typeof(string));
-
-            // Map permissions to tables
-            foreach (DataRow row in tables.Rows)
-            {
-                string schemaName = row["SchemaName"].ToString();
-                string tableName = row["TableName"].ToString();
-                string key = $"{schemaName}.{tableName}";
-
-                if (permissionsDict.TryGetValue(key, out var permissions))
-                {
-                    row["Permissions"] = string.Join(", ", permissions);
-                }
-                else
-                {
-                    row["Permissions"] = "";
-                }
-            }
-
-            // Optionally add column names if --columns flag is set
+            // Optionally get columns if --columns flag is set
+            System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> columnsDict = null;
+            
             if (_showColumns)
             {
                 // Query to get columns for all tables
@@ -157,7 +139,7 @@ ORDER BY schema_name, table_name, c.column_id;";
                 DataTable columnsResult = databaseContext.QueryService.ExecuteTable(columnsQuery);
 
                 // Build dictionary: key = "schema.table", value = list of "column_name (data_type)"
-                var columnsDict = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>>();
+                columnsDict = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>>();
 
                 foreach (DataRow colRow in columnsResult.Rows)
                 {
@@ -171,15 +153,23 @@ ORDER BY schema_name, table_name, c.column_id;";
                     columnsDict[key].Add(columnInfo);
                 }
 
-                // Add Columns column
+                // Add Columns column first (will appear before Permissions)
                 tables.Columns.Add("Columns", typeof(string));
+            }
 
-                foreach (DataRow row in tables.Rows)
+            // Add a column for permissions
+            tables.Columns.Add("Permissions", typeof(string));
+
+            // Map both columns and permissions to tables
+            foreach (DataRow row in tables.Rows)
+            {
+                string schemaName = row["SchemaName"].ToString();
+                string tableName = row["TableName"].ToString();
+                string key = $"{schemaName}.{tableName}";
+
+                // Map columns if requested
+                if (_showColumns && columnsDict != null)
                 {
-                    string schemaName = row["SchemaName"].ToString();
-                    string tableName = row["TableName"].ToString();
-                    string key = $"{schemaName}.{tableName}";
-
                     if (columnsDict.TryGetValue(key, out var columns))
                     {
                         row["Columns"] = string.Join(", ", columns);
@@ -188,6 +178,16 @@ ORDER BY schema_name, table_name, c.column_id;";
                     {
                         row["Columns"] = "";
                     }
+                }
+
+                // Map permissions
+                if (permissionsDict.TryGetValue(key, out var permissions))
+                {
+                    row["Permissions"] = string.Join(", ", permissions);
+                }
+                else
+                {
+                    row["Permissions"] = "";
                 }
             }
 
