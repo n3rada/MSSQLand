@@ -194,9 +194,14 @@ SELECT TOP {_limit}
     ds.DeploymentTime,
     ds.CreationTime,
     ds.ModificationTime,
-    ds.SummarizationTime
+    ds.SummarizationTime,
+    dt.CI_UniqueID AS DeploymentTypeGUID,
+    COALESCE(lp.DisplayName, dt.CI_UniqueID) AS DeploymentTypeName
 FROM [{db}].dbo.v_DeploymentSummary ds
 LEFT JOIN [{db}].dbo.v_Collection c ON ds.CollectionID = c.CollectionID
+LEFT JOIN [{db}].dbo.vAppDeploymentTargetingInfoBase adt ON ds.AssignmentID = adt.AssignmentID
+LEFT JOIN [{db}].dbo.CI_ConfigurationItems dt ON adt.DTCI = dt.CI_ID
+LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON dt.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
 {filterClause}
 ORDER BY ds.CreationTime DESC;
 ";
