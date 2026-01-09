@@ -74,9 +74,6 @@ namespace MSSQLand.Actions.ConfigMgr
                 Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 // Step 1: Find Document_ID in CI_DocumentStore
-                Logger.NewLine();
-                Logger.Info("Looking up deployment type document");
-
                 string documentQuery = $@"
 SELECT TOP 1 *
 FROM [{db}].dbo.CI_DocumentStore
@@ -153,6 +150,7 @@ WHERE ToCI_ID = {deploymentTypeCiId}";
 
                 Logger.Success($"Parent Application CI_ID: {applicationCiId}");
                 Logger.SuccessNested($"Relationship ExtFlag: {extFlags}");
+                Logger.NewLine();
                 
                 // Step 04: Assignments for this Application
                 string assignmentsQuery = $@"
