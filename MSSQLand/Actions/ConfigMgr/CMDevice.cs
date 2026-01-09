@@ -359,15 +359,21 @@ ORDER BY p.Name;";
                     Logger.Warning("No packages deployed to this device");
                 }
 
-                // Get deployed applications
+                // Get deployed applications with CI_UniqueID for tracking
                 string applicationsQuery = $@"
 SELECT DISTINCT
     ci.CI_ID,
+    ci.CI_UniqueID,
     COALESCE(lp.DisplayName, ci.ModelName) AS ApplicationName,
     ci.ModelName,
     ci.IsEnabled,
     ci.IsExpired,
-    ds.DeploymentIntent,
+    ds.AssignmentID,
+    CASE ds.DeploymentIntent
+        WHEN 1 THEN 'Required'
+        WHEN 2 THEN 'Available'
+        ELSE CAST(ds.DeploymentIntent AS VARCHAR)
+    END AS Intent,
     ds.DeploymentTime
 FROM [{db}].dbo.v_FullCollectionMembership cm
 INNER JOIN [{db}].dbo.v_DeploymentSummary ds ON cm.CollectionID = ds.CollectionID
