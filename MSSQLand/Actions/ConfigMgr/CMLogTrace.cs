@@ -155,7 +155,7 @@ WHERE ToCI_ID = {deploymentTypeCiId}";
                 Logger.SuccessNested($"Relationship ExtFlag: {extFlags}");
                 
                 // Step 04: Assignments for this Application
-                string assignementsQuery = $@"
+                string assignmentsQuery = $@"
 SELECT 
     a.AssignmentID,
     a.AssignmentName,
@@ -214,15 +214,15 @@ WHERE a.AssignmentID IN (
     WHERE atc.CI_ID = {applicationCiId}
 );";
 
-                DataTable assignementsResult = databaseContext.QueryService.ExecuteTable(assignementsQuery);
+                DataTable assignmentsResult = databaseContext.QueryService.ExecuteTable(assignmentsQuery);
                 
-                if (assignementsResult.Rows.Count == 0)
+                if (assignmentsResult.Rows.Count == 0)
                 {
                     Logger.Warning("No assignments found for this application");
                     continue;
                 }
 
-                Logger.Success($"Found {assignementsResult.Rows.Count} assignment(s) for Application CI_ID {applicationCiId}");
+                Logger.Success($"Found {assignmentsResult.Rows.Count} assignment(s) for Application CI_ID {applicationCiId}");
 
                 Console.WriteLine(OutputFormatter.ConvertDataTable(assignmentsResult));
 
