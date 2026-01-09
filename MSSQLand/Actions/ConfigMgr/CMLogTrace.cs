@@ -118,7 +118,7 @@ ORDER BY Document_ID DESC";
 SELECT
     lcp.Title,
     ci.*,
-    lcp.Description,,
+    lcp.Description,
     lcp.Publisher,
     lcp.Version,
     lcp.ReleaseDate,
