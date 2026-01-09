@@ -19,15 +19,17 @@ namespace MSSQLand.Actions.Database
     /// - --database <name>: search in specific database.
     /// - --all / -a: search across all accessible databases.
     /// - <schema.table> or <database.schema.table>: limit to one table (positional arg).
-    /// - -c / --column: column-name search only; optional inline pattern via -c=<pattern>.
+    /// - --column-name / -cn: search for keyword in column names only.
+    /// - -c=<pattern> / --column=<pattern>: search data only in columns matching pattern.
     /// 
     /// Examples:
-    /// - search password (current database)
-    /// - search password --all (all databases)
-    /// - search password -c (columns only, all columns)
-    /// - search 16891057 -c=%CI_ID% (columns only, filtered)
-    /// - search password --database Clients
-    /// - search admin dbo.users
+    /// - search password                           (search 'password' in all data, current database)
+    /// - search password --all                     (search in all accessible databases)
+    /// - search password --database Clients        (search in specific database)
+    /// - search password --column-name             (search 'password' in column names only)
+    /// - search 16891057 -c=%CI_ID%               (search '16891057' only in columns matching %CI_ID%)
+    /// - search admin dbo.users                    (search in specific table)
+    /// - search token --column-name --all          (search 'token' in column names across all DBs)
     /// </summary>
     internal class Search : BaseAction
     {
@@ -37,22 +39,20 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(Position = 1, Description = "Database, schema.table, or database.schema.table (defaults to current database if omitted)")]
         private string? _target = null;
 
-        [ArgumentMetadata(ShortName = "c", LongName = "column", Description = "Column-name search; optional pattern via -c=<pattern>")]
+        [ArgumentMetadata(ShortName = "cn", LongName = "column-name", Description = "Search for keyword in column names only")]
         private bool _columnsOnly = false;
+
+        [ArgumentMetadata(ShortName = "c", LongName = "column", Description = "Filter to search only in columns matching this pattern (e.g., -c=%CI_ID%)")]
+        private string _columnFilter = "";
 
         [ArgumentMetadata(ShortName = "a", LongName = "all", Description = "Search across all accessible databases")]
         private bool _searchAllDatabases = false;
 
         [ExcludeFromArguments]
-        private string _columnFilter = "";
-
-        [ExcludeFromArguments]
         private string? _limitDatabase = null;
 
         [ExcludeFromArguments]
-        private string? _targetTable = null;
 
-        [ExcludeFromArguments]
         private string? _targetSchema = null;
 
         public override void ValidateArguments(string[] args)
@@ -75,18 +75,17 @@ namespace MSSQLand.Actions.Database
                 throw new ArgumentException("Keyword is required. Usage: search <keyword> [target] [-c]");
             }
 
-            // Column search flag (optional pattern via -c=<pattern> / --column=<pattern>)
-            if (namedArgs.ContainsKey("c") || namedArgs.ContainsKey("column"))
+            // Column name search flag
+            if (namedArgs.ContainsKey("cn") || namedArgs.ContainsKey("column-name"))
             {
                 _columnsOnly = true;
+            }
 
-                // Try to pull an inline value if provided
-                string colVal = GetNamedArgument(namedArgs, "c",
-                               GetNamedArgument(namedArgs, "column", "true"));
-                if (!string.IsNullOrEmpty(colVal) && !string.Equals(colVal, "true", StringComparison.OrdinalIgnoreCase))
-                {
-                    _columnFilter = colVal;
-                }
+            // Column filter for limiting search to specific column patterns
+            var colFilterArg = GetNamedArgument(namedArgs, "c", GetNamedArgument(namedArgs, "column", null));
+            if (!string.IsNullOrEmpty(colFilterArg))
+            {
+                _columnFilter = colFilterArg;
             }
 
             // Get target from position 1
