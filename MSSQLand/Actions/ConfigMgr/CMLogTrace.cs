@@ -254,10 +254,10 @@ WHERE a.AssignmentID IN (
 
                 Logger.Info("Extracted XML Snippets");
                 Logger.InfoNested("\n---- Policy Platform Document Body (for AppDiscovery.log, AppIntentEval.log)\n");
-                Console.WriteLine(documentStoreBodyXML);
+                Console.WriteLine(Misc.BeautifyXml(documentStoreBodyXML));
 
                 Logger.InfoNested("\n---- SDM Package Digest (System Definition Model representation)\n");
-                Console.WriteLine(sdmPackageDigestXML);
+                Console.WriteLine(Misc.BeautifyXml(sdmPackageDigestXML));
 
                 break; // Found it, no need to check other databases
             }

@@ -200,6 +200,53 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
+        /// Formats (beautifies) an XML string with proper indentation and line breaks.
+        /// Useful for displaying large XML data in a readable format.
+        /// </summary>
+        /// <param name="xmlData">The XML string to format.</param>
+        /// <param name="indent">The indentation string to use (default is two spaces).</param>
+        /// <returns>Formatted XML string, or the original string if parsing fails.</returns>
+        /// <example>
+        /// string xml = "&lt;root&gt;&lt;child&gt;value&lt;/child&gt;&lt;/root&gt;";
+        /// string formatted = BeautifyXml(xml);
+        /// // Returns:
+        /// // &lt;root&gt;
+        /// //   &lt;child&gt;value&lt;/child&gt;
+        /// // &lt;/root&gt;
+        /// </example>
+        public static string BeautifyXml(string xmlData, string indent = "  ")
+        {
+            if (string.IsNullOrEmpty(xmlData))
+                return xmlData;
+
+            try
+            {
+                var doc = new XmlDocument();
+                doc.LoadXml(xmlData);
+
+                var settings = new XmlWriterSettings
+                {
+                    Indent = true,
+                    IndentChars = indent,
+                    NewLineChars = "\n",
+                    NewLineHandling = NewLineHandling.Replace,
+                    OmitXmlDeclaration = false,
+                    Encoding = Encoding.UTF8
+                };
+
+                using var stringWriter = new StringWriter();
+                using var xmlWriter = XmlWriter.Create(stringWriter, settings);
+                doc.Save(xmlWriter);
+                return stringWriter.ToString();
+            }
+            catch
+            {
+                // If parsing fails, return original
+                return xmlData;
+            }
+        }
+
+        /// <summary>
         /// Wraps SQL Server identifier in brackets if it contains separator characters.
         /// Only brackets if the name contains delimiters used in our syntax: : / @ ;
         /// 
