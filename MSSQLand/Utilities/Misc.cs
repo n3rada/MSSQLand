@@ -201,6 +201,7 @@ namespace MSSQLand.Utilities
 
         /// <summary>
         /// Formats (beautifies) an XML string with proper indentation and line breaks.
+        /// Also decodes HTML entities (like &amp;lt; to &lt;) in text content and attributes.
         /// Useful for displaying large XML data in a readable format.
         /// </summary>
         /// <param name="xmlData">The XML string to format.</param>
@@ -224,6 +225,9 @@ namespace MSSQLand.Utilities
                 var doc = new XmlDocument();
                 doc.LoadXml(xmlData);
 
+                // Decode HTML entities in all text nodes and attributes
+                DecodeXmlEntities(doc.DocumentElement);
+
                 var settings = new XmlWriterSettings
                 {
                     Indent = true,
@@ -243,6 +247,36 @@ namespace MSSQLand.Utilities
             {
                 // If parsing fails, return original
                 return xmlData;
+            }
+        }
+
+        /// <summary>
+        /// Recursively decodes HTML entities in XML nodes (text content and attributes).
+        /// Converts &amp;lt; to &lt;, &amp;gt; to &gt;, &amp;amp; to &amp;, etc.
+        /// </summary>
+        private static void DecodeXmlEntities(XmlNode node)
+        {
+            if (node == null) return;
+
+            // Decode text content
+            if (node.NodeType == XmlNodeType.Text)
+            {
+                node.Value = System.Net.WebUtility.HtmlDecode(node.Value);
+            }
+
+            // Decode attributes
+            if (node.Attributes != null)
+            {
+                foreach (XmlAttribute attr in node.Attributes)
+                {
+                    attr.Value = System.Net.WebUtility.HtmlDecode(attr.Value);
+                }
+            }
+
+            // Recursively process child nodes
+            foreach (XmlNode child in node.ChildNodes)
+            {
+                DecodeXmlEntities(child);
             }
         }
 
