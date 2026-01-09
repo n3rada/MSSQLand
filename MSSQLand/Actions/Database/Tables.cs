@@ -15,8 +15,11 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(Position = 1, ShortName = "n", LongName = "name", Description = "Filter tables by name pattern (supports wildcards %)")]
         private string _name = "";
 
-        [ArgumentMetadata(Position = 2, LongName = "columns", Description = "Show column names for each table")]
+        [ArgumentMetadata(Position = 2, ShortName = "sc", LongName = "show-columns", Description = "Show column names for each table")]
         private bool _showColumns = false;
+
+        [ArgumentMetadata(ShortName = "c", LongName = "column", Description = "Filter tables containing a column name pattern (supports wildcards %)")]
+        private string _columnFilter = "";
 
         public override void ValidateArguments(string[] args)
         {
@@ -34,8 +37,15 @@ namespace MSSQLand.Actions.Database
                  ?? GetNamedArgument(namedArgs, "name", null)
                  ?? GetPositionalArgument(positionalArgs, 1, "");
             
-            // Check for --columns flag
-            _showColumns = namedArgs.ContainsKey("columns");
+            // Column-name filter (named or positional slot 2 if provided)
+            _columnFilter = GetNamedArgument(namedArgs, "column",
+                GetNamedArgument(namedArgs, "c",
+                GetPositionalArgument(positionalArgs, 2, "")));
+
+            // Check for show-columns flag (support old --columns for backward compatibility)
+            _showColumns = namedArgs.ContainsKey("show-columns")
+                        || namedArgs.ContainsKey("sc")
+                        || namedArgs.ContainsKey("columns");
             
             // If still null, will use current database in Execute()
         }
@@ -49,7 +59,8 @@ namespace MSSQLand.Actions.Database
 
             string filterMsg = !string.IsNullOrEmpty(_name) ? $" (name: {_name})" : "";
             string columnsMsg = _showColumns ? " with columns" : "";
-            Logger.TaskNested($"Retrieving tables from [{targetDatabase}]{filterMsg}{columnsMsg}");
+            string columnMsg = !string.IsNullOrEmpty(_columnFilter) ? $" with column {_columnFilter}" : "";
+            Logger.TaskNested($"Retrieving tables from [{targetDatabase}]{filterMsg}{columnsMsg}{columnMsg}");
 
             // Build USE statement if specific database is provided
             string useStatement = string.IsNullOrEmpty(_database) ? "" : $"USE [{_database}];";
@@ -61,22 +72,28 @@ namespace MSSQLand.Actions.Database
                 whereClause += $" AND t.name LIKE '%{_name.Replace("'", "''")}%'";
             }
 
+            if (!string.IsNullOrEmpty(_columnFilter))
+            {
+                whereClause += $" AND EXISTS (SELECT 1 FROM sys.columns c WHERE c.object_id = t.object_id AND c.name LIKE '%{_columnFilter.Replace("'", "''")}%')";
+            }
+
             string query = $@"
                 {useStatement}
                 SELECT 
                     s.name AS SchemaName,
                     t.name AS TableName,
                     t.type_desc AS TableType,
-                    SUM(p.rows) AS Rows
+                    COALESCE(pr.Rows, 0) AS Rows
                 FROM 
                     sys.objects t
                 JOIN 
                     sys.schemas s ON t.schema_id = s.schema_id
-                LEFT JOIN 
-                    sys.partitions p ON t.object_id = p.object_id
+                OUTER APPLY (
+                    SELECT SUM(p.rows) AS Rows
+                    FROM sys.partitions p
+                    WHERE p.object_id = t.object_id AND p.index_id IN (0, 1)
+                ) pr
                 {whereClause}
-                GROUP BY 
-                    s.name, t.name, t.type_desc
                 ORDER BY 
                     Rows DESC, SchemaName, TableName;";
 
