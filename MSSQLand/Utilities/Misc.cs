@@ -229,8 +229,27 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
+        /// Strips square brackets from a SQL Server identifier.
+        /// Used when parsing user input that may contain bracketed identifiers.
+        /// </summary>
+        /// <param name="identifier">The identifier that may have brackets.</param>
+        /// <returns>The identifier without surrounding brackets.</returns>
+        /// <example>
+        /// StripBrackets("[database]") => "database"
+        /// StripBrackets("database") => "database"
+        /// StripBrackets(null) => null
+        /// </example>
+        public static string StripBrackets(string identifier)
+        {
+            if (string.IsNullOrEmpty(identifier))
+                return identifier;
+            return identifier.Trim('[', ']');
+        }
+
+        /// <summary>
         /// Builds a fully qualified table name in SQL Server format.
         /// Handles empty schema by using the double-dot notation (database..table).
+        /// Automatically strips brackets from inputs to prevent double-bracketing.
         /// </summary>
         /// <param name="database">Database name (required).</param>
         /// <param name="schema">Schema name (optional - if null/empty, uses double-dot notation).</param>
@@ -238,6 +257,7 @@ namespace MSSQLand.Utilities
         /// <returns>Fully qualified table name with proper bracket escaping.</returns>
         /// <example>
         /// BuildQualifiedTableName("CM_PSC", "dbo", "v_R_System") => "[CM_PSC].[dbo].[v_R_System]"
+        /// BuildQualifiedTableName("[CM_PSC]", "[dbo]", "[v_R_System]") => "[CM_PSC].[dbo].[v_R_System]"
         /// BuildQualifiedTableName("CM_PSC", null, "v_R_System") => "[CM_PSC]..[v_R_System]"
         /// BuildQualifiedTableName("CM_PSC", "", "v_R_System") => "[CM_PSC]..[v_R_System]"
         /// </example>
@@ -248,6 +268,10 @@ namespace MSSQLand.Utilities
             if (string.IsNullOrEmpty(table))
                 throw new ArgumentException("Table name cannot be null or empty.", nameof(table));
 
+            // Strip brackets from inputs to prevent double-bracketing
+            database = StripBrackets(database);
+            table = StripBrackets(table);
+
             if (string.IsNullOrEmpty(schema))
             {
                 // Format: [database]..[table] (no schema)
@@ -256,6 +280,7 @@ namespace MSSQLand.Utilities
             else
             {
                 // Format: [database].[schema].[table]
+                schema = StripBrackets(schema);
                 return $"[{database}].[{schema}].[{table}]";
             }
         }
