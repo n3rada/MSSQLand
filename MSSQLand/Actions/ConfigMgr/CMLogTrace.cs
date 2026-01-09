@@ -240,7 +240,7 @@ WHERE a.AssignmentID IN (
                 // One row = one logical CI version
                 string sdmPackageDigestXML = dtDetailsResult.Rows[0]["SDMPackageDigest"].ToString();
 
-                Logger.Info("Extracted XML Snippets:");
+                Logger.Info("Extracted XML Snippets");
                 Logger.InfoNested("Policy Platform Document Body (for AppDiscovery.log, AppIntentEval.log)");
                 Console.WriteLine(documentStoreBodyXML);
                 Logger.NewLine();
