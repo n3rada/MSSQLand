@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text;
 
-namespace MSSQLand.Actions.CM
+namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
     /// Enumerate ConfigMgr programs (legacy package execution configurations) with command lines and run behavior.

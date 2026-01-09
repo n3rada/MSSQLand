@@ -5,7 +5,7 @@ using System;
 using System.Data;
 using System.Linq;
 
-namespace MSSQLand.Actions.CM
+namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
     /// Enumerate ConfigMgr-managed devices with filtering by attributes.

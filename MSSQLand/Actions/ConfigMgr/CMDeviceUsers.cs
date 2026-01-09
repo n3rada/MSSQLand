@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.CM
+namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
     /// Shows all users who have logged into ConfigMgr-managed devices with usage statistics.

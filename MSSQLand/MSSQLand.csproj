@@ -134,32 +134,32 @@
     <Compile Include="Actions\Remote\RemoteProcedureCall.cs" />
     <Compile Include="Actions\Remote\SmbCoerce.cs" />
 
-    <Compile Include="Actions\CM\CMInfo.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMAdmins.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMServers.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMCollections.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMCollection.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMDevices.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMDevice.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMDeviceUsers.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMHealth.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMScripts.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMScript.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMScriptAdd.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMScriptDelete.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMScriptRun.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMScriptStatus.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMAccounts.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMAadApps.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMDeployments.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMDeployment.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMPackages.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMPackage.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMPrograms.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMTaskSequences.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMTaskSequence.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMApplications.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\CM\CMDistributionPoints.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMInfo.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMAdmins.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMServers.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMCollections.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMCollection.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMDevices.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMDevice.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMDeviceUsers.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMHealth.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMScripts.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMScript.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMScriptAdd.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMScriptDelete.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMScriptRun.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMScriptStatus.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMAccounts.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMAadApps.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMDeployments.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMDeployment.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMPackages.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMPackage.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMPrograms.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMTaskSequences.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMTaskSequence.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMApplications.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMDistributionPoints.cs" Condition="'$(EnableCM)' == 'true'" />
 
     <Compile Include="Exceptions\ActionNotFoundException.cs" />
     <Compile Include="Exceptions\AuthenticationFailedException.cs" />

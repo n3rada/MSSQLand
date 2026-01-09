@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.CM
+namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
     /// Enumerate Azure AD application registrations stored in ConfigMgr for cloud management gateway and co-management.

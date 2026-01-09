@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.CM
+namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
     /// Enumerate ConfigMgr servers in the site hierarchy including site servers, management points, and distribution points.

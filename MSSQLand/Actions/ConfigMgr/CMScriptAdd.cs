@@ -4,7 +4,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace MSSQLand.Actions.CM
+namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
     /// Upload a PowerShell script to ConfigMgr's Scripts table for later execution via sccm-script-run.

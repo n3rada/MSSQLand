@@ -4,7 +4,7 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.CM
+namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
     /// Display comprehensive information about a specific ConfigMgr-managed device.

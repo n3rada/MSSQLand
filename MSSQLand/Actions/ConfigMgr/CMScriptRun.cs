@@ -5,7 +5,7 @@ using System.Data;
 using System.Text;
 using System.Threading;
 
-namespace MSSQLand.Actions.CM
+namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
     /// Execute a PowerShell script on a target device through ConfigMgr's Background (BGB) notification channel.

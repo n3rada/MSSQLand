@@ -3,7 +3,7 @@ using MSSQLand.Utilities;
 using System;
 using System.Data;
 
-namespace MSSQLand.Actions.CM
+namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
     /// Monitor execution status and retrieve output from scripts run via sccm-script-run.

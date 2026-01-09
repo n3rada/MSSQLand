@@ -4,7 +4,7 @@ using System.Text;
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 
-namespace MSSQLand.Actions.CM
+namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
     /// Display detailed information for a specific ConfigMgr PowerShell script including full content and parameters.

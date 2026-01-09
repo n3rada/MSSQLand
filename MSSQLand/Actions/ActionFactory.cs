@@ -7,7 +7,7 @@ using MSSQLand.Actions.FileSystem;
 using MSSQLand.Actions.Execution;
 using MSSQLand.Actions.Domain;
 using MSSQLand.Actions.Administration;
-using MSSQLand.Actions.CM;
+using MSSQLand.Actions.ConfigMgr;
 using MSSQLand.Exceptions;
 
 namespace MSSQLand.Utilities

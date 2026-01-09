@@ -2,7 +2,7 @@ using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
 
-namespace MSSQLand.Actions.CM
+namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
     /// Remove a script from ConfigMgr's Scripts table by GUID to clean up after operations.
