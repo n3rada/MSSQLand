@@ -59,7 +59,7 @@ namespace MSSQLand.Actions.Database
 
             string filterMsg = !string.IsNullOrEmpty(_name) ? $" (name: {_name})" : "";
             string columnsMsg = _showColumns ? " with columns" : "";
-            string columnMsg = !string.IsNullOrEmpty(_columnFilter) ? $" with column {_columnFilter}" : "";
+            string columnMsg = !string.IsNullOrEmpty(_columnFilter) ? $" with column containing '{_columnFilter}'" : "";
             Logger.TaskNested($"Retrieving tables from [{targetDatabase}]{filterMsg}{columnsMsg}{columnMsg}");
 
             // Build USE statement if specific database is provided
