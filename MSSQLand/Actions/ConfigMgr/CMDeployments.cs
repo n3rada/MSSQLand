@@ -33,13 +33,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 5, LongName = "in-progress", Description = "Show only deployments in progress")]
         private bool _inProgress = false;
 
-        [ArgumentMetadata(Position = 6, ShortName = "d", LongName = "deployment-type", Description = "Filter by deployment type GUID (partial match)")]
-        private string _deploymentType = "";
-
-        [ArgumentMetadata(Position = 7, LongName = "deployment-type-only", Description = "Show only deployments with deployment types (Applications)")]
-        private bool _deploymentTypeOnly = false;
-
-        [ArgumentMetadata(Position = 8, LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 6, LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
@@ -62,11 +56,6 @@ namespace MSSQLand.Actions.ConfigMgr
                    ?? GetNamedArgument(named, "intent", null)
                    ?? GetPositionalArgument(positional, 3, "");
 
-            _deploymentType = GetNamedArgument(named, "d", null)
-                           ?? GetNamedArgument(named, "deployment-type", null)
-                           ?? GetPositionalArgument(positional, 4, "");
-
-            _deploymentTypeOnly = named.ContainsKey("deployment-type-only");
             _withErrors = named.ContainsKey("with-errors");
             _inProgress = named.ContainsKey("in-progress");
 
@@ -90,8 +79,6 @@ namespace MSSQLand.Actions.ConfigMgr
                 filterMsg += $" type: {_featureType}";
             if (!string.IsNullOrEmpty(_intent))
                 filterMsg += $" intent: {_intent}";
-            if (!string.IsNullOrEmpty(_deploymentType))
-                filterMsg += $" deployment-type: {_deploymentType}";
             if (_withErrors)
                 filterMsg += " with-errors";
             if (_inProgress)
@@ -171,42 +158,6 @@ namespace MSSQLand.Actions.ConfigMgr
                     filterClause += " AND ds.NumberInProgress > 0";
                 }
 
-                // Build deployment type joins based on whether filtering is needed
-                string deploymentTypeJoin = "";
-                string deploymentTypeColumns = "";
-                
-                if (!string.IsNullOrEmpty(_deploymentType) || _deploymentTypeOnly)
-                {
-                    // When filtering by deployment type or showing only deployments with types, use INNER JOINs
-                    deploymentTypeJoin = $@"
-JOIN [{db}].dbo.v_CIAssignment cia ON ds.AssignmentID = cia.AssignmentID AND ds.FeatureType = 1
-JOIN [{db}].dbo.CI_ConfigurationItems app ON cia.LocalCollectionID = app.CI_ID
-JOIN [{db}].dbo.CI_ConfigurationItems dt ON dt.CI_UniqueID LIKE app.CI_UniqueID + '/%' AND dt.CIType_ID = 21
-LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON dt.CI_ID = lp.CI_ID
-";
-                    deploymentTypeColumns = @",
-    dt.CI_UniqueID AS DeploymentTypeGUID,
-    COALESCE(lp.DisplayName, dt.CI_UniqueID) AS DeploymentTypeName";
-                    
-                    if (!string.IsNullOrEmpty(_deploymentType))
-                    {
-                        filterClause += $" AND dt.CI_UniqueID LIKE '%{_deploymentType.Replace("'", "''")}%'";
-                    }
-                }
-                else
-                {
-                    // When not filtering, use LEFT JOINs to show all deployments with optional deployment type info
-                    deploymentTypeJoin = $@"
-LEFT JOIN [{db}].dbo.v_CIAssignment cia ON ds.AssignmentID = cia.AssignmentID AND ds.FeatureType = 1
-LEFT JOIN [{db}].dbo.CI_ConfigurationItems app ON cia.LocalCollectionID = app.CI_ID
-LEFT JOIN [{db}].dbo.CI_ConfigurationItems dt ON dt.CI_UniqueID LIKE app.CI_UniqueID + '/%' AND dt.CIType_ID = 21
-LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON dt.CI_ID = lp.CI_ID
-";
-                    deploymentTypeColumns = @",
-    dt.CI_UniqueID AS DeploymentTypeGUID,
-    COALESCE(lp.DisplayName, dt.CI_UniqueID) AS DeploymentTypeName";
-                }
-
                 string query = $@"
 SELECT TOP {_limit}
     ds.AssignmentID,
@@ -244,10 +195,8 @@ SELECT TOP {_limit}
     ds.CreationTime,
     ds.ModificationTime,
     ds.SummarizationTime
-    {deploymentTypeColumns}
 FROM [{db}].dbo.v_DeploymentSummary ds
 LEFT JOIN [{db}].dbo.v_Collection c ON ds.CollectionID = c.CollectionID
-{deploymentTypeJoin}
 {filterClause}
 ORDER BY ds.CreationTime DESC;
 ";
