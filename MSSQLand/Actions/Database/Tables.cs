@@ -113,28 +113,30 @@ namespace MSSQLand.Actions.Database
             
             if (_showColumns)
             {
-                // Query to get columns for all tables
+                // Build dynamic filter based on retrieved tables for better performance
+                var tableFilter = new System.Text.StringBuilder();
+                bool first = true;
+                
+                foreach (DataRow row in tables.Rows)
+                {
+                    if (!first) tableFilter.Append(",");
+                    first = false;
+                    tableFilter.Append($"N'{row["SchemaName"]}.{row["TableName"]}'");
+                }
+
+                // Optimized query: only fetch columns for tables we actually retrieved
                 string columnsQuery = $@"{useStatement}
 SELECT 
-    SCHEMA_NAME(t.schema_id) AS schema_name,
-    t.name AS table_name,
+    SCHEMA_NAME(o.schema_id) AS schema_name,
+    o.name AS table_name,
     c.name AS column_name,
     TYPE_NAME(c.user_type_id) AS data_type,
     c.column_id
-FROM sys.tables t
-INNER JOIN sys.columns c ON t.object_id = c.object_id
-WHERE t.type = 'U'
-UNION ALL
-SELECT 
-    SCHEMA_NAME(v.schema_id) AS schema_name,
-    v.name AS table_name,
-    c.name AS column_name,
-    TYPE_NAME(c.user_type_id) AS data_type,
-    c.column_id
-FROM sys.views v
-INNER JOIN sys.columns c ON v.object_id = c.object_id
-WHERE v.type = 'V'
-ORDER BY schema_name, table_name, c.column_id;";
+FROM sys.columns c
+INNER JOIN sys.objects o ON c.object_id = o.object_id
+WHERE o.type IN ('U', 'V')
+    AND SCHEMA_NAME(o.schema_id) + '.' + o.name IN ({tableFilter})
+ORDER BY o.name, c.column_id;";
 
                 DataTable columnsResult = databaseContext.QueryService.ExecuteTable(columnsQuery);
 
