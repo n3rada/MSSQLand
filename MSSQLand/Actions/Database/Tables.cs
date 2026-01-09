@@ -78,7 +78,7 @@ namespace MSSQLand.Actions.Database
                 GROUP BY 
                     s.name, t.name, t.type_desc
                 ORDER BY 
-                    SchemaName, TableName;";
+                    Rows DESC, SchemaName, TableName;";
 
             DataTable tables = databaseContext.QueryService.ExecuteTable(query);
 
