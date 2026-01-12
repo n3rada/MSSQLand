@@ -119,7 +119,9 @@ SELECT
     ci.IsHidden,
     ci.DateCreated,
     ci.CreatedBy,
+    ci.DateLastModified,
     ci.LastModifiedBy,
+    ci.SourceSite,
     ci.SDMPackageDigest,
     lcp.Title,
     lcp.Description,
@@ -144,7 +146,7 @@ WHERE ci.CI_ID = {ciId} AND ci.CIType_ID = 21;";
                 Logger.Success($"Deployment Type: {dt["Title"]}");
                 Logger.SuccessNested($"CI_ID: {dt["CI_ID"]}");
                 Logger.SuccessNested($"CI_UniqueID: {dt["CI_UniqueID"]}");
-                Logger.SuccessNested($"CI Version: {dt["CIVersion"]}");
+                Logger.SuccessNested($"CI Version: {dt["CIVersion"]} (increments with each revision)");
                 Logger.SuccessNested($"Enabled: {dt["IsEnabled"]}");
                 Logger.SuccessNested($"Expired: {dt["IsExpired"]}");
                 Logger.SuccessNested($"Hidden: {dt["IsHidden"]}");
@@ -155,7 +157,12 @@ WHERE ci.CI_ID = {ciId} AND ci.CIType_ID = 21;";
                 }
 
                 Logger.SuccessNested($"Created: {Convert.ToDateTime(dt["DateCreated"]):yyyy-MM-dd HH:mm:ss} UTC by {dt["CreatedBy"]}");
-                Logger.SuccessNested($"Last Modified By: {dt["LastModifiedBy"]}");
+                Logger.SuccessNested($"Last Modified: {Convert.ToDateTime(dt["DateLastModified"]):yyyy-MM-dd HH:mm:ss} UTC by {dt["LastModifiedBy"]}");
+                
+                if (dt["SourceSite"] != DBNull.Value && !string.IsNullOrWhiteSpace(dt["SourceSite"].ToString()))
+                {
+                    Logger.SuccessNested($"Source Site: {dt["SourceSite"]}");
+                }
 
                 // Parse SDM Package Digest for details
                 string sdmXml = dt["SDMPackageDigest"].ToString();
@@ -183,6 +190,25 @@ WHERE ci.CI_ID = {ciId} AND ci.CIType_ID = 21;";
                     Logger.InfoNested($"Install Command: {installCmd}");
                 }
 
+                // Extract uninstall settings
+                string uninstallSetting = Misc.GetXmlValue(sdmXml, "//p1:UninstallSetting");
+                if (!string.IsNullOrEmpty(uninstallSetting))
+                {
+                    Logger.InfoNested($"Uninstall Setting: {uninstallSetting}");
+                }
+
+                string uninstallCmd = Misc.GetXmlValue(sdmXml, "//p1:UninstallCommandLine");
+                if (!string.IsNullOrEmpty(uninstallCmd))
+                {
+                    Logger.InfoNested($"Uninstall Command: {uninstallCmd}");
+                }
+
+                string allowUninstall = Misc.GetXmlValue(sdmXml, "//p1:AllowUninstall");
+                if (!string.IsNullOrEmpty(allowUninstall))
+                {
+                    Logger.InfoNested($"Allow Uninstall: {allowUninstall}");
+                }
+
                 // Extract execution context
                 string execContext = Misc.GetXmlValue(sdmXml, "//p1:ExecutionContext");
                 if (!string.IsNullOrEmpty(execContext))
@@ -190,11 +216,35 @@ WHERE ci.CI_ID = {ciId} AND ci.CIType_ID = 21;";
                     Logger.InfoNested($"Execution Context: {execContext}");
                 }
 
-                // Extract content location
+                string workingDir = Misc.GetXmlValue(sdmXml, "//p1:Arg[@Name='WorkingDirectory']");
+                if (!string.IsNullOrEmpty(workingDir))
+                {
+                    Logger.InfoNested($"Working Directory: {workingDir}");
+                }
+
+                // Extract content location and settings
                 string contentLocation = Misc.GetXmlValue(sdmXml, "//p1:Location");
                 if (!string.IsNullOrEmpty(contentLocation))
                 {
                     Logger.InfoNested($"Content Location: {contentLocation}");
+                }
+
+                string onFastNetwork = Misc.GetXmlValue(sdmXml, "//p1:OnFastNetwork");
+                if (!string.IsNullOrEmpty(onFastNetwork))
+                {
+                    Logger.InfoNested($"On Fast Network: {onFastNetwork}");
+                }
+
+                string onSlowNetwork = Misc.GetXmlValue(sdmXml, "//p1:OnSlowNetwork");
+                if (!string.IsNullOrEmpty(onSlowNetwork))
+                {
+                    Logger.InfoNested($"On Slow Network: {onSlowNetwork}");
+                }
+
+                string peerCache = Misc.GetXmlValue(sdmXml, "//p1:PeerCache");
+                if (!string.IsNullOrEmpty(peerCache))
+                {
+                    Logger.InfoNested($"Peer Cache: {peerCache}");
                 }
 
                 // Extract file name and size
@@ -206,11 +256,47 @@ WHERE ci.CI_ID = {ciId} AND ci.CIType_ID = 21;";
                     Logger.InfoNested($"File: {fileName}{sizeInfo}");
                 }
 
-                // Extract max execution time
+                // Extract execution parameters
                 string maxExecTime = Misc.GetXmlValue(sdmXml, "//p1:Arg[@Name='MaxExecuteTime']");
                 if (!string.IsNullOrEmpty(maxExecTime))
                 {
                     Logger.InfoNested($"Max Execution Time: {maxExecTime} minutes");
+                }
+
+                string runAs32Bit = Misc.GetXmlValue(sdmXml, "//p1:Arg[@Name='RunAs32Bit']");
+                if (!string.IsNullOrEmpty(runAs32Bit))
+                {
+                    Logger.InfoNested($"Run as 32-bit: {runAs32Bit}");
+                }
+
+                string postInstallBehavior = Misc.GetXmlValue(sdmXml, "//p1:Arg[@Name='PostInstallBehavior']");
+                if (!string.IsNullOrEmpty(postInstallBehavior))
+                {
+                    Logger.InfoNested($"Post-Install Behavior: {postInstallBehavior}");
+                }
+
+                string requiresElevation = Misc.GetXmlValue(sdmXml, "//p1:Arg[@Name='RequiresElevatedRights']");
+                if (!string.IsNullOrEmpty(requiresElevation))
+                {
+                    Logger.InfoNested($"Requires Elevated Rights: {requiresElevation}");
+                }
+
+                string requiresUserInteraction = Misc.GetXmlValue(sdmXml, "//p1:Arg[@Name='RequiresUserInteraction']");
+                if (!string.IsNullOrEmpty(requiresUserInteraction))
+                {
+                    Logger.InfoNested($"Requires User Interaction: {requiresUserInteraction}");
+                }
+
+                string requiresReboot = Misc.GetXmlValue(sdmXml, "//p1:Arg[@Name='RequiresReboot']");
+                if (!string.IsNullOrEmpty(requiresReboot))
+                {
+                    Logger.InfoNested($"Requires Reboot: {requiresReboot}");
+                }
+
+                string userInteractionMode = Misc.GetXmlValue(sdmXml, "//p1:Arg[@Name='UserInteractionMode']");
+                if (!string.IsNullOrEmpty(userInteractionMode))
+                {
+                    Logger.InfoNested($"User Interaction Mode: {userInteractionMode}");
                 }
 
                 // Find parent application
@@ -400,10 +486,20 @@ ORDER BY ds.Document_ID DESC;";
                 if (docResult.Rows.Count > 0)
                 {
                     DataRow docRow = docResult.Rows[0];
+                    int docType = Convert.ToInt32(docRow["DocumentType"]);
+                    string docTypeName = docType switch
+                    {
+                        0 => "Desired Configuration (DCM)",
+                        1 => "Compliance Settings",
+                        2 => "Configuration Baseline",
+                        3 => "Policy Platform (DCM Application/Deployment Type)",
+                        _ => $"Unknown ({docType})"
+                    };
+                    
                     Logger.InfoNested($"Document ID: {docRow["Document_ID"]}");
                     Logger.InfoNested($"Document Identifier: {docRow["DocumentIdentifier"]}");
-                    Logger.InfoNested($"Document Type: {docRow["DocumentType"]}");
-                    Logger.InfoNested($"Is Latest Version: {docRow["IsVersionLatest"]}");
+                    Logger.InfoNested($"Document Type: {docTypeName}");
+                    Logger.InfoNested($"Is Latest Version: {docRow["IsVersionLatest"]} (only latest is sent to clients)");
 
                     // Show XML if requested
                     if (_showXml)
