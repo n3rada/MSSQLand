@@ -143,63 +143,6 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
-        /// Extracts a value from an XML string using an XPath expression.
-        /// </summary>
-        /// <param name="xmlData">The XML string to parse.</param>
-        /// <param name="xpath">The XPath expression to locate the node.</param>
-        /// <returns>The inner text of the first matching node, or null if not found.</returns>
-        /// <example>
-        /// string xml = "&lt;Settings&gt;&lt;Version&gt;1.0&lt;/Version&gt;&lt;/Settings&gt;";
-        /// string version = GetXmlValue(xml, "//Version"); // Returns "1.0"
-        /// </example>
-        public static string GetXmlValue(string xmlData, string xpath)
-        {
-            if (string.IsNullOrEmpty(xmlData) || string.IsNullOrEmpty(xpath))
-                return null;
-
-            try
-            {
-                var doc = new XmlDocument();
-                doc.LoadXml(xmlData);
-                var node = doc.SelectSingleNode(xpath);
-                return node?.InnerText;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Extracts an attribute value from an XML string using an XPath expression.
-        /// </summary>
-        /// <param name="xmlData">The XML string to parse.</param>
-        /// <param name="xpath">The XPath expression to locate the node.</param>
-        /// <param name="attributeName">The name of the attribute to extract.</param>
-        /// <returns>The attribute value, or null if not found.</returns>
-        /// <example>
-        /// string xml = "&lt;Property Name='Version' Value='1.0'/&gt;";
-        /// string value = GetXmlAttribute(xml, "//Property[@Name='Version']", "Value"); // Returns "1.0"
-        /// </example>
-        public static string GetXmlAttribute(string xmlData, string xpath, string attributeName)
-        {
-            if (string.IsNullOrEmpty(xmlData) || string.IsNullOrEmpty(xpath) || string.IsNullOrEmpty(attributeName))
-                return null;
-
-            try
-            {
-                var doc = new XmlDocument();
-                doc.LoadXml(xmlData);
-                var node = doc.SelectSingleNode(xpath);
-                return node?.Attributes?[attributeName]?.Value;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
         /// Formats (beautifies) an XML string with proper indentation and line breaks.
         /// Also decodes HTML entities (like &amp;lt; to &lt;) in text content and attributes.
         /// Useful for displaying large XML data in a readable format.
