@@ -140,7 +140,7 @@ WHERE p.PackageID = '{_packageId.Replace("'", "''")}'";
                 
                 if (programCount > 0)
                 {
-                    Logger.NewLine();
+                    
                     Logger.Info($"Programs ({programCount})");
 
                     string programsQuery = $@"
@@ -267,8 +267,6 @@ ORDER BY c.MemberCount DESC, c.Name;";
 
                 // Get package distribution status summary
                 Logger.NewLine();
-                Logger.Info("Package Distribution Status");
-
                 string statusQuery = $@"
 SELECT 
     psd.SiteCode,
@@ -287,14 +285,13 @@ ORDER BY psd.SiteCode;";
                 
                 if (statusResult.Rows.Count > 0)
                 {
-                    Logger.NewLine();
                     Logger.Info("Package Distribution Status");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(statusResult));
                     Logger.Info($"Distribution status across {statusResult.Rows.Count} site(s)");
                 }
 
                 // Get distribution points where this package is distributed
-                Logger.Info("Distribution Points");
+                Logger.NewLine();
 
                 string distributionQuery = $@"
 SELECT *
@@ -306,6 +303,7 @@ ORDER BY dp.ServerNALPath;";
                 
                 if (distributionResult.Rows.Count > 0)
                 {
+                    Logger.Info("Distribution Points");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(distributionResult));
                     Logger.Success($"Package distributed to {distributionResult.Rows.Count} distribution point(s)");
                 }
