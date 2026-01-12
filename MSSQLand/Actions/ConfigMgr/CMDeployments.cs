@@ -171,26 +171,8 @@ SELECT TOP {_limit}
     ds.SoftwareName,
     ds.CollectionID,
     c.Name AS CollectionName,
-    CASE ds.FeatureType
-        WHEN 1 THEN 'Application'
-        WHEN 2 THEN 'Program'
-        WHEN 3 THEN 'Mobile Program'
-        WHEN 4 THEN 'Script'
-        WHEN 5 THEN 'Software Update'
-        WHEN 6 THEN 'Baseline'
-        WHEN 7 THEN 'Task Sequence'
-        WHEN 8 THEN 'Content Distribution'
-        WHEN 9 THEN 'Distribution Point Group'
-        WHEN 10 THEN 'Distribution Point Health'
-        WHEN 11 THEN 'Configuration Policy'
-        ELSE CAST(ds.FeatureType AS VARCHAR)
-    END AS FeatureType,
-    CASE ds.DeploymentIntent
-        WHEN 1 THEN 'Required'
-        WHEN 2 THEN 'Available'
-        WHEN 3 THEN 'Simulate'
-        ELSE CAST(ds.DeploymentIntent AS VARCHAR)
-    END AS DeploymentIntent,
+    ds.FeatureType,
+    ds.DeploymentIntent,
     ds.NumberTotal,
     ds.NumberSuccess,
     ds.NumberInProgress,
@@ -224,6 +206,30 @@ ORDER BY ds.CreationTime DESC;
                     Logger.Warning("No deployments found");
                     continue;
                 }
+
+                // Add decoded FeatureType column
+                DataColumn decodedFeatureColumn = result.Columns.Add("FeatureTypeDecoded", typeof(string));
+                int featureTypeIndex = result.Columns["FeatureType"].Ordinal;
+                decodedFeatureColumn.SetOrdinal(featureTypeIndex);
+
+                // Add decoded DeploymentIntent column
+                DataColumn decodedIntentColumn = result.Columns.Add("DeploymentIntentDecoded", typeof(string));
+                int deploymentIntentIndex = result.Columns["DeploymentIntent"].Ordinal;
+                decodedIntentColumn.SetOrdinal(deploymentIntentIndex);
+
+                foreach (DataRow row in result.Rows)
+                {
+                    row["FeatureTypeDecoded"] = CMService.DecodeFeatureType(row["FeatureType"]);
+                    row["DeploymentIntentDecoded"] = CMService.DecodeDeploymentIntent(row["DeploymentIntent"]);
+                }
+
+                // Remove raw numeric columns
+                result.Columns.Remove("FeatureType");
+                result.Columns.Remove("DeploymentIntent");
+
+                // Rename decoded columns
+                result.Columns["FeatureTypeDecoded"].ColumnName = "FeatureType";
+                result.Columns["DeploymentIntentDecoded"].ColumnName = "DeploymentIntent";
 
                 Console.WriteLine(OutputFormatter.ConvertDataTable(result));
 
