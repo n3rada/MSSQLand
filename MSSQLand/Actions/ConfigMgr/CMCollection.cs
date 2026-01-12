@@ -244,7 +244,7 @@ SELECT
 FROM [{db}].dbo.v_FullCollectionMembership cm
 INNER JOIN [{db}].dbo.v_R_System sys ON cm.ResourceID = sys.ResourceID
 WHERE cm.CollectionID = '{_collectionId.Replace("'", "''")}'
-ORDER BY sys.Name0;";
+ORDER BY sys.Client0 DESC, sys.Name0;";
                     }
                     else // User collection
                     {
