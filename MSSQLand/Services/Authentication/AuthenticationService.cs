@@ -115,6 +115,12 @@ namespace MSSQLand.Services
 
             Server.Version = Connection.ServerVersion;
             
+            // Set database from connection if not already set
+            if (string.IsNullOrEmpty(Server.Database))
+            {
+                Server.Database = Connection.Database;
+            }
+            
             // Query actual SQL Server name and set Server.Hostname (includes instance name)
             try
             {
