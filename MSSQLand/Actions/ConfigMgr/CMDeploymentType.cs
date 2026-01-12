@@ -220,13 +220,13 @@ WHERE ci.CI_ID = {ciId} AND ci.CIType_ID = 21;";
 SELECT 
     ci.CI_ID,
     ci.CI_UniqueID,
-    COALESCE(lp.DisplayName, ci.ModelName) AS ApplicationName
-FROM [{db}].dbo.CI_ConfigurationItemRelations rel
-INNER JOIN [{db}].dbo.CI_Conflcp.Title) AS ApplicationName
+    COALESCE(lp.DisplayName, lcp.Title) AS ApplicationName
 FROM [{db}].dbo.CI_ConfigurationItemRelations rel
 INNER JOIN [{db}].dbo.CI_ConfigurationItems ci ON rel.FromCI_ID = ci.CI_ID
 LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON ci.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
-LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp ON ci.CI_ID = lcp.CI_ID AND lc
+LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp ON ci.CI_ID = lcp.CI_ID AND lcp.LocaleID = 1033
+WHERE rel.ToCI_ID = {ciId} AND rel.RelationType = 9;";
+
                 DataTable parentResult = databaseContext.QueryService.ExecuteTable(parentQuery);
 
                 if (parentResult.Rows.Count > 0)
