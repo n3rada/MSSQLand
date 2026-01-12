@@ -99,7 +99,8 @@ namespace MSSQLand.Actions.Database
 
             if (_withRows)
             {
-                whereClause += " AND EXISTS (SELECT 1 FROM sys.partitions p WHERE p.object_id = t.object_id AND p.index_id IN (0, 1) AND p.rows > 0)";
+                // Only filter tables (type='U') with 0 rows; always show views (type='V') since we can't count their rows
+                whereClause += " AND (t.type = 'V' OR EXISTS (SELECT 1 FROM sys.partitions p WHERE p.object_id = t.object_id AND p.index_id IN (0, 1) AND p.rows > 0))";
             }
 
             string query = $@"
