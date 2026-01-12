@@ -295,8 +295,9 @@ WHERE ds.AssignmentID = {numericAssignmentId}";
                     Logger.Info("No statistics available for this assignment");
                 }
 
-                // For Application deployments, get application and deployment type details
-                if (!isAdvertisement)
+                // For Application deployments (AssignmentType = 1), get application and deployment type details
+                // Configuration Items, Software Updates, and Baselines have different structures
+                if (!isAdvertisement && assignment["AssignmentType"] != DBNull.Value && Convert.ToInt32(assignment["AssignmentType"]) == 1)
                 {
                     Logger.NewLine();
                     Logger.Info("Application Details");
