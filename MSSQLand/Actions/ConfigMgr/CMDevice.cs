@@ -333,36 +333,48 @@ ORDER BY ds.DeploymentTime DESC;";
                 // Get deployed packages with status
                 string packagesQuery = $@"
 SELECT DISTINCT
-    adv.AdvertisementID,
-    adv.AdvertisementName,
-    adv.ProgramName,
-    adv.AdvertFlags,
-    p.PackageID,
-    p.Name AS PackageName,
-    p.Version,
-    p.Manufacturer,
-    p.PackageType AS PackageTypeRaw,
-    p.PkgSourcePath,
-    adv.CollectionID,
-    c.Name AS CollectionName,
-    cas.LastAcceptanceStateName AS AcceptanceState,
+    p.PackageName,
+    -- Status columns first for quick scanning
     cas.LastStateName AS ExecutionState,
-    cas.LastStatusTime,
-    cas.LastExecutionResult,
     CASE 
         WHEN cas.LastAcceptanceState = 0 THEN 'Waiting'
         WHEN cas.LastAcceptanceState = 1 THEN 'Accepted'
         WHEN cas.LastAcceptanceState = 2 THEN 'Rejected'
         WHEN cas.LastAcceptanceState = 3 THEN 'Expired'
         ELSE CAST(cas.LastAcceptanceState AS VARCHAR)
-    END AS AcceptanceStatus
+    END AS AcceptanceStatus,
+    cas.LastStatusTime,
+    cas.LastExecutionResult,
+    -- Package details
+    adv.AdvertisementID,
+    adv.AdvertisementName,
+    adv.ProgramName,
+    p.PackageID,
+    p.Version,
+    p.Manufacturer,
+    p.PackageType AS PackageTypeRaw,
+    -- Deployment context
+    adv.CollectionID,
+    c.Name AS CollectionName,
+    adv.OfferType,
+    adv.RemoteClientFlags,
+    adv.AdvertFlags,
+    p.PkgSourcePath
 FROM [{db}].dbo.v_FullCollectionMembership cm
 INNER JOIN [{db}].dbo.v_Advertisement adv ON cm.CollectionID = adv.CollectionID
 INNER JOIN [{db}].dbo.v_Collection c ON adv.CollectionID = c.CollectionID
 INNER JOIN [{db}].dbo.v_Package p ON adv.PackageID = p.PackageID
 LEFT JOIN [{db}].dbo.v_ClientAdvertisementStatus cas ON cas.AdvertisementID = adv.AdvertisementID AND cas.ResourceID = {resourceId}
 WHERE cm.ResourceID = {resourceId}
-ORDER BY p.Name, adv.AdvertisementName;";
+ORDER BY 
+    CASE 
+        WHEN cas.LastStateName LIKE '%Fail%' OR cas.LastStateName LIKE '%Error%' THEN 0
+        WHEN cas.LastStateName LIKE '%Running%' OR cas.LastStateName = 'Waiting' THEN 1
+        WHEN cas.LastStateName = 'Succeeded' THEN 2
+        ELSE 3
+    END,
+    cas.LastStatusTime DESC,
+    p.Name;";
 
                 DataTable packagesResult = databaseContext.QueryService.ExecuteTable(packagesQuery);
                 
@@ -378,19 +390,34 @@ ORDER BY p.Name, adv.AdvertisementName;";
                     int packageTypeRawIndex = packagesResult.Columns["PackageTypeRaw"].Ordinal;
                     decodedTypeColumn.SetOrdinal(packageTypeRawIndex);
 
-                    // Add decoded AdvertFlags column before AdvertFlags
-                    DataColumn decodedAdvertColumn = packagesResult.Columns.Add("DecodedFlags", typeof(string));
+                    // Add decoded OfferType column
+                    DataColumn decodedOfferColumn = packagesResult.Columns.Add("DeploymentPurpose", typeof(string));
+                    int offerTypeIndex = packagesResult.Columns["OfferType"].Ordinal;
+                    decodedOfferColumn.SetOrdinal(offerTypeIndex);
+
+                    // Add decoded RemoteClientFlags column
+                    DataColumn decodedRemoteColumn = packagesResult.Columns.Add("RerunBehavior", typeof(string));
+                    int remoteClientFlagsIndex = packagesResult.Columns["RemoteClientFlags"].Ordinal;
+                    decodedRemoteColumn.SetOrdinal(remoteClientFlagsIndex);
+
+                    // Add decoded AdvertFlags column
+                    DataColumn decodedAdvertColumn = packagesResult.Columns.Add("AnnouncementFlags", typeof(string));
                     int advertFlagsIndex = packagesResult.Columns["AdvertFlags"].Ordinal;
                     decodedAdvertColumn.SetOrdinal(advertFlagsIndex);
 
                     foreach (DataRow row in packagesResult.Rows)
                     {
                         row["PackageType"] = CMService.DecodePackageType(row["PackageTypeRaw"]);
-                        row["DecodedFlags"] = CMService.DecodeAdvertFlags(row["AdvertFlags"]);
+                        row["DeploymentPurpose"] = CMService.DecodeOfferType(row["OfferType"]);
+                        row["RerunBehavior"] = CMService.DecodeRemoteClientFlags(row["RemoteClientFlags"]);
+                        row["AnnouncementFlags"] = CMService.DecodeAdvertFlags(row["AdvertFlags"]);
                     }
 
-                    // Remove raw numeric column
+                    // Remove raw numeric columns
                     packagesResult.Columns.Remove("PackageTypeRaw");
+                    packagesResult.Columns.Remove("OfferType");
+                    packagesResult.Columns.Remove("RemoteClientFlags");
+                    packagesResult.Columns.Remove("AdvertFlags");
 
                     Console.WriteLine(OutputFormatter.ConvertDataTable(packagesResult));
                     Logger.Success($"Found {packagesResult.Rows.Count} package(s)");
