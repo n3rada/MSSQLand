@@ -91,6 +91,7 @@ namespace MSSQLand.Utilities
             { "links", (typeof(Links), "Enumerate linked servers and their configuration.", null) },
             { "linkmap", (typeof(LinkMap), "Map all possible linked server chains and execution paths.", null) },
             { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.", null) },
+            { "data", (typeof(DataAccess), "Enable or disable data access (OPENQUERY) on linked servers.", null) },
             { "ext-sources", (typeof(ExternalSources), "Enumerate External Data Sources (Azure SQL Database, Synapse, PolyBase).", null) },
             { "ext-creds", (typeof(ExternalCredentials), "Enumerate database-scoped credentials used by External Data Sources.", null) },
             { "ext-tables", (typeof(ExternalTables), "Enumerate external tables and their remote data locations.", null) },
