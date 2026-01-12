@@ -201,10 +201,8 @@ DECLARE @Result INT;
 DECLARE @ErrorSource NVARCHAR(255);
 DECLARE @ErrorDesc NVARCHAR(255);
 
--- Convert hex string to binary
 SET @FileContent = 0x{hexContent};
 
--- Create ADODB.Stream object
 EXEC @Result = sp_OACreate 'ADODB.Stream', @ObjectToken OUTPUT;
 IF @Result <> 0
 BEGIN
@@ -213,7 +211,6 @@ BEGIN
     RETURN;
 END
 
--- Set stream type to binary
 EXEC @Result = sp_OASetProperty @ObjectToken, 'Type', 1;
 IF @Result <> 0
 BEGIN
@@ -223,7 +220,6 @@ BEGIN
     RETURN;
 END
 
--- Open the stream
 EXEC @Result = sp_OAMethod @ObjectToken, 'Open';
 IF @Result <> 0
 BEGIN
@@ -233,7 +229,6 @@ BEGIN
     RETURN;
 END
 
--- Write binary data to stream
 EXEC @Result = sp_OAMethod @ObjectToken, 'Write', NULL, @FileContent;
 IF @Result <> 0
 BEGIN
@@ -244,7 +239,6 @@ BEGIN
     RETURN;
 END
 
--- Save to file (mode 2 = overwrite if exists)
 EXEC @Result = sp_OAMethod @ObjectToken, 'SaveToFile', NULL, '{escapedRemotePath}', 2;
 IF @Result <> 0
 BEGIN
@@ -255,7 +249,6 @@ BEGIN
     RETURN;
 END
 
--- Close and destroy
 EXEC sp_OAMethod @ObjectToken, 'Close';
 EXEC sp_OADestroy @ObjectToken;
 ";

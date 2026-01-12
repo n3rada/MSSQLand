@@ -81,7 +81,6 @@ namespace MSSQLand.Actions.Database
                         dp.name AS [Database User],
                         dp.type_desc AS [User Type],
                         CASE 
-                            -- Check if there''s a different login token entry that grants access
                             WHEN sp.name != dp.name 
                                 AND EXISTS (
                                     SELECT 1 FROM master.sys.login_token lt
@@ -105,7 +104,6 @@ namespace MSSQLand.Actions.Database
                         EXEC sp_executesql @sql;
                     END TRY
                     BEGIN CATCH
-                        -- Skip databases where we don't have permission
                     END CATCH
                     
                     FETCH NEXT FROM db_cursor INTO @dbname;

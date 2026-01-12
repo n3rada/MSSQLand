@@ -157,7 +157,6 @@ DECLARE @Result INT;
 DECLARE @ErrorSource NVARCHAR(255);
 DECLARE @ErrorDesc NVARCHAR(255);
 
--- Create WScript.Shell object
 EXEC @Result = sp_OACreate 'WScript.Shell', @ObjectToken OUTPUT;
 IF @Result <> 0
 BEGIN
@@ -166,10 +165,6 @@ BEGIN
     RETURN;
 END
 
--- Execute the command asynchronously
--- Run(command, windowStyle, waitOnReturn)
--- windowStyle: 0 = hidden
--- waitOnReturn: 0 = don't wait
 EXEC @Result = sp_OAMethod @ObjectToken, 'Run', NULL, '{command}', 0, {waitParam};
 IF @Result <> 0
 BEGIN
@@ -179,7 +174,6 @@ BEGIN
     RETURN;
 END
 
--- Destroy object
 EXEC sp_OADestroy @ObjectToken;
 ";
 
@@ -197,7 +191,6 @@ DECLARE @ErrorSource NVARCHAR(255);
 DECLARE @ErrorDesc NVARCHAR(255);
 DECLARE @ExitCode INT;
 
--- Create WScript.Shell object
 EXEC @Result = sp_OACreate 'WScript.Shell', @ObjectToken OUTPUT;
 IF @Result <> 0
 BEGIN
@@ -206,10 +199,6 @@ BEGIN
     RETURN;
 END
 
--- Execute the command synchronously
--- Run(command, windowStyle, waitOnReturn)
--- windowStyle: 0 = hidden
--- waitOnReturn: 1 = wait for completion
 EXEC @Result = sp_OAMethod @ObjectToken, 'Run', @ExitCode OUTPUT, '{command}', 0, {waitParam};
 IF @Result <> 0
 BEGIN
@@ -219,10 +208,8 @@ BEGIN
     RETURN;
 END
 
--- Destroy object
 EXEC sp_OADestroy @ObjectToken;
 
--- Return exit code
 SELECT @ExitCode AS ExitCode;
 ";
 

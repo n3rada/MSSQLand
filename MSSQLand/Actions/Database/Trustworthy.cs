@@ -132,7 +132,6 @@ WHILE @@FETCH_STATUS = 0
 BEGIN
     SET @isDbOwner = 'NO';
     
-    -- Check if current user has access and is db_owner in this database (only for ONLINE databases)
     IF HAS_DBACCESS(@dbname) = 1 AND @state = 'ONLINE'
     BEGIN
         BEGIN TRY
