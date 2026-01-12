@@ -87,6 +87,16 @@ WHERE p.PackageID = '{_packageId.Replace("'", "''")}'";
                 packageFound = true;
                 DataRow package = packageResult.Rows[0];
 
+                // Check if this is a task sequence - redirect to cm-tasksequence
+                int packageType = package["PackageType"] != DBNull.Value ? Convert.ToInt32(package["PackageType"]) : 0;
+                if (packageType == 4)
+                {
+                    Logger.NewLine();
+                    Logger.Warning($"Package {_packageId} is a Task Sequence");
+                    Logger.WarningNested($"Task sequences have complex step-by-step workflows that require special parsing");
+                    Logger.WarningNested($"Use 'cm-tasksequence {_packageId}' to see detailed task sequence information");
+                }
+
                 // Display package details
                 Logger.NewLine();
                 Logger.Info($"Package: {package["Name"]} ({_packageId})");
