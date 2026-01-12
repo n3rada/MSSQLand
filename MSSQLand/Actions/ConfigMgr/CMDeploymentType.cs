@@ -437,7 +437,7 @@ ORDER BY ds.Document_ID DESC;";
 
             if (!found)
             {
-                Logger.Warning($"Deployment Type CI_ID {ciId} not found in any ConfigMgr database");
+                Logger.Warning($"Deployment Type Configuration Item (CI_ID {ciId}) not found in any ConfigMgr database");
                 Logger.WarningNested("Make sure this is a valid deployment type CI_ID (CIType_ID = 21)");
             }
 
