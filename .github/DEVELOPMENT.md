@@ -142,7 +142,7 @@ namespace MSSQLand.Actions.Database
             // Validate argument if needed
             if (string.IsNullOrEmpty(_argument))
             {
-                throw new ArgumentException("Argument is required. Example: /a:newaction myvalue");
+                throw new ArgumentException("Argument is required. Example: MSSQLand localhost -c token newaction myvalue");
             }
         }
 
