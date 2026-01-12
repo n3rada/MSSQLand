@@ -86,9 +86,9 @@ namespace MSSQLand.Actions.ConfigMgr
             if (_withErrors)
                 filterMsg += " with-errors";
             if (_inProgress)
+                filterMsg += " in-progress";
             if (_withDeploymentTypes)
                 filterMsg += " with-deployment-types";
-                filterMsg += " in-progress";
 
             Logger.TaskNested($"Enumerating ConfigMgr deployments{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
@@ -162,11 +162,11 @@ namespace MSSQLand.Actions.ConfigMgr
                 if (_inProgress)
                 {
                     filterClause += " AND ds.NumberInProgress > 0";
+                }
+
                 if (_withDeploymentTypes)
                 {
                     filterClause += " AND dt.CI_ID IS NOT NULL";
-                }
-
                 }
 
                 string query = $@"
@@ -266,7 +266,12 @@ ORDER BY ds.CreationTime DESC;
                 
                 if (hasDeploymentTypes)
                 {
+                    Logger.NewLine();
                     Logger.Info("Use 'cm-dt [DeploymentTypeCI]' to view deployment type details:");
+                    Logger.InfoNested("- Detection methods and verification scripts");
+                    Logger.InfoNested("- Install/uninstall commands and execution context");
+                    Logger.InfoNested("- Requirements and dependencies");
+                    Logger.InfoNested("- Content location and file details");
                 }
             }
 
