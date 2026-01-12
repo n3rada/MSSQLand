@@ -168,7 +168,11 @@ SELECT TOP {_limit}
         WHEN ds.FeatureType = 2 THEN 'Advertisement'
         ELSE 'Assignment'
     END AS DeploymentKind,
-    ds.SoftwareName,
+    COALESCE(
+        NULLIF(ds.SoftwareName, ''),
+        adv.OfferName,
+        assign.AssignmentName
+    ) AS DeploymentName,
     ds.CollectionID,
     c.Name AS CollectionName,
     ds.FeatureType,
@@ -195,6 +199,8 @@ LEFT JOIN [{db}].dbo.v_Advertisement adv ON ds.CollectionID = adv.CollectionID
     AND ds.PackageID = adv.PackageID 
     AND ds.ProgramName = adv.ProgramName
     AND ds.FeatureType = 2
+LEFT JOIN [{db}].dbo.v_CIAssignment assign ON ds.AssignmentID = assign.AssignmentID
+    AND ds.FeatureType <> 2
 {filterClause}
 ORDER BY ds.CreationTime DESC;
 ";
