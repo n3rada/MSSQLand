@@ -303,6 +303,7 @@ LEFT JOIN [{db}].dbo.v_CH_ClientSummary chs ON sys.ResourceID = chs.ResourceID
 ORDER BY 
     sys.Client0 DESC,
     sys.Decommissioned0 ASC,
+    sys.Primary_Group_ID0 ASC,
     bgb.OnlineStatus DESC,
     chs.LastPolicyRequest DESC,
     bgb.LastOnlineTime DESC";
@@ -314,40 +315,6 @@ ORDER BY
                         Logger.NewLine();
                         Logger.Warning("No devices found");
                         continue;
-                    }
-
-                    // Decode PrimaryGroupRID to human-readable names
-                    if (devicesTable.Columns.Contains("PrimaryGroupRID"))
-                    {
-                        DataColumn decodedGroupColumn = devicesTable.Columns.Add("PrimaryGroup", typeof(string));
-                        int groupRidIndex = devicesTable.Columns["PrimaryGroupRID"].Ordinal;
-                        decodedGroupColumn.SetOrdinal(groupRidIndex);
-
-                        foreach (DataRow row in devicesTable.Rows)
-                        {
-                            if (row["PrimaryGroupRID"] != DBNull.Value)
-                            {
-                                string rid = row["PrimaryGroupRID"].ToString();
-                                row["PrimaryGroup"] = rid switch
-                                {
-                                    "513" => "Domain Users",
-                                    "514" => "Domain Guests",
-                                    "515" => "Domain Computers",
-                                    "516" => "Domain Controllers",
-                                    "517" => "Cert Publishers",
-                                    "518" => "Schema Admins",
-                                    "519" => "Enterprise Admins",
-                                    "520" => "Group Policy Creator Owners",
-                                    "521" => "Read-Only Domain Controllers",
-                                    "522" => "Cloneable Domain Controllers",
-                                    "525" => "Protected Users",
-                                    "526" => "Key Admins",
-                                    "527" => "Enterprise Key Admins",
-                                    _ => $"RID {rid}"
-                                };
-                            }
-                        }
-                        devicesTable.Columns.Remove("PrimaryGroupRID");
                     }
 
                     // Decode UserAccountControl flags
