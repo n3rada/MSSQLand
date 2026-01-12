@@ -233,7 +233,7 @@ WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}';";
                     
                     // Check for scan errors
                     int errorCode = device["UpdateScanErrorCode"] != DBNull.Value ? Convert.ToInt32(device["UpdateScanErrorCode"]) : 0;
-                    string errorInfo = errorCode != 0 ? $" (Error: 0x{errorCode:X8} - {DecodeUpdateScanError(errorCode)})" : "";
+                    string errorInfo = errorCode != 0 ? $" (Error: 0x{errorCode:X8})" : "";
                     
                     Logger.InfoNested($"Update Scan (scans for missing Windows patches): {lastUpdateScan:yyyy-MM-dd HH:mm:ss} UTC ({updateAge.Days}d {updateAge.Hours}h {updateAge.Minutes}m ago){errorInfo}");
                 }
@@ -494,41 +494,6 @@ ORDER BY ts.Name;";
             }
 
             return null;
-        }
-
-        /// <summary>
-        /// Decode common Windows Update / WSUS scan error codes
-        /// </summary>
-        private static string DecodeUpdateScanError(int errorCode)
-        {
-            switch (unchecked((uint)errorCode))
-            {
-                case 0x80240016: return "WU_E_DOWNLOAD_FAILED: Update download failed";
-                case 0x80240017: return "WU_E_URL_NOT_FOUND: Update URL not found";
-                case 0x80240022: return "WU_E_ALL_UPDATES_FAILED: All updates failed to apply";
-                case 0x8024001E: return "WU_E_SERVICE_STOP: Service shutdown in progress";
-                case 0x8024401C: return "WU_E_PT_HTTP_STATUS_REQUEST_TIMEOUT: HTTP request timeout";
-                case 0x80244022: return "WU_E_PT_HTTP_STATUS_SERVICE_UNAVAIL: WSUS server unavailable (503)";
-                case 0x8024402C: return "WU_E_PT_WINHTTP_NAME_NOT_RESOLVED: Cannot resolve WSUS server name";
-                case 0x80244010: return "WU_E_PT_EXCEEDED_MAX_SERVER_TRIPS: Exceeded max server round trips";
-                case 0x80240437: return "WU_E_PT_HTTP_STATUS_DENIED: WSUS server denied access (401)";
-                case 0x80240438: return "WU_E_PT_HTTP_STATUS_FORBIDDEN: WSUS server access forbidden (403)";
-                case 0x80240439: return "WU_E_PT_HTTP_STATUS_BAD_REQUEST: WSUS rejected scan request (400) - possible WSUS config issue";
-                case 0x8024502D: return "WU_E_PT_SAME_REDIR_ID: Redirect loop detected";
-                case 0x8024400A: return "WU_E_PT_SOAPCLIENT_BASE: SOAP client error";
-                case 0x8024400E: return "WU_E_PT_SOAP_SERVER: WSUS SOAP server error";
-                case 0x80244019: return "WU_E_PT_HTTP_STATUS_NOT_FOUND: WSUS endpoint not found (404)";
-                case 0x8024401B: return "WU_E_PT_HTTP_STATUS_BAD_METHOD: Invalid HTTP method";
-                case 0x80244021: return "WU_E_PT_HTTP_STATUS_BAD_GATEWAY: Bad gateway (502)";
-                case 0x80072EE2: return "WINHTTP_NAME_NOT_RESOLVED: Cannot resolve WSUS server hostname";
-                case 0x80072EFD: return "WINHTTP_CANNOT_CONNECT: Cannot connect to WSUS server";
-                case 0x80072F78: return "WINHTTP_SECURE_FAILURE: SSL/TLS certificate error";
-                case 0x80072EE7: return "WINHTTP_NAME_NOT_RESOLVED: DNS lookup failure";
-                case 0x80070643: return "ERROR_INSTALL_FAILURE: Update installation failed";
-                case 0x8007000E: return "E_OUTOFMEMORY: Insufficient memory";
-                case 0x80070005: return "E_ACCESSDENIED: Access denied - permissions issue";
-                default: return "Unknown error - check WindowsUpdate.log or WSUS sync status";
-            }
         }
     }
 }
