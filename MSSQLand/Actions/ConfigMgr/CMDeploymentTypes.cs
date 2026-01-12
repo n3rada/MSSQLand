@@ -2,7 +2,9 @@ using MSSQLand.Services;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Xml;
 
 namespace MSSQLand.Actions.ConfigMgr
 {
@@ -130,7 +132,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
                 string topClause = _limit > 0 ? $"TOP {_limit}" : "";
 
-                // Query all deployment types with XML for parsing
+                // Query deployment types - simplified for performance
                 string query = $@"
 SELECT {topClause}
     ci.CI_ID,
@@ -146,20 +148,9 @@ SELECT {topClause}
     ci.SourceSite,
     ci.SDMPackageDigest,
     lcp.Title,
-    lcp.Version AS LocalizedVersion,
-    parent_app.ApplicationName AS ParentApplication
+    lcp.Version AS LocalizedVersion
 FROM [{db}].dbo.CI_ConfigurationItems ci
 LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp ON ci.CI_ID = lcp.CI_ID AND lcp.LocaleID = 1033
-LEFT JOIN (
-    SELECT 
-        rel.ToCI_ID,
-        COALESCE(lp.DisplayName, lcp_app.Title) AS ApplicationName
-    FROM [{db}].dbo.CI_ConfigurationItemRelations rel
-    INNER JOIN [{db}].dbo.CI_ConfigurationItems ci_app ON rel.FromCI_ID = ci_app.CI_ID
-    LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON ci_app.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
-    LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp_app ON ci_app.CI_ID = lcp_app.CI_ID AND lcp_app.LocaleID = 1033
-    WHERE rel.RelationType = 9
-) parent_app ON ci.CI_ID = parent_app.ToCI_ID
 WHERE ci.CIType_ID = 21
 ORDER BY ci.DateLastModified DESC, ci.DateCreated DESC;";
 
@@ -171,11 +162,203 @@ ORDER BY ci.DateLastModified DESC, ci.DateCreated DESC;";
                     continue;
                 }
 
+                // Parse SDMPackageDigest XML and add extracted columns
+                int sdmIndex = results.Columns["SDMPackageDigest"]?.Ordinal ?? -1;
+                if (sdmIndex >= 0)
+                {
+                    // Add new columns for parsed data
+                    DataColumn technologyCol = results.Columns.Add("Technology", typeof(string));
+                    DataColumn installCmdCol = results.Columns.Add("InstallCommand", typeof(string));
+                    DataColumn contentCol = results.Columns.Add("ContentLocation", typeof(string));
+                    DataColumn detectionCol = results.Columns.Add("DetectionType", typeof(string));
+                    DataColumn executionCol = results.Columns.Add("ExecutionContext", typeof(string));
+
+                    // Add ParentApplication column only if needed for filtering or display
+                    DataColumn parentAppCol = null;
+                    if (!string.IsNullOrEmpty(_application))
+                    {
+                        parentAppCol = results.Columns.Add("ParentApplication", typeof(string));
+                        
+                        // Fetch parent applications for filtering
+                        string parentQuery = $@"
+SELECT 
+    rel.ToCI_ID,
+    COALESCE(lp.DisplayName, lcp_app.Title) AS ApplicationName
+FROM [{db}].dbo.CI_ConfigurationItemRelations rel
+INNER JOIN [{db}].dbo.CI_ConfigurationItems ci_app ON rel.FromCI_ID = ci_app.CI_ID
+LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON ci_app.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
+LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp_app ON ci_app.CI_ID = lcp_app.CI_ID AND lcp_app.LocaleID = 1033
+WHERE rel.RelationType = 9";
+                        
+                        DataTable parentApps = databaseContext.QueryService.ExecuteTable(parentQuery);
+                        Dictionary<int, string> parentAppLookup = new Dictionary<int, string>();
+                        foreach (DataRow parentRow in parentApps.Rows)
+                        {
+                            int ciId = Convert.ToInt32(parentRow["ToCI_ID"]);
+                            string appName = parentRow["ApplicationName"]?.ToString() ?? "";
+                            parentAppLookup[ciId] = appName;
+                        }
+                        
+                        // Populate ParentApplication column
+                        foreach (DataRow row in results.Rows)
+                        {
+                            int ciId = Convert.ToInt32(row["CI_ID"]);
+                            row["ParentApplication"] = parentAppLookup.ContainsKey(ciId) ? parentAppLookup[ciId] : "";
+                        }
+                    }
+
+                    // Position new columns after Title
+                    int titleIndex = results.Columns["Title"]?.Ordinal ?? 0;
+                    technologyCol.SetOrdinal(titleIndex + 1);
+                    installCmdCol.SetOrdinal(titleIndex + 2);
+                    contentCol.SetOrdinal(titleIndex + 3);
+                    detectionCol.SetOrdinal(titleIndex + 4);
+                    executionCol.SetOrdinal(titleIndex + 5);
+                    if (parentAppCol != null)
+                        parentAppCol.SetOrdinal(titleIndex + 6);
+
+                    // Parse XML for each row
+                    List<DataRow> rowsToRemove = new List<DataRow>();
+                    foreach (DataRow row in results.Rows)
+                    {
+                        ParseSDMPackageDigest(row);
+
+                        // Apply filters
+                        bool keepRow = true;
+
+                        if (!string.IsNullOrEmpty(_technology))
+                        {
+                            string tech = row["Technology"]?.ToString() ?? "";
+                            if (!tech.Contains(_technology, StringComparison.OrdinalIgnoreCase))
+                                keepRow = false;
+                        }
+
+                        if (!string.IsNullOrEmpty(_contentPath))
+                        {
+                            string content = row["ContentLocation"]?.ToString() ?? "";
+                            if (!content.Contains(_contentPath, StringComparison.OrdinalIgnoreCase))
+                                keepRow = false;
+                        }
+
+                        if (!string.IsNullOrEmpty(_installCommand))
+                        {
+                            string install = row["InstallCommand"]?.ToString() ?? "";
+                            if (!install.Contains(_installCommand, StringComparison.OrdinalIgnoreCase))
+                                keepRow = false;
+                        }
+
+                        if (!string.IsNullOrEmpty(_executionContext))
+                        {
+                            string context = row["ExecutionContext"]?.ToString() ?? "";
+                            if (!context.Contains(_executionContext, StringComparison.OrdinalIgnoreCase))
+                                keepRow = false;
+                        }
+
+                        if (!string.IsNullOrEmpty(_detectionType))
+                        {
+                            string detection = row["DetectionType"]?.ToString() ?? "";
+                            if (!detection.Contains(_detectionType, StringComparison.OrdinalIgnoreCase))
+                                keepRow = false;
+                        }
+
+                        if (!string.IsNullOrEmpty(_application))
+                        {
+                            string app = row["ParentApplication"]?.ToString() ?? "";
+                            if (!app.Contains(_application, StringComparison.OrdinalIgnoreCase))
+                                keepRow = false;
+                        }
+
+                        if (_enabled != null)
+                        {
+                            bool isEnabled = Convert.ToBoolean(row["IsEnabled"]);
+                            if (isEnabled != _enabled.Value)
+                                keepRow = false;
+                        }
+
+                        if (!keepRow)
+                            rowsToRemove.Add(row);
+                    }
+
+                    // Remove filtered rows
+                    foreach (DataRow row in rowsToRemove)
+                    {
+                        results.Rows.Remove(row);
+                    }
+
+                    // Remove SDMPackageDigest column (no longer needed)
+                    results.Columns.Remove("SDMPackageDigest");
+                }
+
+                if (results.Rows.Count == 0)
+                {
+                    Logger.Warning($"No deployment types found matching the specified filters in {db}");
+                    continue;
+                }
+
                 Console.WriteLine(OutputFormatter.ConvertDataTable(results));
                 Logger.Success($"Found {results.Rows.Count} deployment type(s)");
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Parse SDMPackageDigest XML and extract key fields
+        /// </summary>
+        private static void ParseSDMPackageDigest(DataRow row)
+        {
+            string xmlContent = row["SDMPackageDigest"]?.ToString() ?? "";
+            
+            if (string.IsNullOrEmpty(xmlContent))
+            {
+                row["Technology"] = "";
+                row["InstallCommand"] = "";
+                row["ContentLocation"] = "";
+                row["DetectionType"] = "";
+                row["ExecutionContext"] = "";
+                return;
+            }
+
+            try
+            {
+                XmlDocument doc = new XmlDocument();
+                doc.LoadXml(xmlContent);
+
+                XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
+                nsmgr.AddNamespace("dcm", "http://schemas.microsoft.com/SystemsManagementServer/2005/03/10/DesiredConfiguration");
+                nsmgr.AddNamespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
+
+                // Extract Technology
+                XmlNode techNode = doc.SelectSingleNode("//dcm:DeploymentType/dcm:Installer/@Technology", nsmgr);
+                row["Technology"] = techNode?.Value ?? "";
+
+                // Extract Install Command
+                XmlNode installNode = doc.SelectSingleNode("//dcm:InstallAction/dcm:Provider/dcm:Data[@id='InstallCommandLine']", nsmgr);
+                row["InstallCommand"] = installNode?.InnerText ?? "";
+
+                // Extract Content Location
+                XmlNode contentNode = doc.SelectSingleNode("//dcm:ContentRef/dcm:Location", nsmgr);
+                row["ContentLocation"] = contentNode?.InnerText ?? "";
+
+                // Extract Detection Type
+                XmlNode detectionNode = doc.SelectSingleNode("//dcm:EnhancedDetectionMethod/@DataType", nsmgr);
+                if (detectionNode == null)
+                    detectionNode = doc.SelectSingleNode("//dcm:DetectAction/dcm:Provider/@DataType", nsmgr);
+                row["DetectionType"] = detectionNode?.Value ?? "";
+
+                // Extract Execution Context
+                XmlNode contextNode = doc.SelectSingleNode("//dcm:InstallAction/dcm:Provider/dcm:Data[@id='ExecutionContext']", nsmgr);
+                row["ExecutionContext"] = contextNode?.InnerText ?? "";
+            }
+            catch (Exception)
+            {
+                // If XML parsing fails, set empty values
+                row["Technology"] = "";
+                row["InstallCommand"] = "";
+                row["ContentLocation"] = "";
+                row["DetectionType"] = "";
+                row["ExecutionContext"] = "";
+            }
         }
     }
 }
