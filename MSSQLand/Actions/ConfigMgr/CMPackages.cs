@@ -202,7 +202,12 @@ GROUP BY
     p.Manufacturer, p.Version, p.PackageType,
     p.StoredPkgPath, p.SourceVersion, p.SourceDate, p.LastRefreshTime
 {havingClause}
-ORDER BY p.Name;
+ORDER BY 
+    p.PackageType ASC,
+    COUNT(DISTINCT adv.AdvertisementID) DESC,
+    COUNT(DISTINCT pr.ProgramName) DESC,
+    p.LastRefreshTime DESC,
+    p.Name ASC;
 ";
 
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
