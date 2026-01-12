@@ -9,7 +9,9 @@ using MSSQLand.Actions.FileSystem;
 using MSSQLand.Actions.Execution;
 using MSSQLand.Actions.Domain;
 using MSSQLand.Actions.Administration;
+#if ENABLE_CM
 using MSSQLand.Actions.ConfigMgr;
+#endif
 using MSSQLand.Exceptions;
 
 namespace MSSQLand.Utilities
