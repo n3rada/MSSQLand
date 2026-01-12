@@ -51,9 +51,9 @@ namespace MSSQLand.Actions.ConfigMgr
 
                 string filterClause = string.IsNullOrEmpty(_filter)
                     ? ""
-                    : $"WHERE ServerNALPath LIKE '%{_filter}%'";
+                    : $"WHERE NALPath LIKE '%{_filter}%' OR ServerName LIKE '%{_filter}%'";
 
-                string query = $@"SELECT * FROM [{db}].dbo.v_DistributionPoint {filterClause} ORDER BY ServerNALPath;";
+                string query = $@"SELECT * FROM [{db}].dbo.DistributionPoints {filterClause} ORDER BY NALPath;";
 
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
 

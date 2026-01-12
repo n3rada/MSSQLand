@@ -126,7 +126,7 @@ namespace MSSQLand.Utilities
             { "cm-tasksequences", (typeof(CMTaskSequences), "Enumerate all task sequences with summary information.", new[] { "cm-ts" }) },
             { "cm-tasksequence", (typeof(CMTaskSequence), "Display detailed information for a specific task sequence including all referenced content.", null) },
             { "cm-applications", (typeof(CMApplications), "Enumerate applications with deployment types, install commands, and content locations for modification.", new[] { "cm-apps" }) },
-            { "cm-distribution-points", (typeof(CMDistributionPoints), "Enumerate distribution points with content library paths for lateral movement and content poisoning.", new[] { "cm-dp" }) },
+            { "cm-distribution-points", (typeof(CMDistributionPoints), "Enumerate distribution points with content library paths for lateral movement and content poisoning.", new[] { "cm-dps" }) },
             { "cm-accounts", (typeof(CMAccounts), "Enumerate encrypted credentials (NAA, Client Push, Task Sequence) for decryption on site server.", null) },
             { "cm-aad-apps", (typeof(CMAadApps), "Enumerate Azure AD app registrations with encrypted secrets for cloud infrastructure access.", new[] { "cm-aad" }) },
             { "cm-scripts", (typeof(CMScripts), "Enumerate PowerShell scripts with metadata overview (excludes script content).", null) },

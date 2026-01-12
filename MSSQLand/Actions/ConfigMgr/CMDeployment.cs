@@ -544,21 +544,20 @@ ORDER BY aas.LastStatusTime DESC";
                     string dpStatusQuery = $@"
 SELECT 
     dp.ServerName AS DistributionPoint,
-    dps.LastStatusTime,
-    CASE dps.MessageState
+    ps.LastStatusTime,
+    CASE ps.MessageState
         WHEN 1 THEN 'Success'
         WHEN 2 THEN 'InProgress'
         WHEN 3 THEN 'Error'
         WHEN 4 THEN 'Retry'
-        ELSE CAST(dps.MessageState AS VARCHAR)
+        ELSE CAST(ps.MessageState AS VARCHAR)
     END AS DistributionState,
-    dps.LastStatusMessageIDName,
-    dps.LastErrorStatusMessageIDName,
-    dp.BoundaryGroups
-FROM [{db}].dbo.v_DistributionPoint dp
-INNER JOIN [{db}].dbo.v_PackageStatusDetailSumm dps ON dp.ServerName = dps.ServerNALPath
-WHERE dps.PackageID = '{packageId.Replace("'", "''")}'
-ORDER BY dps.LastStatusTime DESC;";
+    ps.LastStatusMessageID,
+    ps.LastErrorStatusMessageID
+FROM [{db}].dbo.DistributionPoints dp
+INNER JOIN [{db}].dbo.DistributionStatus ps ON dp.NALPath = ps.NALPath
+WHERE ps.PackageID = '{packageId.Replace("'", "''")}'
+ORDER BY ps.LastStatusTime DESC;";
 
                     DataTable dpStatusResult = databaseContext.QueryService.ExecuteTable(dpStatusQuery);
                     
