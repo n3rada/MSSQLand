@@ -1,3 +1,5 @@
+// MSSQLand/Actions/ConfigMgr/CMDevice.cs
+
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;

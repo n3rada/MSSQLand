@@ -1,3 +1,5 @@
+// MSSQLand/Actions/ConfigMgr/CMScriptRun.cs
+
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;

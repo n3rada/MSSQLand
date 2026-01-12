@@ -1,4 +1,6 @@
-﻿using System;
+﻿// MSSQLand/Actions/ActionFactory.cs
+
+using System;
 using System.Collections.Generic;
 using MSSQLand.Actions;
 using MSSQLand.Actions.Remote;

@@ -1,4 +1,6 @@
-﻿using MSSQLand.Services;
+﻿// MSSQLand/Actions/Execution/RemotePowerShellExecutor.cs
+
+using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
 

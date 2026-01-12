@@ -1,4 +1,4 @@
-// MSSQLand/Actions/Administration/UserAdd.cs
+// MSSQLand/Actions/Administration/CreateUser.cs
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;

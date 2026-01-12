@@ -1,3 +1,5 @@
+// MSSQLand/Actions/ConfigMgr/CMDistributionPoints.cs
+
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;

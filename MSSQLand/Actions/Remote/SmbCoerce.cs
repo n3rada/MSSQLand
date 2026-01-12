@@ -1,4 +1,6 @@
-﻿using MSSQLand.Services;
+﻿// MSSQLand/Actions/Remote/SmbCoerce.cs
+
+using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
 using System.Text.RegularExpressions;

@@ -1,4 +1,6 @@
-﻿using MSSQLand.Services;
+﻿// MSSQLand/Actions/Administration/Kill.cs
+
+using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
 using System.Data;

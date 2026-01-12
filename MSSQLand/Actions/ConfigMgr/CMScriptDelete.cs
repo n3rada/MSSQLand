@@ -1,3 +1,5 @@
+// MSSQLand/Actions/ConfigMgr/CMScriptDelete.cs
+
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;

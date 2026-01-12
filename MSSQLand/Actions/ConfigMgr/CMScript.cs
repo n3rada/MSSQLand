@@ -1,3 +1,5 @@
+// MSSQLand/Actions/ConfigMgr/CMScript.cs
+
 using System;
 using System.Data;
 using System.Text;

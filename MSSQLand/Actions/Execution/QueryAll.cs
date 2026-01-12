@@ -1,3 +1,5 @@
+// MSSQLand/Actions/Execution/QueryAll.cs
+
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
