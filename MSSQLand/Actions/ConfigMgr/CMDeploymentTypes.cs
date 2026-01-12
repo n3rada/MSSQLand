@@ -154,8 +154,7 @@ SELECT {topClause}
     ci.LastModifiedBy,
     ci.SourceSite,
     ci.SDMPackageDigest,
-    lcp.Title,
-    lcp.Version AS LocalizedVersion
+    lcp.Title
 FROM [{db}].dbo.CI_ConfigurationItems ci
 LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp ON ci.CI_ID = lcp.CI_ID AND lcp.LocaleID = 1033
 WHERE {whereClause}
