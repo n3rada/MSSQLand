@@ -420,7 +420,6 @@ ORDER BY dt.DateCreated DESC";
                         // For other CI types, just show pointer to cm-dt
                         else
                         {
-                            Logger.NewLine();
                             Logger.Info($"Use 'cm-dt {ciId}' to view detailed {ciRow["CIType"]} information");
                         }
                     }
