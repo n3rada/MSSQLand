@@ -283,8 +283,8 @@ SELECT DISTINCT
     ds.SoftwareName,
     ds.CollectionID,
     c.Name AS CollectionName,
-    ds.FeatureType,
-    ds.DeploymentIntent,
+    ds.FeatureType AS FeatureTypeRaw,
+    ds.DeploymentIntent AS DeploymentIntentRaw,
     ds.DeploymentTime,
     ds.NumberSuccess,
     ds.NumberInProgress,
@@ -303,21 +303,24 @@ ORDER BY ds.DeploymentTime DESC;";
                 {
                     Logger.Info("Deployments Targeting This Device");
                     
-                    // Add decoded FeatureType column before FeatureType
+                    // Add decoded columns and remove raw numeric columns
                     DataColumn decodedFeatureColumn = deploymentsResult.Columns.Add("DeploymentType", typeof(string));
-                    int featureTypeIndex = deploymentsResult.Columns["FeatureType"].Ordinal;
-                    decodedFeatureColumn.SetOrdinal(featureTypeIndex);
+                    int featureTypeRawIndex = deploymentsResult.Columns["FeatureTypeRaw"].Ordinal;
+                    decodedFeatureColumn.SetOrdinal(featureTypeRawIndex);
 
-                    // Add decoded DeploymentIntent column before DeploymentIntent
                     DataColumn decodedIntentColumn = deploymentsResult.Columns.Add("Intent", typeof(string));
-                    int deploymentIntentIndex = deploymentsResult.Columns["DeploymentIntent"].Ordinal;
-                    decodedIntentColumn.SetOrdinal(deploymentIntentIndex);
+                    int deploymentIntentRawIndex = deploymentsResult.Columns["DeploymentIntentRaw"].Ordinal;
+                    decodedIntentColumn.SetOrdinal(deploymentIntentRawIndex);
 
                     foreach (DataRow row in deploymentsResult.Rows)
                     {
-                        row["DeploymentType"] = CMService.DecodeFeatureType(row["FeatureType"]);
-                        row["Intent"] = CMService.DecodeDeploymentIntent(row["DeploymentIntent"]);
+                        row["DeploymentType"] = CMService.DecodeFeatureType(row["FeatureTypeRaw"]);
+                        row["Intent"] = CMService.DecodeDeploymentIntent(row["DeploymentIntentRaw"]);
                     }
+
+                    // Remove raw numeric columns
+                    deploymentsResult.Columns.Remove("FeatureTypeRaw");
+                    deploymentsResult.Columns.Remove("DeploymentIntentRaw");
 
                     Console.WriteLine(OutputFormatter.ConvertDataTable(deploymentsResult));
                     Logger.Success($"Found {deploymentsResult.Rows.Count} deployment(s) targeting this device");
@@ -334,7 +337,7 @@ SELECT DISTINCT
     p.Name AS PackageName,
     p.Version,
     p.Manufacturer,
-    p.PackageType,
+    p.PackageType AS PackageTypeRaw,
     p.PkgSourcePath,
     adv.CollectionID,
     c.Name AS CollectionName,
@@ -369,10 +372,11 @@ ORDER BY p.Name, adv.AdvertisementName;";
                 if (packagesResult.Rows.Count > 0)
                 {
                     Logger.Info("Packages Deployed to This Device");
-                    // Add decoded PackageType column before PackageType
-                    DataColumn decodedTypeColumn = packagesResult.Columns.Add("PackageTypeDecoded", typeof(string));
-                    int packageTypeIndex = packagesResult.Columns["PackageType"].Ordinal;
-                    decodedTypeColumn.SetOrdinal(packageTypeIndex);
+                    
+                    // Add decoded PackageType column and remove raw numeric column
+                    DataColumn decodedTypeColumn = packagesResult.Columns.Add("PackageType", typeof(string));
+                    int packageTypeRawIndex = packagesResult.Columns["PackageTypeRaw"].Ordinal;
+                    decodedTypeColumn.SetOrdinal(packageTypeRawIndex);
 
                     // Add decoded AdvertFlags column before AdvertFlags
                     DataColumn decodedAdvertColumn = packagesResult.Columns.Add("DecodedFlags", typeof(string));
@@ -381,9 +385,12 @@ ORDER BY p.Name, adv.AdvertisementName;";
 
                     foreach (DataRow row in packagesResult.Rows)
                     {
-                        row["PackageTypeDecoded"] = CMService.DecodePackageType(row["PackageType"]);
+                        row["PackageType"] = CMService.DecodePackageType(row["PackageTypeRaw"]);
                         row["DecodedFlags"] = CMService.DecodeAdvertFlags(row["AdvertFlags"]);
                     }
+
+                    // Remove raw numeric column
+                    packagesResult.Columns.Remove("PackageTypeRaw");
 
                     Console.WriteLine(OutputFormatter.ConvertDataTable(packagesResult));
                     Logger.Success($"Found {packagesResult.Rows.Count} package(s)");
@@ -403,7 +410,7 @@ SELECT DISTINCT
     ci.IsEnabled,
     ci.IsExpired,
     ds.AssignmentID,
-    ds.DeploymentIntent,
+    ds.DeploymentIntent AS DeploymentIntentRaw,
     ds.DeploymentTime
 FROM [{db}].dbo.v_FullCollectionMembership cm
 INNER JOIN [{db}].dbo.v_DeploymentSummary ds ON cm.CollectionID = ds.CollectionID
@@ -427,15 +434,18 @@ ORDER BY ApplicationName;";
                 {
                     Logger.Info("Applications Deployed to This Device");
                     
-                    // Add decoded DeploymentIntent column before DeploymentIntent
+                    // Add decoded DeploymentIntent column and remove raw numeric column
                     DataColumn decodedIntentColumn = applicationsResult.Columns.Add("Intent", typeof(string));
-                    int deploymentIntentIndex = applicationsResult.Columns["DeploymentIntent"].Ordinal;
-                    decodedIntentColumn.SetOrdinal(deploymentIntentIndex);
+                    int deploymentIntentRawIndex = applicationsResult.Columns["DeploymentIntentRaw"].Ordinal;
+                    decodedIntentColumn.SetOrdinal(deploymentIntentRawIndex);
 
                     foreach (DataRow row in applicationsResult.Rows)
                     {
-                        row["Intent"] = CMService.DecodeDeploymentIntent(row["DeploymentIntent"]);
+                        row["Intent"] = CMService.DecodeDeploymentIntent(row["DeploymentIntentRaw"]);
                     }
+
+                    // Remove raw numeric column
+                    applicationsResult.Columns.Remove("DeploymentIntentRaw");
 
                     Console.WriteLine(OutputFormatter.ConvertDataTable(applicationsResult));
                     Logger.Success($"Found {applicationsResult.Rows.Count} application(s)");

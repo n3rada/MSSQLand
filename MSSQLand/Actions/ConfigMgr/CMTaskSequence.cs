@@ -115,7 +115,7 @@ WHERE ts.PackageID = '{_packageId.Replace("'", "''")}'
                     string refQuery = $@"
 SELECT 
     ref.ReferencePackageID,
-    ref.ReferencePackageType,
+    ref.ReferencePackageType AS ReferencePackageTypeRaw,
     ref.ReferenceName AS ContentName,
     ref.ReferenceVersion AS Version,
     ref.ReferenceDescription AS Description,
@@ -127,15 +127,18 @@ ORDER BY ref.ReferencePackageType, ref.ReferenceName;
 
                     DataTable refResult = databaseContext.QueryService.ExecuteTable(refQuery);
                     
-                    // Add decoded ContentType column before ReferencePackageType
+                    // Add decoded ContentType column and remove raw numeric column
                     DataColumn decodedTypeColumn = refResult.Columns.Add("ContentType", typeof(string));
-                    int packageTypeIndex = refResult.Columns["ReferencePackageType"].Ordinal;
-                    decodedTypeColumn.SetOrdinal(packageTypeIndex);
+                    int packageTypeRawIndex = refResult.Columns["ReferencePackageTypeRaw"].Ordinal;
+                    decodedTypeColumn.SetOrdinal(packageTypeRawIndex);
 
                     foreach (DataRow row in refResult.Rows)
                     {
-                        row["ContentType"] = CMService.DecodePackageType(row["ReferencePackageType"]);
+                        row["ContentType"] = CMService.DecodePackageType(row["ReferencePackageTypeRaw"]);
                     }
+
+                    // Remove raw numeric column
+                    refResult.Columns.Remove("ReferencePackageTypeRaw");
 
                     Console.WriteLine(OutputFormatter.ConvertDataTable(refResult));
 
@@ -144,7 +147,7 @@ ORDER BY ref.ReferencePackageType, ref.ReferenceName;
                     Logger.Info("Content Summary by Type");
                     string summaryQuery = $@"
 SELECT 
-    ref.ReferencePackageType,
+    ref.ReferencePackageType AS ReferencePackageTypeRaw,
     COUNT(*) AS Count
 FROM [{db}].dbo.v_TaskSequenceReferencesInfo ref
 WHERE ref.PackageID = '{_packageId.Replace("'", "''")}'
@@ -154,15 +157,18 @@ ORDER BY COUNT(*) DESC;
 
                     DataTable summaryResult = databaseContext.QueryService.ExecuteTable(summaryQuery);
                     
-                    // Add decoded ContentType column before ReferencePackageType
+                    // Add decoded ContentType column and remove raw numeric column
                     DataColumn decodedSummaryTypeColumn = summaryResult.Columns.Add("ContentType", typeof(string));
-                    int summaryPackageTypeIndex = summaryResult.Columns["ReferencePackageType"].Ordinal;
-                    decodedSummaryTypeColumn.SetOrdinal(summaryPackageTypeIndex);
+                    int summaryPackageTypeRawIndex = summaryResult.Columns["ReferencePackageTypeRaw"].Ordinal;
+                    decodedSummaryTypeColumn.SetOrdinal(summaryPackageTypeRawIndex);
 
                     foreach (DataRow row in summaryResult.Rows)
                     {
-                        row["ContentType"] = CMService.DecodePackageType(row["ReferencePackageType"]);
+                        row["ContentType"] = CMService.DecodePackageType(row["ReferencePackageTypeRaw"]);
                     }
+
+                    // Remove raw numeric column
+                    summaryResult.Columns.Remove("ReferencePackageTypeRaw");
 
                     Console.WriteLine(OutputFormatter.ConvertDataTable(summaryResult));
                 }
@@ -232,7 +238,7 @@ SELECT
     ds.SoftwareName,
     ds.CollectionID,
     c.Name AS CollectionName,
-    ds.DeploymentIntent,
+    ds.DeploymentIntent AS DeploymentIntentRaw,
     ds.NumberSuccess,
     ds.NumberInProgress,
     ds.NumberErrors,
@@ -249,15 +255,18 @@ ORDER BY ds.DeploymentTime DESC;";
                 
                 if (statusResult.Rows.Count > 0)
                 {
-                    // Add decoded DeploymentIntent column before DeploymentIntent
+                    // Add decoded DeploymentIntent column and remove raw numeric column
                     DataColumn decodedIntentColumn = statusResult.Columns.Add("Intent", typeof(string));
-                    int deploymentIntentIndex = statusResult.Columns["DeploymentIntent"].Ordinal;
-                    decodedIntentColumn.SetOrdinal(deploymentIntentIndex);
+                    int deploymentIntentRawIndex = statusResult.Columns["DeploymentIntentRaw"].Ordinal;
+                    decodedIntentColumn.SetOrdinal(deploymentIntentRawIndex);
 
                     foreach (DataRow row in statusResult.Rows)
                     {
-                        row["Intent"] = CMService.DecodeDeploymentIntent(row["DeploymentIntent"]);
+                        row["Intent"] = CMService.DecodeDeploymentIntent(row["DeploymentIntentRaw"]);
                     }
+
+                    // Remove raw numeric column
+                    statusResult.Columns.Remove("DeploymentIntentRaw");
 
                     Console.WriteLine(OutputFormatter.ConvertDataTable(statusResult));
                 }

@@ -92,7 +92,7 @@ SELECT TOP {_limit}
     p.PkgSourcePath,
     p.Manufacturer,
     p.Version,
-    p.PackageType,
+    p.PackageType AS PackageTypeRaw,
     p.StoredPkgPath,
     p.SourceVersion,
     p.SourceDate,
@@ -121,15 +121,18 @@ ORDER BY p.Name;
                     continue;
                 }
 
-                // Add decoded PackageType column before PackageType
-                DataColumn decodedTypeColumn = result.Columns.Add("PackageTypeDecoded", typeof(string));
-                int packageTypeIndex = result.Columns["PackageType"].Ordinal;
-                decodedTypeColumn.SetOrdinal(packageTypeIndex);
+                // Add decoded PackageType column and remove raw numeric column
+                DataColumn decodedTypeColumn = result.Columns.Add("PackageType", typeof(string));
+                int packageTypeRawIndex = result.Columns["PackageTypeRaw"].Ordinal;
+                decodedTypeColumn.SetOrdinal(packageTypeRawIndex);
 
                 foreach (DataRow row in result.Rows)
                 {
-                    row["PackageTypeDecoded"] = CMService.DecodePackageType(row["PackageType"]);
+                    row["PackageType"] = CMService.DecodePackageType(row["PackageTypeRaw"]);
                 }
+
+                // Remove raw numeric column
+                result.Columns.Remove("PackageTypeRaw");
 
                 Console.WriteLine(OutputFormatter.ConvertDataTable(result));
 
