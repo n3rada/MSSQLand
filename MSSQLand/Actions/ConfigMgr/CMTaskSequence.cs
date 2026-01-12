@@ -254,8 +254,8 @@ ORDER BY adv.PresentTime DESC;";
                         if (row["MemberCount"] != DBNull.Value)
                             totalMembers += Convert.ToInt32(row["MemberCount"]);
                     }
-                    Logger.Info($"Total devices potentially targeted: {totalMembers}");
-                    Logger.InfoNested("Use 'cm-collection <CollectionID>' to see which devices are in each collection");
+                    Logger.SuccessNested($"Total devices potentially targeted: {totalMembers}");
+                    Logger.SuccessNested("Use 'cm-collection <CollectionID>' to see which devices are in each collection");
                 }
                 else
                 {
