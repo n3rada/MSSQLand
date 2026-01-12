@@ -336,6 +336,8 @@ SELECT DISTINCT
     p.Manufacturer,
     p.PackageType,
     p.PkgSourcePath,
+    adv.CollectionID,
+    c.Name AS CollectionName,
     adv.AdvertisementID,
     adv.AdvertisementName,
     adv.ProgramName,
@@ -353,6 +355,7 @@ SELECT DISTINCT
     END AS AcceptanceStatus
 FROM [{db}].dbo.v_FullCollectionMembership cm
 INNER JOIN [{db}].dbo.v_Advertisement adv ON cm.CollectionID = adv.CollectionID
+INNER JOIN [{db}].dbo.v_Collection c ON adv.CollectionID = c.CollectionID
 INNER JOIN [{db}].dbo.v_Package p ON adv.PackageID = p.PackageID
 LEFT JOIN [{db}].dbo.v_ClientAdvertisementStatus cas ON cas.AdvertisementID = adv.AdvertisementID AND cas.ResourceID = {resourceId}
 WHERE cm.ResourceID = {resourceId}
@@ -365,6 +368,11 @@ ORDER BY p.Name, adv.AdvertisementName;";
                 
                 if (packagesResult.Rows.Count > 0)
                 {
+                    // Add decoded PackageType column before PackageType
+                    DataColumn decodedTypeColumn = packagesResult.Columns.Add("PackageTypeDecoded", typeof(string));
+                    int packageTypeIndex = packagesResult.Columns["PackageType"].Ordinal;
+                    decodedTypeColumn.SetOrdinal(packageTypeIndex);
+
                     // Add decoded AdvertFlags column before AdvertFlags
                     DataColumn decodedAdvertColumn = packagesResult.Columns.Add("DecodedFlags", typeof(string));
                     int advertFlagsIndex = packagesResult.Columns["AdvertFlags"].Ordinal;
@@ -372,6 +380,7 @@ ORDER BY p.Name, adv.AdvertisementName;";
 
                     foreach (DataRow row in packagesResult.Rows)
                     {
+                        row["PackageTypeDecoded"] = CMService.DecodePackageType(row["PackageType"]);
                         row["DecodedFlags"] = CMService.DecodeAdvertFlags(row["AdvertFlags"]);
                     }
 

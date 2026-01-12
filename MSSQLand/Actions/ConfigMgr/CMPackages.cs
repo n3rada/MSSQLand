@@ -121,6 +121,16 @@ ORDER BY p.Name;
                     continue;
                 }
 
+                // Add decoded PackageType column before PackageType
+                DataColumn decodedTypeColumn = result.Columns.Add("PackageTypeDecoded", typeof(string));
+                int packageTypeIndex = result.Columns["PackageType"].Ordinal;
+                decodedTypeColumn.SetOrdinal(packageTypeIndex);
+
+                foreach (DataRow row in result.Rows)
+                {
+                    row["PackageTypeDecoded"] = CMService.DecodePackageType(row["PackageType"]);
+                }
+
                 Console.WriteLine(OutputFormatter.ConvertDataTable(result));
 
                 Logger.Success($"Found {result.Rows.Count} package(s)");

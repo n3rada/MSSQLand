@@ -115,16 +115,7 @@ WHERE ts.PackageID = '{_packageId.Replace("'", "''")}'
                     string refQuery = $@"
 SELECT 
     ref.ReferencePackageID,
-    CASE ref.ReferencePackageType
-        WHEN 0 THEN 'Package'
-        WHEN 3 THEN 'Driver Package'
-        WHEN 5 THEN 'Software Update Package'
-        WHEN 257 THEN 'Operating System Image'
-        WHEN 258 THEN 'Boot Image'
-        WHEN 259 THEN 'Operating System Installer'
-        WHEN 512 THEN 'Application'
-        ELSE 'Unknown (' + CAST(ref.ReferencePackageType AS VARCHAR) + ')'
-    END AS ContentType,
+    ref.ReferencePackageType,
     ref.ReferenceName AS ContentName,
     ref.ReferenceVersion AS Version,
     ref.ReferenceDescription AS Description,
@@ -135,6 +126,17 @@ ORDER BY ref.ReferencePackageType, ref.ReferenceName;
 ";
 
                     DataTable refResult = databaseContext.QueryService.ExecuteTable(refQuery);
+                    
+                    // Add decoded ContentType column before ReferencePackageType
+                    DataColumn decodedTypeColumn = refResult.Columns.Add("ContentType", typeof(string));
+                    int packageTypeIndex = refResult.Columns["ReferencePackageType"].Ordinal;
+                    decodedTypeColumn.SetOrdinal(packageTypeIndex);
+
+                    foreach (DataRow row in refResult.Rows)
+                    {
+                        row["ContentType"] = CMService.DecodePackageType(row["ReferencePackageType"]);
+                    }
+
                     Console.WriteLine(OutputFormatter.ConvertDataTable(refResult));
 
                     // Summary by content type
@@ -142,16 +144,7 @@ ORDER BY ref.ReferencePackageType, ref.ReferenceName;
                     Logger.Info("Content Summary by Type");
                     string summaryQuery = $@"
 SELECT 
-    CASE ref.ReferencePackageType
-        WHEN 0 THEN 'Package'
-        WHEN 3 THEN 'Driver Package'
-        WHEN 5 THEN 'Software Update Package'
-        WHEN 257 THEN 'Operating System Image'
-        WHEN 258 THEN 'Boot Image'
-        WHEN 259 THEN 'Operating System Installer'
-        WHEN 512 THEN 'Application'
-        ELSE 'Unknown'
-    END AS ContentType,
+    ref.ReferencePackageType,
     COUNT(*) AS Count
 FROM [{db}].dbo.v_TaskSequenceReferencesInfo ref
 WHERE ref.PackageID = '{_packageId.Replace("'", "''")}'
@@ -160,6 +153,17 @@ ORDER BY COUNT(*) DESC;
 ";
 
                     DataTable summaryResult = databaseContext.QueryService.ExecuteTable(summaryQuery);
+                    
+                    // Add decoded ContentType column before ReferencePackageType
+                    DataColumn decodedTypeColumn = summaryResult.Columns.Add("ContentType", typeof(string));
+                    int packageTypeIndex = summaryResult.Columns["ReferencePackageType"].Ordinal;
+                    decodedTypeColumn.SetOrdinal(packageTypeIndex);
+
+                    foreach (DataRow row in summaryResult.Rows)
+                    {
+                        row["ContentType"] = CMService.DecodePackageType(row["ReferencePackageType"]);
+                    }
+
                     Console.WriteLine(OutputFormatter.ConvertDataTable(summaryResult));
                 }
                 else

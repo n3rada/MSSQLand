@@ -107,7 +107,7 @@ WHERE p.PackageID = '{_packageId.Replace("'", "''")}'";
                 Logger.InfoNested($"Language: {language}");
                 
                 // PackageType: NULL = standard package (0)
-                string packageType = package["PackageType"] != DBNull.Value ? package["PackageType"].ToString() : "0 (Standard)";
+                string packageType = CMService.DecodePackageType(package["PackageType"]);
                 Logger.InfoNested($"Package Type: {packageType}");
                 
                 // Source Path: NULL = no source files (virtual package or legacy)

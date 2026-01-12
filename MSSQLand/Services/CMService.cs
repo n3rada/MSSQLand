@@ -112,6 +112,33 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
+        /// Decodes PackageType numeric value into human-readable string.
+        /// See: https://learn.microsoft.com/en-us/mem/configmgr/develop/reference/core/servers/configure/sms_package-server-wmi-class
+        /// </summary>
+        public static string DecodePackageType(object packageTypeObj)
+        {
+            if (packageTypeObj == DBNull.Value)
+                return "Package";
+
+            int packageType = Convert.ToInt32(packageTypeObj);
+
+            return packageType switch
+            {
+                0 => "Package",
+                3 => "Driver Package",
+                4 => "Task Sequence",
+                5 => "Software Update",
+                6 => "Device Setting",
+                7 => "Virtual App",
+                8 => "Application",
+                257 => "OS Image",
+                258 => "Boot Image",
+                259 => "OS Installer",
+                _ => $"Unknown ({packageType})"
+            };
+        }
+
+        /// <summary>
         /// Decodes ProgramFlags bitmask into human-readable semicolon-separated string.
         /// See: https://learn.microsoft.com/en-us/intune/configmgr/develop/reference/core/servers/configure/sms_program-server-wmi-class
         /// </summary>
