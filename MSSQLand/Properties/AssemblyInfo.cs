@@ -27,5 +27,10 @@
 // Revision
 // Patch-level change: hotfixes, small internal corrections, minor tweaks.
 //
-[assembly: AssemblyVersion("2.0.0.0")]
-[assembly: AssemblyFileVersion("2.0.0.0")]
+// Example versions:
+// 2.0.0 - Initial public release
+// 2.1.0 - Added data access control and EAFP pattern
+// 2.1.1 - Bug fixes and performance improvements
+//
+[assembly: AssemblyVersion("2.1.0.0")]
+[assembly: AssemblyFileVersion("2.1.0.0")]
