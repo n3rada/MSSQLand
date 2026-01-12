@@ -225,9 +225,6 @@ namespace MSSQLand.Utilities
                 var doc = new XmlDocument();
                 doc.LoadXml(xmlData);
 
-                // Decode HTML entities in all text nodes and attributes
-                DecodeXmlEntities(doc.DocumentElement);
-
                 var settings = new XmlWriterSettings
                 {
                     Indent = true,
@@ -241,7 +238,11 @@ namespace MSSQLand.Utilities
                 using var stringWriter = new StringWriter();
                 using var xmlWriter = XmlWriter.Create(stringWriter, settings);
                 doc.Save(xmlWriter);
-                return stringWriter.ToString();
+                
+                // Decode HTML entities in the final formatted output for better readability
+                // XmlWriter encodes entities for valid XML, but we want human-readable output
+                string formatted = stringWriter.ToString();
+                return System.Net.WebUtility.HtmlDecode(formatted);
             }
             catch
             {
@@ -250,35 +251,7 @@ namespace MSSQLand.Utilities
             }
         }
 
-        /// <summary>
-        /// Recursively decodes HTML entities in XML nodes (text content and attributes).
-        /// Converts &amp;lt; to &lt;, &amp;gt; to &gt;, &amp;amp; to &amp;, etc.
-        /// </summary>
-        private static void DecodeXmlEntities(XmlNode node)
-        {
-            if (node == null) return;
 
-            // Decode text content
-            if (node.NodeType == XmlNodeType.Text)
-            {
-                node.Value = System.Net.WebUtility.HtmlDecode(node.Value);
-            }
-
-            // Decode attributes
-            if (node.Attributes != null)
-            {
-                foreach (XmlAttribute attr in node.Attributes)
-                {
-                    attr.Value = System.Net.WebUtility.HtmlDecode(attr.Value);
-                }
-            }
-
-            // Recursively process child nodes
-            foreach (XmlNode child in node.ChildNodes)
-            {
-                DecodeXmlEntities(child);
-            }
-        }
 
         /// <summary>
         /// Wraps SQL Server identifier in brackets if it contains separator characters.
