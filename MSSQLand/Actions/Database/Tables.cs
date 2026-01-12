@@ -70,6 +70,12 @@ namespace MSSQLand.Actions.Database
                 ? databaseContext.QueryService.ExecutionServer.Database 
                 : _database;
 
+            // Ensure we have a valid database name
+            if (string.IsNullOrEmpty(targetDatabase))
+            {
+                throw new InvalidOperationException("Unable to determine target database. Please specify a database name explicitly.");
+            }
+
             string filterMsg = !string.IsNullOrEmpty(_name) ? $" (name: {_name})" : "";
             string columnsMsg = _showColumns ? " with columns" : "";
             string columnMsg = !string.IsNullOrEmpty(_columnFilter) ? $" with column containing '{_columnFilter}'" : "";
