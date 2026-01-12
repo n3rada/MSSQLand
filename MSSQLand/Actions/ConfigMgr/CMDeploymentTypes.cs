@@ -132,7 +132,6 @@ namespace MSSQLand.Actions.ConfigMgr
 
                 string topClause = _limit > 0 ? $"TOP {_limit}" : "";
 
-                // Query deployment types - simplified for performance
                 string query = $@"
 SELECT {topClause}
     ci.CI_ID,
@@ -222,8 +221,15 @@ WHERE rel.RelationType = 9";
                     foreach (DataRow row in results.Rows)
                     {
                         ParseSDMPackageDigest(row);
+                    }
 
-                        // Apply filters
+                    // Remove SDMPackageDigest column immediately after parsing (huge XML blob)
+                    results.Columns.Remove("SDMPackageDigest");
+
+                    // Apply filters
+                    foreach (DataRow row in results.Rows)
+                    {
+
                         bool keepRow = true;
 
                         if (!string.IsNullOrEmpty(_technology))
@@ -268,10 +274,11 @@ WHERE rel.RelationType = 9";
                                 keepRow = false;
                         }
 
-                        if (_enabled != null)
+                        if (!string.IsNullOrEmpty(_enabled))
                         {
                             bool isEnabled = Convert.ToBoolean(row["IsEnabled"]);
-                            if (isEnabled != _enabled.Value)
+                            bool enabledFilter = bool.Parse(_enabled);
+                            if (isEnabled != enabledFilter)
                                 keepRow = false;
                         }
 
@@ -284,9 +291,6 @@ WHERE rel.RelationType = 9";
                     {
                         results.Rows.Remove(row);
                     }
-
-                    // Remove SDMPackageDigest column (no longer needed)
-                    results.Columns.Remove("SDMPackageDigest");
                 }
 
                 if (results.Rows.Count == 0)
