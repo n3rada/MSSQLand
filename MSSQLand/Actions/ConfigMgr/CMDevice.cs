@@ -327,7 +327,7 @@ ORDER BY ds.DeploymentTime DESC;";
                     Logger.Warning("No deployments targeting this device");
                 }
 
-                // Get deployed packages
+                // Get deployed packages with status
                 string packagesQuery = $@"
 SELECT DISTINCT
     p.PackageID,
@@ -336,13 +336,27 @@ SELECT DISTINCT
     p.Manufacturer,
     p.PackageType,
     p.PkgSourcePath,
+    adv.AdvertisementID,
     adv.AdvertisementName,
-    adv.AdvertFlags
+    adv.ProgramName,
+    adv.AdvertFlags,
+    cas.LastAcceptanceStateName AS AcceptanceState,
+    cas.LastStateName AS ExecutionState,
+    cas.LastStatusTime,
+    cas.LastExecutionResult,
+    CASE 
+        WHEN cas.LastAcceptanceState = 0 THEN 'Waiting'
+        WHEN cas.LastAcceptanceState = 1 THEN 'Accepted'
+        WHEN cas.LastAcceptanceState = 2 THEN 'Rejected'
+        WHEN cas.LastAcceptanceState = 3 THEN 'Expired'
+        ELSE CAST(cas.LastAcceptanceState AS VARCHAR)
+    END AS AcceptanceStatus
 FROM [{db}].dbo.v_FullCollectionMembership cm
 INNER JOIN [{db}].dbo.v_Advertisement adv ON cm.CollectionID = adv.CollectionID
 INNER JOIN [{db}].dbo.v_Package p ON adv.PackageID = p.PackageID
+LEFT JOIN [{db}].dbo.v_ClientAdvertisementStatus cas ON cas.AdvertisementID = adv.AdvertisementID AND cas.ResourceID = {resourceId}
 WHERE cm.ResourceID = {resourceId}
-ORDER BY p.Name;";
+ORDER BY p.Name, adv.AdvertisementName;";
 
                 DataTable packagesResult = databaseContext.QueryService.ExecuteTable(packagesQuery);
                 
