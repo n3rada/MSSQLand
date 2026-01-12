@@ -250,16 +250,22 @@ WHERE adv.OfferID = '{_assignmentId.Replace("'", "''")}'";
                     {
                         Logger.InfoNested("RERUN BEHAVIOR: Default (if failed)");
                     }
+
+                    // Decode RemoteClientFlags for full details
+                    Logger.InfoNested($"RemoteClientFlags: {CMService.DecodeRemoteClientFlags(remoteClientFlags)}");
                     
-                    // Check AdvertFlags for other behaviors
+                    // Decode AdvertFlags for announcement timing and behavior
+                    Logger.InfoNested($"AdvertFlags: {CMService.DecodeAdvertFlags(advertFlags)}");
+                    
+                    // Highlight critical AdvertFlags
                     if ((advertFlags & 0x00020000) == 0x00020000)
                     {
-                        Logger.InfoNested("Can override maintenance windows");
+                        Logger.WarningNested("⚠ Can override maintenance windows");
                     }
                     
                     if ((advertFlags & 0x00000020) == 0x00000020)
                     {
-                        Logger.InfoNested("Announcement timing: IMMEDIATE (runs as soon as received)");
+                        Logger.WarningNested("⚠ Announcement timing: IMMEDIATE (runs as soon as received)");
                     }
                     
                     if ((advertFlags & 0x02000000) == 0x02000000)
