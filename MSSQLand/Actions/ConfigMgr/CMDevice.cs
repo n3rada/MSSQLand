@@ -394,7 +394,7 @@ ORDER BY SortPriority, cas.LastStatusTime DESC, p.Name;";
 
                     // Add decoded OfferType column
                     DataColumn decodedOfferColumn = packagesResult.Columns.Add("DeploymentPurpose", typeof(string));
-                    int offerTypeIndex = packagesResult.Columns["OfferType"].Ordinal;
+                    int offerTypeIndex = packagesResult.Columns["OfferTypeID"].Ordinal;
                     decodedOfferColumn.SetOrdinal(offerTypeIndex);
 
                     // Add decoded RemoteClientFlags column
@@ -404,22 +404,23 @@ ORDER BY SortPriority, cas.LastStatusTime DESC, p.Name;";
 
                     // Add decoded AdvertFlags column
                     DataColumn decodedAdvertColumn = packagesResult.Columns.Add("AnnouncementFlags", typeof(string));
-                    int advertFlagsIndex = packagesResult.Columns["AdvertFlags"].Ordinal;
+                    int advertFlagsIndex = packagesResult.Columns["OfferFlags"].Ordinal;
                     decodedAdvertColumn.SetOrdinal(advertFlagsIndex);
 
                     foreach (DataRow row in packagesResult.Rows)
                     {
                         row["PackageType"] = CMService.DecodePackageType(row["PackageTypeRaw"]);
-                        row["DeploymentPurpose"] = CMService.DecodeOfferType(row["OfferType"]);
+                        row["DeploymentPurpose"] = CMService.DecodeOfferType(row["OfferTypeID"]);
                         row["RerunBehavior"] = CMService.DecodeRemoteClientFlags(row["RemoteClientFlags"]);
-                        row["AnnouncementFlags"] = CMService.DecodeAdvertFlags(row["AdvertFlags"]);
+                        row["AnnouncementFlags"] = CMService.DecodeAdvertFlags(row["OfferFlags"]);
                     }
 
                     // Remove raw numeric columns
                     packagesResult.Columns.Remove("PackageTypeRaw");
-                    packagesResult.Columns.Remove("OfferType");
+                    packagesResult.Columns.Remove("OfferTypeID");
                     packagesResult.Columns.Remove("RemoteClientFlags");
-                    packagesResult.Columns.Remove("AdvertFlags");
+                    packagesResult.Columns.Remove("OfferFlags");
+                    packagesResult.Columns.Remove("SortPriority"); // Remove helper column
 
                     Console.WriteLine(OutputFormatter.ConvertDataTable(packagesResult));
                     Logger.Success($"Found {packagesResult.Rows.Count} package(s)");
