@@ -341,7 +341,7 @@ ORDER BY ds.DeploymentTime DESC;";
                 // Get deployed packages with status
                 string packagesQuery = $@"
 SELECT DISTINCT
-    p.PackageName,
+    p.Name AS PackageName,
     cas.LastStateName AS ExecutionState,
     CASE 
         WHEN cas.LastAcceptanceState = 0 THEN 'Waiting'
@@ -352,32 +352,30 @@ SELECT DISTINCT
     END AS AcceptanceStatus,
     cas.LastStatusTime,
     cas.LastExecutionResult,
-    adv.AdvertisementID,
-    adv.AdvertisementName,
-    adv.ProgramName,
+    adv.OfferID AS AdvertisementID,
+    adv.OfferName AS AdvertisementName,
+    adv.PkgProgram AS ProgramName,
     p.PackageID,
     p.Version,
     p.Manufacturer,
     p.PackageType AS PackageTypeRaw,
-    adv.OfferType,
+    adv.OfferTypeID,
     adv.RemoteClientFlags,
-    adv.AdvertFlags,
-    p.PkgSourcePath
-FROM [{db}].dbo.v_FullCollectionMembership cm
-INNER JOIN [{db}].dbo.v_Advertisement adv ON cm.CollectionID = adv.CollectionID
-INNER JOIN [{db}].dbo.v_Collection c ON adv.CollectionID = c.CollectionID
-INNER JOIN [{db}].dbo.v_Package p ON adv.PackageID = p.PackageID
-LEFT JOIN [{db}].dbo.v_ClientAdvertisementStatus cas ON cas.AdvertisementID = adv.AdvertisementID AND cas.ResourceID = {resourceId}
-WHERE cm.ResourceID = {resourceId}
-ORDER BY 
+    adv.OfferFlags,
+    p.PkgSourcePath,
     CASE 
         WHEN cas.LastStateName LIKE '%Fail%' OR cas.LastStateName LIKE '%Error%' THEN 0
         WHEN cas.LastStateName LIKE '%Running%' OR cas.LastStateName = 'Waiting' THEN 1
         WHEN cas.LastStateName = 'Succeeded' THEN 2
         ELSE 3
-    END,
-    cas.LastStatusTime DESC,
-    p.Name;";
+    END AS SortPriority
+FROM [{db}].dbo.v_FullCollectionMembership cm
+INNER JOIN [{db}].dbo.vSMS_Advertisement adv ON cm.CollectionID = adv.CollectionID
+INNER JOIN [{db}].dbo.v_Collection c ON adv.CollectionID = c.CollectionID
+INNER JOIN [{db}].dbo.v_Package p ON adv.PkgID = p.PackageID
+LEFT JOIN [{db}].dbo.v_ClientAdvertisementStatus cas ON cas.AdvertisementID = adv.OfferID AND cas.ResourceID = {resourceId}
+WHERE cm.ResourceID = {resourceId}
+ORDER BY SortPriority, cas.LastStatusTime DESC, p.Name;";
 
                 DataTable packagesResult = databaseContext.QueryService.ExecuteTable(packagesQuery);
                 
