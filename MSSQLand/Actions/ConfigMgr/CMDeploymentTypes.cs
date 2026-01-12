@@ -229,42 +229,42 @@ WHERE rel.RelationType = 9";
                         if (!string.IsNullOrEmpty(_technology))
                         {
                             string tech = row["Technology"]?.ToString() ?? "";
-                            if (!tech.Contains(_technology, StringComparison.OrdinalIgnoreCase))
+                            if (tech.IndexOf(_technology, StringComparison.OrdinalIgnoreCase) < 0)
                                 keepRow = false;
                         }
 
                         if (!string.IsNullOrEmpty(_contentPath))
                         {
                             string content = row["ContentLocation"]?.ToString() ?? "";
-                            if (!content.Contains(_contentPath, StringComparison.OrdinalIgnoreCase))
+                            if (content.IndexOf(_contentPath, StringComparison.OrdinalIgnoreCase) < 0)
                                 keepRow = false;
                         }
 
                         if (!string.IsNullOrEmpty(_installCommand))
                         {
                             string install = row["InstallCommand"]?.ToString() ?? "";
-                            if (!install.Contains(_installCommand, StringComparison.OrdinalIgnoreCase))
+                            if (install.IndexOf(_installCommand, StringComparison.OrdinalIgnoreCase) < 0)
                                 keepRow = false;
                         }
 
                         if (!string.IsNullOrEmpty(_executionContext))
                         {
                             string context = row["ExecutionContext"]?.ToString() ?? "";
-                            if (!context.Contains(_executionContext, StringComparison.OrdinalIgnoreCase))
+                            if (context.IndexOf(_executionContext, StringComparison.OrdinalIgnoreCase) < 0)
                                 keepRow = false;
                         }
 
                         if (!string.IsNullOrEmpty(_detectionType))
                         {
                             string detection = row["DetectionType"]?.ToString() ?? "";
-                            if (!detection.Contains(_detectionType, StringComparison.OrdinalIgnoreCase))
+                            if (detection.IndexOf(_detectionType, StringComparison.OrdinalIgnoreCase) < 0)
                                 keepRow = false;
                         }
 
                         if (!string.IsNullOrEmpty(_application))
                         {
                             string app = row["ParentApplication"]?.ToString() ?? "";
-                            if (!app.Contains(_application, StringComparison.OrdinalIgnoreCase))
+                            if (app.IndexOf(_application, StringComparison.OrdinalIgnoreCase) < 0)
                                 keepRow = false;
                         }
 
