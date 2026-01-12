@@ -135,8 +135,7 @@
     <Compile Include="Actions\Remote\SmbCoerce.cs" />
 
     <Compile Include="Actions\ConfigMgr\CMInfo.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMLogTrace.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMAdmins.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMLogTrace.cs" Condition="'$(EnableCM)' == 'true'" />    <Compile Include="Actions\ConfigMgr\CMDeploymentType.cs" Condition="'$(EnableCM)' == 'true'" />    <Compile Include="Actions\ConfigMgr\CMAdmins.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\ConfigMgr\CMServers.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\ConfigMgr\CMCollections.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\ConfigMgr\CMCollection.cs" Condition="'$(EnableCM)' == 'true'" />
