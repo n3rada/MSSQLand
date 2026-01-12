@@ -3,6 +3,7 @@ using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
+using System.Xml;
 
 namespace MSSQLand.Actions.ConfigMgr
 {
@@ -53,10 +54,10 @@ namespace MSSQLand.Actions.ConfigMgr
                 Logger.NewLine();
                 Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
-                // Get task sequence details
+                // Get task sequence details (including Sequence XML)
                 string tsQuery = $@"
 SELECT 
-    ts.PackageID,
+    ts.PkgID AS PackageID,
     ts.Name,
     ts.Description,
     ts.Version,
@@ -64,21 +65,22 @@ SELECT
     ts.Language,
     ts.SourceDate,
     ts.SourceVersion,
-    ts.PkgSourcePath AS SourcePath,
+    ts.Source AS SourcePath,
     ts.StoredPkgPath,
-    ts.LastRefreshTime,
+    ts.LastRefresh AS LastRefreshTime,
     ts.BootImageID,
     bi.Name AS BootImageName,
     ts.TS_Type,
     ts.TS_Flags,
+    ts.Sequence,
     (
         SELECT COUNT(*) 
         FROM [{db}].dbo.v_TaskSequenceReferencesInfo ref 
-        WHERE ref.PackageID = ts.PackageID
+        WHERE ref.PackageID = ts.PkgID
     ) AS ReferencedContentCount
-FROM [{db}].dbo.v_TaskSequencePackage ts
+FROM [{db}].dbo.vSMS_TaskSequencePackage ts
 LEFT JOIN [{db}].dbo.v_BootImagePackage bi ON ts.BootImageID = bi.PackageID
-WHERE ts.PackageID = '{_packageId.Replace("'", "''")}'
+WHERE ts.PkgID = '{_packageId.Replace("'", "''")}'
 ";
 
                 DataTable tsResult = databaseContext.QueryService.ExecuteTable(tsQuery);
@@ -92,6 +94,7 @@ WHERE ts.PackageID = '{_packageId.Replace("'", "''")}'
                 DataRow tsRow = tsResult.Rows[0];
                 string name = tsRow["Name"].ToString();
                 string description = tsRow["Description"].ToString();
+                string sequenceXml = tsRow["Sequence"].ToString();
                 int refCount = tsRow["ReferencedContentCount"] != DBNull.Value ? Convert.ToInt32(tsRow["ReferencedContentCount"]) : 0;
 
                 Logger.NewLine();
@@ -102,8 +105,19 @@ WHERE ts.PackageID = '{_packageId.Replace("'", "''")}'
                 }
                 Logger.Info($"Referenced Content Count: {refCount}");
 
+                // Parse and display task sequence steps
+                if (!string.IsNullOrEmpty(sequenceXml))
+                {
+                    Logger.NewLine();
+                    Logger.Info("Task Sequence Steps (Execution Order)");
+                    ParseAndDisplaySequenceSteps(sequenceXml);
+                }
+
                 Logger.NewLine();
                 Logger.Info("Task Sequence Properties");
+                
+                // Remove Sequence XML from display (too large)
+                tsResult.Columns.Remove("Sequence");
                 Console.WriteLine(OutputFormatter.ConvertDataTable(tsResult));
 
                 // Get referenced content
@@ -279,6 +293,150 @@ ORDER BY ds.DeploymentTime DESC;";
             }
 
             return null;
+        }
+
+        private void ParseAndDisplaySequenceSteps(string sequenceXml)
+        {
+            try
+            {
+                XmlDocument doc = new XmlDocument();
+                doc.LoadXml(sequenceXml);
+
+                // Task sequence steps are in /sequence/group or /sequence/step nodes
+                XmlNodeList steps = doc.SelectNodes("//sequence//*[@type]");
+                
+                if (steps == null || steps.Count == 0)
+                {
+                    Logger.Warning("No steps found in task sequence");
+                    return;
+                }
+
+                DataTable stepsTable = new DataTable();
+                stepsTable.Columns.Add("Step", typeof(int));
+                stepsTable.Columns.Add("Type", typeof(string));
+                stepsTable.Columns.Add("Name", typeof(string));
+                stepsTable.Columns.Add("Description", typeof(string));
+                stepsTable.Columns.Add("Disabled", typeof(string));
+                stepsTable.Columns.Add("ContinueOnError", typeof(string));
+                stepsTable.Columns.Add("Details", typeof(string));
+
+                int stepNumber = 1;
+                ProcessStepsRecursive(steps, stepsTable, ref stepNumber, 0);
+
+                Console.WriteLine(OutputFormatter.ConvertDataTable(stepsTable));
+                Logger.Success($"Total steps: {stepsTable.Rows.Count}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Failed to parse task sequence steps: {ex.Message}");
+            }
+        }
+
+        private void ProcessStepsRecursive(XmlNodeList nodes, DataTable table, ref int stepNumber, int depth)
+        {
+            foreach (XmlNode node in nodes)
+            {
+                if (node.Attributes == null) continue;
+
+                string type = node.Attributes["type"]?.Value ?? "";
+                string name = node.Attributes["name"]?.Value ?? "";
+                string description = node.Attributes["description"]?.Value ?? "";
+                string disabled = node.Attributes["disable"]?.Value == "true" ? "Yes" : "No";
+                string continueOnError = node.Attributes["continueOnError"]?.Value == "true" ? "Yes" : "No";
+
+                // Decode common step types
+                string decodedType = DecodeStepType(type);
+                
+                // Extract relevant details based on step type
+                string details = ExtractStepDetails(node, type);
+
+                // Add indentation for nested groups
+                string indent = new string(' ', depth * 2);
+                string displayName = indent + name;
+
+                table.Rows.Add(stepNumber++, decodedType, displayName, description, disabled, continueOnError, details);
+
+                // Process child steps for groups
+                if (type == "SMS_TaskSequence_Group")
+                {
+                    XmlNodeList children = node.SelectNodes("*[@type]");
+                    if (children != null && children.Count > 0)
+                    {
+                        ProcessStepsRecursive(children, table, ref stepNumber, depth + 1);
+                    }
+                }
+            }
+        }
+
+        private string DecodeStepType(string type)
+        {
+            return type switch
+            {
+                "SMS_TaskSequence_Group" => "Group",
+                "SMS_TaskSequence_PartitionDiskAction" => "Partition Disk",
+                "SMS_TaskSequence_ApplyOperatingSystemAction" => "Apply OS Image",
+                "SMS_TaskSequence_ApplyWindowsSettingsAction" => "Apply Windows Settings",
+                "SMS_TaskSequence_ApplyNetworkSettingsAction" => "Apply Network Settings",
+                "SMS_TaskSequence_SetVariableAction" => "Set Variable",
+                "SMS_TaskSequence_RunCommandLineAction" => "Run Command Line",
+                "SMS_TaskSequence_InstallSoftwareAction" => "Install Package",
+                "SMS_TaskSequence_InstallApplicationAction" => "Install Application",
+                "SMS_TaskSequence_DriverAction" => "Auto Apply Drivers",
+                "SMS_TaskSequence_RebootAction" => "Restart Computer",
+                "SMS_TaskSequence_JoinDomainWorkgroupAction" => "Join Domain/Workgroup",
+                "SMS_TaskSequence_EnableBitLockerAction" => "Enable BitLocker",
+                "SMS_TaskSequence_PreProvisionBitLockerAction" => "Pre-provision BitLocker",
+                "SMS_TaskSequence_RunPowerShellScriptAction" => "Run PowerShell Script",
+                "SMS_TaskSequence_DownloadPackageContentAction" => "Download Package Content",
+                "SMS_TaskSequence_CaptureWindowsSettingsAction" => "Capture Windows Settings",
+                "SMS_TaskSequence_CaptureNetworkSettingsAction" => "Capture Network Settings",
+                "SMS_TaskSequence_ConnectNetworkFolderAction" => "Connect to Network Folder",
+                "SMS_TaskSequence_ConditionVariable" => "Condition: Variable",
+                _ => type.Replace("SMS_TaskSequence_", "").Replace("Action", "")
+            };
+        }
+
+        private string ExtractStepDetails(XmlNode node, string type)
+        {
+            try
+            {
+                switch (type)
+                {
+                    case "SMS_TaskSequence_InstallSoftwareAction":
+                        var pkgId = node.SelectSingleNode("defaultVarList/variable[@property='PackageID']")?.Attributes?["value"]?.Value;
+                        var program = node.SelectSingleNode("defaultVarList/variable[@property='ProgramName']")?.Attributes?["value"]?.Value;
+                        return !string.IsNullOrEmpty(pkgId) ? $"Package: {pkgId}, Program: {program}" : "";
+
+                    case "SMS_TaskSequence_RunCommandLineAction":
+                        var cmdLine = node.SelectSingleNode("defaultVarList/variable[@property='CommandLine']")?.Attributes?["value"]?.Value;
+                        return !string.IsNullOrEmpty(cmdLine) ? $"Command: {cmdLine}" : "";
+
+                    case "SMS_TaskSequence_RunPowerShellScriptAction":
+                        var scriptName = node.SelectSingleNode("defaultVarList/variable[@property='ScriptName']")?.Attributes?["value"]?.Value;
+                        var sourcePkg = node.SelectSingleNode("defaultVarList/variable[@property='SourcePackageID']")?.Attributes?["value"]?.Value;
+                        return !string.IsNullOrEmpty(scriptName) ? $"Script: {scriptName}, Package: {sourcePkg}" : "";
+
+                    case "SMS_TaskSequence_SetVariableAction":
+                        var varName = node.SelectSingleNode("defaultVarList/variable[@property='VariableName']")?.Attributes?["value"]?.Value;
+                        var varValue = node.SelectSingleNode("defaultVarList/variable[@property='VariableValue']")?.Attributes?["value"]?.Value;
+                        return !string.IsNullOrEmpty(varName) ? $"{varName} = {varValue}" : "";
+
+                    case "SMS_TaskSequence_ApplyOperatingSystemAction":
+                        var imageId = node.SelectSingleNode("defaultVarList/variable[@property='ImagePackageID']")?.Attributes?["value"]?.Value;
+                        return !string.IsNullOrEmpty(imageId) ? $"Image: {imageId}" : "";
+
+                    case "SMS_TaskSequence_DriverAction":
+                        var driverPkg = node.SelectSingleNode("defaultVarList/variable[@property='DriverPackageID']")?.Attributes?["value"]?.Value;
+                        return !string.IsNullOrEmpty(driverPkg) ? $"Driver Package: {driverPkg}" : "";
+
+                    default:
+                        return "";
+                }
+            }
+            catch
+            {
+                return "";
+            }
         }
     }
 }
