@@ -151,6 +151,7 @@ namespace MSSQLand.Actions.Execution
                 if (asyncMode)
                 {
                     // Async mode - no exit code returned
+                    // Creates WScript.Shell object and calls Run method with waitOnReturn=0 (don't wait)
                     string query = $@"
 DECLARE @ObjectToken INT;
 DECLARE @Result INT;
@@ -184,6 +185,8 @@ EXEC sp_OADestroy @ObjectToken;
                 else
                 {
                     // Sync mode - wait and return exit code
+                    // Creates WScript.Shell object and calls Run method with waitOnReturn=1 (wait for completion)
+                    // Returns the exit code from the executed process
                     string query = $@"
 DECLARE @ObjectToken INT;
 DECLARE @Result INT;

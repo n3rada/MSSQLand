@@ -21,6 +21,9 @@ namespace MSSQLand.Actions.Database
         {
             Logger.TaskNested("Retrieving OLE DB providers information");
             
+            // Query enumerates OLE DB providers and reads their registry settings
+            // Uses cursor to iterate through each provider and read configuration from registry
+            // Settings include AllowInProcess, DisallowAdHocAccess, DynamicParameters, etc.
             string query = @"
 			CREATE TABLE #Providers ([ProviderName] varchar(8000), 
             [ParseName] varchar(8000),

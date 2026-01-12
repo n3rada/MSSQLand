@@ -49,6 +49,8 @@ namespace MSSQLand.Actions.Database
 
             Logger.TaskNested("Mapping server logins to database users across all accessible databases");
 
+            // Query iterates through all accessible databases and maps server logins to database users
+            // Uses cursor to build dynamic SQL for each database, checking login tokens for group memberships
             string query = @"
                 DECLARE @mapping TABLE (
                     [Database] NVARCHAR(128),

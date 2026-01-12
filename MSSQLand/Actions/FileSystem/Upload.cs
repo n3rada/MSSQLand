@@ -194,6 +194,8 @@ namespace MSSQLand.Actions.FileSystem
             string escapedRemotePath = _remotePath.Replace("'", "''");
 
             // Use ADODB.Stream to write binary data
+            // Creates ADODB.Stream object, sets Type=1 (binary), writes hex content, and saves to file
+            // Mode 2 in SaveToFile means overwrite if file exists
             string query = $@"
 DECLARE @ObjectToken INT;
 DECLARE @FileContent VARBINARY(MAX);
