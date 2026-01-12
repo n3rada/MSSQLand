@@ -150,8 +150,7 @@ ORDER BY ServerName;";
                 Logger.Success($"Found {result.Rows.Count} distribution point(s)");
             }
 
-            Logger.Success("Distribution point enumeration completed");
-            return null;
+            return result;
         }
     }
 }
