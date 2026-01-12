@@ -354,10 +354,17 @@ SELECT
     COALESCE(lp.DisplayName, lcp.Title, ci.CI_UniqueID) AS DisplayName,
     ci.CIType_ID,
     CASE ci.CIType_ID
-        WHEN 9 THEN 'Baseline'
-        WHEN 10 THEN 'Application'
-        WHEN 21 THEN 'Deployment Type'
         WHEN 1 THEN 'Software Update'
+        WHEN 2 THEN 'Configuration Item'
+        WHEN 3 THEN 'Software Update Bundle'
+        WHEN 8 THEN 'Configuration Item (Custom)'
+        WHEN 9 THEN 'Configuration Baseline'
+        WHEN 10 THEN 'Application'
+        WHEN 11 THEN 'Software Update Deployment Template'
+        WHEN 21 THEN 'Deployment Type'
+        WHEN 23 THEN 'Driver Package'
+        WHEN 24 THEN 'Task Sequence'
+        WHEN 25 THEN 'Configuration Policy'
         ELSE 'Other (' + CAST(ci.CIType_ID AS VARCHAR) + ')'
     END AS CIType,
     ci.IsEnabled,
@@ -385,7 +392,7 @@ WHERE atc.AssignmentID = {assignmentId}";
                         string ciUniqueID = ciRow["CI_UniqueID"].ToString();
 
                         // For Applications (CIType_ID = 10), show deployment types
-                        if (assignmentType == 1 && ciTypeId == 10)
+                        if (ciTypeId == 10)
                         {
                             Logger.NewLine();
                             Logger.Info("Deployment Types");
@@ -417,9 +424,66 @@ ORDER BY dt.DateCreated DESC";
                                 Logger.Warning("No deployment types found");
                             }
                         }
+                        // For Configuration Baselines (CIType_ID = 9), show contained configuration items
+                        else if (ciTypeId == 9)
+                        {
+                            Logger.NewLine();
+                            Logger.Info("Baseline Configuration Items");
+
+                            string baselineCIsQuery = $@"
+SELECT 
+    rel.ToCI_ID AS CI_ID,
+    ci.CI_UniqueID,
+    COALESCE(lp.DisplayName, lcp.Title, ci.CI_UniqueID) AS DisplayName,
+    ci.CIType_ID,
+    CASE ci.CIType_ID
+        WHEN 1 THEN 'Software Update'
+        WHEN 2 THEN 'Configuration Item'
+        WHEN 8 THEN 'Configuration Item (Custom)'
+        WHEN 9 THEN 'Configuration Baseline'
+        WHEN 10 THEN 'Application'
+        ELSE 'Other (' + CAST(ci.CIType_ID AS VARCHAR) + ')'
+    END AS CIType,
+    ci.IsEnabled,
+    ci.IsExpired
+FROM [{db}].dbo.CI_ConfigurationItemRelations rel
+INNER JOIN [{db}].dbo.CI_ConfigurationItems ci ON rel.ToCI_ID = ci.CI_ID
+LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON ci.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
+LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp ON ci.CI_ID = lcp.CI_ID AND lcp.LocaleID = 1033
+WHERE rel.FromCI_ID = {ciId}
+ORDER BY ci.CIType_ID, ci.DateCreated DESC";
+
+                            DataTable baselineCIsResult = databaseContext.QueryService.ExecuteTable(baselineCIsQuery);
+
+                            if (baselineCIsResult.Rows.Count > 0)
+                            {
+                                Console.WriteLine(OutputFormatter.ConvertDataTable(baselineCIsResult));
+                                Logger.Success($"Found {baselineCIsResult.Rows.Count} configuration item(s) in baseline");
+                                Logger.SuccessNested("Use 'cm-dt [CI_ID]' to view CI details");
+                            }
+                            else
+                            {
+                                Logger.Warning("No configuration items found in baseline");
+                            }
+                        }
+                        // For Software Updates (CIType_ID = 1), show update metadata
+                        else if (ciTypeId == 1)
+                        {
+                            Logger.NewLine();
+                            Logger.Info($"This is a Software Update deployment");
+                            Logger.InfoNested($"Use 'cm-dt {ciId}' for update details (severity, KB, bulletins, etc.)");
+                        }
+                        // For Configuration Items (CIType_ID = 2 or 8), show settings info
+                        else if (ciTypeId == 2 || ciTypeId == 8)
+                        {
+                            Logger.NewLine();
+                            Logger.Info($"This is a Configuration Item deployment");
+                            Logger.InfoNested($"Use 'cm-dt {ciId}' for compliance settings and rules");
+                        }
                         // For other CI types, just show pointer to cm-dt
                         else
                         {
+                            Logger.NewLine();
                             Logger.Info($"Use 'cm-dt {ciId}' to view detailed {ciRow["CIType"]} information");
                         }
                     }
