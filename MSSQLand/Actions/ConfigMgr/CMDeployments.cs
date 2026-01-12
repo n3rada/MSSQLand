@@ -33,7 +33,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 5, LongName = "in-progress", Description = "Show only deployments in progress")]
         private bool _inProgress = false;
 
-        [ArgumentMetadata(Position = 6, LongName = "with-deployment-types", Description = "Show only deployments with deployment types (Applications)")]
+        [ArgumentMetadata(Position = 6, ShortName = "dt", LongName = "with-deployment-types", Description = "Show only deployments with deployment types (Applications)")]
         private bool _withDeploymentTypes = false;
 
         [ArgumentMetadata(Position = 7, LongName = "limit", Description = "Limit number of results (default: 50)")]
@@ -61,7 +61,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
             _withErrors = named.ContainsKey("with-errors");
             _inProgress = named.ContainsKey("in-progress");
-            _withDeploymentTypes = named.ContainsKey("with-deployment-types");
+            _withDeploymentTypes = named.ContainsKey("with-deployment-types") || named.ContainsKey("dt");
 
             string limitStr = GetNamedArgument(named, "l", null)
                            ?? GetNamedArgument(named, "limit", null)
@@ -266,12 +266,7 @@ ORDER BY ds.CreationTime DESC;
                 
                 if (hasDeploymentTypes)
                 {
-                    Logger.NewLine();
-                    Logger.Info("Use 'cm-dt [DeploymentTypeCI]' to view deployment type details:");
-                    Logger.InfoNested("- Detection methods and verification scripts");
-                    Logger.InfoNested("- Install/uninstall commands and execution context");
-                    Logger.InfoNested("- Requirements and dependencies");
-                    Logger.InfoNested("- Content location and file details");
+                    Logger.SuccessNested("Use 'cm-dt [DeploymentTypeCI]' to view deployment type details:");
                 }
             }
 
