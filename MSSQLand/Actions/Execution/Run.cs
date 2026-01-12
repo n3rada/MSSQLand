@@ -15,7 +15,7 @@ namespace MSSQLand.Actions.Execution
     /// 1. OLE Automation with WScript.Shell
     /// 2. xp_cmdshell (fallback)
     /// 
-    /// The action verifies the file exists before attempting execution.
+    /// If the file does not exist, an error will be reported during execution.
     /// </summary>
     internal class Run : BaseAction
     {
@@ -101,13 +101,6 @@ namespace MSSQLand.Actions.Execution
         {
             Logger.TaskNested($"Executing remote file");
 
-            // Verify file exists
-            if (!FileExists(databaseContext))
-            {
-                Logger.Error($"File does not exist: {_filePath}");
-                return null;
-            }
-
             Logger.Info($"Executing file: {_filePath}");
 
             // If output capture is requested, force xp_cmdshell
@@ -130,35 +123,6 @@ namespace MSSQLand.Actions.Execution
             {
                 Logger.Info("OLE Automation not available, using xp_cmdshell method");
                 return ExecuteViaXpCmdshell(databaseContext, _asyncMode);
-            }
-        }
-
-        /// <summary>
-        /// Check if a file exists using xp_fileexist.
-        /// </summary>
-        /// <param name="databaseContext">The database context.</param>
-        /// <returns>True if file exists; otherwise false.</returns>
-        private bool FileExists(DatabaseContext databaseContext)
-        {
-            try
-            {
-                string escapedPath = _filePath.Replace("'", "''");
-                string query = $"EXEC master..xp_fileexist '{escapedPath}'";
-                DataTable result = databaseContext.QueryService.ExecuteTable(query);
-
-                if (result == null || result.Rows.Count == 0)
-                {
-                    return false;
-                }
-
-                // xp_fileexist returns: File Exists, File is a Directory, Parent Directory Exists
-                bool fileExists = result.Rows[0][0] != DBNull.Value && Convert.ToInt32(result.Rows[0][0]) == 1;
-                return fileExists;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Could not check if file exists: {ex.Message}");
-                return false;
             }
         }
 
@@ -281,7 +245,14 @@ SELECT @ExitCode AS ExitCode;
             }
             catch (Exception ex)
             {
-                Logger.Error($"Failed to execute via OLE: {ex.Message}");
+                if (ex.Message.Contains("cannot find") || ex.Message.Contains("not found") || ex.Message.Contains("does not exist"))
+                {
+                    Logger.Error($"File does not exist: {_filePath}");
+                }
+                else
+                {
+                    Logger.Error($"Failed to execute via OLE: {ex.Message}");
+                }
                 return null;
             }
         }
@@ -362,7 +333,14 @@ SELECT @ExitCode AS ExitCode;
             }
             catch (Exception ex)
             {
-                Logger.Error($"Failed to execute via xp_cmdshell: {ex.Message}");
+                if (ex.Message.Contains("cannot find") || ex.Message.Contains("not found") || ex.Message.Contains("does not exist"))
+                {
+                    Logger.Error($"File does not exist: {_filePath}");
+                }
+                else
+                {
+                    Logger.Error($"Failed to execute via xp_cmdshell: {ex.Message}");
+                }
                 return null;
             }
         }
