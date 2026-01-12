@@ -136,17 +136,26 @@ SELECT
     adv.ProgramName,
     adv.PresentTime AS StartTime,
     adv.ExpirationTime,
-    CASE 
-        WHEN adv.AdvertFlags & 0x00000020 = 0x00000020 THEN 'Required'
-        ELSE 'Available'
+    adv.OfferType,
+    CASE adv.OfferType
+        WHEN 0 THEN 'Required'
+        WHEN 2 THEN 'Available'
+        ELSE 'Unknown (' + CAST(adv.OfferType AS VARCHAR) + ')'
     END AS Intent,
+    adv.RemoteClientFlags,
     CASE 
-        WHEN adv.AdvertFlags & 0x00000200 = 0x00000200 THEN 'Yes'
-        ELSE 'No'
+        WHEN adv.RemoteClientFlags & 0x00000800 = 0x00000800 THEN 'Always'
+        WHEN adv.RemoteClientFlags & 0x00002000 = 0x00002000 THEN 'If Failed'
+        WHEN adv.RemoteClientFlags & 0x00004000 = 0x00004000 THEN 'If Succeeded'
+        WHEN adv.RemoteClientFlags & 0x00001000 = 0x00001000 THEN 'Never'
+        ELSE 'If Failed'
     END AS RerunBehavior,
     CASE 
-        WHEN adv.AdvertFlags & 0x00000001 = 0x00000001 THEN 'Download and execute'
-        ELSE 'Run from DP'
+        WHEN adv.RemoteClientFlags & 0x00000040 = 0x00000040 THEN 'Download from remote DP'
+        WHEN adv.RemoteClientFlags & 0x00000010 = 0x00000010 THEN 'Download from local DP'
+        WHEN adv.RemoteClientFlags & 0x00000080 = 0x00000080 THEN 'Run from remote DP'
+        WHEN adv.RemoteClientFlags & 0x00000008 = 0x00000008 THEN 'Run from local DP'
+        ELSE 'Unknown'
     END AS ExecutionMode,
     CASE 
         WHEN adv.AdvertFlags & 0x00020000 = 0x00020000 THEN 'Yes'
@@ -198,38 +207,64 @@ WHERE adv.AdvertisementID = '{_assignmentId.Replace("'", "''")}'";
                 // Check for rerun behavior if it's an advertisement
                 if (isAdvertisement)
                 {
+                    int offerType = assignment["OfferType"] != DBNull.Value ? Convert.ToInt32(assignment["OfferType"]) : 2;
+                    int remoteClientFlags = assignment["RemoteClientFlags"] != DBNull.Value ? Convert.ToInt32(assignment["RemoteClientFlags"]) : 0;
                     int advertFlags = assignment["AdvertFlags"] != DBNull.Value ? Convert.ToInt32(assignment["AdvertFlags"]) : 0;
                     
                     Logger.NewLine();
                     Logger.Info("Deployment Behavior Analysis");
                     
-                    if ((advertFlags & 0x00000020) == 0x00000020)
+                    // Check OfferType (0=Required, 2=Available)
+                    if (offerType == 0)
                     {
                         Logger.WarningNested("This is a REQUIRED deployment - it will automatically install");
                     }
-                    else
+                    else if (offerType == 2)
                     {
                         Logger.InfoNested("This is an AVAILABLE deployment - users must manually install");
                     }
-                    
-                    if ((advertFlags & 0x00000200) == 0x00000200)
+                    else
                     {
-                        Logger.WarningNested("RERUN BEHAVIOR ENABLED - This will reinstall even if previously successful!");
+                        Logger.InfoNested($"Offer type: {offerType} (unknown)");
+                    }
+                    
+                    // Check RemoteClientFlags for rerun behavior (bit 11=Always, 12=Never, 13=If Failed, 14=If Succeeded)
+                    if ((remoteClientFlags & 0x00000800) == 0x00000800)
+                    {
+                        Logger.WarningNested("RERUN BEHAVIOR: ALWAYS - This will reinstall even if previously successful!");
                         Logger.WarningNested("This is likely why software keeps getting reinstalled");
+                    }
+                    else if ((remoteClientFlags & 0x00001000) == 0x00001000)
+                    {
+                        Logger.InfoNested("RERUN BEHAVIOR: NEVER - Will not run if already executed");
+                    }
+                    else if ((remoteClientFlags & 0x00002000) == 0x00002000)
+                    {
+                        Logger.InfoNested("RERUN BEHAVIOR: IF FAILED - Only reruns if previous execution failed");
+                    }
+                    else if ((remoteClientFlags & 0x00004000) == 0x00004000)
+                    {
+                        Logger.InfoNested("RERUN BEHAVIOR: IF SUCCEEDED - Only reruns if previous execution succeeded");
                     }
                     else
                     {
-                        Logger.InfoNested("Rerun disabled - Only runs if not already successful");
+                        Logger.InfoNested("RERUN BEHAVIOR: Default (if failed)");
                     }
                     
+                    // Check AdvertFlags for other behaviors
                     if ((advertFlags & 0x00020000) == 0x00020000)
                     {
                         Logger.InfoNested("Can override maintenance windows");
                     }
                     
-                    if ((advertFlags & 0x00000400) == 0x00000400)
+                    if ((advertFlags & 0x00000020) == 0x00000020)
                     {
-                        Logger.InfoNested("Users can run independently from Software Center");
+                        Logger.InfoNested("Announcement timing: IMMEDIATE (runs as soon as received)");
+                    }
+                    
+                    if ((advertFlags & 0x02000000) == 0x02000000)
+                    {
+                        Logger.InfoNested("Hidden from Software Center (NO_DISPLAY flag set)");
                     }
                 }
 
