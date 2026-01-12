@@ -14,7 +14,9 @@ namespace MSSQLand.Actions.ConfigMgr
     /// you'll find deployment type GUIDs in client logs. This action traces those GUIDs through the ConfigMgr
     /// database to show you exactly which assignments (deployments) are responsible.
     /// 
-    /// Common Log Files:
+    /// It answers questions like "Why is this software being installed on this device?"
+    /// 
+    /// Common Log Files (C:\Windows\CCM\Logs\):
     /// - AppDiscovery.log: Shows detection method evaluation with deployment type GUIDs
     /// - AppEnforce.log: Shows installation/uninstallation attempts with deployment type GUIDs
     /// - AppIntentEval.log: Shows application intent evaluation with deployment type GUIDs
@@ -36,11 +38,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// - Deployment type CI_ID, title, and status
     /// - Parent application CI_ID and name
     /// - All assignments deploying this application (with collections, deadlines, user notifications, etc.)
-    /// - Install command line and content source path
-    /// - Detection method details
-    /// - Requirements (e.g., computer name filters, OS version requirements)
-    /// - Full Policy Platform XML (used by CCM agent)
-    /// - Full SDM Package Digest XML (System Definition Model)
+    /// 
     /// 
     /// Accepted GUID Formats:
     /// - Full: "ScopeId_xxx-xxx-xxx-xxx-xxx/DeploymentType_xxx-xxx-xxx-xxx-xxx"
@@ -281,28 +279,11 @@ WHERE a.AssignmentID IN (
 
                 Console.WriteLine(OutputFormatter.ConvertDataTable(assignmentsResult));
 
-                Logger.Info("Next Steps");
-                Logger.InfoNested("Use 'cm-assignment <AssignmentID>' to view detailed deployment settings");
-                Logger.InfoNested("Use 'cm-collection <CollectionID>' to see which devices are targeted");
-
                 Logger.NewLine();
-
-                // Policy Platform (SML-IF / PolicyPlatform)
-                // Stored per generated policy document
-                // Used by AppDiscovery.log, AppIntentEval.log
-                string documentStoreBodyXML = documentResult.Rows[0]["Body"].ToString();
-
-                // SDM (System Definition Model) representation
-                // XML namespace: SystemCenterConfigurationManager/2009/AppMgmtDigest
-                // One row = one logical CI version
-                string sdmPackageDigestXML = dtDetailsResult.Rows[0]["SDMPackageDigest"].ToString();
-
-                Logger.Info("Extracted XML Snippets");
-                Logger.InfoNested("\n---- Policy Platform Document Body (for AppDiscovery.log, AppIntentEval.log)\n");
-                Console.WriteLine(Misc.BeautifyXml(documentStoreBodyXML));
-
-                Logger.InfoNested("\n---- SDM Package Digest (System Definition Model representation)\n");
-                Console.WriteLine(Misc.BeautifyXml(sdmPackageDigestXML));
+                Logger.Info("Next Steps");
+                Logger.InfoNested($"Use 'cm-dt {deploymentTypeCiId}' to view deployment type details (detection method, install commands, requirements, XML)");
+                Logger.InfoNested("Use 'cm-deployment <AssignmentID>' to view detailed deployment settings");
+                Logger.InfoNested("Use 'cm-collection <CollectionID>' to see which devices are targeted");
 
                 break; // Found it, no need to check other databases
             }
