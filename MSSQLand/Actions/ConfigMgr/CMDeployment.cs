@@ -117,23 +117,23 @@ WHERE a.AssignmentID = {numericAssignmentId}";
                     assignmentResult = databaseContext.QueryService.ExecuteTable(assignmentQuery);
                 }
 
-                // If not found or ID is not numeric, try v_Advertisement (for packages/task sequences with string AdvertisementID)
+                // If not found or ID is not numeric, try vSMS_Advertisement (for packages/task sequences with string OfferID)
                 if (assignmentResult == null || assignmentResult.Rows.Count == 0)
                 {
                     string advQuery = $@"
 SELECT 
-    adv.AdvertisementID AS AssignmentID,
-    adv.AdvertisementName AS AssignmentName,
+    adv.OfferID AS AssignmentID,
+    adv.OfferName AS AssignmentName,
     adv.CollectionID,
     c.Name AS CollectionName,
     c.MemberCount,
-    adv.PackageID,
+    adv.PkgID AS PackageID,
     p.Name AS SoftwareName,
     CASE 
-        WHEN EXISTS(SELECT 1 FROM [{db}].dbo.v_TaskSequencePackage ts WHERE ts.PackageID = adv.PackageID) THEN 'Task Sequence'
+        WHEN EXISTS(SELECT 1 FROM [{db}].dbo.v_TaskSequencePackage ts WHERE ts.PackageID = adv.PkgID) THEN 'Task Sequence'
         ELSE 'Package'
     END AS AssignmentTypeDescription,
-    adv.ProgramName,
+    adv.PkgProgram AS ProgramName,
     adv.PresentTime AS StartTime,
     adv.ExpirationTime,
     adv.OfferTypeID,
@@ -158,18 +158,18 @@ SELECT
         ELSE 'Unknown'
     END AS ExecutionMode,
     CASE 
-        WHEN adv.AdvertFlags & 0x00020000 = 0x00020000 THEN 'Yes'
+        WHEN adv.OfferFlags & 0x00020000 = 0x00020000 THEN 'Yes'
         ELSE 'No'
     END AS OverrideMaintenanceWindow,
     CASE 
-        WHEN adv.AdvertFlags & 0x00000400 = 0x00000400 THEN 'Yes'
+        WHEN adv.OfferFlags & 0x00000400 = 0x00000400 THEN 'Yes'
         ELSE 'No'
     END AS AllowUsersToRun,
-    adv.AdvertFlags
-FROM [{db}].dbo.vAdvertisement adv
+    adv.OfferFlags AS AdvertFlags
+FROM [{db}].dbo.vSMS_Advertisement adv
 LEFT JOIN [{db}].dbo.v_Collection c ON adv.CollectionID = c.CollectionID
-LEFT JOIN [{db}].dbo.v_Package p ON adv.PackageID = p.PackageID
-WHERE adv.AdvertisementID = '{_assignmentId.Replace("'", "''")}'";
+LEFT JOIN [{db}].dbo.v_Package p ON adv.PkgID = p.PackageID
+WHERE adv.OfferID = '{_assignmentId.Replace("'", "''")}'";
 
                     assignmentResult = databaseContext.QueryService.ExecuteTable(advQuery);
                     
@@ -275,7 +275,7 @@ WHERE adv.AdvertisementID = '{_assignmentId.Replace("'", "''")}'";
                 string statsQuery;
                 if (isAdvertisement)
                 {
-                    // For Advertisements, match by CollectionID + PackageID + ProgramName (v_DeploymentSummary.AssignmentID is always 0)
+                    // For Advertisements, match by CollectionID + PkgID + PkgProgram (v_DeploymentSummary.AssignmentID is always 0)
                     string packageId = assignment["PackageID"].ToString();
                     string programName = assignment["ProgramName"].ToString();
                     string collectionId = assignment["CollectionID"].ToString();
