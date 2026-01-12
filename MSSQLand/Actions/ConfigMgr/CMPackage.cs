@@ -88,8 +88,8 @@ WHERE p.PackageID = '{_packageId.Replace("'", "''")}'";
                 DataRow package = packageResult.Rows[0];
 
                 // Check if this is a task sequence - redirect to cm-tasksequence
-                int packageType = package["PackageType"] != DBNull.Value ? Convert.ToInt32(package["PackageType"]) : 0;
-                if (packageType == 4)
+                int packageTypeValue = package["PackageType"] != DBNull.Value ? Convert.ToInt32(package["PackageType"]) : 0;
+                if (packageTypeValue == 4)
                 {
                     Logger.NewLine();
                     Logger.Warning($"Package {_packageId} is a Task Sequence");
