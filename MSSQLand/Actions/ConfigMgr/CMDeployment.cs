@@ -376,7 +376,7 @@ WHERE atc.AssignmentID = {assignmentId}";
                     }
                     else
                     {
-                        Logger.Info("Configuration Item");
+                        Logger.Info("Configuration Item (CI) Information");
                         Console.WriteLine(OutputFormatter.ConvertDataTable(ciResult));
                         
                         DataRow ciRow = ciResult.Rows[0];
@@ -410,12 +410,7 @@ ORDER BY dt.DateCreated DESC";
                             {
                                 Console.WriteLine(OutputFormatter.ConvertDataTable(deploymentTypesResult));
                                 Logger.Success($"Found {deploymentTypesResult.Rows.Count} deployment type(s)");
-                                Logger.NewLine();
-                                Logger.Info("Use 'cm-dt [CI_ID]' to view deployment type details:");
-                                Logger.InfoNested("- Detection methods and verification scripts");
-                                Logger.InfoNested("- Install/uninstall commands and execution context");
-                                Logger.InfoNested("- Requirements and dependencies");
-                                Logger.InfoNested("- Content location and file details");
+                                Logger.SuccessNested("Use 'cm-dt [CI_ID]' to view deployment type details:");
                             }
                             else
                             {
@@ -483,17 +478,17 @@ ORDER BY aas.LastStatusTime DESC";
                 }
 
                 DataTable deviceStatusResult = databaseContext.QueryService.ExecuteTable(deviceStatusQuery);
+                Logger.NewLine();
                 
                 if (deviceStatusResult.Rows.Count > 0)
                 {
-                    Logger.NewLine();
+                    
                     Logger.Info("Device Status (showing TOP 50 recent activity)");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(deviceStatusResult));
                     Logger.Info($"Showing {deviceStatusResult.Rows.Count} device status records");
                 }
                 else
                 {
-                    Logger.NewLine();
                     Logger.Warning("No device status information available");
                 }
 
