@@ -53,7 +53,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 0, Description = "Deployment Type CI_ID (e.g., 16891057)")]
         private string _ciId = "";
 
-        [ArgumentMetadata(Flag = "xml", Description = "Include full Policy Platform and SDM Package Digest XML output")]
+        [ArgumentMetadata(Name = "xml", Description = "Include full Policy Platform and SDM Package Digest XML output")]
         private bool _showXml = false;
 
         public override void ValidateArguments(string[] args)
