@@ -75,7 +75,11 @@ namespace MSSQLand.Actions.ConfigMgr
                 throw new ArgumentException($"Invalid CI_ID: {_ciId}. Must be a numeric CI_ID.");
             }
 
-            _showXml = GetNamedArgument(named, "xml", false);
+            string xmlStr = GetNamedArgument(named, "xml", null);
+            if (!string.IsNullOrEmpty(xmlStr))
+            {
+                _showXml = bool.Parse(xmlStr);
+            }
         }
 
         public override object? Execute(DatabaseContext databaseContext)
