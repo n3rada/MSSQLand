@@ -166,8 +166,7 @@ See [.github/SECURITY.md](.github/SECURITY.md) for how to report security issues
 ## 📚 Documentation
 
 - **Overview**: [README.md](./README.md)
-- **Project Structure**: [STRUCTURE.md](./STRUCTURE.md)
-- **Developer Guide**: [DEVELOPERS.md](./DEVELOPERS.md) - How to add new actions
+- **Development Guide**: [.github/DEVELOPMENT.md](.github/DEVELOPMENT.md) - Architecture, structure, and how to add new actions
 - **Release Process**: [.github/RELEASING.md](.github/RELEASING.md) - For maintainers
 
 ## ❓ Questions?
