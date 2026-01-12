@@ -345,11 +345,11 @@ WHERE ds.AssignmentID = {numericAssignmentId}";
                     
                     Logger.NewLine();
 
-                    // Get the CI_ID and basic info from v_CIAssignment
+                    // Get the CI_ID and basic info using v_CIAssignmentToCI
                     string ciQuery = $@"
 SELECT 
-    a.AssignmentID,
-    a.LocalCollectionID AS CI_ID,
+    atc.AssignmentID,
+    atc.CI_ID,
     ci.CI_UniqueID,
     COALESCE(lp.DisplayName, lcp.Title, ci.CI_UniqueID) AS DisplayName,
     ci.CIType_ID,
@@ -362,11 +362,11 @@ SELECT
     END AS CIType,
     ci.IsEnabled,
     ci.IsExpired
-FROM [{db}].dbo.v_CIAssignment a
-INNER JOIN [{db}].dbo.CI_ConfigurationItems ci ON a.LocalCollectionID = ci.CI_ID
+FROM [{db}].dbo.v_CIAssignmentToCI atc
+INNER JOIN [{db}].dbo.CI_ConfigurationItems ci ON atc.CI_ID = ci.CI_ID
 LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON ci.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
 LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp ON ci.CI_ID = lcp.CI_ID AND lcp.LocaleID = 1033
-WHERE a.AssignmentID = {assignmentId}";
+WHERE atc.AssignmentID = {assignmentId}";
 
                     DataTable ciResult = databaseContext.QueryService.ExecuteTable(ciQuery);
 
