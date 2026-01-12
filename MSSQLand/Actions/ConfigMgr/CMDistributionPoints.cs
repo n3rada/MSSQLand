@@ -15,22 +15,52 @@ namespace MSSQLand.Actions.ConfigMgr
     /// </summary>
     internal class CMDistributionPoints : BaseAction
     {
-        [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by DP name")]
-        private string _filter = "";
+        [ArgumentMetadata(Position = 0, ShortName = "s", LongName = "server", Description = "Filter by server name")]
+        private string _server = "";
+
+        [ArgumentMetadata(Position = 1, ShortName = "t", LongName = "type", Description = "Filter by DP type")]
+        private string _type = "";
+
+        [ArgumentMetadata(Position = 2, ShortName = "a", LongName = "active", Description = "Show only active DPs (default: false)")]
+        private bool _activeOnly = false;
+
+        [ArgumentMetadata(Position = 3, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 100)")]
+        private int _limit = 100;
 
         public override void ValidateArguments(string[] args)
         {
             var (named, positional) = ParseActionArguments(args);
 
-            _filter = GetNamedArgument(named, "f", null)
-                   ?? GetNamedArgument(named, "filter", null)
+            _server = GetNamedArgument(named, "s", null)
+                   ?? GetNamedArgument(named, "server", null)
                    ?? GetPositionalArgument(positional, 0, "");
+
+            _type = GetNamedArgument(named, "t", null)
+                 ?? GetNamedArgument(named, "type", null)
+                 ?? GetPositionalArgument(positional, 1, "");
+
+            string activeStr = GetNamedArgument(named, "a", null)
+                            ?? GetNamedArgument(named, "active", null);
+            if (!string.IsNullOrEmpty(activeStr))
+            {
+                _activeOnly = bool.Parse(activeStr);
+            }
+
+            string limitStr = GetNamedArgument(named, "l", null)
+                           ?? GetNamedArgument(named, "limit", null);
+            if (!string.IsNullOrEmpty(limitStr))
+            {
+                _limit = int.Parse(limitStr);
+            }
         }
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
-            Logger.TaskNested($"Enumerating ConfigMgr distribution points{filterMsg}");
+            string serverMsg = !string.IsNullOrEmpty(_server) ? $" (server: {_server})" : "";
+            string typeMsg = !string.IsNullOrEmpty(_type) ? $" (type: {_type})" : "";
+            string activeMsg = _activeOnly ? " (active only)" : "";
+            Logger.TaskNested($"Enumerating ConfigMgr distribution points{serverMsg}{typeMsg}{activeMsg}");
+            Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -49,11 +79,63 @@ namespace MSSQLand.Actions.ConfigMgr
                 Logger.NewLine();
                 Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
-                string filterClause = string.IsNullOrEmpty(_filter)
-                    ? ""
-                    : $"WHERE NALPath LIKE '%{_filter}%' OR ServerName LIKE '%{_filter}%'";
+                string whereClause = "WHERE 1=1";
 
-                string query = $@"SELECT * FROM [{db}].dbo.DistributionPoints {filterClause} ORDER BY NALPath;";
+                if (!string.IsNullOrEmpty(_server))
+                {
+                    whereClause += $" AND (ServerName LIKE '%{_server.Replace("'", "''")}%' OR NALPath LIKE '%{_server.Replace("'", "''")}%')";
+                }
+
+                if (!string.IsNullOrEmpty(_type))
+                {
+                    whereClause += $" AND Type LIKE '%{_type.Replace("'", "''")}%'";
+                }
+
+                if (_activeOnly)
+                {
+                    whereClause += " AND IsActive = 1";
+                }
+
+                string topClause = _limit > 0 ? $"TOP {_limit}" : "";
+
+                string query = $@"
+SELECT {topClause}
+    DPID,
+    ServerName,
+    NALPath,
+    ShareName,
+    SMSSiteCode,
+    Type,
+    State,
+    CASE State
+        WHEN 0 THEN 'Not Installed'
+        WHEN 1 THEN 'Installed'
+        WHEN 2 THEN 'Installation Failed'
+        WHEN 3 THEN 'Installation Pending'
+        ELSE CAST(State AS VARCHAR)
+    END AS StateDescription,
+    IsActive,
+    IsPXE,
+    IsPullDP,
+    IsBITS,
+    IsMulticast,
+    DPDrive,
+    MinFreeSpace,
+    Description,
+    Priority,
+    TransferRate,
+    MaintenanceMode,
+    MaintenanceModeLastStartTime,
+    AnonymousEnabled,
+    TokenAuthEnabled,
+    SslState,
+    IsProtected,
+    PreStagingAllowed,
+    IsDoincEnabled,
+    PreferredMPEnabled
+FROM [{db}].dbo.DistributionPoints
+{whereClause}
+ORDER BY ServerName;";
 
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
 
