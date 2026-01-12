@@ -333,6 +333,10 @@ ORDER BY ds.DeploymentTime DESC;";
                 // Get deployed packages with status
                 string packagesQuery = $@"
 SELECT DISTINCT
+    adv.AdvertisementID,
+    adv.AdvertisementName,
+    adv.ProgramName,
+    adv.AdvertFlags,
     p.PackageID,
     p.Name AS PackageName,
     p.Version,
@@ -341,10 +345,6 @@ SELECT DISTINCT
     p.PkgSourcePath,
     adv.CollectionID,
     c.Name AS CollectionName,
-    adv.AdvertisementID,
-    adv.AdvertisementName,
-    adv.ProgramName,
-    adv.AdvertFlags,
     cas.LastAcceptanceStateName AS AcceptanceState,
     cas.LastStateName AS ExecutionState,
     cas.LastStatusTime,
