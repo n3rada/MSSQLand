@@ -5,6 +5,7 @@ using System;
 using System.Data;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
 using System.Xml;
 
@@ -323,18 +324,28 @@ ORDER BY ds.DeploymentTime DESC;";
                 throw new InvalidDataException($"Sequence data too large ({compressedData.Length / 1024 / 1024}MB) - possible data corruption");
             }
             
+            // Debug: show first bytes
+            string hexDump = BitConverter.ToString(compressedData.Take(16).ToArray()).Replace("-", " ");
+            Logger.Trace($"Sequence data: {compressedData.Length} bytes, first 16 bytes: {hexDump}");
+            
             // Skip first 4 bytes (size header) if present
             int offset = 0;
             
             // Check for GZip magic number (0x1F 0x8B)
             if (compressedData.Length > 2 && compressedData[0] == 0x1F && compressedData[1] == 0x8B)
             {
+                Logger.Info("Detected GZip format (magic: 0x1F 0x8B)");
                 offset = 0; // Already GZip format
             }
-            else if (compressedData.Length > 6)
+            else if (compressedData.Length > 6 && compressedData[4] == 0x1F && compressedData[5] == 0x8B)
             {
+                Logger.Info("Detected 4-byte header + GZip format");
                 // Might have 4-byte size header before GZip data
                 offset = 4;
+            }
+            else
+            {
+                Logger.Warning($"No GZip magic found. First bytes: {hexDump}");
             }
 
             try
@@ -352,19 +363,26 @@ ORDER BY ds.DeploymentTime DESC;";
                         throw new InvalidDataException($"Decompressed sequence too large ({decompressed.Length / 1024 / 1024}MB) - possible bomb");
                     }
                     
-                    return Encoding.UTF8.GetString(decompressed);
+                    string xml = Encoding.UTF8.GetString(decompressed);
+                    Logger.Success($"Decompressed {decompressed.Length} bytes, first chars: {xml.Substring(0, Math.Min(100, xml.Length))}");
+                    return xml;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Warning($"GZip decompression failed: {ex.Message}");
+                
                 // If GZip fails, try as plain UTF-8 (some older versions)
                 try
                 {
-                    return Encoding.UTF8.GetString(compressedData);
+                    string plainUtf8 = Encoding.UTF8.GetString(compressedData);
+                    Logger.Info("Trying plain UTF-8 decoding");
+                    return plainUtf8;
                 }
                 catch
                 {
                     // Try Unicode
+                    Logger.Info("Trying Unicode decoding");
                     return Encoding.Unicode.GetString(compressedData);
                 }
             }
