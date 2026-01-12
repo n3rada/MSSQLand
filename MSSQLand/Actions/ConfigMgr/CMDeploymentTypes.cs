@@ -134,6 +134,10 @@ namespace MSSQLand.Actions.ConfigMgr
 
                 // Build WHERE clause with SQL-level filters (non-XML fields)
                 string whereClause = "ci.CIType_ID = 21";
+                
+                // Only show deployment types with actual XML content (skip empty/incomplete records)
+                whereClause += " AND ci.SDMPackageDigest IS NOT NULL";
+                
                 if (!string.IsNullOrEmpty(_enabled))
                 {
                     bool enabledFilter = bool.Parse(_enabled);
