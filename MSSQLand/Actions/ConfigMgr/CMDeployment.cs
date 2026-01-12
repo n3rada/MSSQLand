@@ -132,7 +132,7 @@ SELECT
     CASE 
         WHEN EXISTS(SELECT 1 FROM [{db}].dbo.v_TaskSequencePackage ts WHERE ts.PackageID = adv.PackageID) THEN 'Task Sequence'
         ELSE 'Package'
-    END AS AssignmentType,
+    END AS AssignmentTypeDescription,
     adv.ProgramName,
     adv.PresentTime AS StartTime,
     adv.ExpirationTime,
