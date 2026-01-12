@@ -116,6 +116,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
                 Logger.NewLine();
                 Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
+                Logger.NewLine();
 
                 // Step 1: Find Document_ID in CI_DocumentStore
                 string documentQuery = $@"
