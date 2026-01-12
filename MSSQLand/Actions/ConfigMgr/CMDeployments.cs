@@ -33,7 +33,10 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 5, LongName = "in-progress", Description = "Show only deployments in progress")]
         private bool _inProgress = false;
 
-        [ArgumentMetadata(Position = 6, LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 6, LongName = "with-deployment-types", Description = "Show only deployments with deployment types (Applications)")]
+        private bool _withDeploymentTypes = false;
+
+        [ArgumentMetadata(Position = 7, LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
@@ -58,6 +61,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
             _withErrors = named.ContainsKey("with-errors");
             _inProgress = named.ContainsKey("in-progress");
+            _withDeploymentTypes = named.ContainsKey("with-deployment-types");
 
             string limitStr = GetNamedArgument(named, "l", null)
                            ?? GetNamedArgument(named, "limit", null)
@@ -82,6 +86,8 @@ namespace MSSQLand.Actions.ConfigMgr
             if (_withErrors)
                 filterMsg += " with-errors";
             if (_inProgress)
+            if (_withDeploymentTypes)
+                filterMsg += " with-deployment-types";
                 filterMsg += " in-progress";
 
             Logger.TaskNested($"Enumerating ConfigMgr deployments{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
@@ -156,6 +162,11 @@ namespace MSSQLand.Actions.ConfigMgr
                 if (_inProgress)
                 {
                     filterClause += " AND ds.NumberInProgress > 0";
+                if (_withDeploymentTypes)
+                {
+                    filterClause += " AND dt.CI_ID IS NOT NULL";
+                }
+
                 }
 
                 string query = $@"
@@ -255,12 +266,7 @@ ORDER BY ds.CreationTime DESC;
                 
                 if (hasDeploymentTypes)
                 {
-                    Logger.NewLine();
                     Logger.Info("Use 'cm-dt [DeploymentTypeCI]' to view deployment type details:");
-                    Logger.InfoNested("- Detection methods and verification scripts");
-                    Logger.InfoNested("- Install/uninstall commands and execution context");
-                    Logger.InfoNested("- Requirements and dependencies");
-                    Logger.InfoNested("- Content location and file details");
                 }
             }
 
