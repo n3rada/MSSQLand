@@ -112,17 +112,14 @@ namespace MSSQLand.Actions.ConfigMgr
 SELECT
     ci.CI_ID,
     ci.CI_UniqueID,
-    ci.ModelName,
     ci.CIVersion,
     ci.IsEnabled,
     ci.IsExpired,
     ci.IsHidden,
-    ci.IsSuperseded,
     ci.DateCreated,
     ci.CreatedBy,
     ci.LastModifiedBy,
     ci.SDMPackageDigest,
-    ci.SDMPackageVersion,
     lcp.Title,
     lcp.Description,
     lcp.Publisher,
@@ -146,12 +143,10 @@ WHERE ci.CI_ID = {ciId} AND ci.CIType_ID = 21;";
                 Logger.Success($"Deployment Type: {dt["Title"]}");
                 Logger.SuccessNested($"CI_ID: {dt["CI_ID"]}");
                 Logger.SuccessNested($"CI_UniqueID: {dt["CI_UniqueID"]}");
-                Logger.SuccessNested($"Model Name: {dt["ModelName"]}");
                 Logger.SuccessNested($"CI Version: {dt["CIVersion"]}");
                 Logger.SuccessNested($"Enabled: {dt["IsEnabled"]}");
                 Logger.SuccessNested($"Expired: {dt["IsExpired"]}");
                 Logger.SuccessNested($"Hidden: {dt["IsHidden"]}");
-                Logger.SuccessNested($"Superseded: {dt["IsSuperseded"]}");
 
                 if (dt["Description"] != DBNull.Value && !string.IsNullOrWhiteSpace(dt["Description"].ToString()))
                 {
@@ -227,10 +222,11 @@ SELECT
     ci.CI_UniqueID,
     COALESCE(lp.DisplayName, ci.ModelName) AS ApplicationName
 FROM [{db}].dbo.CI_ConfigurationItemRelations rel
+INNER JOIN [{db}].dbo.CI_Conflcp.Title) AS ApplicationName
+FROM [{db}].dbo.CI_ConfigurationItemRelations rel
 INNER JOIN [{db}].dbo.CI_ConfigurationItems ci ON rel.FromCI_ID = ci.CI_ID
 LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON ci.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
-WHERE rel.ToCI_ID = {ciId} AND rel.RelationType = 9;";
-
+LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp ON ci.CI_ID = lcp.CI_ID AND lc
                 DataTable parentResult = databaseContext.QueryService.ExecuteTable(parentQuery);
 
                 if (parentResult.Rows.Count > 0)
