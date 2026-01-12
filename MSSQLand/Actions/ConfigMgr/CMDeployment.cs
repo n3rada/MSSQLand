@@ -603,11 +603,29 @@ ORDER BY ds.LastStatusTime DESC;";
 SELECT 
     PackageID,
     Name,
+    Description,
+    Manufacturer,
+    Version,
     PkgSourcePath,
+    PkgSourceFlag,
     SourceVersion,
     SourceDate,
-    SourceSize,
-    PackageSize
+    PackageType,
+    CASE PackageType
+        WHEN 0 THEN 'Software Distribution Package'
+        WHEN 3 THEN 'Driver Package'
+        WHEN 4 THEN 'Task Sequence Package'
+        WHEN 5 THEN 'Software Update Package'
+        WHEN 6 THEN 'Device Setting Package'
+        WHEN 7 THEN 'Virtual Application Package'
+        WHEN 8 THEN 'Application Package'
+        WHEN 257 THEN 'Image Package'
+        WHEN 258 THEN 'Boot Image Package'
+        WHEN 259 THEN 'OS Upgrade Package'
+        ELSE CAST(PackageType AS VARCHAR)
+    END AS PackageTypeDescription,
+    LastRefreshTime,
+    SourceSite
 FROM [{db}].dbo.v_Package
 WHERE PackageID = '{packageId.Replace("'", "''")}'";
 
