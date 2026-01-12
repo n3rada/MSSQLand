@@ -170,7 +170,7 @@ SELECT TOP {_limit}
     END AS DeploymentKind,
     COALESCE(
         NULLIF(ds.SoftwareName, ''),
-        adv.OfferName,
+        adv.AdvertisementName,
         assign.AssignmentName
     ) AS DeploymentName,
     ds.CollectionID,
