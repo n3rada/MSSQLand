@@ -281,8 +281,6 @@ WHERE rel.RelationType = 9";
                                 keepRow = false;
                         }
 
-                        // Note: --enabled filter already applied at SQL level
-
                         if (!keepRow)
                             rowsToRemove.Add(row);
                     }
@@ -291,12 +289,6 @@ WHERE rel.RelationType = 9";
                     foreach (DataRow row in rowsToRemove)
                     {
                         results.Rows.Remove(row);
-                    }
-
-                    // Truncate long fields for display after filtering
-                    foreach (DataRow row in results.Rows)
-                    {
-                        TruncateLongFields(row);
                     }
                 }
 
@@ -369,29 +361,6 @@ WHERE rel.RelationType = 9";
                 row["ContentLocation"] = "";
                 row["DetectionType"] = "";
                 row["ExecutionContext"] = "";
-            }
-        }
-
-        /// <summary>
-        /// Truncate long fields to keep output compact
-        /// </summary>
-        private static void TruncateLongFields(DataRow row)
-        {
-            const int maxInstallCmdLength = 150;
-            const int maxContentLength = 100;
-
-            // Truncate InstallCommand if too long
-            string installCmd = row["InstallCommand"]?.ToString() ?? "";
-            if (installCmd.Length > maxInstallCmdLength)
-            {
-                row["InstallCommand"] = installCmd.Substring(0, maxInstallCmdLength) + "...";
-            }
-
-            // Truncate ContentLocation if too long
-            string content = row["ContentLocation"]?.ToString() ?? "";
-            if (content.Length > maxContentLength)
-            {
-                row["ContentLocation"] = content.Substring(0, maxContentLength) + "...";
             }
         }
     }
