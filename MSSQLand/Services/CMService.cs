@@ -139,6 +139,52 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
+        /// Decodes FeatureType numeric value into human-readable deployment type string.
+        /// </summary>
+        public static string DecodeFeatureType(object featureTypeObj)
+        {
+            if (featureTypeObj == DBNull.Value)
+                return "Unknown";
+
+            int featureType = Convert.ToInt32(featureTypeObj);
+
+            return featureType switch
+            {
+                1 => "Application",
+                2 => "Program",
+                3 => "Mobile Program",
+                4 => "Script",
+                5 => "Software Update",
+                6 => "Baseline",
+                7 => "Task Sequence",
+                8 => "Content Distribution",
+                9 => "Distribution Point Group",
+                10 => "Distribution Point Health",
+                11 => "Configuration Policy",
+                _ => $"Unknown ({featureType})"
+            };
+        }
+
+        /// <summary>
+        /// Decodes DeploymentIntent numeric value into human-readable string.
+        /// </summary>
+        public static string DecodeDeploymentIntent(object deploymentIntentObj)
+        {
+            if (deploymentIntentObj == DBNull.Value)
+                return "Unknown";
+
+            int deploymentIntent = Convert.ToInt32(deploymentIntentObj);
+
+            return deploymentIntent switch
+            {
+                1 => "Required",
+                2 => "Available",
+                3 => "Simulate",
+                _ => $"Unknown ({deploymentIntent})"
+            };
+        }
+
+        /// <summary>
         /// Decodes ProgramFlags bitmask into human-readable semicolon-separated string.
         /// See: https://learn.microsoft.com/en-us/intune/configmgr/develop/reference/core/servers/configure/sms_program-server-wmi-class
         /// </summary>

@@ -232,12 +232,7 @@ SELECT
     ds.SoftwareName,
     ds.CollectionID,
     c.Name AS CollectionName,
-    CASE ds.DeploymentIntent
-        WHEN 1 THEN 'Required'
-        WHEN 2 THEN 'Available'
-        WHEN 3 THEN 'Simulate'
-        ELSE CAST(ds.DeploymentIntent AS VARCHAR)
-    END AS Intent,
+    ds.DeploymentIntent,
     ds.NumberSuccess,
     ds.NumberInProgress,
     ds.NumberErrors,
@@ -254,6 +249,16 @@ ORDER BY ds.DeploymentTime DESC;";
                 
                 if (statusResult.Rows.Count > 0)
                 {
+                    // Add decoded DeploymentIntent column before DeploymentIntent
+                    DataColumn decodedIntentColumn = statusResult.Columns.Add("Intent", typeof(string));
+                    int deploymentIntentIndex = statusResult.Columns["DeploymentIntent"].Ordinal;
+                    decodedIntentColumn.SetOrdinal(deploymentIntentIndex);
+
+                    foreach (DataRow row in statusResult.Rows)
+                    {
+                        row["Intent"] = CMService.DecodeDeploymentIntent(row["DeploymentIntent"]);
+                    }
+
                     Console.WriteLine(OutputFormatter.ConvertDataTable(statusResult));
                 }
                 else
