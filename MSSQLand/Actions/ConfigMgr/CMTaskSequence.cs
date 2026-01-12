@@ -3,6 +3,9 @@ using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
+using System.IO;
+using System.IO.Compression;
+using System.Text;
 using System.Xml;
 
 namespace MSSQLand.Actions.ConfigMgr
@@ -94,7 +97,23 @@ WHERE ts.PkgID = '{_packageId.Replace("'", "''")}'
                 DataRow tsRow = tsResult.Rows[0];
                 string name = tsRow["Name"].ToString();
                 string description = tsRow["Description"].ToString();
-                string sequenceXml = tsRow["Sequence"].ToString();
+                
+                // Sequence is stored as compressed binary (varbinary), need to decompress
+                byte[] sequenceBinary = tsRow["Sequence"] as byte[];
+                string sequenceXml = "";
+                
+                if (sequenceBinary != null && sequenceBinary.Length > 0)
+                {
+                    try
+                    {
+                        sequenceXml = DecompressSequence(sequenceBinary);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Warning($"Failed to decompress sequence data: {ex.Message}");
+                    }
+                }
+                
                 int refCount = tsRow["ReferencedContentCount"] != DBNull.Value ? Convert.ToInt32(tsRow["ReferencedContentCount"]) : 0;
 
                 Logger.NewLine();
@@ -293,6 +312,48 @@ ORDER BY ds.DeploymentTime DESC;";
             }
 
             return null;
+        }
+
+        private string DecompressSequence(byte[] compressedData)
+        {
+            // ConfigMgr stores task sequences as GZip-compressed XML
+            // Skip first 4 bytes (size header) if present
+            int offset = 0;
+            
+            // Check for GZip magic number (0x1F 0x8B)
+            if (compressedData.Length > 2 && compressedData[0] == 0x1F && compressedData[1] == 0x8B)
+            {
+                offset = 0; // Already GZip format
+            }
+            else if (compressedData.Length > 6)
+            {
+                // Might have 4-byte size header before GZip data
+                offset = 4;
+            }
+
+            try
+            {
+                using (var inputStream = new MemoryStream(compressedData, offset, compressedData.Length - offset))
+                using (var gzipStream = new GZipStream(inputStream, CompressionMode.Decompress))
+                using (var outputStream = new MemoryStream())
+                {
+                    gzipStream.CopyTo(outputStream);
+                    return Encoding.UTF8.GetString(outputStream.ToArray());
+                }
+            }
+            catch
+            {
+                // If GZip fails, try as plain UTF-8 (some older versions)
+                try
+                {
+                    return Encoding.UTF8.GetString(compressedData);
+                }
+                catch
+                {
+                    // Try Unicode
+                    return Encoding.Unicode.GetString(compressedData);
+                }
+            }
         }
 
         private void ParseAndDisplaySequenceSteps(string sequenceXml)
