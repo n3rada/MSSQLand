@@ -351,6 +351,16 @@ ORDER BY p.Name;";
                 
                 if (packagesResult.Rows.Count > 0)
                 {
+                    // Add decoded AdvertFlags column before AdvertFlags
+                    DataColumn decodedAdvertColumn = packagesResult.Columns.Add("DecodedFlags", typeof(string));
+                    int advertFlagsIndex = packagesResult.Columns["AdvertFlags"].Ordinal;
+                    decodedAdvertColumn.SetOrdinal(advertFlagsIndex);
+
+                    foreach (DataRow row in packagesResult.Rows)
+                    {
+                        row["DecodedFlags"] = CMService.DecodeAdvertFlags(row["AdvertFlags"]);
+                    }
+
                     Console.WriteLine(OutputFormatter.ConvertDataTable(packagesResult));
                     Logger.Success($"Found {packagesResult.Rows.Count} package(s)");
                 }
