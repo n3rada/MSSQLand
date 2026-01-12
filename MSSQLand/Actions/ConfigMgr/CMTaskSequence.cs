@@ -155,9 +155,9 @@ ORDER BY COUNT(*) DESC;
                     DataTable summaryResult = databaseContext.QueryService.ExecuteTable(summaryQuery);
                     
                     // Add decoded ContentType column before ReferencePackageType
-                    DataColumn decodedTypeColumn = summaryResult.Columns.Add("ContentType", typeof(string));
-                    int packageTypeIndex = summaryResult.Columns["ReferencePackageType"].Ordinal;
-                    decodedTypeColumn.SetOrdinal(packageTypeIndex);
+                    DataColumn decodedSummaryTypeColumn = summaryResult.Columns.Add("ContentType", typeof(string));
+                    int summaryPackageTypeIndex = summaryResult.Columns["ReferencePackageType"].Ordinal;
+                    decodedSummaryTypeColumn.SetOrdinal(summaryPackageTypeIndex);
 
                     foreach (DataRow row in summaryResult.Rows)
                     {
