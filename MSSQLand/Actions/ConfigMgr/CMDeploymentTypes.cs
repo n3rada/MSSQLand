@@ -132,6 +132,14 @@ namespace MSSQLand.Actions.ConfigMgr
 
                 string topClause = _limit > 0 ? $"TOP {_limit}" : "";
 
+                // Build WHERE clause with SQL-level filters (non-XML fields)
+                string whereClause = "ci.CIType_ID = 21";
+                if (!string.IsNullOrEmpty(_enabled))
+                {
+                    bool enabledFilter = bool.Parse(_enabled);
+                    whereClause += $" AND ci.IsEnabled = {(enabledFilter ? "1" : "0")}";
+                }
+
                 string query = $@"
 SELECT {topClause}
     ci.CI_ID,
@@ -150,7 +158,7 @@ SELECT {topClause}
     lcp.Version AS LocalizedVersion
 FROM [{db}].dbo.CI_ConfigurationItems ci
 LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp ON ci.CI_ID = lcp.CI_ID AND lcp.LocaleID = 1033
-WHERE ci.CIType_ID = 21
+WHERE {whereClause}
 ORDER BY ci.DateLastModified DESC, ci.DateCreated DESC;";
 
                 DataTable results = databaseContext.QueryService.ExecuteTable(query);
@@ -274,13 +282,7 @@ WHERE rel.RelationType = 9";
                                 keepRow = false;
                         }
 
-                        if (!string.IsNullOrEmpty(_enabled))
-                        {
-                            bool isEnabled = Convert.ToBoolean(row["IsEnabled"]);
-                            bool enabledFilter = bool.Parse(_enabled);
-                            if (isEnabled != enabledFilter)
-                                keepRow = false;
-                        }
+                        // Note: --enabled filter already applied at SQL level
 
                         if (!keepRow)
                             rowsToRemove.Add(row);
