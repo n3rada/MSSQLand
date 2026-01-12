@@ -260,12 +260,12 @@ WHERE adv.OfferID = '{_assignmentId.Replace("'", "''")}'";
                     // Highlight critical AdvertFlags
                     if ((advertFlags & 0x00020000) == 0x00020000)
                     {
-                        Logger.WarningNested("⚠ Can override maintenance windows");
+                        Logger.WarningNested("[!] Can override maintenance windows");
                     }
                     
                     if ((advertFlags & 0x00000020) == 0x00000020)
                     {
-                        Logger.WarningNested("⚠ Announcement timing: IMMEDIATE (runs as soon as received)");
+                        Logger.WarningNested("[!] Announcement timing: IMMEDIATE (runs as soon as received)");
                     }
                     
                     if ((advertFlags & 0x02000000) == 0x02000000)
