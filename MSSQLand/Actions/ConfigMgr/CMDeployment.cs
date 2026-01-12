@@ -532,6 +532,99 @@ ORDER BY aas.LastStatusTime DESC";
                     Logger.Warning("No device status information available");
                 }
 
+                // For Advertisements, check content distribution status
+                if (isAdvertisement && assignment["PackageID"] != DBNull.Value)
+                {
+                    string packageId = assignment["PackageID"].ToString();
+                    
+                    Logger.NewLine();
+                    Logger.Info("Content Distribution Status");
+                    Logger.InfoNested($"Checking where package {packageId} is distributed");
+
+                    string dpStatusQuery = $@"
+SELECT 
+    dp.ServerName AS DistributionPoint,
+    dps.LastStatusTime,
+    CASE dps.MessageState
+        WHEN 1 THEN 'Success'
+        WHEN 2 THEN 'InProgress'
+        WHEN 3 THEN 'Error'
+        WHEN 4 THEN 'Retry'
+        ELSE CAST(dps.MessageState AS VARCHAR)
+    END AS DistributionState,
+    dps.LastStatusMessageIDName,
+    dps.LastErrorStatusMessageIDName,
+    dp.BoundaryGroups
+FROM [{db}].dbo.v_DistributionPoint dp
+INNER JOIN [{db}].dbo.v_PackageStatusDetailSumm dps ON dp.ServerName = dps.ServerNALPath
+WHERE dps.PackageID = '{packageId.Replace("'", "''")}'
+ORDER BY dps.LastStatusTime DESC;";
+
+                    DataTable dpStatusResult = databaseContext.QueryService.ExecuteTable(dpStatusQuery);
+                    
+                    if (dpStatusResult.Rows.Count > 0)
+                    {
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(dpStatusResult));
+                        
+                        int successCount = 0;
+                        int errorCount = 0;
+                        int inProgressCount = 0;
+                        
+                        foreach (DataRow dpRow in dpStatusResult.Rows)
+                        {
+                            string state = dpRow["DistributionState"].ToString();
+                            if (state == "Success") successCount++;
+                            else if (state == "Error") errorCount++;
+                            else if (state == "InProgress") inProgressCount++;
+                        }
+                        
+                        Logger.Info($"Content distributed to {dpStatusResult.Rows.Count} DP(s): {successCount} successful, {errorCount} errors, {inProgressCount} in progress");
+                        
+                        if (successCount == 0)
+                        {
+                            Logger.Warning("Content not successfully distributed to any DP - this explains 'Waiting for content' status!");
+                        }
+                        else if (errorCount > 0)
+                        {
+                            Logger.Warning($"{errorCount} DP(s) have distribution errors - may cause content availability issues");
+                        }
+                    }
+                    else
+                    {
+                        Logger.Warning($"Package {packageId} is NOT distributed to any distribution points!");
+                        Logger.WarningNested("This explains why devices are 'Waiting for content'");
+                        Logger.InfoNested($"Action: Distribute package {packageId} to appropriate DPs using ConfigMgr console");
+                    }
+
+                    // Show package source path
+                    string pkgInfoQuery = $@"
+SELECT 
+    PackageID,
+    Name,
+    PkgSourcePath,
+    SourceVersion,
+    SourceDate,
+    SourceSize,
+    PackageSize
+FROM [{db}].dbo.v_Package
+WHERE PackageID = '{packageId.Replace("'", "''")}'";
+
+                    DataTable pkgInfoResult = databaseContext.QueryService.ExecuteTable(pkgInfoQuery);
+                    
+                    if (pkgInfoResult.Rows.Count > 0)
+                    {
+                        Logger.NewLine();
+                        Logger.Info("Package Source Information");
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(pkgInfoResult));
+                        
+                        DataRow pkgRow = pkgInfoResult.Rows[0];
+                        if (pkgRow["PkgSourcePath"] == DBNull.Value || string.IsNullOrEmpty(pkgRow["PkgSourcePath"].ToString()))
+                        {
+                            Logger.Warning("Package has no source path defined - cannot distribute to DPs");
+                        }
+                    }
+                }
+
                 break; // Found assignment, no need to check other databases
             }
 
