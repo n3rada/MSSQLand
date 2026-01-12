@@ -2,3 +2,16 @@
 
 # CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
 dotnet_diagnostic.CS8632.severity = none
+
+# IDE0005: Remove unnecessary using directives
+dotnet_diagnostic.IDE0005.severity = warning
+
+# CA1812: Avoid uninstantiated internal classes
+dotnet_diagnostic.CA1812.severity = warning
+
+# Additional code quality analyzers
+dotnet_diagnostic.IDE0001.severity = warning  # Simplify name
+dotnet_diagnostic.IDE0002.severity = warning  # Simplify member access
+dotnet_diagnostic.IDE0004.severity = warning  # Remove unnecessary cast
+dotnet_diagnostic.IDE0051.severity = warning  # Remove unused private members
+dotnet_diagnostic.IDE0052.severity = warning  # Remove unread private members
