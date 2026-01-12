@@ -412,11 +412,15 @@ ORDER BY
                     // Decode ManagementAuthority
                     if (devicesTable.Columns.Contains("ManagementAuthority"))
                     {
+                        DataColumn decodedAuthorityColumn = devicesTable.Columns.Add("Management", typeof(string));
+                        int authorityIndex = devicesTable.Columns["ManagementAuthority"].Ordinal;
+                        decodedAuthorityColumn.SetOrdinal(authorityIndex);
+
                         foreach (DataRow row in devicesTable.Rows)
                         {
                             if (row["ManagementAuthority"] != DBNull.Value && int.TryParse(row["ManagementAuthority"].ToString(), out int authority))
                             {
-                                row["ManagementAuthority"] = authority switch
+                                row["Management"] = authority switch
                                 {
                                     0 => "ConfigMgr",
                                     1 => "Intune",
@@ -426,6 +430,7 @@ ORDER BY
                                 };
                             }
                         }
+                        devicesTable.Columns.Remove("ManagementAuthority");
                     }
 
                     // Add UniqueCollections column - shows collections NOT shared by all devices
