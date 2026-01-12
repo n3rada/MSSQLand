@@ -174,28 +174,36 @@ ORDER BY ds.DeploymentTime DESC;";
 
                 string rulesQuery = $@"
 SELECT 
-    cr.RuleName,
-    CASE cr.RuleType
-        WHEN 1 THEN 'Direct'
-        WHEN 2 THEN 'Query'
-        WHEN 3 THEN 'Include'
-        WHEN 4 THEN 'Exclude'
-        ELSE CAST(cr.RuleType AS VARCHAR)
-    END AS RuleType,
-    cr.QueryExpression,
-    cr.IncludeCollectionID,
-    cr.ExcludeCollectionID
-FROM [{db}].dbo.v_CollectionRuleDirect cr
-WHERE cr.CollectionID = '{_collectionId.Replace("'", "''")}'
-UNION ALL
-SELECT 
     cq.RuleName,
     'Query' AS RuleType,
     cq.QueryExpression,
-    NULL AS IncludeCollectionID,
-    NULL AS ExcludeCollectionID
+    NULL AS ResourceID,
+    cq.LimitToCollectionID
 FROM [{db}].dbo.v_CollectionRuleQuery cq
 WHERE cq.CollectionID = '{_collectionId.Replace("'", "''")}'
+UNION ALL
+SELECT 
+    cd.RuleName,
+    'Direct' AS RuleType,
+    NULL AS QueryExpression,
+    cd.ResourceID,
+    NULL AS LimitToCollectionID
+FROM [{db}].dbo.v_CollectionRuleDirect cd
+WHERE cd.CollectionID = '{_collectionId.Replace("'", "''")}'
+UNION ALL
+SELECT 
+    cr.QueryName AS RuleName,
+    CASE cr.RuleType
+        WHEN 3 THEN 'Include Collection'
+        WHEN 4 THEN 'Exclude Collection'
+        ELSE 'Other'
+    END AS RuleType,
+    NULL AS QueryExpression,
+    NULL AS ResourceID,
+    cr.ReferencedCollectionID AS LimitToCollectionID
+FROM [{db}].dbo.Collection_Rules cr
+WHERE cr.CollectionID = (SELECT CollectionID FROM [{db}].dbo.Collections_G WHERE SiteID = '{_collectionId.Replace("'", "''")}')
+    AND cr.RuleType IN (3, 4)
 ORDER BY RuleType, RuleName;";
 
                 DataTable rulesResult = databaseContext.QueryService.ExecuteTable(rulesQuery);
