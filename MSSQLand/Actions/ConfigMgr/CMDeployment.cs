@@ -341,9 +341,9 @@ WHERE ds.AssignmentID = {numericAssignmentId}";
                 if (!isAdvertisement && assignment["AssignmentType"] != DBNull.Value)
                 {
                     int assignmentType = Convert.ToInt32(assignment["AssignmentType"]);
+                    int assignmentId = Convert.ToInt32(assignment["AssignmentID"]);
                     
                     Logger.NewLine();
-                    Logger.Info("Configuration Item");
 
                     // Get the CI_ID and basic info from v_CIAssignment
                     string ciQuery = $@"
@@ -366,7 +366,7 @@ FROM [{db}].dbo.v_CIAssignment a
 INNER JOIN [{db}].dbo.CI_ConfigurationItems ci ON a.LocalCollectionID = ci.CI_ID
 LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON ci.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
 LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp ON ci.CI_ID = lcp.CI_ID AND lcp.LocaleID = 1033
-WHERE a.AssignmentID = {numericAssignmentId}";
+WHERE a.AssignmentID = {assignmentId}";
 
                     DataTable ciResult = databaseContext.QueryService.ExecuteTable(ciQuery);
 
@@ -376,6 +376,7 @@ WHERE a.AssignmentID = {numericAssignmentId}";
                     }
                     else
                     {
+                        Logger.Info("Configuration Item");
                         Console.WriteLine(OutputFormatter.ConvertDataTable(ciResult));
                         
                         DataRow ciRow = ciResult.Rows[0];
@@ -437,6 +438,7 @@ ORDER BY dt.DateCreated DESC";
                 if (!isAdvertisement)
                 {
                     // Configuration Item/Application - use v_AssignmentState_Combined
+                    int assignmentId = Convert.ToInt32(assignment["AssignmentID"]);
                     deviceStatusQuery = $@"
 SELECT TOP 100
     sys.Name0 AS DeviceName,
@@ -455,7 +457,7 @@ SELECT TOP 100
     asd.LastErrorCode
 FROM [{db}].dbo.v_AssignmentState_Combined asd
 INNER JOIN [{db}].dbo.v_R_System sys ON asd.ResourceID = sys.ResourceID
-WHERE asd.AssignmentID = '{_assignmentId.Replace("'", "''")}'
+WHERE asd.AssignmentID = {assignmentId}
 ORDER BY asd.StateTime DESC";
                 }
                 else
