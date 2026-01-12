@@ -245,7 +245,7 @@ WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}';";
 
                 // Get collection memberships
                 Logger.NewLine();
-                Logger.Info("Collection Memberships");
+                
 
                 string collectionsQuery = $@"
 SELECT 
@@ -267,6 +267,7 @@ ORDER BY c.CollectionID;";
                 
                 if (collectionsResult.Rows.Count > 0)
                 {
+                    Logger.Info("Collection Memberships");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(collectionsResult));
                     Logger.Success($"Device is member of {collectionsResult.Rows.Count} collection(s)");
                 }
@@ -315,10 +316,10 @@ ORDER BY ds.DeploymentTime DESC;";
                 DataTable deploymentsResult = databaseContext.QueryService.ExecuteTable(deploymentsQuery);
                 
                 Logger.NewLine();
-                Logger.Info("Deployments Targeting This Device");
                 
                 if (deploymentsResult.Rows.Count > 0)
                 {
+                    Logger.Info("Deployments Targeting This Device");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(deploymentsResult));
                     Logger.Success($"Found {deploymentsResult.Rows.Count} deployment(s) targeting this device");
                 }
@@ -364,10 +365,11 @@ ORDER BY p.Name, adv.AdvertisementName;";
                 DataTable packagesResult = databaseContext.QueryService.ExecuteTable(packagesQuery);
                 
                 Logger.NewLine();
-                Logger.Info("Packages Deployed to This Device");
+                
                 
                 if (packagesResult.Rows.Count > 0)
                 {
+                    Logger.Info("Packages Deployed to This Device");
                     // Add decoded PackageType column before PackageType
                     DataColumn decodedTypeColumn = packagesResult.Columns.Add("PackageTypeDecoded", typeof(string));
                     int packageTypeIndex = packagesResult.Columns["PackageType"].Ordinal;
@@ -425,10 +427,10 @@ ORDER BY ApplicationName;";
                 DataTable applicationsResult = databaseContext.QueryService.ExecuteTable(applicationsQuery);
                 
                 Logger.NewLine();
-                Logger.Info("Applications Deployed to This Device");
                 
                 if (applicationsResult.Rows.Count > 0)
                 {
+                    Logger.Info("Applications Deployed to This Device");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(applicationsResult));
                     Logger.Success($"Found {applicationsResult.Rows.Count} application(s)");
                 }
@@ -455,10 +457,10 @@ ORDER BY ts.Name;";
                 DataTable taskSequencesResult = databaseContext.QueryService.ExecuteTable(taskSequencesQuery);
                 
                 Logger.NewLine();
-                Logger.Info("Task Sequences Deployed to This Device");
                 
                 if (taskSequencesResult.Rows.Count > 0)
                 {
+                    Logger.Info("Task Sequences Deployed to This Device");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(taskSequencesResult));
                     Logger.Success($"Found {taskSequencesResult.Rows.Count} task sequence(s)");
                 }
