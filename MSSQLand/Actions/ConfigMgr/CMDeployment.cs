@@ -136,11 +136,11 @@ SELECT
     adv.ProgramName,
     adv.PresentTime AS StartTime,
     adv.ExpirationTime,
-    adv.OfferType,
-    CASE adv.OfferType
+    adv.OfferTypeID,
+    CASE adv.OfferTypeID
         WHEN 0 THEN 'Required'
         WHEN 2 THEN 'Available'
-        ELSE 'Unknown (' + CAST(adv.OfferType AS VARCHAR) + ')'
+        ELSE 'Unknown (' + CAST(adv.OfferTypeID AS VARCHAR) + ')'
     END AS Intent,
     adv.RemoteClientFlags,
     CASE 
@@ -166,7 +166,7 @@ SELECT
         ELSE 'No'
     END AS AllowUsersToRun,
     adv.AdvertFlags
-FROM [{db}].dbo.v_Advertisement adv
+FROM [{db}].dbo.vAdvertisement adv
 LEFT JOIN [{db}].dbo.v_Collection c ON adv.CollectionID = c.CollectionID
 LEFT JOIN [{db}].dbo.v_Package p ON adv.PackageID = p.PackageID
 WHERE adv.AdvertisementID = '{_assignmentId.Replace("'", "''")}'";
@@ -207,14 +207,14 @@ WHERE adv.AdvertisementID = '{_assignmentId.Replace("'", "''")}'";
                 // Check for rerun behavior if it's an advertisement
                 if (isAdvertisement)
                 {
-                    int offerType = assignment["OfferType"] != DBNull.Value ? Convert.ToInt32(assignment["OfferType"]) : 2;
+                    int offerType = assignment["OfferTypeID"] != DBNull.Value ? Convert.ToInt32(assignment["OfferTypeID"]) : 2;
                     int remoteClientFlags = assignment["RemoteClientFlags"] != DBNull.Value ? Convert.ToInt32(assignment["RemoteClientFlags"]) : 0;
                     int advertFlags = assignment["AdvertFlags"] != DBNull.Value ? Convert.ToInt32(assignment["AdvertFlags"]) : 0;
                     
                     Logger.NewLine();
                     Logger.Info("Deployment Behavior Analysis");
                     
-                    // Check OfferType (0=Required, 2=Available)
+                    // Check OfferTypeID (0=Required, 2=Available)
                     if (offerType == 0)
                     {
                         Logger.WarningNested("This is a REQUIRED deployment - it will automatically install");
