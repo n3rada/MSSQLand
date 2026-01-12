@@ -611,28 +611,28 @@ SELECT
     SourceVersion,
     SourceDate,
     PackageType,
-    CASE PackageType
-        WHEN 0 THEN 'Software Distribution Package'
-        WHEN 3 THEN 'Driver Package'
-        WHEN 4 THEN 'Task Sequence Package'
-        WHEN 5 THEN 'Software Update Package'
-        WHEN 6 THEN 'Device Setting Package'
-        WHEN 7 THEN 'Virtual Application Package'
-        WHEN 8 THEN 'Application Package'
-        WHEN 257 THEN 'Image Package'
-        WHEN 258 THEN 'Boot Image Package'
-        WHEN 259 THEN 'OS Upgrade Package'
-        ELSE CAST(PackageType AS VARCHAR)
-    END AS PackageTypeDescription,
     LastRefreshTime,
     SourceSite
 FROM [{db}].dbo.v_Package
-WHERE PackageID = '{packageId.Replace("'", "''")}'";
+WHERE PackageID = '{packageId.Replace("'", "''")}';";
 
                     DataTable pkgInfoResult = databaseContext.QueryService.ExecuteTable(pkgInfoQuery);
                     
                     if (pkgInfoResult.Rows.Count > 0)
                     {
+                        // Add decoded PackageType column
+                        DataColumn decodedTypeColumn = pkgInfoResult.Columns.Add("PackageTypeDescription", typeof(string));
+                        int packageTypeIndex = pkgInfoResult.Columns["PackageType"].Ordinal;
+                        decodedTypeColumn.SetOrdinal(packageTypeIndex);
+
+                        foreach (DataRow row in pkgInfoResult.Rows)
+                        {
+                            row["PackageTypeDescription"] = CMService.DecodePackageType(row["PackageType"]);
+                        }
+
+                        // Remove raw numeric column
+                        pkgInfoResult.Columns.Remove("PackageType");
+
                         Logger.NewLine();
                         Logger.Info("Package Source Information");
                         Console.WriteLine(OutputFormatter.ConvertDataTable(pkgInfoResult));
