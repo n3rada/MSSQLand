@@ -108,7 +108,10 @@ namespace MSSQLand.Actions.Database
                     s.name AS SchemaName,
                     t.name AS TableName,
                     t.type_desc AS TableType,
-                    COALESCE(pr.Rows, 0) AS Rows
+                    CASE 
+                        WHEN t.type = 'U' THEN CAST(COALESCE(pr.Rows, 0) AS VARCHAR(20))
+                        ELSE 'N/A'
+                    END AS Rows
                 FROM 
                     sys.objects t
                 JOIN 
@@ -120,7 +123,7 @@ namespace MSSQLand.Actions.Database
                 ) pr
                 {whereClause}
                 ORDER BY 
-                    Rows DESC, SchemaName, TableName;";
+                    CASE WHEN t.type = 'U' THEN COALESCE(pr.Rows, 0) ELSE -1 END DESC, SchemaName, TableName;";
 
             DataTable tables = databaseContext.QueryService.ExecuteTable(query);
 
