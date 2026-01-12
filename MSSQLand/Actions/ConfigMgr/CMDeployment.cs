@@ -108,7 +108,7 @@ SELECT
     a.SourceSite
 FROM [{db}].dbo.v_CIAssignment a
 LEFT JOIN [{db}].dbo.v_Collection c ON a.CollectionID = c.CollectionID
-WHERE a.AssignmentID = '{_assignmentId.Replace("'", "''")}'";";
+WHERE a.AssignmentID = '{_assignmentId.Replace("'", "''")}'";
 
                 DataTable assignmentResult = databaseContext.QueryService.ExecuteTable(assignmentQuery);
 
@@ -241,7 +241,7 @@ SELECT
     ds.ModificationTime,
     ds.SummarizationTime
 FROM [{db}].dbo.v_DeploymentSummary ds
-WHERE ds.AssignmentID = '{_assignmentId.Replace("'", "''")}'";";
+WHERE ds.AssignmentID = '{_assignmentId.Replace("'", "''")}'";
 
                 DataTable statsResult = databaseContext.QueryService.ExecuteTable(statsQuery);
                 
@@ -267,7 +267,7 @@ SELECT
     LocalCollectionID AS CI_ID,
     AssignmentName
 FROM [{db}].dbo.v_CIAssignment
-WHERE AssignmentID = '{_assignmentId.Replace("'", "''")}'";";
+WHERE AssignmentID = '{_assignmentId.Replace("'", "''")}'";
 
                     DataTable ciIdResult = databaseContext.QueryService.ExecuteTable(ciIdQuery);
 
@@ -462,7 +462,7 @@ SELECT TOP 100
     asd.LastErrorCode
 FROM [{db}].dbo.v_AssignmentState_Combined asd
 INNER JOIN [{db}].dbo.v_R_System sys ON asd.ResourceID = sys.ResourceID
-WHERE asd.AssignmentID = '{_assignmentId.Replace("'", "''")}'";
+WHERE asd.AssignmentID = '{_assignmentId.Replace("'", "''")}'
 ORDER BY asd.StateTime DESC";
                 }
                 else
