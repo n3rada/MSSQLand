@@ -205,31 +205,31 @@ WHERE adv.AdvertisementID = '{_assignmentId.Replace("'", "''")}'";
                     
                     if ((advertFlags & 0x00000020) == 0x00000020)
                     {
-                        Logger.Warning("This is a REQUIRED deployment - it will automatically install");
+                        Logger.WarningNested("This is a REQUIRED deployment - it will automatically install");
                     }
                     else
                     {
-                        Logger.Info("This is an AVAILABLE deployment - users must manually install");
+                        Logger.InfoNested("This is an AVAILABLE deployment - users must manually install");
                     }
                     
                     if ((advertFlags & 0x00000200) == 0x00000200)
                     {
-                        Logger.Warning("RERUN BEHAVIOR ENABLED - This will reinstall even if previously successful!");
+                        Logger.WarningNested("RERUN BEHAVIOR ENABLED - This will reinstall even if previously successful!");
                         Logger.WarningNested("This is likely why software keeps getting reinstalled");
                     }
                     else
                     {
-                        Logger.Info("Rerun disabled - Only runs if not already successful");
+                        Logger.InfoNested("Rerun disabled - Only runs if not already successful");
                     }
                     
                     if ((advertFlags & 0x00020000) == 0x00020000)
                     {
-                        Logger.Info("Can override maintenance windows");
+                        Logger.InfoNested("Can override maintenance windows");
                     }
                     
                     if ((advertFlags & 0x00000400) == 0x00000400)
                     {
-                        Logger.Info("Users can run independently from Software Center");
+                        Logger.InfoNested("Users can run independently from Software Center");
                     }
                 }
 
@@ -237,7 +237,15 @@ WHERE adv.AdvertisementID = '{_assignmentId.Replace("'", "''")}'";
                 Logger.NewLine();
                 Logger.Info("Deployment Statistics");
 
-                string statsQuery = $@"
+                string statsQuery;
+                if (isAdvertisement)
+                {
+                    // For Advertisements, match by CollectionID + PackageID + ProgramName (v_DeploymentSummary.AssignmentID is always 0)
+                    string packageId = assignment["PackageID"].ToString();
+                    string programName = assignment["ProgramName"].ToString();
+                    string collectionId = assignment["CollectionID"].ToString();
+                    
+                    statsQuery = $@"
 SELECT 
     ds.CollectionID,
     ds.SoftwareName,
@@ -251,7 +259,30 @@ SELECT
     ds.ModificationTime,
     ds.SummarizationTime
 FROM [{db}].dbo.v_DeploymentSummary ds
-WHERE ds.AssignmentID = '{_assignmentId.Replace("'", "''")}'";
+WHERE ds.CollectionID = '{collectionId.Replace("'", "''")}'  
+    AND ds.PackageID = '{packageId.Replace("'", "''")}'  
+    AND ds.ProgramName = '{programName.Replace("'", "''")}'
+    AND ds.FeatureType = 2";
+                }
+                else
+                {
+                    // For Assignments, match by numeric AssignmentID
+                    statsQuery = $@"
+SELECT 
+    ds.CollectionID,
+    ds.SoftwareName,
+    ds.NumberTotal,
+    ds.NumberSuccess,
+    ds.NumberInProgress,
+    ds.NumberErrors,
+    ds.NumberUnknown,
+    ds.NumberOther,
+    ds.DeploymentTime,
+    ds.ModificationTime,
+    ds.SummarizationTime
+FROM [{db}].dbo.v_DeploymentSummary ds
+WHERE ds.AssignmentID = {numericAssignmentId}";
+                }
 
                 DataTable statsResult = databaseContext.QueryService.ExecuteTable(statsQuery);
                 
