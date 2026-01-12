@@ -10,18 +10,21 @@ namespace MSSQLand.Actions.ConfigMgr
     /// Enumerate ConfigMgr collections with member counts, types, and properties.
     /// Use this to identify device and user groupings for targeted deployment attacks.
     /// Shows collection names, types (device/user), member counts, and collection IDs needed for deployment targeting.
-    /// Filter by name or type, and optionally show only collections with members.
+    /// Search by CollectionID or name, filter by type, and optionally show only collections with members.
     /// Essential for understanding organizational structure and planning deployment-based attacks.
     /// </summary>
     internal class CMCollections : BaseAction
     {
-        [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by collection name")]
-        private string _filter = "";
+        [ArgumentMetadata(Position = 0, ShortName = "id", LongName = "collection-id", Description = "Search by CollectionID")]
+        private string _collectionId = "";
 
-        [ArgumentMetadata(Position = 1, ShortName = "t", LongName = "type", Description = "Filter by type: user (1) or device (2)")]
+        [ArgumentMetadata(Position = 1, ShortName = "n", LongName = "name", Description = "Search by collection name")]
+        private string _nameFilter = "";
+
+        [ArgumentMetadata(Position = 2, ShortName = "t", LongName = "type", Description = "Filter by type: user (1) or device (2)")]
         private string _collectionType = "";
 
-        [ArgumentMetadata(Position = 2,  LongName = "limit", Description = "Limit number of results (default: 100)")]
+        [ArgumentMetadata(Position = 3,  LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         [ArgumentMetadata(ShortName = "wm", LongName = "with-members", Description = "Only show collections with members (MemberCount > 0)")]
@@ -31,17 +34,21 @@ namespace MSSQLand.Actions.ConfigMgr
         {
             var (named, positional) = ParseActionArguments(args);
 
-            _filter = GetNamedArgument(named, "f", null)
-                   ?? GetNamedArgument(named, "filter", null)
-                   ?? GetPositionalArgument(positional, 0, "");
+            _collectionId = GetNamedArgument(named, "id", null)
+                         ?? GetNamedArgument(named, "collection-id", null)
+                         ?? GetPositionalArgument(positional, 0, "");
+
+            _nameFilter = GetNamedArgument(named, "n", null)
+                       ?? GetNamedArgument(named, "name", null)
+                       ?? GetPositionalArgument(positional, 1, "");
 
             _collectionType = GetNamedArgument(named, "t", null)
                            ?? GetNamedArgument(named, "type", null)
-                           ?? GetPositionalArgument(positional, 1, "");
+                           ?? GetPositionalArgument(positional, 2, "");
 
             string limitStr = GetNamedArgument(named, "l", null)
                            ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 2);
+                           ?? GetPositionalArgument(positional, 3);
             if (!string.IsNullOrEmpty(limitStr))
             {
                 _limit = int.Parse(limitStr);
@@ -52,9 +59,10 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
+            string idMsg = !string.IsNullOrEmpty(_collectionId) ? $" (ID: {_collectionId})" : "";
+            string nameMsg = !string.IsNullOrEmpty(_nameFilter) ? $" (name: {_nameFilter})" : "";
             string typeMsg = !string.IsNullOrEmpty(_collectionType) ? $" (type: {_collectionType})" : "";
-            Logger.TaskNested($"Enumerating ConfigMgr collections{filterMsg}{typeMsg}");
+            Logger.TaskNested($"Enumerating ConfigMgr collections{idMsg}{nameMsg}{typeMsg}");
             Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -77,11 +85,17 @@ namespace MSSQLand.Actions.ConfigMgr
                 {
                     string whereClause = "WHERE 1=1";
                     
-                    // Add filter conditions
-                    if (!string.IsNullOrEmpty(_filter))
+                    // Add CollectionID search
+                    if (!string.IsNullOrEmpty(_collectionId))
                     {
-                        whereClause += $" AND (Name LIKE '%{_filter.Replace("'", "''")}%' " +
-                                      $"OR Comment LIKE '%{_filter.Replace("'", "''")}%')";
+                        whereClause += $" AND CollectionID = '{_collectionId.Replace("'", "''")}'";
+                    }
+
+                    // Add name search
+                    if (!string.IsNullOrEmpty(_nameFilter))
+                    {
+                        whereClause += $" AND (Name LIKE '%{_nameFilter.Replace("'", "''")}%' " +
+                                      $"OR Comment LIKE '%{_nameFilter.Replace("'", "''")}%')";
                     }
 
                     // Add collection type filter
@@ -109,7 +123,7 @@ namespace MSSQLand.Actions.ConfigMgr
 SELECT {topClause} *
 FROM [{db}].dbo.v_Collection
 {whereClause}
-ORDER BY CollectionType, MemberCount DESC, LastMemberChangeTime DESC";
+ORDER BY LastChangeTime DESC, LastRefreshTime DESC, MemberCount DESC";
 
                     DataTable collectionsTable = databaseContext.QueryService.ExecuteTable(query);
 
