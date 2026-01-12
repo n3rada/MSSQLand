@@ -356,68 +356,15 @@ WHERE CI_UniqueID = '{dtUniqueID.Replace("'", "''")}'
                                     {
                                         string detectionXml = detectionResult.Rows[0]["DetectionXML"].ToString();
                                         
-                                        // Try to extract key detection info from XML (simplified parsing)
-                                        if (detectionXml.Contains("<File"))
-                                        {
-                                            Logger.InfoNested("Detection Method: File-based detection");
-                                            
-                                            // Extract file path if present
-                                            int pathStart = detectionXml.IndexOf("Path=\"");
-                                            if (pathStart > 0)
-                                            {
-                                                pathStart += 6;
-                                                int pathEnd = detectionXml.IndexOf("\"", pathStart);
-                                                if (pathEnd > pathStart)
-                                                {
-                                                    string filePath = detectionXml.Substring(pathStart, pathEnd - pathStart);
-                                                    Logger.InfoNested($"  Checks for file: {filePath}");
-                                                }
-                                            }
-                                        }
+                                        // Use centralized parser to extract detection method info
+                                        var sdmInfo = CMService.ParseSDMPackageDigest(detectionXml, detailed: true);
                                         
-                                        if (detectionXml.Contains("<RegistryKey"))
+                                        if (!string.IsNullOrEmpty(sdmInfo.DetectionMethodSummary))
                                         {
-                                            Logger.InfoNested("Detection Method: Registry-based detection");
-                                            
-                                            // Extract registry key if present
-                                            int keyStart = detectionXml.IndexOf("Key=\"");
-                                            if (keyStart > 0)
-                                            {
-                                                keyStart += 5;
-                                                int keyEnd = detectionXml.IndexOf("\"", keyStart);
-                                                if (keyEnd > keyStart)
-                                                {
-                                                    string regKey = detectionXml.Substring(keyStart, keyEnd - keyStart);
-                                                    Logger.InfoNested($"  Checks registry: {regKey}");
-                                                }
-                                            }
-                                        }
-                                        
-                                        if (detectionXml.Contains("<Script"))
-                                        {
-                                            Logger.InfoNested("Detection Method: Script-based detection");
-                                            Logger.InfoNested("  Uses custom PowerShell/VBScript");
+                                            Logger.InfoNested($"Detection Method: {sdmInfo.DetectionMethodSummary}");
                                         }
 
-                                        if (detectionXml.Contains("ProductCode"))
-                                        {
-                                            Logger.InfoNested("Detection Method: MSI Product Code detection");
-                                            
-                                            // Extract product code if present
-                                            int codeStart = detectionXml.IndexOf("ProductCode>");
-                                            if (codeStart > 0)
-                                            {
-                                                codeStart += 12;
-                                                int codeEnd = detectionXml.IndexOf("<", codeStart);
-                                                if (codeEnd > codeStart)
-                                                {
-                                                    string productCode = detectionXml.Substring(codeStart, codeEnd - codeStart);
-                                                    Logger.InfoNested($"  Product Code: {productCode}");
-                                                }
-                                            }
-                                        }
-
-                                        Logger.InfoNested($"Use 'query \"SELECT CAST(SDMPackageDigest AS NVARCHAR(MAX)) FROM [{db}].dbo.CI_ConfigurationItems WHERE CI_UniqueID = '{dtUniqueID}'\" --limit 1' to see full XML");
+                                        Logger.InfoNested($"Use 'cm-dt {dtRow["CI_ID"]}' to see full detection method details");
                                     }
                                     else
                                     {
