@@ -173,9 +173,14 @@ WHERE adv.AdvertisementID = '{_assignmentId.Replace("'", "''")}'";
                 assignmentFound = true;
                 DataRow assignment = assignmentResult.Rows[0];
 
+                // Determine if this is an Assignment (Application) or Advertisement (Package/Program)
+                bool isAdvertisement = assignmentResult.Columns.Contains("AdvertFlags");
+                string deploymentKind = isAdvertisement ? "Advertisement (Package/Program)" : "Assignment (Application/CI)";
+
                 // Display assignment details
                 Logger.NewLine();
-                Logger.Info($"Assignment: {assignment["AssignmentName"]} (ID: {_assignmentId})");
+                Logger.Info($"Deployment: {assignment["AssignmentName"]} (ID: {_assignmentId})");
+                Logger.InfoNested($"Kind: {deploymentKind}");
                 Logger.InfoNested($"Type: {assignment["AssignmentTypeDescription"]}");
                 Logger.InfoNested($"Intent: {assignment["Intent"]}");
 
@@ -191,7 +196,7 @@ WHERE adv.AdvertisementID = '{_assignmentId.Replace("'", "''")}'";
                 Console.WriteLine(OutputFormatter.ConvertDataTable(assignmentResult));
 
                 // Check for rerun behavior if it's an advertisement
-                if (assignmentResult.Columns.Contains("AdvertFlags"))
+                if (isAdvertisement)
                 {
                     int advertFlags = assignment["AdvertFlags"] != DBNull.Value ? Convert.ToInt32(assignment["AdvertFlags"]) : 0;
                     
@@ -260,7 +265,7 @@ WHERE ds.AssignmentID = '{_assignmentId.Replace("'", "''")}'";
                 }
 
                 // For Application deployments, get application and deployment type details
-                if (assignmentResult.Columns.Contains("AssignmentType") && !assignmentResult.Columns.Contains("AdvertFlags"))
+                if (!isAdvertisement)
                 {
                     Logger.NewLine();
                     Logger.Info("Application Details");
@@ -393,7 +398,7 @@ WHERE CI_UniqueID = '{dtUniqueID.Replace("'", "''")}'
                 string deviceStatusQuery;
                 
                 // Check if this is a Configuration Item/Application deployment or Advertisement
-                if (assignmentResult.Columns.Contains("AssignmentType"))
+                if (!isAdvertisement)
                 {
                     // Configuration Item/Application - use v_AssignmentState_Combined
                     deviceStatusQuery = $@"

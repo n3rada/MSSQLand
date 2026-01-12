@@ -164,6 +164,10 @@ SELECT TOP {_limit}
         WHEN ds.FeatureType = 2 THEN adv.AdvertisementID
         ELSE CAST(ds.AssignmentID AS VARCHAR)
     END AS DeploymentID,
+    CASE 
+        WHEN ds.FeatureType = 2 THEN 'Advertisement'
+        ELSE 'Assignment'
+    END AS DeploymentKind,
     ds.SoftwareName,
     ds.CollectionID,
     c.Name AS CollectionName,
