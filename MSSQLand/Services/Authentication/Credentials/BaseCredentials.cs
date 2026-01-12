@@ -16,13 +16,13 @@ namespace MSSQLand.Services.Credentials
 
         /// <summary>
         /// The application name used for the SQL connection.
-        /// Default: "DataFactory" (mimics common data processing applications)
+        /// Default: "SQLAgent - TSQL JobStep" (mimics SQL Server Agent executing T-SQL jobs)
         /// </summary>
         public string AppName { get; set; } = null;
 
         /// <summary>
         /// The workstation ID used for the SQL connection.
-        /// Default: null (will generate "datafactory-runX" where X is random 0-10)
+        /// Default: null (will generate "SQLNODE-0X" where X is random 0-99, mimics clustered SQL nodes)
         /// </summary>
         public string WorkstationId { get; set; } = null;
 
@@ -69,10 +69,10 @@ namespace MSSQLand.Services.Credentials
         {
             // Set defaults if not configured via command line
             if (string.IsNullOrEmpty(AppName))
-                AppName = "DataFactory";
+                AppName = "SQLAgent - TSQL JobStep";
             
             if (string.IsNullOrEmpty(WorkstationId))
-                WorkstationId = "datafactory-run" + Misc.GetRandomNumber(0, 10);
+                WorkstationId = "SQLNODE-" + Misc.GetRandomNumber(0, 99).ToString("D2");
 
             connectionString = $"{connectionString.TrimEnd(';')}; Connect Timeout={_connectTimeout}; Application Name={AppName}; Workstation Id={WorkstationId}";
 
