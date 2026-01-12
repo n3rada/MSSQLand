@@ -57,6 +57,7 @@ namespace MSSQLand.Actions.ConfigMgr
         public override object? Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested("Retrieving all deployment types");
+            Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -66,24 +67,7 @@ namespace MSSQLand.Actions.ConfigMgr
             {
                 Logger.Warning("No ConfigMgr databases found");
                 return null;
-            Logger.TaskNested($"Limit: {_limit}");
             }
-
-            DataTable allResults = new DataTable();
-            allResults.Columns.Add("Database", typeof(string));
-            allResults.Columns.Add("SiteCode", typeof(string));
-            allResults.Columns.Add("CI_ID", typeof(int));
-            allResults.Columns.Add("Title", typeof(string));
-            allResults.Columns.Add("Version", typeof(string));
-            allResults.Columns.Add("CI_Version", typeof(int));
-            allResults.Columns.Add("Enabled", typeof(bool));
-            allResults.Columns.Add("Expired", typeof(bool));
-            allResults.Columns.Add("Hidden", typeof(bool));
-            allResults.Columns.Add("CreatedBy", typeof(string));
-            allResults.Columns.Add("DateCreated", typeof(DateTime));
-            allResults.Columns.Add("LastModifiedBy", typeof(string));
-            allResults.Columns.Add("DateLastModified", typeof(DateTime));
-            allResults.Columns.Add("SourceSite", typeof(string));
 
             foreach (string db in databases)
             {
@@ -92,19 +76,19 @@ namespace MSSQLand.Actions.ConfigMgr
                 Logger.NewLine();
                 Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
+                string topClause = _limit > 0 ? $"TOP {_limit}" : "";
+
                 // Query all deployment types, ordered by modification and creation date
                 string query = $@"
-SELECT
+SELECT {topClause}
     ci.CI_ID,
     ci.CI_UniqueID,
     ci.CIVersion,
     ci.IsEnabled,
     ci.IsExpired,
-    ci.IsHidden,string topClause = _limit > 0 ? $"TOP {_limit}" : "";
-
-                // Query all deployment types, ordered by modification and creation date
-                string query = $@"
-SELECT {topClause}.CreatedBy,
+    ci.IsHidden,
+    ci.DateCreated,
+    ci.CreatedBy,
     ci.DateLastModified,
     ci.LastModifiedBy,
     ci.SourceSite,
@@ -123,42 +107,11 @@ ORDER BY ci.DateLastModified DESC, ci.DateCreated DESC;";
                     continue;
                 }
 
+                Console.WriteLine(OutputFormatter.ConvertDataTable(results));
                 Logger.Success($"Found {results.Rows.Count} deployment type(s)");
-
-                // Add rows to combined results
-                foreach (DataRow row in results.Rows)
-                {
-                    DataRow newRow = allResults.NewRow();
-                    newRow["Database"] = db;
-                    newRow["SiteCode"] = siteCode;
-                    newRow["CI_ID"] = row["CI_ID"];
-                    newRow["Title"] = row["Title"] != DBNull.Value ? row["Title"] : "";
-                    newRow["Version"] = row["LocalizedVersion"] != DBNull.Value ? row["LocalizedVersion"] : "";
-                    newRow["CI_Version"] = row["CIVersion"];
-                    newRow["Enabled"] = row["IsEnabled"];
-                    newRow["Expired"] = row["IsExpired"];
-                    newRow["Hidden"] = row["IsHidden"];
-                    newRow["CreatedBy"] = row["CreatedBy"] != DBNull.Value ? row["CreatedBy"] : "";
-                    newRow["DateCreated"] = row["DateCreated"];
-                    newRow["LastModifiedBy"] = row["LastModifiedBy"] != DBNull.Value ? row["LastModifiedBy"] : "";
-                    newRow["DateLastModified"] = row["DateLastModified"];
-                    newRow["SourceSite"] = row["SourceSite"] != DBNull.Value ? row["SourceSite"] : "";
-                    allResults.Rows.Add(newRow);
-                }
             }
 
-            if (allResults.Rows.Count == 0)
-            {
-                Logger.Warning("No deployment types found in any ConfigMgr database");
-                return null;
-            }
-
-            // Output formatted results
-            Logger.NewLine();
-            Logger.Success($"Total: {allResults.Rows.Count} deployment type(s) across all databases");
-            Logger.NewLine();
-
-            if (_csvOutput)
-            Console.WriteLine(OutputFormatter.ConvertDataTable(allResults));
-
-            Logger.Success($"Total: {allResults.Rows.Count} deployment type(s) across all databases");
+            return null;
+        }
+    }
+}
