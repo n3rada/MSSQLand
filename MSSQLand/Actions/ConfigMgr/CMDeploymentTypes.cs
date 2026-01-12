@@ -74,8 +74,8 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(LongName = "enabled", Description = "Filter by enabled status (true/false)")]
         private string _enabled = "";
 
-        [ArgumentMetadata(LongName = "limit", Description = "Limit number of results (default: 100)")]
-        private int _limit = 100;
+        [ArgumentMetadata(LongName = "limit", Description = "Limit number of results (default: 25)")]
+        private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
         {
