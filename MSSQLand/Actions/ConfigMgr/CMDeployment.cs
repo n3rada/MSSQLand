@@ -54,8 +54,12 @@ namespace MSSQLand.Actions.ConfigMgr
                 Logger.NewLine();
                 Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
-                // Get assignment details from v_CIAssignment (for applications) or v_Advertisement (for packages/TS)
-                string assignmentQuery = $@"
+                DataTable assignmentResult = null;
+
+                // Try v_CIAssignment first (for applications with numeric AssignmentID)
+                if (int.TryParse(_assignmentId, out int numericAssignmentId))
+                {
+                    string assignmentQuery = $@"
 SELECT 
     a.AssignmentID,
     a.AssignmentName,
@@ -108,13 +112,14 @@ SELECT
     a.SourceSite
 FROM [{db}].dbo.v_CIAssignment a
 LEFT JOIN [{db}].dbo.v_Collection c ON a.CollectionID = c.CollectionID
-WHERE a.AssignmentID = '{_assignmentId.Replace("'", "''")}'";
+WHERE a.AssignmentID = {numericAssignmentId}";
 
-                DataTable assignmentResult = databaseContext.QueryService.ExecuteTable(assignmentQuery);
+                    assignmentResult = databaseContext.QueryService.ExecuteTable(assignmentQuery);
+                }
 
-                if (assignmentResult.Rows.Count == 0)
+                // If not found or ID is not numeric, try v_Advertisement (for packages/task sequences with string AdvertisementID)
+                if (assignmentResult == null || assignmentResult.Rows.Count == 0)
                 {
-                    // Try looking in advertisements for packages/task sequences
                     string advQuery = $@"
 SELECT 
     adv.AdvertisementID AS AssignmentID,

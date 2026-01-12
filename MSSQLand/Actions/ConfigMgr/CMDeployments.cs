@@ -160,7 +160,10 @@ namespace MSSQLand.Actions.ConfigMgr
 
                 string query = $@"
 SELECT TOP {_limit}
-    ds.AssignmentID,
+    CASE 
+        WHEN ds.FeatureType = 2 THEN adv.AdvertisementID
+        ELSE CAST(ds.AssignmentID AS VARCHAR)
+    END AS DeploymentID,
     ds.SoftwareName,
     ds.CollectionID,
     c.Name AS CollectionName,
@@ -202,6 +205,10 @@ LEFT JOIN [{db}].dbo.v_Collection c ON ds.CollectionID = c.CollectionID
 LEFT JOIN [{db}].dbo.vAppDeploymentTargetingInfoBase adt ON ds.AssignmentID = adt.AssignmentID
 LEFT JOIN [{db}].dbo.CI_ConfigurationItems dt ON adt.DTCI = dt.CI_ID
 LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON dt.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
+LEFT JOIN [{db}].dbo.v_Advertisement adv ON ds.CollectionID = adv.CollectionID 
+    AND ds.PackageID = adv.PackageID 
+    AND ds.ProgramName = adv.ProgramName
+    AND ds.FeatureType = 2
 {filterClause}
 ORDER BY ds.CreationTime DESC;
 ";
