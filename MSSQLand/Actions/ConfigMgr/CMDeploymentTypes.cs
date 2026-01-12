@@ -153,10 +153,8 @@ SELECT {topClause}
     ci.DateLastModified,
     ci.LastModifiedBy,
     ci.SourceSite,
-    ci.SDMPackageDigest,
-    lcp.Title
+    ci.SDMPackageDigest
 FROM [{db}].dbo.CI_ConfigurationItems ci
-LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp ON ci.CI_ID = lcp.CI_ID AND lcp.LocaleID = 1033
 WHERE {whereClause}
 ORDER BY ci.DateLastModified DESC, ci.DateCreated DESC;";
 
@@ -213,15 +211,15 @@ WHERE rel.RelationType = 9";
                         }
                     }
 
-                    // Position new columns after Title
-                    int titleIndex = results.Columns["Title"]?.Ordinal ?? 0;
-                    technologyCol.SetOrdinal(titleIndex + 1);
-                    installCmdCol.SetOrdinal(titleIndex + 2);
-                    contentCol.SetOrdinal(titleIndex + 3);
-                    detectionCol.SetOrdinal(titleIndex + 4);
-                    executionCol.SetOrdinal(titleIndex + 5);
+                    // Position new columns at the beginning (after CI_ID)
+                    int ciIdIndex = results.Columns["CI_ID"]?.Ordinal ?? 0;
+                    technologyCol.SetOrdinal(ciIdIndex + 1);
+                    installCmdCol.SetOrdinal(ciIdIndex + 2);
+                    contentCol.SetOrdinal(ciIdIndex + 3);
+                    detectionCol.SetOrdinal(ciIdIndex + 4);
+                    executionCol.SetOrdinal(ciIdIndex + 5);
                     if (parentAppCol != null)
-                        parentAppCol.SetOrdinal(titleIndex + 6);
+                        parentAppCol.SetOrdinal(ciIdIndex + 6);
 
                     // Parse XML for each row
                     List<DataRow> rowsToRemove = new List<DataRow>();
