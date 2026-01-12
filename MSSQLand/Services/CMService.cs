@@ -78,8 +78,72 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
+        /// Decodes OfferType value into human-readable string.
+        /// See: https://learn.microsoft.com/en-us/mem/configmgr/develop/reference/core/servers/configure/sms_advertisement-server-wmi-class#offertype
+        /// </summary>
+        public static string DecodeOfferType(object offerTypeObj)
+        {
+            if (offerTypeObj == DBNull.Value)
+                return "Unknown";
+
+            int offerType = Convert.ToInt32(offerTypeObj);
+
+            return offerType switch
+            {
+                0 => "Required",
+                2 => "Available",
+                _ => $"Unknown ({offerType})"
+            };
+        }
+
+        /// <summary>
+        /// Decodes RemoteClientFlags bitmask into human-readable comma-separated string.
+        /// Default value is 48 (0x30 = DOWNLOAD_FROM_LOCAL_DISPPOINT | DONT_RUN_NO_LOCAL_DISPPOINT).
+        /// See: https://learn.microsoft.com/en-us/mem/configmgr/develop/reference/core/servers/configure/sms_advertisement-server-wmi-class#remoteclientflags
+        /// </summary>
+        public static string DecodeRemoteClientFlags(object remoteClientFlagsObj)
+        {
+            if (remoteClientFlagsObj == DBNull.Value)
+                return "None";
+
+            int remoteClientFlags = Convert.ToInt32(remoteClientFlagsObj);
+            var flags = new List<string>();
+
+            // Rerun behavior (bits 11-14, mutually exclusive)
+            if ((remoteClientFlags & 0x00000800) == 0x00000800) 
+                flags.Add("RERUN_ALWAYS");
+            else if ((remoteClientFlags & 0x00001000) == 0x00001000) 
+                flags.Add("RERUN_NEVER");
+            else if ((remoteClientFlags & 0x00002000) == 0x00002000) 
+                flags.Add("RERUN_IF_FAILED");
+            else if ((remoteClientFlags & 0x00004000) == 0x00004000) 
+                flags.Add("RERUN_IF_SUCCEEDED");
+
+            // Distribution point behavior (bits 3-9)
+            if ((remoteClientFlags & 0x00000008) == 0x00000008) flags.Add("RUN_FROM_LOCAL_DISPPOINT");
+            if ((remoteClientFlags & 0x00000010) == 0x00000010) flags.Add("DOWNLOAD_FROM_LOCAL_DISPPOINT");
+            if ((remoteClientFlags & 0x00000020) == 0x00000020) flags.Add("DONT_RUN_NO_LOCAL_DISPPOINT");
+            if ((remoteClientFlags & 0x00000040) == 0x00000040) flags.Add("DOWNLOAD_FROM_REMOTE_DISPPOINT");
+            if ((remoteClientFlags & 0x00000080) == 0x00000080) flags.Add("RUN_FROM_REMOTE_DISPPOINT");
+            if ((remoteClientFlags & 0x00000100) == 0x00000100) flags.Add("DOWNLOAD_ON_DEMAND_FROM_LOCAL_DP");
+            if ((remoteClientFlags & 0x00000200) == 0x00000200) flags.Add("DOWNLOAD_ON_DEMAND_FROM_REMOTE_DP");
+            
+            // Legacy/Other flags
+            if ((remoteClientFlags & 0x00000001) == 0x00000001) flags.Add("BATTERY_POWER");
+            if ((remoteClientFlags & 0x00000002) == 0x00000002) flags.Add("RUN_FROM_CD");
+            if ((remoteClientFlags & 0x00000004) == 0x00000004) flags.Add("DOWNLOAD_FROM_CD");
+            if ((remoteClientFlags & 0x00000400) == 0x00000400) flags.Add("BALLOON_REMINDERS_REQUIRED");
+            if ((remoteClientFlags & 0x00008000) == 0x00008000) flags.Add("PERSIST_ON_WRITE_FILTER_DEVICES");
+            if ((remoteClientFlags & 0x00020000) == 0x00020000) flags.Add("DONT_FALLBACK");
+            if ((remoteClientFlags & 0x00040000) == 0x00040000) flags.Add("DP_ALLOW_METERED_NETWORK");
+
+            return flags.Count > 0 ? string.Join(", ", flags) : "None";
+        }
+
+        /// <summary>
         /// Decodes AdvertFlags bitmask into human-readable comma-separated string.
-        /// See: https://learn.microsoft.com/en-us/intune/configmgr/develop/reference/core/servers/configure/sms_advertisement-server-wmi-class#advertflags
+        /// NOTE: AdvertFlags controls WHEN/HOW to announce, not Required vs Available (use OfferType for that).
+        /// See: https://learn.microsoft.com/en-us/mem/configmgr/develop/reference/core/servers/configure/sms_advertisement-server-wmi-class#advertflags
         /// </summary>
         public static string DecodeAdvertFlags(object advertFlagsObj)
         {
