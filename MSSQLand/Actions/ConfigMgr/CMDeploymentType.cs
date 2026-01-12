@@ -106,6 +106,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
                 Logger.NewLine();
                 Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
+                Logger.NewLine();
 
                 // Get deployment type details
                 string dtQuery = $@"
@@ -272,21 +273,21 @@ WHERE rel.ToCI_ID = {ciId} AND rel.RelationType = 9;";
                                     case "File":
                                         string filePath = settingNode.SelectSingleNode("dc:Path", nsManager)?.InnerText;
                                         string filter = settingNode.SelectSingleNode("dc:Filter", nsManager)?.InnerText;
-                                        Logger.InfoNested($"  → File Detection: {filePath}\\{filter}");
+                                        Logger.InfoNested($"\tFile Detection: {filePath}\\{filter}");
                                         break;
                                     case "Folder":
                                         string folderPath = settingNode.SelectSingleNode("dc:Path", nsManager)?.InnerText;
                                         string folderFilter = settingNode.SelectSingleNode("dc:Filter", nsManager)?.InnerText;
-                                        Logger.InfoNested($"  → Folder Detection: {folderPath}\\{folderFilter}");
+                                        Logger.InfoNested($"\tFolder Detection: {folderPath}\\{folderFilter}");
                                         break;
                                     case "RegistryKey":
                                         string regKey = settingNode.SelectSingleNode("dc:Key", nsManager)?.InnerText;
-                                        Logger.InfoNested($"  → Registry Key: {regKey}");
+                                        Logger.InfoNested($"\tRegistry Key: {regKey}");
                                         break;
                                     case "RegistrySetting":
                                         string regSettingKey = settingNode.SelectSingleNode("dc:Key", nsManager)?.InnerText;
                                         string valueName = settingNode.SelectSingleNode("dc:ValueName", nsManager)?.InnerText;
-                                        Logger.InfoNested($"  → Registry Value: {regSettingKey}\\{valueName}");
+                                        Logger.InfoNested($"\tRegistry Value: {regSettingKey}\\{valueName}");
                                         break;
                                 }
                             }
@@ -294,11 +295,11 @@ WHERE rel.ToCI_ID = {ciId} AND rel.RelationType = 9;";
                         else if (detectionType == "ProductCode")
                         {
                             string productCode = Misc.GetXmlValue(sdmXml, "//p1:ProductCode");
-                            Logger.InfoNested($"  → MSI Product Code: {productCode}");
+                            Logger.InfoNested($"\tMSI Product Code: {productCode}");
                         }
                         else if (detectionType == "Custom")
                         {
-                            Logger.InfoNested($"  → Custom script detection (see XML for details)");
+                            Logger.InfoNested($"\tCustom script detection (see XML for details)");
                         }
                     }
                 }
@@ -331,11 +332,11 @@ WHERE rel.ToCI_ID = {ciId} AND rel.RelationType = 9;";
                             
                             if (!string.IsNullOrEmpty(displayName))
                             {
-                                Logger.InfoNested($"  → {displayName} (Operator: {operatorType})");
+                                Logger.InfoNested($"\t{displayName} (Operator: {operatorType})");
                             }
                             else
                             {
-                                Logger.InfoNested($"  → Requirement with operator: {operatorType}");
+                                Logger.InfoNested($"\tRequirement with operator: {operatorType}");
                             }
                         }
                     }
@@ -369,7 +370,7 @@ WHERE rel.ToCI_ID = {ciId} AND rel.RelationType = 9;";
                         {
                             string code = exitCodeNode.Attributes["Code"]?.Value;
                             string codeClass = exitCodeNode.Attributes["Class"]?.Value;
-                            Logger.InfoNested($"  → {code}: {codeClass}");
+                            Logger.InfoNested($"\t{code}: {codeClass}");
                         }
                     }
                 }
@@ -387,7 +388,6 @@ SELECT TOP 1
     ds.Document_ID,
     ds.DocumentIdentifier,
     ds.DocumentType,
-    ds.DocumentVersion,
     ds.IsVersionLatest,
     ds.Body
 FROM [{db}].dbo.CI_CIDocuments cid
@@ -403,7 +403,6 @@ ORDER BY ds.Document_ID DESC;";
                     Logger.InfoNested($"Document ID: {docRow["Document_ID"]}");
                     Logger.InfoNested($"Document Identifier: {docRow["DocumentIdentifier"]}");
                     Logger.InfoNested($"Document Type: {docRow["DocumentType"]}");
-                    Logger.InfoNested($"Document Version: {docRow["DocumentVersion"]}");
                     Logger.InfoNested($"Is Latest Version: {docRow["IsVersionLatest"]}");
 
                     // Show XML if requested
