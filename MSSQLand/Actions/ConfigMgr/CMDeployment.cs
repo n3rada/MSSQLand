@@ -336,58 +336,56 @@ WHERE ds.AssignmentID = {numericAssignmentId}";
                     Logger.Info("No statistics available for this assignment");
                 }
 
-                // For Application deployments (AssignmentType = 1), get application and deployment type details
-                // Configuration Items, Software Updates, and Baselines have different structures
-                if (!isAdvertisement && assignment["AssignmentType"] != DBNull.Value && Convert.ToInt32(assignment["AssignmentType"]) == 1)
+                // For CI-based deployments (Applications, Configuration Items, Baselines, Software Updates),
+                // show configuration item identifiers
+                if (!isAdvertisement && assignment["AssignmentType"] != DBNull.Value)
                 {
+                    int assignmentType = Convert.ToInt32(assignment["AssignmentType"]);
+                    
                     Logger.NewLine();
-                    Logger.Info("Application Details");
+                    Logger.Info("Configuration Item");
 
-                    // Get the CI_ID from v_CIAssignment
-                    string ciIdQuery = $@"
+                    // Get the CI_ID and basic info from v_CIAssignment
+                    string ciQuery = $@"
 SELECT 
-    AssignmentID,
-    LocalCollectionID AS CI_ID,
-    AssignmentName
-FROM [{db}].dbo.v_CIAssignment
-WHERE AssignmentID = '{_assignmentId.Replace("'", "''")}'";
+    a.AssignmentID,
+    a.LocalCollectionID AS CI_ID,
+    ci.CI_UniqueID,
+    COALESCE(lp.DisplayName, lcp.Title, ci.CI_UniqueID) AS DisplayName,
+    ci.CIType_ID,
+    CASE ci.CIType_ID
+        WHEN 9 THEN 'Baseline'
+        WHEN 10 THEN 'Application'
+        WHEN 21 THEN 'Deployment Type'
+        WHEN 1 THEN 'Software Update'
+        ELSE 'Other (' + CAST(ci.CIType_ID AS VARCHAR) + ')'
+    END AS CIType,
+    ci.IsEnabled,
+    ci.IsExpired
+FROM [{db}].dbo.v_CIAssignment a
+INNER JOIN [{db}].dbo.CI_ConfigurationItems ci ON a.LocalCollectionID = ci.CI_ID
+LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON ci.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
+LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp ON ci.CI_ID = lcp.CI_ID AND lcp.LocaleID = 1033
+WHERE a.AssignmentID = {numericAssignmentId}";
 
-                    DataTable ciIdResult = databaseContext.QueryService.ExecuteTable(ciIdQuery);
+                    DataTable ciResult = databaseContext.QueryService.ExecuteTable(ciQuery);
 
-                    if (ciIdResult.Rows.Count == 0 || ciIdResult.Rows[0]["CI_ID"] == DBNull.Value)
+                    if (ciResult.Rows.Count == 0)
                     {
-                        Logger.Warning("Could not retrieve CI_ID from v_CIAssignment - application details unavailable");
+                        Logger.Warning("Could not retrieve CI information");
                     }
                     else
                     {
-                        int ciId = Convert.ToInt32(ciIdResult.Rows[0]["CI_ID"]);
-                        Logger.InfoNested($"Application CI_ID: {ciId}");
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(ciResult));
+                        
+                        DataRow ciRow = ciResult.Rows[0];
+                        int ciId = Convert.ToInt32(ciRow["CI_ID"]);
+                        int ciTypeId = Convert.ToInt32(ciRow["CIType_ID"]);
+                        string ciUniqueID = ciRow["CI_UniqueID"].ToString();
 
-                        string appDetailsQuery = $@"
-SELECT 
-    ci.CI_ID AS ApplicationCI_ID,
-    ci.CI_UniqueID AS ApplicationUniqueID,
-    ci.ModelId,
-    COALESCE(lp.DisplayName, ci.CI_UniqueID) AS ApplicationDisplayName,
-    ci.CIType_ID,
-    ci.IsEnabled,
-    ci.IsExpired,
-    ci.DateCreated,
-    ci.DateLastModified
-FROM [{db}].dbo.CI_ConfigurationItems ci
-LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON ci.CI_ID = lp.CI_ID
-WHERE ci.CI_ID = {ciId}";
-
-                        DataTable appDetailsResult = databaseContext.QueryService.ExecuteTable(appDetailsQuery);
-
-                        if (appDetailsResult.Rows.Count > 0)
+                        // For Applications (CIType_ID = 10), show deployment types
+                        if (assignmentType == 1 && ciTypeId == 10)
                         {
-                            Console.WriteLine(OutputFormatter.ConvertDataTable(appDetailsResult));
-
-                            DataRow appDetails = appDetailsResult.Rows[0];
-                            string appUniqueID = appDetails["ApplicationUniqueID"].ToString();
-
-                            // Get deployment types for this application
                             Logger.NewLine();
                             Logger.Info("Deployment Types");
 
@@ -395,14 +393,13 @@ WHERE ci.CI_ID = {ciId}";
 SELECT 
     dt.CI_ID,
     dt.CI_UniqueID,
-    COALESCE(lp.DisplayName, dt.CI_UniqueID) AS DeploymentTypeName,
-    dt.CIType_ID,
+    COALESCE(lp.DisplayName, lcp.Title, dt.CI_UniqueID) AS DeploymentTypeName,
     dt.IsEnabled,
-    dt.IsExpired,
-    dt.DateCreated
+    dt.IsExpired
 FROM [{db}].dbo.CI_ConfigurationItems dt
-LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON dt.CI_ID = lp.CI_ID
-WHERE dt.CI_UniqueID LIKE '{appUniqueID.Replace("'", "''")}/%'
+LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON dt.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
+LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp ON dt.CI_ID = lcp.CI_ID AND lcp.LocaleID = 1033
+WHERE dt.CI_UniqueID LIKE '{ciUniqueID.Replace("'", "''")}/%'
     AND dt.CIType_ID = 21
 ORDER BY dt.DateCreated DESC";
 
@@ -411,58 +408,24 @@ ORDER BY dt.DateCreated DESC";
                             if (deploymentTypesResult.Rows.Count > 0)
                             {
                                 Console.WriteLine(OutputFormatter.ConvertDataTable(deploymentTypesResult));
-                                Logger.Info($"Found {deploymentTypesResult.Rows.Count} deployment type(s)");
-
-                                // Get detection methods for each deployment type
+                                Logger.Success($"Found {deploymentTypesResult.Rows.Count} deployment type(s)");
                                 Logger.NewLine();
-                                Logger.Info("Detection Methods");
-
-                                foreach (DataRow dtRow in deploymentTypesResult.Rows)
-                                {
-                                    string dtUniqueID = dtRow["CI_UniqueID"].ToString();
-                                    string dtName = dtRow["DeploymentTypeName"].ToString();
-
-                                    Logger.NewLine();
-                                    Logger.InfoNested($"Deployment Type: {dtName}");
-                                    Logger.InfoNested($"UniqueID: {dtUniqueID}");
-
-                                    string detectionQuery = $@"
-SELECT 
-    CAST(SDMPackageDigest AS NVARCHAR(MAX)) AS DetectionXML
-FROM [{db}].dbo.CI_ConfigurationItems
-WHERE CI_UniqueID = '{dtUniqueID.Replace("'", "''")}' 
-    AND SDMPackageDigest IS NOT NULL";
-
-                                    DataTable detectionResult = databaseContext.QueryService.ExecuteTable(detectionQuery);
-
-                                    if (detectionResult.Rows.Count > 0 && detectionResult.Rows[0]["DetectionXML"] != DBNull.Value)
-                                    {
-                                        string detectionXml = detectionResult.Rows[0]["DetectionXML"].ToString();
-                                        
-                                        // Use centralized parser to extract detection method info
-                                        var sdmInfo = CMService.ParseSDMPackageDigest(detectionXml, detailed: true);
-                                        
-                                        if (!string.IsNullOrEmpty(sdmInfo.DetectionMethodSummary))
-                                        {
-                                            Logger.InfoNested($"Detection Method: {sdmInfo.DetectionMethodSummary}");
-                                        }
-
-                                        Logger.InfoNested($"Use 'cm-dt {dtRow["CI_ID"]}' to see full detection method details");
-                                    }
-                                    else
-                                    {
-                                        Logger.InfoNested("No detection method XML found");
-                                    }
-                                }
+                                Logger.Info("Use 'cm-dt [CI_ID]' to view deployment type details:");
+                                Logger.InfoNested("- Detection methods and verification scripts");
+                                Logger.InfoNested("- Install/uninstall commands and execution context");
+                                Logger.InfoNested("- Requirements and dependencies");
+                                Logger.InfoNested("- Content location and file details");
                             }
                             else
                             {
-                                Logger.Warning("No deployment types found for this application");
+                                Logger.Warning("No deployment types found");
                             }
                         }
+                        // For other CI types, just show pointer to cm-dt
                         else
                         {
-                            Logger.Warning("Application record not found in CI_ConfigurationItems");
+                            Logger.NewLine();
+                            Logger.Info($"Use 'cm-dt {ciId}' to view detailed {ciRow["CIType"]} information");
                         }
                     }
                 }
