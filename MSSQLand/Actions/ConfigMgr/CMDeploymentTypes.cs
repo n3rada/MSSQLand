@@ -135,9 +135,6 @@ namespace MSSQLand.Actions.ConfigMgr
                 // Build WHERE clause with SQL-level filters (non-XML fields)
                 string whereClause = "ci.CIType_ID = 21";
                 
-                // Only show deployment types with actual XML content (skip empty/incomplete records)
-                whereClause += " AND ci.SDMPackageDigest IS NOT NULL";
-                
                 if (!string.IsNullOrEmpty(_enabled))
                 {
                     bool enabledFilter = bool.Parse(_enabled);
@@ -332,29 +329,34 @@ WHERE rel.RelationType = 9";
                 doc.LoadXml(xmlContent);
 
                 XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
-                nsmgr.AddNamespace("dcm", "http://schemas.microsoft.com/SystemsManagementServer/2005/03/10/DesiredConfiguration");
-                nsmgr.AddNamespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
+                nsmgr.AddNamespace("p1", "http://schemas.microsoft.com/SystemCenterConfigurationManager/2009/AppMgmtDigest");
 
                 // Extract Technology
-                XmlNode techNode = doc.SelectSingleNode("//dcm:DeploymentType/dcm:Installer/@Technology", nsmgr);
-                row["Technology"] = techNode?.Value ?? "";
+                XmlNode techNode = doc.SelectSingleNode("//p1:Technology", nsmgr);
+                row["Technology"] = techNode?.InnerText ?? "";
 
                 // Extract Install Command
-                XmlNode installNode = doc.SelectSingleNode("//dcm:InstallAction/dcm:Provider/dcm:Data[@id='InstallCommandLine']", nsmgr);
+                XmlNode installNode = doc.SelectSingleNode("//p1:InstallCommandLine", nsmgr);
                 row["InstallCommand"] = installNode?.InnerText ?? "";
 
                 // Extract Content Location
-                XmlNode contentNode = doc.SelectSingleNode("//dcm:ContentRef/dcm:Location", nsmgr);
+                XmlNode contentNode = doc.SelectSingleNode("//p1:Location", nsmgr);
                 row["ContentLocation"] = contentNode?.InnerText ?? "";
 
-                // Extract Detection Type
-                XmlNode detectionNode = doc.SelectSingleNode("//dcm:EnhancedDetectionMethod/@DataType", nsmgr);
-                if (detectionNode == null)
-                    detectionNode = doc.SelectSingleNode("//dcm:DetectAction/dcm:Provider/@DataType", nsmgr);
-                row["DetectionType"] = detectionNode?.Value ?? "";
+                // Extract Detection Type (EnhancedDetectionMethod or DetectAction DataType)
+                XmlNode detectionNode = doc.SelectSingleNode("//p1:EnhancedDetectionMethod", nsmgr);
+                if (detectionNode != null)
+                {
+                    row["DetectionType"] = "Enhanced";
+                }
+                else
+                {
+                    detectionNode = doc.SelectSingleNode("//p1:DetectAction", nsmgr);
+                    row["DetectionType"] = detectionNode != null ? "Script" : "";
+                }
 
                 // Extract Execution Context
-                XmlNode contextNode = doc.SelectSingleNode("//dcm:InstallAction/dcm:Provider/dcm:Data[@id='ExecutionContext']", nsmgr);
+                XmlNode contextNode = doc.SelectSingleNode("//p1:ExecutionContext", nsmgr);
                 row["ExecutionContext"] = contextNode?.InnerText ?? "";
             }
             catch (Exception)
