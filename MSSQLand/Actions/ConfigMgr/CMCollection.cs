@@ -62,9 +62,10 @@ SELECT
     c.Comment,
     c.CollectionType,
     CASE c.CollectionType
+        WHEN 0 THEN 'Other'
         WHEN 1 THEN 'User'
         WHEN 2 THEN 'Device'
-        ELSE 'Other'
+        ELSE 'Unknown'
     END AS TypeName,
     c.MemberCount,
     c.LastRefreshTime,

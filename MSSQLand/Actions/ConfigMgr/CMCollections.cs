@@ -21,7 +21,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 1, ShortName = "n", LongName = "name", Description = "Search by collection name")]
         private string _nameFilter = "";
 
-        [ArgumentMetadata(Position = 2, ShortName = "t", LongName = "type", Description = "Filter by type: user (1) or device (2)")]
+        [ArgumentMetadata(Position = 2, ShortName = "t", LongName = "type", Description = "Filter by type: other (0), user (1), or device (2)")]
         private string _collectionType = "";
 
         [ArgumentMetadata(Position = 3,  LongName = "limit", Description = "Limit number of results (default: 50)")]
@@ -101,7 +101,11 @@ namespace MSSQLand.Actions.ConfigMgr
                     // Add collection type filter
                     if (!string.IsNullOrEmpty(_collectionType))
                     {
-                        if (_collectionType.Equals("user", StringComparison.OrdinalIgnoreCase) || _collectionType == "1")
+                        if (_collectionType.Equals("other", StringComparison.OrdinalIgnoreCase) || _collectionType == "0")
+                        {
+                            whereClause += " AND CollectionType = 0";
+                        }
+                        else if (_collectionType.Equals("user", StringComparison.OrdinalIgnoreCase) || _collectionType == "1")
                         {
                             whereClause += " AND CollectionType = 1";
                         }
