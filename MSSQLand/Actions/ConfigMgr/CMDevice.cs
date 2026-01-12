@@ -279,7 +279,10 @@ ORDER BY c.CollectionID;";
                 // Get deployments targeting this device (via collections)
                 string deploymentsQuery = $@"
 SELECT DISTINCT
-    ds.AssignmentID,
+    CASE 
+        WHEN ds.FeatureType = 2 THEN adv.AdvertisementID
+        ELSE CAST(ds.AssignmentID AS VARCHAR)
+    END AS DeploymentID,
     ds.SoftwareName,
     ds.CollectionID,
     c.Name AS CollectionName,
@@ -292,6 +295,10 @@ SELECT DISTINCT
 FROM [{db}].dbo.v_FullCollectionMembership cm
 INNER JOIN [{db}].dbo.v_DeploymentSummary ds ON cm.CollectionID = ds.CollectionID
 INNER JOIN [{db}].dbo.v_Collection c ON ds.CollectionID = c.CollectionID
+LEFT JOIN [{db}].dbo.v_Advertisement adv ON ds.CollectionID = adv.CollectionID 
+    AND ds.PackageID = adv.PackageID 
+    AND ds.ProgramName = adv.ProgramName
+    AND ds.FeatureType = 2
 WHERE cm.ResourceID = {resourceId}
 ORDER BY ds.DeploymentTime DESC;";
 
@@ -302,6 +309,7 @@ ORDER BY ds.DeploymentTime DESC;";
                 if (deploymentsResult.Rows.Count > 0)
                 {
                     Logger.Info("Deployments Targeting This Device");
+                    Logger.InfoNested("What's supposed to run here?")
                     
                     // Add decoded columns and remove raw numeric columns
                     DataColumn decodedFeatureColumn = deploymentsResult.Columns.Add("DeploymentType", typeof(string));
@@ -351,8 +359,6 @@ SELECT DISTINCT
     p.Version,
     p.Manufacturer,
     p.PackageType AS PackageTypeRaw,
-    adv.CollectionID,
-    c.Name AS CollectionName,
     adv.OfferType,
     adv.RemoteClientFlags,
     adv.AdvertFlags,
@@ -381,6 +387,7 @@ ORDER BY
                 if (packagesResult.Rows.Count > 0)
                 {
                     Logger.Info("Packages Deployed to This Device");
+                    Logger.InfoNested("What packages are supposed to be here and their status?")
                     
                     // Add decoded PackageType column and remove raw numeric column
                     DataColumn decodedTypeColumn = packagesResult.Columns.Add("PackageType", typeof(string));
