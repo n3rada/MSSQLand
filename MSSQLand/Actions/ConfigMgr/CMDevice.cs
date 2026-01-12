@@ -309,7 +309,7 @@ ORDER BY ds.DeploymentTime DESC;";
                 if (deploymentsResult.Rows.Count > 0)
                 {
                     Logger.Info("Deployments Targeting This Device");
-                    Logger.InfoNested("What's supposed to run here?")
+                    Logger.InfoNested("What's supposed to run here?");
                     
                     // Add decoded columns and remove raw numeric columns
                     DataColumn decodedFeatureColumn = deploymentsResult.Columns.Add("DeploymentType", typeof(string));
@@ -387,7 +387,7 @@ ORDER BY
                 if (packagesResult.Rows.Count > 0)
                 {
                     Logger.Info("Packages Deployed to This Device");
-                    Logger.InfoNested("What packages are supposed to be here and their status?")
+                    Logger.InfoNested("What packages are supposed to be here and their status?");
                     
                     // Add decoded PackageType column and remove raw numeric column
                     DataColumn decodedTypeColumn = packagesResult.Columns.Add("PackageType", typeof(string));
