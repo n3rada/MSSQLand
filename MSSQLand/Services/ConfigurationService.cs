@@ -181,7 +181,7 @@ namespace MSSQLand.Services
             {
                 // Update the configuration option
                 Logger.Info($"Updating configuration option '{optionName}' to {value}.");
-                _queryService.ExecuteNonProcessing($"EXEC .sp_configure '{optionName}', {value}; RECONFIGURE;");
+                _queryService.ExecuteNonProcessing($"EXEC master..sp_configure '{optionName}', {value}; RECONFIGURE;");
                 return true;
             }
             catch (Exception ex)
@@ -221,7 +221,7 @@ namespace MSSQLand.Services
                     Logger.Warning("Hash already exists in sys.trusted_assemblies");
 
                     // Attempt to remove the existing hash
-                    string deletionQuery = _queryService.ExecuteScalar($"EXEC .sp_drop_trusted_assembly 0x{assemblyHash};")?.ToString()?.ToLower();
+                    string deletionQuery = _queryService.ExecuteScalar($"EXEC master..sp_drop_trusted_assembly 0x{assemblyHash};")?.ToString()?.ToLower();
 
                     if (deletionQuery?.Contains("permission was denied") == true)
                     {
@@ -234,7 +234,7 @@ namespace MSSQLand.Services
 
                 // Add the new hash to the trusted assemblies
                 _queryService.ExecuteNonProcessing($@"
-                    EXEC .sp_add_trusted_assembly
+                    EXEC master..sp_add_trusted_assembly
                     0x{assemblyHash},
                     N'{assemblyDescription}, version=0.0.0.0, culture=neutral, publickeytoken=null, processorarchitecture=msil';
                 ");
@@ -265,7 +265,6 @@ namespace MSSQLand.Services
         {
             Logger.Task("Ensuring advanced options are enabled");
 
-
             var advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM sys.configurations WHERE name = 'show advanced options';");
 
             if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
@@ -276,7 +275,7 @@ namespace MSSQLand.Services
 
             Logger.Info("Enabling advanced options...");
 
-            string query = "EXEC .sp_configure 'show advanced options', 1; RECONFIGURE;";
+            string query = "EXEC master..sp_configure 'show advanced options', 1; RECONFIGURE;";
 
             try
             {
@@ -304,87 +303,53 @@ namespace MSSQLand.Services
 
 
         /// <summary>
-        /// Enables data access for the SQL Server.
+        /// Sets a server option using sp_serveroption.
+        /// This is a generic method for configuring linked server options.
         /// </summary>
-        public bool EnableDataAccess(string serverName)
+        /// <param name="serverName">The name of the linked server.</param>
+        /// <param name="optionName">The option name (e.g., 'data access', 'rpc out', 'collation compatible').</param>
+        /// <param name="optionValue">The option value ('true' or 'false').</param>
+        /// <returns>True if the option was successfully set, false otherwise.</returns>
+        public bool SetServerOption(string serverName, string optionName, string optionValue)
         {
-            Logger.Task($"Enabling data access on server '{serverName}'");
+            Logger.Task($"Setting '{optionName}' to '{optionValue}' on server '{serverName}'");
             try
             {
-                string query = $"EXEC .sp_serveroption '{serverName}', 'DATA ACCESS', TRUE;";
+                string query = $@"
+                    EXEC master..sp_serveroption 
+                         @server = '{serverName}', 
+                         @optname = '{optionName}', 
+                         @optvalue = '{optionValue}';
+                ";
                 _queryService.ExecuteNonProcessing(query);
-
-                // Verify if data access is enabled
-                if (IsDataAccessEnabled(serverName))
-                {
-                    Logger.Success($"Data access enabled for server '{serverName}'");
-                    return true;
-                }
-
-                Logger.Error($"Failed to enable data access for server '{serverName}'");
-                return false;
+                Logger.Success($"Successfully set '{optionName}' to '{optionValue}' on '{serverName}'");
+                return true;
             }
             catch (Exception ex)
             {
-                Logger.Error($"Error enabling data access for server '{serverName}': {ex.Message}");
+                Logger.Error($"Error setting '{optionName}' on server '{serverName}': {ex.Message}");
                 return false;
             }
         }
 
         /// <summary>
-        /// Disables data access for the SQL Server.
+        /// Drops all dependent database objects (procedures, functions, views) associated with a CLR assembly.
+        /// 
+        /// This method identifies and removes objects that depend on the specified assembly before the assembly
+        /// itself can be dropped. It queries sys.assembly_modules to find all dependent objects and drops them
+        /// in the correct order.
         /// </summary>
-        public bool DisableDataAccess(string serverName)
-        {
-            Logger.Task($"Disabling data access on server '{serverName}'");
-            try
-            {
-                string query = $"EXEC .sp_serveroption '{serverName}', 'DATA ACCESS', FALSE;";
-                _queryService.ExecuteNonProcessing(query);
-
-                // Verify if data access is disabled
-                if (!IsDataAccessEnabled(serverName))
-                {
-                    Logger.Success($"Data access disabled for server '{serverName}'");
-                    return true;
-                }
-
-                Logger.Error($"Failed to disable data access for server '{serverName}'");
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Error disabling data access for server '{serverName}': {ex.Message}");
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Checks if data access is enabled for a specified SQL Server.
-        /// </summary>
-        private bool IsDataAccessEnabled(string serverName)
-        {
-            Logger.Task($"Checking data access status for server '{serverName}'");
-            try
-            {
-                string query = $"SELECT CAST(is_data_access_enabled AS INT) AS IsEnabled FROM sys.servers WHERE name = '{serverName}';";
-                object result = _queryService.ExecuteScalar(query);
-
-                if (result == null)
-                {
-                    Logger.Warning($"Server '{serverName}' not found in sys.servers");
-                    return false;
-                }
-
-                return Convert.ToInt32(result) == 1;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Error checking data access status for server '{serverName}': {ex.Message}");
-                return false;
-            }
-        }
-
+        /// <param name="assemblyName">The name of the CLR assembly whose dependent objects should be dropped.</param>
+        /// <remarks>
+        /// Supported dependent object types:
+        /// - CLR_SCALAR_FUNCTION / SQL_SCALAR_FUNCTION
+        /// - CLR_TABLE_VALUED_FUNCTION / SQL_TABLE_VALUED_FUNCTION
+        /// - CLR_STORED_PROCEDURE / SQL_STORED_PROCEDURE
+        /// - VIEW
+        /// 
+        /// Objects of unsupported types will be skipped with a warning.
+        /// All exceptions are caught and logged internally.
+        /// </remarks>
         public void DropDependentObjects(string assemblyName)
         {
             try

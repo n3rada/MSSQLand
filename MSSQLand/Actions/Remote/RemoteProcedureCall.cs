@@ -2,10 +2,8 @@
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
-using MSSQLand.Utilities.Formatters;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 
 namespace MSSQLand.Actions.Remote
@@ -69,27 +67,19 @@ namespace MSSQLand.Actions.Remote
 
             Logger.TaskNested($"{actionVerb} RPC on linked server '{_linkedServerName}'");
 
-            string query = $@"
-                EXEC sp_serveroption 
-                     @server = '{_linkedServerName}', 
-                     @optname = 'rpc out', 
-                     @optvalue = '{rpcValue}';
-            ";
+            bool success = databaseContext.ConfigService.SetServerOption(_linkedServerName, "rpc out", rpcValue);
 
-            try
+            if (success)
             {
-                DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
-                Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
-
                 string status = _action == RpcActionMode.Enable ? "enabled" : "disabled";
                 Logger.Success($"RPC successfully {status} on '{_linkedServerName}'");
-                return resultTable;
             }
-            catch (Exception ex)
+            else
             {
-                Logger.Error($"Failed to modify RPC settings on '{_linkedServerName}': {ex.Message}");
-                return null;
+                Logger.Error($"Failed to modify RPC settings on '{_linkedServerName}'");
             }
+
+            return success;
         }
     }
 }

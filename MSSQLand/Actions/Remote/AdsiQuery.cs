@@ -119,7 +119,7 @@ namespace MSSQLand.Actions.Remote
             if (!_domainFqdn.Contains("."))
             {
                 Logger.Warning($"Domain '{_domainFqdn}' does not appear to be a fully qualified domain name (FQDN).");
-                Logger.InfoNested("FQDN format: domain.tld");
+                Logger.TaskNested("FQDN format: domain.tld");
             }
         }
 
@@ -158,7 +158,7 @@ namespace MSSQLand.Actions.Remote
                     if (!adsiService.AdsiServerExists(_adsiServerName))
                     {
                         Logger.Error($"ADSI linked server '{_adsiServerName}' not found.");
-                        Logger.InfoNested("Use '/a:adsi list' to see available ADSI servers or omit the server name to create a temporary one.");
+                        Logger.ErrorNested("Use 'adsi list' to see available ADSI servers or omit the server name to create a temporary one.");
                         return null;
                     }
                 }
@@ -168,14 +168,41 @@ namespace MSSQLand.Actions.Remote
                 // Build the LDAP query based on preset or custom input
                 string ldapQuery = _preset == "custom" ? _ldapQuery : BuildPresetQuery();
 
-                Logger.InfoNested($"Domain: {_domainFqdn}");
-                Logger.InfoNested($"Preset: {_preset}");
-                Logger.InfoNested($"LDAP Query: {ldapQuery}");
+                Logger.TaskNested($"Domain: {_domainFqdn}");
+                Logger.TaskNested($"Preset: {_preset}");
+                Logger.TaskNested($"LDAP Query: {ldapQuery}");
 
                 // Execute the OPENQUERY against the ADSI server
                 string query = $"SELECT * FROM OPENQUERY([{_adsiServerName}], '{EscapeSingleQuotes(ldapQuery)}')";
                 
-                DataTable result = databaseContext.QueryService.ExecuteTable(query);
+                DataTable result;
+                try
+                {
+                    result = databaseContext.QueryService.ExecuteTable(query);
+                }
+                catch (Exception ex)
+                {
+                    // Check if the error is due to data access being disabled
+                    if (ex.Message.Contains("data access") || ex.Message.Contains("OLE DB provider"))
+                    {
+                        Logger.Warning($"Data access appears to be disabled for '{_adsiServerName}'");
+                        Logger.TaskNested("Attempting to enable data access");
+
+                        if (!databaseContext.ConfigService.SetServerOption(_adsiServerName, "data access", "true"))
+                        {
+                            Logger.Error($"Failed to enable data access for '{_adsiServerName}'");
+                            Logger.TaskNested("Try running: data enable " + _adsiServerName);
+                            return null;
+                        }
+
+                        Logger.Success("Data access enabled, retrying query");
+                        result = databaseContext.QueryService.ExecuteTable(query);
+                    }
+                    else
+                    {
+                        throw; // Re-throw if it's not a data access error
+                    }
+                }
 
                 if (result.Rows.Count == 0)
                 {
@@ -197,17 +224,17 @@ namespace MSSQLand.Actions.Remote
                 // Provide helpful error messages
                 if (ex.Message.Contains("Access denied"))
                 {
-                    Logger.InfoNested("The SQL Server service account may not have permissions to query Active Directory.");
+                    Logger.TaskNested("The SQL Server service account may not have permissions to query Active Directory.");
                 }
                 else if (ex.Message.Contains("Provider cannot be found"))
                 {
-                    Logger.InfoNested("The ADSDSOObject provider may not be available on this server.");
+                    Logger.TaskNested("The ADSDSOObject provider may not be available on this server.");
                 }
                 else if (ex.Message.Contains("syntax") || ex.Message.Contains("LDAP"))
                 {
-                    Logger.InfoNested("Check your LDAP query syntax and domain FQDN.");
-                    Logger.InfoNested($"Current domain: {_domainFqdn}");
-                    Logger.InfoNested("Example: /a:adsiquery <fqdn> users");
+                    Logger.TaskNested("Check your LDAP query syntax and domain FQDN.");
+                    Logger.TaskNested($"Current domain: {_domainFqdn}");
+                    Logger.TaskNested("Example: /a:adsiquery <fqdn> users");
                 }
 
                 return null;
@@ -217,7 +244,7 @@ namespace MSSQLand.Actions.Remote
                 // Cleanup temporary ADSI server if it was created
                 if (cleanupRequired && !string.IsNullOrEmpty(_adsiServerName))
                 {
-                    Logger.InfoNested($"Cleaning up temporary ADSI server '{_adsiServerName}'");
+                    Logger.TaskNested($"Cleaning up temporary ADSI server '{_adsiServerName}'");
                     try
                     {
                         adsiService.DropLinkedServer(_adsiServerName);
