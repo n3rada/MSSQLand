@@ -72,6 +72,8 @@ namespace MSSQLand.Actions.ConfigMgr
                 return null;
             }
 
+            DataTable result = null;
+
             foreach (string db in databases)
             {
                 string siteCode = CMService.GetSiteCode(db);
@@ -137,7 +139,7 @@ FROM [{db}].dbo.DistributionPoints
 {whereClause}
 ORDER BY ServerName;";
 
-                DataTable result = databaseContext.QueryService.ExecuteTable(query);
+                result = databaseContext.QueryService.ExecuteTable(query);
 
                 if (result.Rows.Count == 0)
                 {
