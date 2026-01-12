@@ -136,7 +136,17 @@ WHERE ts.PkgID = '{_packageId.Replace("'", "''")}'
                 Logger.NewLine();
                 Logger.Info("Task Sequence Properties");
                 
-                // Remove Sequence XML from display (too large)
+                // Add SequenceSize column and remove raw binary Sequence column
+                DataColumn sizeColumn = tsResult.Columns.Add("SequenceSize", typeof(string));
+                int sequenceIndex = tsResult.Columns["Sequence"].Ordinal;
+                sizeColumn.SetOrdinal(sequenceIndex);
+                
+                // Set SequenceSize for the single row (DataTable always has 1 row here)
+                byte[] seqData = tsRow["Sequence"] as byte[];
+                tsRow["SequenceSize"] = (seqData != null && seqData.Length > 0) 
+                    ? Misc.FormatByteSize(seqData.Length) 
+                    : "Empty";
+                
                 tsResult.Columns.Remove("Sequence");
                 Console.WriteLine(OutputFormatter.ConvertDataTable(tsResult));
 
@@ -321,7 +331,7 @@ ORDER BY ds.DeploymentTime DESC;";
             // Safety check: if compressed data is > 10MB, likely corrupt or wrong column
             if (compressedData.Length > 10 * 1024 * 1024)
             {
-                throw new InvalidDataException($"Sequence data too large ({compressedData.Length / 1024 / 1024}MB) - possible data corruption");
+                throw new InvalidDataException($"Sequence data too large ({Misc.FormatByteSize(compressedData.Length, false)}) - possible data corruption");
             }
             
             // Debug: show first bytes
@@ -360,11 +370,11 @@ ORDER BY ds.DeploymentTime DESC;";
                     // Safety check: decompressed XML > 50MB is suspicious
                     if (decompressed.Length > 50 * 1024 * 1024)
                     {
-                        throw new InvalidDataException($"Decompressed sequence too large ({decompressed.Length / 1024 / 1024}MB) - possible bomb");
+                        throw new InvalidDataException($"Decompressed sequence too large ({Misc.FormatByteSize(decompressed.Length, false)}) - possible bomb");
                     }
                     
                     string xml = Encoding.UTF8.GetString(decompressed);
-                    Logger.Success($"Decompressed {decompressed.Length} bytes, first chars: {xml.Substring(0, Math.Min(100, xml.Length))}");
+                    Logger.Success($"Decompressed {Misc.FormatByteSize(decompressed.Length, false)}, first chars: {xml.Substring(0, Math.Min(100, xml.Length))}");
                     return xml;
                 }
             }

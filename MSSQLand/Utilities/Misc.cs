@@ -244,6 +244,47 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
+        /// Converts byte count to human-readable format with appropriate unit (B, KB, MB, GB, TB).
+        /// Uses binary units (1024 bytes = 1 KB) and formats with 2 decimal places.
+        /// </summary>
+        /// <param name="bytes">The number of bytes to format.</param>
+        /// <param name="showBytes">If true, includes raw byte count in parentheses (default: true).</param>
+        /// <returns>Formatted string like "499.29 KB (511,272 bytes)" or "1.5 MB".</returns>
+        /// <example>
+        /// FormatByteSize(512) => "512 B"
+        /// FormatByteSize(1536) => "1.50 KB (1,536 bytes)"
+        /// FormatByteSize(1048576) => "1.00 MB (1,048,576 bytes)"
+        /// FormatByteSize(511272) => "499.29 KB (511,272 bytes)"
+        /// FormatByteSize(0) => "0 B"
+        /// </example>
+        public static string FormatByteSize(long bytes, bool showBytes = true)
+        {
+            if (bytes == 0)
+                return "0 B";
+
+            string[] units = { "B", "KB", "MB", "GB", "TB" };
+            int unitIndex = 0;
+            double size = bytes;
+
+            while (size >= 1024 && unitIndex < units.Length - 1)
+            {
+                size /= 1024;
+                unitIndex++;
+            }
+
+            // For bytes, don't show decimal places
+            if (unitIndex == 0)
+                return $"{bytes:N0} B";
+
+            // For larger units, show 2 decimal places and optionally raw bytes
+            string formatted = $"{size:F2} {units[unitIndex]}";
+            if (showBytes)
+                formatted += $" ({bytes:N0} bytes)";
+
+            return formatted;
+        }
+
+        /// <summary>
         /// Builds a fully qualified table name in SQL Server format.
         /// Handles empty schema by using the double-dot notation (database..table).
         /// Automatically strips brackets from inputs to prevent double-bracketing.
