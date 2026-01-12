@@ -499,7 +499,7 @@ ORDER BY asd.StateTime DESC";
                 {
                     // Advertisement (Package/Task Sequence) - use v_ClientAdvertisementStatus
                     deviceStatusQuery = $@"
-SELECT TOP 100
+SELECT TOP 50
     sys.Name0 AS DeviceName,
     sys.ResourceID,
     aas.LastState,
@@ -522,9 +522,9 @@ ORDER BY aas.LastStatusTime DESC";
                 if (deviceStatusResult.Rows.Count > 0)
                 {
                     Logger.NewLine();
-                    Logger.Info("Device Status (showing recent activity)");
+                    Logger.Info("Device Status (showing TOP 50 recent activity)");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(deviceStatusResult));
-                    Logger.Info($"Showing {deviceStatusResult.Rows.Count} device status records (most recent first)");
+                    Logger.Info($"Showing {deviceStatusResult.Rows.Count} device status records");
                 }
                 else
                 {
