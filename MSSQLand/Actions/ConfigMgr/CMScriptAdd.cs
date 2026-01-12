@@ -39,11 +39,6 @@ namespace MSSQLand.Actions.ConfigMgr
                 throw new ArgumentException("Script file path is required (--file or -f)");
             }
 
-            if (!File.Exists(_scriptFile))
-            {
-                throw new FileNotFoundException($"Script file not found: {_scriptFile}");
-            }
-
             // Name argument (optional, auto-generate stealth name if not provided)
             _scriptName = GetNamedArgument(named, "n", null)
                        ?? GetNamedArgument(named, "name", null)
@@ -76,6 +71,11 @@ namespace MSSQLand.Actions.ConfigMgr
             try
             {
                 scriptContent = File.ReadAllText(_scriptFile);
+            }
+            catch (FileNotFoundException)
+            {
+                Logger.Error($"Script file not found: {_scriptFile}");
+                return null;
             }
             catch (Exception ex)
             {
