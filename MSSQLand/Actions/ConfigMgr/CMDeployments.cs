@@ -177,6 +177,9 @@ SELECT TOP {_limit}
     c.Name AS CollectionName,
     ds.FeatureType,
     ds.DeploymentIntent,
+    dt.CI_ID AS DeploymentTypeCI,
+    dt.CI_UniqueID AS DeploymentTypeGUID,
+    COALESCE(lp.DisplayName, dt.CI_UniqueID) AS DeploymentTypeName,
     ds.NumberTotal,
     ds.NumberSuccess,
     ds.NumberInProgress,
@@ -187,9 +190,7 @@ SELECT TOP {_limit}
     ds.DeploymentTime,
     ds.CreationTime,
     ds.ModificationTime,
-    ds.SummarizationTime,
-    dt.CI_UniqueID AS DeploymentTypeGUID,
-    COALESCE(lp.DisplayName, dt.CI_UniqueID) AS DeploymentTypeName
+    ds.SummarizationTime
 FROM [{db}].dbo.v_DeploymentSummary ds
 LEFT JOIN [{db}].dbo.v_Collection c ON ds.CollectionID = c.CollectionID
 LEFT JOIN [{db}].dbo.vAppDeploymentTargetingInfoBase adt ON ds.AssignmentID = adt.AssignmentID
@@ -240,6 +241,27 @@ ORDER BY ds.CreationTime DESC;
                 Console.WriteLine(OutputFormatter.ConvertDataTable(result));
 
                 Logger.Success($"Found {result.Rows.Count} deployment(s)");
+                
+                // Check if any deployments have DeploymentType information
+                bool hasDeploymentTypes = false;
+                foreach (DataRow row in result.Rows)
+                {
+                    if (row["DeploymentTypeCI"] != DBNull.Value)
+                    {
+                        hasDeploymentTypes = true;
+                        break;
+                    }
+                }
+                
+                if (hasDeploymentTypes)
+                {
+                    Logger.NewLine();
+                    Logger.Info("Use 'cm-dt [DeploymentTypeCI]' to view deployment type details:");
+                    Logger.InfoNested("- Detection methods and verification scripts");
+                    Logger.InfoNested("- Install/uninstall commands and execution context");
+                    Logger.InfoNested("- Requirements and dependencies");
+                    Logger.InfoNested("- Content location and file details");
+                }
             }
 
             return null;
