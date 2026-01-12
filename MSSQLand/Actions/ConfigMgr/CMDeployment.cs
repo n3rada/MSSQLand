@@ -302,7 +302,7 @@ WHERE ds.AssignmentID = {numericAssignmentId}";
                     Logger.NewLine();
                     Logger.Info("Application Details");
 
-                    // Get the CI_ID from v_CIAssignment (LocalCollectionID in SQL 2016)
+                    // Get the CI_ID from v_CIAssignment
                     string ciIdQuery = $@"
 SELECT 
     AssignmentID,
