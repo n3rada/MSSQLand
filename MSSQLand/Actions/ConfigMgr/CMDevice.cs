@@ -334,7 +334,6 @@ ORDER BY ds.DeploymentTime DESC;";
                 string packagesQuery = $@"
 SELECT DISTINCT
     p.PackageName,
-    -- Status columns first for quick scanning
     cas.LastStateName AS ExecutionState,
     CASE 
         WHEN cas.LastAcceptanceState = 0 THEN 'Waiting'
@@ -345,7 +344,6 @@ SELECT DISTINCT
     END AS AcceptanceStatus,
     cas.LastStatusTime,
     cas.LastExecutionResult,
-    -- Package details
     adv.AdvertisementID,
     adv.AdvertisementName,
     adv.ProgramName,
@@ -353,7 +351,6 @@ SELECT DISTINCT
     p.Version,
     p.Manufacturer,
     p.PackageType AS PackageTypeRaw,
-    -- Deployment context
     adv.CollectionID,
     c.Name AS CollectionName,
     adv.OfferType,
