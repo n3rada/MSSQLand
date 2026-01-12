@@ -164,157 +164,77 @@ WHERE ci.CI_ID = {ciId} AND ci.CIType_ID = 21;";
                     Logger.SuccessNested($"Source Site: {dt["SourceSite"]}");
                 }
 
-                // Parse SDM Package Digest for details (parse once, query many times)
+                // Parse SDM Package Digest for details (centralized parser)
                 string sdmXml = dt["SDMPackageDigest"].ToString();
+                var sdmInfo = CMService.ParseSDMPackageDigest(sdmXml, detailed: true);
 
                 Logger.NewLine();
                 Logger.Info("Technical Details");
 
-                try
+                if (!string.IsNullOrEmpty(sdmInfo.Technology))
+                    Logger.InfoNested($"Technology: {sdmInfo.Technology}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.Hosting))
+                    Logger.InfoNested($"Hosting: {sdmInfo.Hosting}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.InstallCommand))
+                    Logger.InfoNested($"Install Command: {sdmInfo.InstallCommand}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.UninstallSetting))
+                    Logger.InfoNested($"Uninstall Setting: {sdmInfo.UninstallSetting}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.UninstallCommand))
+                    Logger.InfoNested($"Uninstall Command: {sdmInfo.UninstallCommand}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.AllowUninstall))
+                    Logger.InfoNested($"Allow Uninstall: {sdmInfo.AllowUninstall}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.ExecutionContext))
+                    Logger.InfoNested($"Execution Context: {sdmInfo.ExecutionContext}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.WorkingDirectory))
+                    Logger.InfoNested($"Working Directory: {sdmInfo.WorkingDirectory}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.ContentLocation))
+                    Logger.InfoNested($"Content Location: {sdmInfo.ContentLocation}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.OnFastNetwork))
+                    Logger.InfoNested($"On Fast Network: {sdmInfo.OnFastNetwork}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.OnSlowNetwork))
+                    Logger.InfoNested($"On Slow Network: {sdmInfo.OnSlowNetwork}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.PeerCache))
+                    Logger.InfoNested($"Peer Cache: {sdmInfo.PeerCache}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.FileName))
                 {
-                    XmlDocument sdmDoc = new XmlDocument();
-                    sdmDoc.LoadXml(sdmXml);
-
-                    XmlNamespaceManager sdmNs = new XmlNamespaceManager(sdmDoc.NameTable);
-                    sdmNs.AddNamespace("p1", "http://schemas.microsoft.com/SystemCenterConfigurationManager/2009/AppMgmtDigest");
-
-                    // Extract technology type
-                    string technology = sdmDoc.SelectSingleNode("//p1:Technology", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(technology))
-                    {
-                        Logger.InfoNested($"Technology: {technology}");
-                    }
-
-                    string hosting = sdmDoc.SelectSingleNode("//p1:Hosting", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(hosting))
-                    {
-                        Logger.InfoNested($"Hosting: {hosting}");
-                    }
-
-                    // Extract install command
-                    string installCmd = sdmDoc.SelectSingleNode("//p1:InstallCommandLine", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(installCmd))
-                    {
-                        Logger.InfoNested($"Install Command: {installCmd}");
-                    }
-
-                    // Extract uninstall settings
-                    string uninstallSetting = sdmDoc.SelectSingleNode("//p1:UninstallSetting", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(uninstallSetting))
-                    {
-                        Logger.InfoNested($"Uninstall Setting: {uninstallSetting}");
-                    }
-
-                    string uninstallCmd = sdmDoc.SelectSingleNode("//p1:UninstallCommandLine", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(uninstallCmd))
-                    {
-                        Logger.InfoNested($"Uninstall Command: {uninstallCmd}");
-                    }
-
-                    string allowUninstall = sdmDoc.SelectSingleNode("//p1:AllowUninstall", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(allowUninstall))
-                    {
-                        Logger.InfoNested($"Allow Uninstall: {allowUninstall}");
-                    }
-
-                    // Extract execution context
-                    string execContext = sdmDoc.SelectSingleNode("//p1:ExecutionContext", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(execContext))
-                    {
-                        Logger.InfoNested($"Execution Context: {execContext}");
-                    }
-
-                    string workingDir = sdmDoc.SelectSingleNode("//p1:Arg[@Name='WorkingDirectory']", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(workingDir))
-                    {
-                        Logger.InfoNested($"Working Directory: {workingDir}");
-                    }
-
-                    // Extract content location and settings
-                    string contentLocation = sdmDoc.SelectSingleNode("//p1:Location", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(contentLocation))
-                    {
-                        Logger.InfoNested($"Content Location: {contentLocation}");
-                    }
-
-                    string onFastNetwork = sdmDoc.SelectSingleNode("//p1:OnFastNetwork", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(onFastNetwork))
-                    {
-                        Logger.InfoNested($"On Fast Network: {onFastNetwork}");
-                    }
-
-                    string onSlowNetwork = sdmDoc.SelectSingleNode("//p1:OnSlowNetwork", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(onSlowNetwork))
-                    {
-                        Logger.InfoNested($"On Slow Network: {onSlowNetwork}");
-                    }
-
-                    string peerCache = sdmDoc.SelectSingleNode("//p1:PeerCache", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(peerCache))
-                    {
-                        Logger.InfoNested($"Peer Cache: {peerCache}");
-                    }
-
-                    // Extract file name and size
-                    XmlNode fileNode = sdmDoc.SelectSingleNode("//p1:File", sdmNs);
-                    if (fileNode != null)
-                    {
-                        string fileName = fileNode.Attributes["Name"]?.Value;
-                        string fileSize = fileNode.Attributes["Size"]?.Value;
-                        if (!string.IsNullOrEmpty(fileName))
-                        {
-                            string sizeInfo = !string.IsNullOrEmpty(fileSize) ? $" ({long.Parse(fileSize):N0} bytes)" : "";
-                            Logger.InfoNested($"File: {fileName}{sizeInfo}");
-                        }
-                    }
-
-                    // Extract execution parameters
-                    string maxExecTime = sdmDoc.SelectSingleNode("//p1:Arg[@Name='MaxExecuteTime']", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(maxExecTime))
-                    {
-                        Logger.InfoNested($"Max Execution Time: {maxExecTime} minutes");
-                    }
-
-                    string runAs32Bit = sdmDoc.SelectSingleNode("//p1:Arg[@Name='RunAs32Bit']", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(runAs32Bit))
-                    {
-                        Logger.InfoNested($"Run as 32-bit: {runAs32Bit}");
-                    }
-
-                    string postInstallBehavior = sdmDoc.SelectSingleNode("//p1:Arg[@Name='PostInstallBehavior']", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(postInstallBehavior))
-                    {
-                        Logger.InfoNested($"Post-Install Behavior: {postInstallBehavior}");
-                    }
-
-                    string requiresElevation = sdmDoc.SelectSingleNode("//p1:Arg[@Name='RequiresElevatedRights']", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(requiresElevation))
-                    {
-                        Logger.InfoNested($"Requires Elevated Rights: {requiresElevation}");
-                    }
-
-                    string requiresUserInteraction = sdmDoc.SelectSingleNode("//p1:Arg[@Name='RequiresUserInteraction']", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(requiresUserInteraction))
-                    {
-                        Logger.InfoNested($"Requires User Interaction: {requiresUserInteraction}");
-                    }
-
-                    string requiresReboot = sdmDoc.SelectSingleNode("//p1:Arg[@Name='RequiresReboot']", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(requiresReboot))
-                    {
-                        Logger.InfoNested($"Requires Reboot: {requiresReboot}");
-                    }
-
-                    string userInteractionMode = sdmDoc.SelectSingleNode("//p1:Arg[@Name='UserInteractionMode']", sdmNs)?.InnerText;
-                    if (!string.IsNullOrEmpty(userInteractionMode))
-                    {
-                        Logger.InfoNested($"User Interaction Mode: {userInteractionMode}");
-                    }
+                    string sizeInfo = !string.IsNullOrEmpty(sdmInfo.FileSize) 
+                        ? $" ({long.Parse(sdmInfo.FileSize):N0} bytes)" 
+                        : "";
+                    Logger.InfoNested($"File: {sdmInfo.FileName}{sizeInfo}");
                 }
-                catch (Exception ex)
-                {
-                    Logger.Warning($"Could not parse technical details: {ex.Message}");
-                }
+
+                if (!string.IsNullOrEmpty(sdmInfo.MaxExecuteTime))
+                    Logger.InfoNested($"Max Execution Time: {sdmInfo.MaxExecuteTime} minutes");
+
+                if (!string.IsNullOrEmpty(sdmInfo.RunAs32Bit))
+                    Logger.InfoNested($"Run as 32-bit: {sdmInfo.RunAs32Bit}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.PostInstallBehavior))
+                    Logger.InfoNested($"Post-Install Behavior: {sdmInfo.PostInstallBehavior}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.RequiresElevatedRights))
+                    Logger.InfoNested($"Requires Elevated Rights: {sdmInfo.RequiresElevatedRights}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.RequiresUserInteraction))
+                    Logger.InfoNested($"Requires User Interaction: {sdmInfo.RequiresUserInteraction}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.RequiresReboot))
+                    Logger.InfoNested($"Requires Reboot: {sdmInfo.RequiresReboot}");
+
+                if (!string.IsNullOrEmpty(sdmInfo.UserInteractionMode))
+                    Logger.InfoNested($"User Interaction Mode: {sdmInfo.UserInteractionMode}");
 
                 // Find parent application
                 Logger.NewLine();

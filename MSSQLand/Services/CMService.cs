@@ -451,5 +451,143 @@ FROM [{database}].dbo.DistributionPoints
 ORDER BY ServerName;
 ");
         }
+
+        /// <summary>
+        /// Holds parsed information from SDMPackageDigest XML for deployment types.
+        /// </summary>
+        public class SDMPackageInfo
+        {
+            // Basic fields (always parsed - used by cm-dts)
+            public string Technology { get; set; } = "";
+            public string InstallCommand { get; set; } = "";
+            public string ContentLocation { get; set; } = "";
+            public string DetectionType { get; set; } = "";
+            public string ExecutionContext { get; set; } = "";
+
+            // Detailed fields (only parsed when detailed=true - used by cm-dt and cm-deployment)
+            public string Hosting { get; set; } = "";
+            public string UninstallCommand { get; set; } = "";
+            public string UninstallSetting { get; set; } = "";
+            public string AllowUninstall { get; set; } = "";
+            public string WorkingDirectory { get; set; } = "";
+            public string OnFastNetwork { get; set; } = "";
+            public string OnSlowNetwork { get; set; } = "";
+            public string PeerCache { get; set; } = "";
+            public string FileName { get; set; } = "";
+            public string FileSize { get; set; } = "";
+            public string MaxExecuteTime { get; set; } = "";
+            public string RunAs32Bit { get; set; } = "";
+            public string PostInstallBehavior { get; set; } = "";
+            public string RequiresElevatedRights { get; set; } = "";
+            public string RequiresUserInteraction { get; set; } = "";
+            public string RequiresReboot { get; set; } = "";
+            public string UserInteractionMode { get; set; } = "";
+
+            // Detection method details (only when detailed=true)
+            public string DetectionMethodSummary { get; set; } = "";
+        }
+
+        /// <summary>
+        /// Parse SDMPackageDigest XML and extract deployment type information.
+        /// </summary>
+        /// <param name="xmlContent">The SDMPackageDigest XML content from CI_ConfigurationItems</param>
+        /// <param name="detailed">If true, extracts all fields; if false, only basic fields (faster)</param>
+        /// <returns>Parsed SDMPackageInfo object</returns>
+        public static SDMPackageInfo ParseSDMPackageDigest(string xmlContent, bool detailed = false)
+        {
+            var info = new SDMPackageInfo();
+
+            if (string.IsNullOrEmpty(xmlContent))
+                return info;
+
+            try
+            {
+                var doc = new System.Xml.XmlDocument();
+                doc.LoadXml(xmlContent);
+
+                var nsmgr = new System.Xml.XmlNamespaceManager(doc.NameTable);
+                nsmgr.AddNamespace("p1", "http://schemas.microsoft.com/SystemCenterConfigurationManager/2009/AppMgmtDigest");
+                nsmgr.AddNamespace("dc", "http://schemas.microsoft.com/SystemsCenterConfigurationManager/2009/07/10/DesiredConfiguration");
+
+                // Basic fields (always extract)
+                info.Technology = doc.SelectSingleNode("//p1:Technology", nsmgr)?.InnerText ?? "";
+                info.InstallCommand = doc.SelectSingleNode("//p1:InstallCommandLine", nsmgr)?.InnerText ?? "";
+                info.ContentLocation = doc.SelectSingleNode("//p1:Location", nsmgr)?.InnerText ?? "";
+                info.ExecutionContext = doc.SelectSingleNode("//p1:ExecutionContext", nsmgr)?.InnerText ?? "";
+
+                // Detection type
+                var enhancedDetection = doc.SelectSingleNode("//p1:EnhancedDetectionMethod", nsmgr);
+                if (enhancedDetection != null)
+                {
+                    info.DetectionType = "Enhanced";
+                }
+                else
+                {
+                    var detectAction = doc.SelectSingleNode("//p1:DetectAction", nsmgr);
+                    info.DetectionType = detectAction != null ? "Script" : "";
+                }
+
+                // Detailed fields (only if requested)
+                if (detailed)
+                {
+                    info.Hosting = doc.SelectSingleNode("//p1:Hosting", nsmgr)?.InnerText ?? "";
+                    info.UninstallCommand = doc.SelectSingleNode("//p1:UninstallCommandLine", nsmgr)?.InnerText ?? "";
+                    info.UninstallSetting = doc.SelectSingleNode("//p1:UninstallSetting", nsmgr)?.InnerText ?? "";
+                    info.AllowUninstall = doc.SelectSingleNode("//p1:AllowUninstall", nsmgr)?.InnerText ?? "";
+                    info.WorkingDirectory = doc.SelectSingleNode("//p1:Arg[@Name='WorkingDirectory']", nsmgr)?.InnerText ?? "";
+                    info.OnFastNetwork = doc.SelectSingleNode("//p1:OnFastNetwork", nsmgr)?.InnerText ?? "";
+                    info.OnSlowNetwork = doc.SelectSingleNode("//p1:OnSlowNetwork", nsmgr)?.InnerText ?? "";
+                    info.PeerCache = doc.SelectSingleNode("//p1:PeerCache", nsmgr)?.InnerText ?? "";
+
+                    var fileNode = doc.SelectSingleNode("//p1:File", nsmgr);
+                    if (fileNode != null)
+                    {
+                        info.FileName = fileNode.Attributes["Name"]?.Value ?? "";
+                        info.FileSize = fileNode.Attributes["Size"]?.Value ?? "";
+                    }
+
+                    info.MaxExecuteTime = doc.SelectSingleNode("//p1:Arg[@Name='MaxExecuteTime']", nsmgr)?.InnerText ?? "";
+                    info.RunAs32Bit = doc.SelectSingleNode("//p1:Arg[@Name='RunAs32Bit']", nsmgr)?.InnerText ?? "";
+                    info.PostInstallBehavior = doc.SelectSingleNode("//p1:Arg[@Name='PostInstallBehavior']", nsmgr)?.InnerText ?? "";
+                    info.RequiresElevatedRights = doc.SelectSingleNode("//p1:Arg[@Name='RequiresElevatedRights']", nsmgr)?.InnerText ?? "";
+                    info.RequiresUserInteraction = doc.SelectSingleNode("//p1:Arg[@Name='RequiresUserInteraction']", nsmgr)?.InnerText ?? "";
+                    info.RequiresReboot = doc.SelectSingleNode("//p1:Arg[@Name='RequiresReboot']", nsmgr)?.InnerText ?? "";
+                    info.UserInteractionMode = doc.SelectSingleNode("//p1:Arg[@Name='UserInteractionMode']", nsmgr)?.InnerText ?? "";
+
+                    // Generate detection method summary
+                    var detectionSummary = new List<string>();
+                    
+                    if (xmlContent.Contains("<File"))
+                    {
+                        detectionSummary.Add("File-based detection");
+                    }
+                    
+                    if (xmlContent.Contains("<RegistryKey"))
+                    {
+                        detectionSummary.Add("Registry-based detection");
+                    }
+                    
+                    if (xmlContent.Contains("<Script"))
+                    {
+                        detectionSummary.Add("Script-based detection (PowerShell/VBScript)");
+                    }
+                    
+                    if (xmlContent.Contains("ProductCode"))
+                    {
+                        detectionSummary.Add("MSI Product Code detection");
+                    }
+
+                    info.DetectionMethodSummary = detectionSummary.Count > 0 
+                        ? string.Join(", ", detectionSummary) 
+                        : "Unknown detection method";
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug($"Failed to parse SDMPackageDigest XML: {ex.Message}");
+            }
+
+            return info;
+        }
     }
 }

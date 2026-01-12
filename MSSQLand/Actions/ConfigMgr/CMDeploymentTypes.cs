@@ -4,7 +4,6 @@ using MSSQLand.Utilities.Formatters;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Xml;
 
 namespace MSSQLand.Actions.ConfigMgr
 {
@@ -221,11 +220,18 @@ WHERE rel.RelationType = 9";
                     if (parentAppCol != null)
                         parentAppCol.SetOrdinal(ciIdIndex + 6);
 
-                    // Parse XML for each row
+                    // Parse XML for each row using centralized parser
                     List<DataRow> rowsToRemove = new List<DataRow>();
                     foreach (DataRow row in results.Rows)
                     {
-                        ParseSDMPackageDigest(row);
+                        string xmlContent = row["SDMPackageDigest"]?.ToString() ?? "";
+                        var sdmInfo = CMService.ParseSDMPackageDigest(xmlContent, detailed: false);
+                        
+                        row["Technology"] = sdmInfo.Technology;
+                        row["InstallCommand"] = sdmInfo.InstallCommand;
+                        row["ContentLocation"] = sdmInfo.ContentLocation;
+                        row["DetectionType"] = sdmInfo.DetectionType;
+                        row["ExecutionContext"] = sdmInfo.ExecutionContext;
                     }
 
                     // Remove SDMPackageDigest column immediately after parsing (huge XML blob)
@@ -301,70 +307,6 @@ WHERE rel.RelationType = 9";
             }
 
             return null;
-        }
-
-        /// <summary>
-        /// Parse SDMPackageDigest XML and extract key fields
-        /// </summary>
-        private static void ParseSDMPackageDigest(DataRow row)
-        {
-            string xmlContent = row["SDMPackageDigest"]?.ToString() ?? "";
-            
-            if (string.IsNullOrEmpty(xmlContent))
-            {
-                row["Technology"] = "";
-                row["InstallCommand"] = "";
-                row["ContentLocation"] = "";
-                row["DetectionType"] = "";
-                row["ExecutionContext"] = "";
-                return;
-            }
-
-            try
-            {
-                XmlDocument doc = new XmlDocument();
-                doc.LoadXml(xmlContent);
-
-                XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
-                nsmgr.AddNamespace("p1", "http://schemas.microsoft.com/SystemCenterConfigurationManager/2009/AppMgmtDigest");
-
-                // Extract Technology
-                XmlNode techNode = doc.SelectSingleNode("//p1:Technology", nsmgr);
-                row["Technology"] = techNode?.InnerText ?? "";
-
-                // Extract Install Command
-                XmlNode installNode = doc.SelectSingleNode("//p1:InstallCommandLine", nsmgr);
-                row["InstallCommand"] = installNode?.InnerText ?? "";
-
-                // Extract Content Location
-                XmlNode contentNode = doc.SelectSingleNode("//p1:Location", nsmgr);
-                row["ContentLocation"] = contentNode?.InnerText ?? "";
-
-                // Extract Detection Type (EnhancedDetectionMethod or DetectAction DataType)
-                XmlNode detectionNode = doc.SelectSingleNode("//p1:EnhancedDetectionMethod", nsmgr);
-                if (detectionNode != null)
-                {
-                    row["DetectionType"] = "Enhanced";
-                }
-                else
-                {
-                    detectionNode = doc.SelectSingleNode("//p1:DetectAction", nsmgr);
-                    row["DetectionType"] = detectionNode != null ? "Script" : "";
-                }
-
-                // Extract Execution Context
-                XmlNode contextNode = doc.SelectSingleNode("//p1:ExecutionContext", nsmgr);
-                row["ExecutionContext"] = contextNode?.InnerText ?? "";
-            }
-            catch (Exception)
-            {
-                // If XML parsing fails, set empty values
-                row["Technology"] = "";
-                row["InstallCommand"] = "";
-                row["ContentLocation"] = "";
-                row["DetectionType"] = "";
-                row["ExecutionContext"] = "";
-            }
         }
     }
 }
