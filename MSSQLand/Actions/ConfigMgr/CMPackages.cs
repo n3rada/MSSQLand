@@ -165,6 +165,16 @@ namespace MSSQLand.Actions.ConfigMgr
                     whereClause += " AND (p.PkgSourcePath IS NULL OR p.PkgSourcePath = '')";
                 }
 
+                string havingClause = "";
+                if (_withPrograms)
+                {
+                    havingClause = " HAVING COUNT(DISTINCT pr.ProgramName) > 0";
+                }
+                if (_withDeployments)
+                {
+                    havingClause += (string.IsNullOrEmpty(havingClause) ? " HAVING" : " AND") + " COUNT(DISTINCT adv.AdvertisementID) > 0";
+                }
+
                 string query = $@"
 SELECT TOP {_limit}
     p.PackageID,
@@ -186,11 +196,12 @@ SELECT TOP {_limit}
 FROM [{db}].dbo.v_Package p
 LEFT JOIN [{db}].dbo.v_Program pr ON p.PackageID = pr.PackageID
 LEFT JOIN [{db}].dbo.v_Advertisement adv ON p.PackageID = adv.PackageID
-{filterClause}
+{whereClause}
 GROUP BY 
     p.PackageID, p.Name, p.Description, p.PkgSourcePath, 
     p.Manufacturer, p.Version, p.PackageType,
     p.StoredPkgPath, p.SourceVersion, p.SourceDate, p.LastRefreshTime
+{havingClause}
 ORDER BY p.Name;
 ";
 
