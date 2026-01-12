@@ -317,6 +317,12 @@ ORDER BY ds.DeploymentTime DESC;";
         private string DecompressSequence(byte[] compressedData)
         {
             // ConfigMgr stores task sequences as GZip-compressed XML
+            // Safety check: if compressed data is > 10MB, likely corrupt or wrong column
+            if (compressedData.Length > 10 * 1024 * 1024)
+            {
+                throw new InvalidDataException($"Sequence data too large ({compressedData.Length / 1024 / 1024}MB) - possible data corruption");
+            }
+            
             // Skip first 4 bytes (size header) if present
             int offset = 0;
             
@@ -338,7 +344,15 @@ ORDER BY ds.DeploymentTime DESC;";
                 using (var outputStream = new MemoryStream())
                 {
                     gzipStream.CopyTo(outputStream);
-                    return Encoding.UTF8.GetString(outputStream.ToArray());
+                    byte[] decompressed = outputStream.ToArray();
+                    
+                    // Safety check: decompressed XML > 50MB is suspicious
+                    if (decompressed.Length > 50 * 1024 * 1024)
+                    {
+                        throw new InvalidDataException($"Decompressed sequence too large ({decompressed.Length / 1024 / 1024}MB) - possible bomb");
+                    }
+                    
+                    return Encoding.UTF8.GetString(decompressed);
                 }
             }
             catch
