@@ -118,7 +118,10 @@ WHERE c.CollectionID = '{_collectionId.Replace("'", "''")}';";
 
                 string deploymentsQuery = $@"
 SELECT 
-    ds.AssignmentID,
+    CASE 
+        WHEN ds.AssignmentID = 0 THEN CAST(adv.AdvertisementID AS VARCHAR)
+        ELSE CAST(ds.AssignmentID AS VARCHAR)
+    END AS DeploymentID,
     ds.SoftwareName,
     CASE ds.FeatureType
         WHEN 1 THEN 'Application'
@@ -147,6 +150,9 @@ SELECT
     ds.DeploymentTime,
     ds.ModificationTime
 FROM [{db}].dbo.v_DeploymentSummary ds
+LEFT JOIN [{db}].dbo.v_Advertisement adv ON ds.PackageID = adv.PackageID 
+    AND adv.CollectionID = ds.CollectionID 
+    AND ds.AssignmentID = 0
 WHERE ds.CollectionID = '{_collectionId.Replace("'", "''")}'
 ORDER BY ds.DeploymentTime DESC;";
 
@@ -168,7 +174,7 @@ ORDER BY ds.DeploymentTime DESC;";
 
                 string rulesQuery = $@"
 SELECT 
-    cr.QueryName AS RuleName,
+    cr.RuleName,
     CASE cr.RuleType
         WHEN 1 THEN 'Direct'
         WHEN 2 THEN 'Query'
@@ -176,13 +182,21 @@ SELECT
         WHEN 4 THEN 'Exclude'
         ELSE CAST(cr.RuleType AS VARCHAR)
     END AS RuleType,
-    crs.WQL AS QueryExpression,
-    CASE WHEN cr.RuleType = 3 THEN CAST(cr.ReferencedCollectionID AS VARCHAR) ELSE CAST(NULL AS VARCHAR) END AS IncludeCollectionID,
-    CASE WHEN cr.RuleType = 4 THEN CAST(cr.ReferencedCollectionID AS VARCHAR) ELSE CAST(NULL AS VARCHAR) END AS ExcludeCollectionID
-FROM [{db}].dbo.Collection_Rules cr
-LEFT JOIN [{db}].dbo.Collection_Rules_SQL crs ON cr.QueryKey = crs.QueryKey
+    cr.QueryExpression,
+    cr.IncludeCollectionID,
+    cr.ExcludeCollectionID
+FROM [{db}].dbo.v_CollectionRuleDirect cr
 WHERE cr.CollectionID = '{_collectionId.Replace("'", "''")}'
-ORDER BY cr.RuleType, cr.QueryName;";
+UNION ALL
+SELECT 
+    cq.RuleName,
+    'Query' AS RuleType,
+    cq.QueryExpression,
+    NULL AS IncludeCollectionID,
+    NULL AS ExcludeCollectionID
+FROM [{db}].dbo.v_CollectionRuleQuery cq
+WHERE cq.CollectionID = '{_collectionId.Replace("'", "''")}'
+ORDER BY RuleType, RuleName;";
 
                 DataTable rulesResult = databaseContext.QueryService.ExecuteTable(rulesQuery);
                 
