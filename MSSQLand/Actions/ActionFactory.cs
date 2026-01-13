@@ -118,7 +118,6 @@ namespace MSSQLand.Utilities
             { "cm-collection", (typeof(CMCollection), "Display comprehensive information about a specific collection including all member devices and deployments.", null) },
             { "cm-devices", (typeof(CMDevices), "Enumerate managed devices with filtering by attributes for device discovery and inventory queries.", null) },
             { "cm-device", (typeof(CMDevice), "Display comprehensive information about a specific device including all deployments and targeted content.", null) },
-            { "cm-device-users", (typeof(CMDeviceUsers), "Show historical user login patterns on devices with usage statistics from hardware inventory.", null) },
             { "cm-health", (typeof(CMHealth), "Display client health diagnostics and communication status for troubleshooting client issues.", null) },
             { "cm-deployments", (typeof(CMDeployments), "Enumerate active deployments showing what content is pushed to which collections for hijacking.", new[] { "cm-assignments" }) },
             { "cm-deployment", (typeof(CMDeployment), "Display detailed information about a specific deployment including rerun behavior and device status.", new[] { "cm-assignment" }) },
