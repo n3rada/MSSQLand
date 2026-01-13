@@ -144,7 +144,6 @@
     <Compile Include="Actions\ConfigMgr\CMCollection.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\ConfigMgr\CMDevices.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\ConfigMgr\CMDevice.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMDeviceUsers.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\ConfigMgr\CMHealth.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\ConfigMgr\CMScripts.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\ConfigMgr\CMScript.cs" Condition="'$(EnableCM)' == 'true'" />
