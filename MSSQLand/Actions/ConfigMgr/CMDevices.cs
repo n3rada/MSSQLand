@@ -69,7 +69,7 @@ namespace MSSQLand.Actions.ConfigMgr
                    ?? GetPositionalArgument(positional, 1, "");
 
             _username = GetNamedArgument(named, "u", null)
-                     ?? GetNamedArgument(named, "username", null) ?? "";
+                     ?? GetNamedArgument(named, "user", null) ?? "";
 
             // Implicitly enable --users when --user filter is specified
             if (!string.IsNullOrEmpty(_username))
