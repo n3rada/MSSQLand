@@ -20,12 +20,7 @@ namespace MSSQLand.Actions.Database
     /// </summary>
     internal class Hashes : BaseAction
     {
-        public override void ValidateArguments(string[] args)
-        {
-            // No arguments required
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             if (databaseContext.QueryService.IsAzureSQL())
             {

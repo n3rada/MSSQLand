@@ -28,30 +28,10 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override void ValidateArguments(string[] args)
         {
-            var (named, positional) = ParseActionArguments(args);
-
-            // ResourceID argument (required)
-            _resourceId = GetNamedArgument(named, "r", null)
-                       ?? GetNamedArgument(named, "resourceid", null)
-                       ?? GetPositionalArgument(positional, 0);
-
-            if (string.IsNullOrWhiteSpace(_resourceId))
-            {
-                throw new ArgumentException("ResourceID is required (--resourceid or -r)");
-            }
-
-            // Script GUID argument (required)
-            _scriptGuid = GetNamedArgument(named, "g", null)
-                       ?? GetNamedArgument(named, "scriptguid", null)
-                       ?? GetPositionalArgument(positional, 1);
-
-            if (string.IsNullOrWhiteSpace(_scriptGuid))
-            {
-                throw new ArgumentException("Script GUID is required (--scriptguid or -g)");
-            }
+            BindArguments(args);
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Executing ConfigMgr script on ResourceID: {_resourceId}");
 

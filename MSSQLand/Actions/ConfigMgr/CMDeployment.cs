@@ -15,25 +15,10 @@ namespace MSSQLand.Actions.ConfigMgr
     /// </summary>
     internal class CMDeployment : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Description = "Assignment ID to retrieve details for (e.g., 16779074)")]
-        private string _assignmentId = "";
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Assignment ID to retrieve details for (e.g., 16779074)")]
+        private int _assignmentId;
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (named, positional) = ParseActionArguments(args);
-
-            _assignmentId = GetPositionalArgument(positional, 0, "")
-                         ?? GetNamedArgument(named, "assignment", null)
-                         ?? GetNamedArgument(named, "a", null)
-                         ?? "";
-
-            if (string.IsNullOrWhiteSpace(_assignmentId))
-            {
-                throw new ArgumentException("Assignment ID is required");
-            }
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Retrieving assignment details for: {_assignmentId}");
 
@@ -58,10 +43,8 @@ namespace MSSQLand.Actions.ConfigMgr
 
                 DataTable assignmentResult = null;
 
-                // Try v_CIAssignment first (for applications with numeric AssignmentID)
-                if (int.TryParse(_assignmentId, out int numericAssignmentId))
-                {
-                    string assignmentQuery = $@"
+                // Query for applications with numeric AssignmentID
+                string assignmentQuery = $@"
 SELECT 
     a.AssignmentID,
     a.AssignmentName,
@@ -114,10 +97,9 @@ SELECT
     a.SourceSite
 FROM [{db}].dbo.v_CIAssignment a
 LEFT JOIN [{db}].dbo.v_Collection c ON a.CollectionID = c.CollectionID
-WHERE a.AssignmentID = {numericAssignmentId}";
+WHERE a.AssignmentID = {_assignmentId}";
 
                     assignmentResult = databaseContext.QueryService.ExecuteTable(assignmentQuery);
-                }
 
                 // If not found or ID is not numeric, try vSMS_Advertisement (for packages/task sequences with string OfferID)
                 if (assignmentResult == null || assignmentResult.Rows.Count == 0)

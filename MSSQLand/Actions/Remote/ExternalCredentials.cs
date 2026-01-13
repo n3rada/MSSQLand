@@ -25,19 +25,11 @@ namespace MSSQLand.Actions.Remote
     /// </summary>
     internal class ExternalCredentials : BaseAction
     {
-
-
-        public override void ValidateArguments(string[] args)
-        {
-            // No additional arguments needed
-        }
-
-
         /// <summary>
         /// Executes the external credentials action to retrieve database-scoped credentials.
         /// </summary>
         /// <param name="databaseContext">The DatabaseContext for executing the query.</param>
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Retrieving Database-Scoped Credentials");
 

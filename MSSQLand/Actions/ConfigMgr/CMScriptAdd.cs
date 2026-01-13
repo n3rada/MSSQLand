@@ -29,32 +29,22 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override void ValidateArguments(string[] args)
         {
-            var (named, positional) = ParseActionArguments(args);
+            BindArguments(args);
 
-            // File argument (required)
-            _scriptFile = GetNamedArgument(named, "f", null) 
-                       ?? GetNamedArgument(named, "file", null)
-                       ?? GetPositionalArgument(positional, 0);
-
-            if (string.IsNullOrWhiteSpace(_scriptFile))
+            // Auto-generate stealth name if not provided
+            if (string.IsNullOrWhiteSpace(_scriptName))
             {
-                throw new ArgumentException("Script file path is required (--file or -f)");
+                _scriptName = $"CMDeploy0{new Random().Next(0, 10)}";
             }
 
-            // Name argument (optional, auto-generate stealth name if not provided)
-            _scriptName = GetNamedArgument(named, "n", null)
-                       ?? GetNamedArgument(named, "name", null)
-                       ?? GetPositionalArgument(positional, 1)
-                       ?? $"CMDeploy0{new Random().Next(0, 10)}";
-
-            // GUID argument (optional, auto-generate if not provided)
-            _scriptGuid = GetNamedArgument(named, "g", null)
-                       ?? GetNamedArgument(named, "guid", null)
-                       ?? GetPositionalArgument(positional, 2)
-                       ?? Guid.NewGuid().ToString().ToUpper();
+            // Auto-generate GUID if not provided
+            if (string.IsNullOrWhiteSpace(_scriptGuid))
+            {
+                _scriptGuid = Guid.NewGuid().ToString().ToUpper();
+            }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Adding ConfigMgr script: {_scriptName}");
 

@@ -32,34 +32,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(ShortName = "wm", LongName = "with-members", Description = "Only show collections with members (MemberCount > 0)")]
         private bool _withMembers = false;
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (named, positional) = ParseActionArguments(args);
-
-            _collectionId = GetNamedArgument(named, "id", null)
-                         ?? GetNamedArgument(named, "collection-id", null)
-                         ?? GetPositionalArgument(positional, 0, "");
-
-            _nameFilter = GetNamedArgument(named, "n", null)
-                       ?? GetNamedArgument(named, "name", null)
-                       ?? GetPositionalArgument(positional, 1, "");
-
-            _collectionType = GetNamedArgument(named, "t", null)
-                           ?? GetNamedArgument(named, "type", null)
-                           ?? GetPositionalArgument(positional, 2, "");
-
-            string limitStr = GetNamedArgument(named, "l", null)
-                           ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 3);
-            if (!string.IsNullOrEmpty(limitStr))
-            {
-                _limit = int.Parse(limitStr);
-            }
-
-            _withMembers = named.ContainsKey("wm") || named.ContainsKey("with-members");
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             string idMsg = !string.IsNullOrEmpty(_collectionId) ? $" (ID: {_collectionId})" : "";
             string nameMsg = !string.IsNullOrEmpty(_nameFilter) ? $" (name: {_nameFilter})" : "";

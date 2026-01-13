@@ -10,12 +10,7 @@ namespace MSSQLand.Actions.Database
 {
     internal class Impersonation : BaseAction
     {
-        public override void ValidateArguments(string[] args)
-        {
-            // No additional arguments needed
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested("Starting impersonation check");
 

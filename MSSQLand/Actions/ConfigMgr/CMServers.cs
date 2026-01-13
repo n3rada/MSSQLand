@@ -16,12 +16,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// </summary>
     internal class CMServers : BaseAction
     {
-        public override void ValidateArguments(string[] args)
-        {
-            // No arguments required
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested("Enumerating ConfigMgr servers in hierarchy");
 

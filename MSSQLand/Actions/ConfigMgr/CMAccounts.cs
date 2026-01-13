@@ -18,12 +18,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// </summary>
     internal class CMAccounts : BaseAction
     {
-        public override void ValidateArguments(string[] args)
-        {
-            // No arguments required
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested("Enumerating ConfigMgr stored credentials");
 

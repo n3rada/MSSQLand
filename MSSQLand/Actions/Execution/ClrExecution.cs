@@ -17,28 +17,7 @@ namespace MSSQLand.Actions.Execution
         [ArgumentMetadata(Position = 1, Description = "Function name to execute (default: Main)")]
         private string _function = "Main";
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-            
-            // Parse DLL URI (required)
-            _dllURI = GetPositionalArgument(positionalArgs, 0);
-            
-            // Parse function name (optional, default: Main)
-            _function = GetPositionalArgument(positionalArgs, 1, "Main");
-
-            if (string.IsNullOrEmpty(_dllURI))
-            {
-                throw new ArgumentException("DLL URI is required. Usage: <dllURI> [function]");
-            }
-
-            if (string.IsNullOrEmpty(_function))
-            {
-                _function = "Main";
-            }
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             // Step 1: Get the SHA-512 hash for the DLL and its bytes.
             string[] library = ConvertDLLToSQLBytes(_dllURI);

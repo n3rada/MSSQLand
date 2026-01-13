@@ -22,20 +22,10 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override void ValidateArguments(string[] args)
         {
-            var (named, positional) = ParseActionArguments(args);
-
-            // TaskID argument (required)
-            _taskId = GetNamedArgument(named, "t", null)
-                   ?? GetNamedArgument(named, "taskid", null)
-                   ?? GetPositionalArgument(positional, 0);
-
-            if (string.IsNullOrWhiteSpace(_taskId))
-            {
-                throw new ArgumentException("Task ID is required (--taskid or -t)");
-            }
+            BindArguments(args);
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Checking status for Task ID: {_taskId}");
 

@@ -24,16 +24,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override void ValidateArguments(string[] args)
         {
-            var (named, positional) = ParseActionArguments(args);
-
-            _collectionId = GetPositionalArgument(positional, 0, "")
-                         ?? GetNamedArgument(named, "collection", null)
-                         ?? GetNamedArgument(named, "c", null)
-                         ?? "";
-
-            _collectionName = GetNamedArgument(named, "n", null)
-                           ?? GetNamedArgument(named, "name", null)
-                           ?? "";
+            BindArguments(args);
 
             if (string.IsNullOrWhiteSpace(_collectionId) && string.IsNullOrWhiteSpace(_collectionName))
             {
@@ -41,7 +32,7 @@ namespace MSSQLand.Actions.ConfigMgr
             }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             string searchMsg = !string.IsNullOrEmpty(_collectionId)
                 ? $"ID: {_collectionId}"

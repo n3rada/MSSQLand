@@ -129,7 +129,7 @@ namespace MSSQLand.Actions.Remote
                    arg == "admins" || arg == "ou" || arg == "all";
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             AdsiService adsiService = new(databaseContext);
             bool cleanupRequired = false;

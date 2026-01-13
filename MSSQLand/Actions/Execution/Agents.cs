@@ -21,43 +21,23 @@ namespace MSSQLand.Actions.Execution
         private ActionMode _action = ActionMode.Status;
         
         [ArgumentMetadata(Position = 1, Description = "Command to execute (required for exec mode)")]
-        private string? _command = null;
+        private string _command = null;
         
         [ArgumentMetadata(Position = 2, Description = "Subsystem: cmd, powershell, tsql, vbscript (default: powershell)")]
         private SubSystemMode _subSystem = SubSystemMode.PowerShell;
 
         public override void ValidateArguments(string[] args)
         {
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-            
-            // Parse action mode (default: status)
-            string actionStr = GetPositionalArgument(positionalArgs, 0, "status");
-            if (!Enum.TryParse<ActionMode>(actionStr, true, out _action))
-            {
-                throw new ArgumentException($"Invalid action: {actionStr}. Valid actions: status, exec");
-            }
-            
-            // Parse command (required for exec mode)
-            _command = GetPositionalArgument(positionalArgs, 1, null);
-            
-            // Parse subsystem (default: powershell)
-            string subSystemStr = GetPositionalArgument(positionalArgs, 2, "powershell");
-            if (!Enum.TryParse<SubSystemMode>(subSystemStr, true, out _subSystem))
-            {
-                throw new ArgumentException($"Invalid subsystem: {subSystemStr}. Valid subsystems: cmd, powershell, tsql, vbscript");
-            }
+            BindArguments(args);
 
             // Additional validation
-            if (_action == ActionMode.Exec)
+            if (_action == ActionMode.Exec && string.IsNullOrEmpty(_command))
             {
-                if (string.IsNullOrEmpty(_command))
-                {
-                    throw new ArgumentException("Missing command to execute. Example: agents exec 'whoami'");
-                }
+                throw new ArgumentException("Missing command to execute. Example: agents exec 'whoami'");
             }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Executing {_action} mode");
 
@@ -77,7 +57,7 @@ namespace MSSQLand.Actions.Execution
         /// <summary>
         /// Lists SQL Server Agent jobs.
         /// </summary>
-        private object? ListAgentJobs(DatabaseContext databaseContext)
+        private object ListAgentJobs(DatabaseContext databaseContext)
         {
             if (!AgentStatus(databaseContext))
             {
@@ -104,7 +84,7 @@ namespace MSSQLand.Actions.Execution
         /// <summary>
         /// Executes a command using SQL Server Agent.
         /// </summary>
-        private object? ExecuteAgentJob(DatabaseContext databaseContext)
+        private object ExecuteAgentJob(DatabaseContext databaseContext)
         {
             if (!AgentStatus(databaseContext))
             {

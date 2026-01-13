@@ -52,43 +52,15 @@ namespace MSSQLand.Actions.ConfigMgr
     /// </summary>
     internal class CMDeploymentType : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Description = "Deployment Type CI_ID (e.g., 16891057)")]
-        private string _ciId = "";
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Deployment Type CI_ID (e.g., 16891057)")]
+        private int _ciId;
 
         [ArgumentMetadata(LongName = "xml", Description = "Include full Policy Platform and SDM Package Digest XML output")]
         private bool _showXml = false;
 
-        public override void ValidateArguments(string[] args)
+        public override object Execute(DatabaseContext databaseContext)
         {
-            var (named, positional) = ParseActionArguments(args);
-
-            _ciId = GetPositionalArgument(positional, 0, "")
-                 ?? GetNamedArgument(named, "ci-id", null)
-                 ?? GetNamedArgument(named, "id", null)
-                 ?? "";
-
-            if (string.IsNullOrWhiteSpace(_ciId))
-            {
-                throw new ArgumentException("Deployment Type CI_ID is required. Example: cm-dt 16891057");
-            }
-
-            if (!int.TryParse(_ciId, out _))
-            {
-                throw new ArgumentException($"Invalid CI_ID: {_ciId}. Must be a numeric CI_ID.");
-            }
-
-            string xmlStr = GetNamedArgument(named, "xml", null);
-            if (!string.IsNullOrEmpty(xmlStr))
-            {
-                _showXml = bool.Parse(xmlStr);
-            }
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
-        {
-            int ciId = int.Parse(_ciId);
-
-            Logger.TaskNested($"Retrieving deployment type details for CI_ID: {ciId}");
+            Logger.TaskNested($"Retrieving deployment type details for CI_ID: {_ciId}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -131,13 +103,13 @@ SELECT
     lcp.Version AS LocalizedVersion
 FROM [{db}].dbo.CI_ConfigurationItems ci
 LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp ON ci.CI_ID = lcp.CI_ID AND lcp.LocaleID = 1033
-WHERE ci.CI_ID = {ciId} AND ci.CIType_ID = 21;";
+WHERE ci.CI_ID = {_ciId} AND ci.CIType_ID = 21;";
 
                 DataTable dtResult = databaseContext.QueryService.ExecuteTable(dtQuery);
 
                 if (dtResult.Rows.Count == 0)
                 {
-                    Logger.Warning($"Deployment Type CI_ID {ciId} not found in {db}");
+                    Logger.Warning($"Deployment Type CI_ID {_ciId} not found in {db}");
                     continue;
                 }
 
@@ -251,7 +223,7 @@ FROM [{db}].dbo.CI_ConfigurationItemRelations rel
 INNER JOIN [{db}].dbo.CI_ConfigurationItems ci ON rel.FromCI_ID = ci.CI_ID
 LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON ci.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
 LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp ON ci.CI_ID = lcp.CI_ID AND lcp.LocaleID = 1033
-WHERE rel.ToCI_ID = {ciId} AND rel.RelationType = 9;";
+WHERE rel.ToCI_ID = {_ciId} AND rel.RelationType = 9;";
 
                 DataTable parentResult = databaseContext.QueryService.ExecuteTable(parentQuery);
 
@@ -417,7 +389,7 @@ SELECT TOP 1
     ds.Body
 FROM [{db}].dbo.CI_CIDocuments cid
 INNER JOIN [{db}].dbo.CI_DocumentStore ds ON cid.Document_ID = ds.Document_ID
-WHERE cid.CI_ID = {ciId} AND ds.IsVersionLatest = 1
+WHERE cid.CI_ID = {_ciId} AND ds.IsVersionLatest = 1
 ORDER BY ds.Document_ID DESC;";
 
                 DataTable docResult = databaseContext.QueryService.ExecuteTable(docQuery);
@@ -471,7 +443,7 @@ ORDER BY ds.Document_ID DESC;";
 
             if (!found)
             {
-                Logger.Warning($"Deployment Type Configuration Item (CI_ID {ciId}) not found in any ConfigMgr database");
+                Logger.Warning($"Deployment Type Configuration Item (CI_ID {_ciId}) not found in any ConfigMgr database");
                 Logger.WarningNested("Make sure this is a valid deployment type CI_ID (CIType_ID = 21)");
             }
 

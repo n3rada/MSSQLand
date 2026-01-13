@@ -17,69 +17,25 @@ namespace MSSQLand.Actions.Domain
         private const int DefaultMaxRid = 10000;
         private const int BatchSize = 1000;
 
+        private enum OutputFormat { Default, Bash, Python, Table }
+
         [ArgumentMetadata(Position = 0, Description = "Maximum RID to enumerate (default: 10000)")]
         private int _maxRid = DefaultMaxRid;
 
-        [ExcludeFromArguments]
-        private bool _bashOutput = false;
-        
-        [ExcludeFromArguments]
-        private bool _pythonOutput = false;
-        
-        [ExcludeFromArguments]
-        private bool _tableOutput = false;
+        [ArgumentMetadata(LongName = "format", Description = "Output format: bash, python, or table")]
+        private OutputFormat _format = OutputFormat.Default;
 
         public override void ValidateArguments(string[] args)
         {
-            if (args == null || args.Length == 0)
-            {
-                return;
-            }
+            BindArguments(args);
 
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-
-            // Check for --format flag
-            if (namedArgs.ContainsKey("format"))
+            if (_maxRid <= 0)
             {
-                string format = namedArgs["format"].ToLower();
-                if (format == "bash")
-                {
-                    _bashOutput = true;
-                }
-                else if (format == "python" || format == "py")
-                {
-                    _pythonOutput = true;
-                }
-                else if (format == "table")
-                {
-                    _tableOutput = true;
-                }
-                else
-                {
-                    throw new ArgumentException($"Invalid format: {format}. Use 'bash', 'python', or 'table'.");
-                }
-            }
-
-            // First positional argument is max RID
-            if (positionalArgs.Count > 0)
-            {
-                if (int.TryParse(positionalArgs[0], out int maxRid) && maxRid > 0)
-                {
-                    _maxRid = maxRid;
-                }
-                else
-                {
-                    throw new ArgumentException($"Invalid max RID: {positionalArgs[0]}. Must be a positive integer.");
-                }
-            }
-
-            if (positionalArgs.Count > 1)
-            {
-                throw new ArgumentException($"Too many positional arguments. Expected: [maxRid]. Use --format flag for output format.");
+                throw new ArgumentException($"Invalid max RID: {_maxRid}. Must be a positive integer.");
             }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Starting RID cycling (max RID: {_maxRid})");
             
@@ -177,7 +133,7 @@ namespace MSSQLand.Actions.Domain
                 // Print results if any found
                 if (results.Count > 0)
                 {
-                    if (_bashOutput)
+                    if (_format == OutputFormat.Bash)
                     {
                         // Output in bash associative array format
                         Logger.Info("Bash associative array format");
@@ -195,7 +151,7 @@ namespace MSSQLand.Actions.Domain
                         
                         Console.WriteLine(")");
                     }
-                    else if (_pythonOutput)
+                    else if (_format == OutputFormat.Python)
                     {
                         // Output in Python dictionary format
                         Logger.Info("Python dictionary format");
@@ -216,7 +172,7 @@ namespace MSSQLand.Actions.Domain
                         
                         Console.WriteLine("}");
                     }
-                    else if (_tableOutput)
+                    else if (_format == OutputFormat.Table)
                     {
                         // Detailed table output
                         DataTable resultTable = new();

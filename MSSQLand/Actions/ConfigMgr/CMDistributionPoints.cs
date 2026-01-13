@@ -29,34 +29,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 3, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 100)")]
         private int _limit = 50;
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (named, positional) = ParseActionArguments(args);
-
-            _server = GetNamedArgument(named, "s", null)
-                   ?? GetNamedArgument(named, "server", null)
-                   ?? GetPositionalArgument(positional, 0, "");
-
-            _type = GetNamedArgument(named, "t", null)
-                 ?? GetNamedArgument(named, "type", null)
-                 ?? GetPositionalArgument(positional, 1, "");
-
-            string activeStr = GetNamedArgument(named, "a", null)
-                            ?? GetNamedArgument(named, "active", null);
-            if (!string.IsNullOrEmpty(activeStr))
-            {
-                _activeOnly = bool.Parse(activeStr);
-            }
-
-            string limitStr = GetNamedArgument(named, "l", null)
-                           ?? GetNamedArgument(named, "limit", null);
-            if (!string.IsNullOrEmpty(limitStr))
-            {
-                _limit = int.Parse(limitStr);
-            }
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             string serverMsg = !string.IsNullOrEmpty(_server) ? $" (server: {_server})" : "";
             string typeMsg = !string.IsNullOrEmpty(_type) ? $" (type: {_type})" : "";

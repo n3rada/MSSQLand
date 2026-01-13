@@ -12,33 +12,36 @@ namespace MSSQLand.Actions
     /// <summary>
     /// Abstract base class for all actions, enforcing validation and execution logic.
     /// 
-    /// ARGUMENT PARSING GUIDE:
-    /// =======================
+    /// ARGUMENT BINDING:
+    /// =================
     /// 
-    /// All derived actions MUST properly parse and assign arguments.
+    /// DEFAULT BEHAVIOR (auto-binding):
+    /// --------------------------------
+    /// Decorate fields with [ArgumentMetadata] and let the base class handle binding:
     /// 
-    /// STANDARD PATTERN:
-    /// -----------------
-    /// 1. Decorate fields with [ArgumentMetadata] for documentation:
     ///    [ArgumentMetadata(Position = 0, Required = true, Description = "Table name")]
     ///    private string _tableName;
     /// 
-    /// 2. Parse and assign manually in ValidateArguments():
+    ///    [ArgumentMetadata(Position = 1, ShortName = "l", LongName = "limit", Description = "Row limit")]
+    ///    private int _limit = 50;  // Use typed fields, not string + parsing
+    /// 
+    /// If no custom validation is needed, you don't need to override ValidateArguments().
+    /// The base class will call BindArguments() automatically.
+    /// 
+    /// CUSTOM VALIDATION:
+    /// ------------------
+    /// Override ValidateArguments() only when additional validation is required:
+    /// 
     ///    public override void ValidateArguments(string[] args)
     ///    {
-    ///        var (namedArgs, positionalArgs) = ParseActionArguments(args);
-    ///        
-    ///        // Extract positional arguments
-    ///        _tableName = GetPositionalArgument(positionalArgs, 0);
-    ///        
-    ///        // Extract named arguments
-    ///        string limitStr = GetNamedArgument(namedArgs, "limit", "0");
-    ///        _limit = int.Parse(limitStr);
-    ///        
-    ///        // Add validation
-    ///        if (string.IsNullOrEmpty(_tableName))
-    ///            throw new ArgumentException("Table name is required");
+    ///        BindArguments(args);  // Always call first
+    ///        if (_limit &lt; 0) throw new ArgumentException("Limit must be positive");
     ///    }
+    /// 
+    /// MANUAL PARSING (for complex cases):
+    /// -----------------------------------
+    /// Use ParseActionArguments(), GetNamedArgument(), GetPositionalArgument()
+    /// when auto-binding is insufficient (e.g., FQTN parsing, joined arguments).
     /// </summary>
     
     [AttributeUsage(AttributeTargets.Field)]
@@ -47,28 +50,27 @@ namespace MSSQLand.Actions
 
         /// <summary>
         /// Validates the action arguments passed as string array (argparse-style).
+        /// Default implementation calls BindArguments() for automatic field binding.
+        /// Override only when custom validation or parsing logic is needed.
         /// </summary>
         /// <param name="args">The action-specific arguments as string array.</param>
-        public abstract void ValidateArguments(string[] args);
+        public virtual void ValidateArguments(string[] args)
+        {
+            BindArguments(args);
+        }
 
 
         /// <summary>
         /// Executes the action using the provided ConnectionManager.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager for database operations.</param>
-        public abstract object? Execute(DatabaseContext databaseContext = null);
+        public abstract object Execute(DatabaseContext databaseContext = null);
 
         /// <summary>
         /// Parse action arguments using modern CLI patterns (argparse-style).
         /// Supports: positional args, -flag value, --long-flag value, -flag:value, --long-flag=value
         /// 
-        /// Example usage:
-        /// <code>
-        /// var (namedArgs, positionalArgs) = ParseActionArguments(args);
-        /// _mode = GetPositionalArgument(positionalArgs, 0);
-        /// _tableName = GetPositionalArgument(positionalArgs, 1);
-        /// _limit = int.Parse(GetNamedArgument(namedArgs, "limit", "0"));
-        /// </code>
+        /// Used internally by BindArguments(). Only use directly for complex custom parsing.
         /// </summary>
         /// <param name="args">The action arguments array.</param>
         /// <returns>Dictionary of named arguments and list of positional arguments.</returns>
@@ -203,6 +205,114 @@ namespace MSSQLand.Actions
                 return positionalArgs[index];
             }
             return defaultValue;
+        }
+
+        /// <summary>
+        /// Automatically binds parsed arguments to fields decorated with ArgumentMetadataAttribute.
+        /// Uses reflection to match named/positional args to field metadata.
+        /// </summary>
+        /// <param name="args">The action arguments array.</param>
+        /// <exception cref="ArgumentException">Thrown when required arguments are missing or conversion fails.</exception>
+        protected void BindArguments(string[] args)
+        {
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
+            var fields = GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
+
+            foreach (var field in fields)
+            {
+                var metadata = field.GetCustomAttribute<ArgumentMetadataAttribute>();
+                if (metadata == null) continue;
+
+                string value = null;
+
+                // Try named arguments first (short name, then long name)
+                if (!string.IsNullOrEmpty(metadata.ShortName))
+                {
+                    value = GetNamedArgument(namedArgs, metadata.ShortName);
+                }
+                if (value == null && !string.IsNullOrEmpty(metadata.LongName))
+                {
+                    value = GetNamedArgument(namedArgs, metadata.LongName);
+                }
+
+                // Fall back to positional argument
+                if (value == null && metadata.Position >= 0)
+                {
+                    value = GetPositionalArgument(positionalArgs, metadata.Position);
+                }
+
+                // If value found, convert and set; otherwise check if required
+                if (value != null)
+                {
+                    try
+                    {
+                        object convertedValue = ConvertArgumentValue(value, field.FieldType);
+                        field.SetValue(this, convertedValue);
+                    }
+                    catch (Exception ex)
+                    {
+                        string argName = metadata.LongName ?? metadata.ShortName ?? field.Name.TrimStart('_');
+                        throw new ArgumentException($"Failed to convert argument '{argName}' value '{value}' to {SimplifyType(field.FieldType)}: {ex.Message}");
+                    }
+                }
+                else if (metadata.Required)
+                {
+                    string argName = metadata.LongName ?? metadata.ShortName ?? field.Name.TrimStart('_');
+                    throw new ArgumentException($"Required argument '{argName}' is missing.");
+                }
+                // else: keep the field's default value
+            }
+        }
+
+        /// <summary>
+        /// Converts a string value to the target type.
+        /// Supports: string, int, bool, enum types.
+        /// </summary>
+        /// <param name="value">The string value to convert.</param>
+        /// <param name="targetType">The target type.</param>
+        /// <returns>The converted value.</returns>
+        private object ConvertArgumentValue(string value, Type targetType)
+        {
+            if (targetType == typeof(string))
+            {
+                return value;
+            }
+
+            if (targetType == typeof(int))
+            {
+                return int.Parse(value);
+            }
+
+            if (targetType == typeof(bool))
+            {
+                // Handle common boolean representations
+                if (string.IsNullOrEmpty(value) || 
+                    value.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                    value.Equals("1", StringComparison.OrdinalIgnoreCase) ||
+                    value.Equals("yes", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+                return false;
+            }
+
+            if (targetType == typeof(long))
+            {
+                return long.Parse(value);
+            }
+
+            if (targetType == typeof(double))
+            {
+                return double.Parse(value);
+            }
+
+            if (targetType.IsEnum)
+            {
+                return Enum.Parse(targetType, value, ignoreCase: true);
+            }
+
+            // Fallback to Convert.ChangeType for other types
+            return Convert.ChangeType(value, targetType);
         }
 
         /// <summary>

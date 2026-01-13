@@ -100,7 +100,7 @@ namespace MSSQLand.Actions.Database
             }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             // Use the execution database if no database is specified
             if (string.IsNullOrEmpty(_database))

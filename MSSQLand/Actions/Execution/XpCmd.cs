@@ -32,7 +32,7 @@ namespace MSSQLand.Actions.Execution
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
         /// <returns>A list of strings containing the command output, or an empty list if no output.</returns>
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Executing command: {_command}");
 

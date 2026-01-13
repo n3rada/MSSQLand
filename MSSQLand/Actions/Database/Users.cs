@@ -22,12 +22,7 @@ namespace MSSQLand.Actions.Database
     /// </summary>
     internal class Users : BaseAction
     {
-        public override void ValidateArguments(string[] args)
-        {
-            // No additional arguments needed
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             string databaseUsersQuery;
 

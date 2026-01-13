@@ -15,12 +15,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// </summary>
     internal class CMInfo : BaseAction
     {
-        public override void ValidateArguments(string[] args)
-        {
-            // No additional arguments needed
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested("Detecting ConfigMgr databases");
 

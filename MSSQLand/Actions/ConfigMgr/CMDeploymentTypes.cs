@@ -80,27 +80,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(LongName = "limit", Description = "Limit number of results (default: 25)")]
         private int _limit = 50;
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (named, positional) = ParseActionArguments(args);
-
-            _technology = GetNamedArgument(named, "tech", null) ?? "";
-            _contentPath = GetNamedArgument(named, "content", null) ?? "";
-            _installCommand = GetNamedArgument(named, "install", null) ?? "";
-            _executionContext = GetNamedArgument(named, "context", null) ?? "";
-            _detectionType = GetNamedArgument(named, "detection", null) ?? "";
-            _application = GetNamedArgument(named, "app", null) ?? "";
-            _enabled = GetNamedArgument(named, "enabled", null) ?? "";
-
-            string limitStr = GetNamedArgument(named, "l", null)
-                           ?? GetNamedArgument(named, "limit", null);
-            if (!string.IsNullOrEmpty(limitStr))
-            {
-                _limit = int.Parse(limitStr);
-            }
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             string filterMsg = "";
             if (!string.IsNullOrEmpty(_technology)) filterMsg += $" tech:{_technology}";

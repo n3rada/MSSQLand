@@ -26,19 +26,11 @@ namespace MSSQLand.Actions.Remote
     /// </summary>
     internal class ExternalTables : BaseAction
     {
-
-
-        public override void ValidateArguments(string[] args)
-        {
-            // No additional arguments needed
-        }
-
-
         /// <summary>
         /// Executes the external tables action to retrieve external table definitions.
         /// </summary>
         /// <param name="databaseContext">The DatabaseContext for executing the query.</param>
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Retrieving External Tables");
 

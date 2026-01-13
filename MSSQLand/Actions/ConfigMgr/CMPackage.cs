@@ -16,25 +16,10 @@ namespace MSSQLand.Actions.ConfigMgr
     /// </summary>
     internal class CMPackage : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Description = "Package PackageID to retrieve details for (e.g., PSC004BF)")]
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Package PackageID to retrieve details for (e.g., PSC004BF)")]
         private string _packageId = "";
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (named, positional) = ParseActionArguments(args);
-
-            _packageId = GetPositionalArgument(positional, 0, "")
-                      ?? GetNamedArgument(named, "package", null)
-                      ?? GetNamedArgument(named, "p", null)
-                      ?? "";
-
-            if (string.IsNullOrWhiteSpace(_packageId))
-            {
-                throw new ArgumentException("Package PackageID is required");
-            }
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Retrieving comprehensive package information for: {_packageId}");
 

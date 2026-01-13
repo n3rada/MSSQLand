@@ -10,16 +10,11 @@ namespace MSSQLand.Actions.Database
 {
     internal class OleDbProvidersInfo : BaseAction
     {
-        public override void ValidateArguments(string[] args)
-        {
-            // No additional arguments needed
-        }
-
         /// <summary>
         /// https://github.com/NetSPI/PowerUpSQL/blob/7d73373b0751b8648a800fbeef4c00ced66eba58/PowerUpSQL.ps1#L6987
         /// </summary>
         /// <param name="databaseContext"></param>
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested("Retrieving OLE DB providers information");
             

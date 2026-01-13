@@ -62,90 +62,16 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override void ValidateArguments(string[] args)
         {
-            var (named, positional) = ParseActionArguments(args);
-
-            _device = GetNamedArgument(named, "device", null)
-                   ?? GetPositionalArgument(positional, 0, "");
-
-            _domain = GetNamedArgument(named, "d", null)
-                   ?? GetNamedArgument(named, "domain", null)
-                   ?? GetPositionalArgument(positional, 1, "");
-
-            _username = GetNamedArgument(named, "u", null)
-                     ?? GetNamedArgument(named, "user", null) ?? "";
+            BindArguments(args);
 
             // Implicitly enable --users when --user filter is specified
             if (!string.IsNullOrEmpty(_username))
             {
                 _withUsers = true;
             }
-
-            _ip = GetNamedArgument(named, "i", null)
-               ?? GetNamedArgument(named, "ip", null) ?? "";
-
-            _collection = GetNamedArgument(named, "c", null)
-                       ?? GetNamedArgument(named, "collection", null)
-                       ?? GetPositionalArgument(positional, 2, "");
-
-            _distinguishedName = GetNamedArgument(named, "dn", null)
-                              ?? GetNamedArgument(named, "distinguished-name", null)
-                              ?? GetPositionalArgument(positional, 3, "");
-
-            string onlineStr = GetNamedArgument(named, "o", null)
-                            ?? GetNamedArgument(named, "online", null);
-            if (!string.IsNullOrEmpty(onlineStr))
-            {
-                _onlineOnly = bool.Parse(onlineStr);
-            }
-
-            string withUsersStr = GetNamedArgument(named, "users", null);
-            if (!string.IsNullOrEmpty(withUsersStr))
-            {
-                _withUsers = bool.Parse(withUsersStr);
-            }
-
-            string noUserStr = GetNamedArgument(named, "n", null)
-                            ?? GetNamedArgument(named, "no-user", null);
-            if (!string.IsNullOrEmpty(noUserStr))
-            {
-                _noUser = bool.Parse(noUserStr);
-            }
-
-            string clientOnlyStr = GetNamedArgument(named, "client-only", null);
-            if (!string.IsNullOrEmpty(clientOnlyStr))
-            {
-                _clientOnly = bool.Parse(clientOnlyStr);
-            }
-
-            string activeOnlyStr = GetNamedArgument(named, "a", null)
-                                ?? GetNamedArgument(named, "active", null);
-            if (!string.IsNullOrEmpty(activeOnlyStr))
-            {
-                _activeOnly = bool.Parse(activeOnlyStr);
-            }
-
-            string lastSeenDaysStr = GetNamedArgument(named, "last-seen-days", null);
-            if (!string.IsNullOrEmpty(lastSeenDaysStr))
-            {
-                _lastSeenDays = int.Parse(lastSeenDaysStr);
-            }
-
-            string userSeenDaysStr = GetNamedArgument(named, "user-seen-days", null);
-            if (!string.IsNullOrEmpty(userSeenDaysStr))
-            {
-                _userSeenDays = int.Parse(userSeenDaysStr);
-            }
-
-            string limitStr = GetNamedArgument(named, "l", null)
-                           ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 4);
-            if (!string.IsNullOrEmpty(limitStr))
-            {
-                _limit = int.Parse(limitStr);
-            }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             string deviceMsg = !string.IsNullOrEmpty(_device) ? $" (device: {_device})" : "";
             string domainMsg = !string.IsNullOrEmpty(_domain) ? $" (domain: {_domain})" : "";

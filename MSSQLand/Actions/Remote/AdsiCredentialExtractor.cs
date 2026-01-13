@@ -21,7 +21,7 @@ namespace MSSQLand.Actions.Remote
         private Mode _mode = Mode.Self;
         
         [ArgumentMetadata(Position = 1, Description = "Target ADSI server name (required for link mode)")]
-        private string? _targetServer;
+        private string _targetServer;
 
 
         public override void ValidateArguments(string[] args)
@@ -60,7 +60,7 @@ namespace MSSQLand.Actions.Remote
         /// <summary>
         /// Executes the chosen ADSI extraction method.
         /// </summary>
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             // Pre-check: Warn about authentication type limitations
             string authType = databaseContext.AuthService.CredentialsType;

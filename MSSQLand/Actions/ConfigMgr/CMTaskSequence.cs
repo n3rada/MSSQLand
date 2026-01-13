@@ -24,22 +24,10 @@ namespace MSSQLand.Actions.ConfigMgr
     /// </summary>
     internal class CMTaskSequence : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Description = "Task Sequence PackageID (e.g., PSC002C0)")]
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Task Sequence PackageID (e.g., PSC002C0)")]
         private string _packageId = "";
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (named, positional) = ParseActionArguments(args);
-
-            _packageId = GetPositionalArgument(positional, 0, "");
-
-            if (string.IsNullOrEmpty(_packageId))
-            {
-                throw new ArgumentException("Task Sequence PackageID is required");
-            }
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Retrieving task sequence details for: {_packageId}");
 

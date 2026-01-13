@@ -27,27 +27,14 @@ namespace MSSQLand.Actions.Database
     internal class Trustworthy : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "d", LongName = "database", Description = "Specific database to check (optional - checks all if omitted)")]
-        private string? _database = null;
+        private string _database = null;
 
         [ArgumentMetadata(ShortName = "e", LongName = "exploit", Description = "Exploit vulnerability and escalate current user to sysadmin")]
         private bool _exploitMode = false;
 
         public override void ValidateArguments(string[] args)
         {
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-
-            // Get database from positional or named arguments
-            _database = GetPositionalArgument(positionalArgs, 0, null);
-            if (string.IsNullOrEmpty(_database))
-            {
-                _database = GetNamedArgument(namedArgs, "database", GetNamedArgument(namedArgs, "d", null));
-            }
-
-            // Check for exploit flag
-            if (namedArgs.ContainsKey("exploit") || namedArgs.ContainsKey("e"))
-            {
-                _exploitMode = true;
-            }
+            BindArguments(args);
 
             // Exploit mode requires a database
             if (_exploitMode && string.IsNullOrEmpty(_database))
@@ -56,7 +43,7 @@ namespace MSSQLand.Actions.Database
             }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             // If exploit mode, perform actual privilege escalation
             if (_exploitMode)
@@ -255,7 +242,7 @@ ORDER BY [Database];";
         /// <param name="databaseContext">The database context for query execution.</param>
         /// <param name="database">The target database name to exploit.</param>
         /// <returns>True if escalation succeeded, false otherwise.</returns>
-        private object? ExploitPrivilegeEscalation(DatabaseContext databaseContext, string database)
+        private object ExploitPrivilegeEscalation(DatabaseContext databaseContext, string database)
         {
             Logger.TaskNested($"Exploiting TRUSTWORTHY vulnerability on database '{database}'");
             Logger.TaskNested("This will escalate your current user to sysadmin");

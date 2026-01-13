@@ -9,13 +9,7 @@ namespace MSSQLand.Actions.Administration
 {
     internal class Sessions : BaseAction
     {
-
-        public override void ValidateArguments(string[] args)
-        {
-            // No additional arguments needed
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested("Retrieving active SQL Server sessions");
 

@@ -11,19 +11,11 @@ namespace MSSQLand.Actions.Remote
 {
     internal class Links : BaseAction
     {
-
-
-        public override void ValidateArguments(string[] args)
-        {
-            // No additional arguments needed
-        }
-
-
         /// <summary>
         /// Executes the query action using the provided ConnectionManager.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager for executing the query.</param>
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             // Check if running on Azure SQL Database (PaaS)
             if (databaseContext.QueryService.IsAzureSQL())

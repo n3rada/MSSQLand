@@ -64,7 +64,7 @@ namespace MSSQLand.Actions.Remote
             _linkedServerName = args[1].Trim();
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             string dataAccessValue = _action == DataAccessMode.Enable ? "true" : "false";
             string actionVerb = _action == DataAccessMode.Enable ? "Enabling" : "Disabling";

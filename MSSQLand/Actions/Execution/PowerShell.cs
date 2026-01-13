@@ -30,7 +30,7 @@ namespace MSSQLand.Actions.Execution
         /// Executes the provided PowerShell script on the SQL server.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Executing PowerShell script: {_script}");
 

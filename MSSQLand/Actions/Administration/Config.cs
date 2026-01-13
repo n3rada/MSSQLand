@@ -52,7 +52,7 @@ namespace MSSQLand.Actions.Administration
             }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             // Mode 1: Set configuration option
             if (_value >= 0 && !string.IsNullOrEmpty(_optionName))

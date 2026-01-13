@@ -52,7 +52,7 @@ namespace MSSQLand.Actions.Remote
         /// Executes SMB interaction using multiple fallback methods.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Sending SMB request to: {_uncPath}");
 

@@ -51,19 +51,15 @@ namespace MSSQLand.Actions.Remote
 
         public override void ValidateArguments(string[] args)
         {
-            string[] parts = args;
+            BindArguments(args);
 
-            if (parts != null && parts.Length > 0)
+            if (_maxDepth < 1 || _maxDepth > 50)
             {
-                if (!int.TryParse(parts[0], out int maxDepth) || maxDepth < 1 || maxDepth > 50)
-                {
-                    throw new ArgumentException("Maximum depth must be between 1 and 50. Example: /a:links explore 15");
-                }
-                _maxDepth = maxDepth;
+                throw new ArgumentException("Maximum depth must be between 1 and 50. Example: /a:links explore 15");
             }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested("Enumerating linked servers");
             Logger.TaskNested($"Maximum recursion depth: {_maxDepth}");

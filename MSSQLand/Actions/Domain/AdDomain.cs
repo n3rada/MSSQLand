@@ -14,12 +14,7 @@ namespace MSSQLand.Actions.Domain
     /// </summary>
     internal class AdDomain : BaseAction
     {
-        public override void ValidateArguments(string[] args)
-        {
-            // No additional arguments needed
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested("Retrieving domain SID");
 

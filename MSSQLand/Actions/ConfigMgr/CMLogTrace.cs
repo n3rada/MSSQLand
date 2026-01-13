@@ -60,22 +60,12 @@ namespace MSSQLand.Actions.ConfigMgr
     /// </summary>
     internal class CMLogTrace : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Description = "Deployment Type GUID (a.k.a. AppDeliveryTypeId in WMI) from log or client")]
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Deployment Type GUID (a.k.a. AppDeliveryTypeId in WMI) from log or client")]
         private string _guid = "";
 
         public override void ValidateArguments(string[] args)
         {
-            var (named, positional) = ParseActionArguments(args);
-
-            _guid = GetPositionalArgument(positional, 0, "")
-                 ?? GetNamedArgument(named, "guid", null)
-                 ?? GetNamedArgument(named, "g", null)
-                 ?? "";
-
-            if (string.IsNullOrWhiteSpace(_guid))
-            {
-                throw new ArgumentException("Deployment Type GUID is required. Example: ScopeId_xxx/DeploymentType_xxx or just DeploymentType_xxx");
-            }
+            BindArguments(args);
 
             // Clean up the GUID - remove any prefix/suffix if user pasted full log line
             _guid = _guid.Trim();
@@ -96,7 +86,7 @@ namespace MSSQLand.Actions.ConfigMgr
             }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Tracing deployment type: {_guid}");
 

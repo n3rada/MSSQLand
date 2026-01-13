@@ -76,7 +76,7 @@ namespace MSSQLand.Actions.Database
             }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             if (string.IsNullOrEmpty(_table))
             {

@@ -6,6 +6,7 @@ namespace MSSQLand.Actions
 {
     /// <summary>
     /// Provides metadata about an action's argument, including position and aliases.
+    /// Used by BindArguments() for automatic field binding and by GetArguments() for help text.
     /// </summary>
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
     public class ArgumentMetadataAttribute : Attribute

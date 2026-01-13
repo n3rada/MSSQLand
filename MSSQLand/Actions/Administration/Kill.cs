@@ -29,7 +29,7 @@ namespace MSSQLand.Actions.Administration
             }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.NewLine();
             Logger.Info($"Preparing to kill session(s) for target: {_target}");

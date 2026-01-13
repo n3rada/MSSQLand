@@ -22,12 +22,7 @@ namespace MSSQLand.Actions.Database
     /// </summary>
     internal class Roles : BaseAction
     {
-        public override void ValidateArguments(string[] args)
-        {
-            // No arguments required
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested("Enumerating server-level and database-level roles with their members");
 

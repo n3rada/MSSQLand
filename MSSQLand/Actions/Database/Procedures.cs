@@ -16,30 +16,17 @@ namespace MSSQLand.Actions.Database
         private Mode _mode = Mode.List;
 
         [ArgumentMetadata(Position = 1, Description = "Stored procedure name as schema.procedure (required for exec/read) or search keyword (required for search)")]
-        private string? _procedureName = null;
+        private string _procedureName = null;
 
         [ArgumentMetadata(Position = 2, Description = "Procedure arguments (optional for exec)")]
-        private string? _procedureArgs = null;
+        private string _procedureArgs = null;
 
         [ExcludeFromArguments]
-        private string? _searchKeyword = null;
+        private string _searchKeyword = null;
 
         public override void ValidateArguments(string[] args)
         {
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-            
-            // Parse mode from positional argument
-            string modeStr = GetPositionalArgument(positionalArgs, 0, "list");
-            if (!Enum.TryParse<Mode>(modeStr, true, out _mode))
-            {
-                throw new ArgumentException($"Invalid mode: {modeStr}. Valid modes: list, exec, read, search");
-            }
-            
-            // Parse procedure name or search keyword
-            _procedureName = GetPositionalArgument(positionalArgs, 1);
-            
-            // Parse procedure arguments (for exec mode)
-            _procedureArgs = GetPositionalArgument(positionalArgs, 2);
+            BindArguments(args);
 
             // Additional validation
             switch (_mode)
@@ -85,7 +72,7 @@ namespace MSSQLand.Actions.Database
             }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             switch (_mode)
             {
@@ -243,7 +230,7 @@ namespace MSSQLand.Actions.Database
         /// <summary>
         /// Reads the definition of a stored procedure.
         /// </summary>
-        private object? ReadProcedureDefinition(DatabaseContext databaseContext, string procedureName)
+        private object ReadProcedureDefinition(DatabaseContext databaseContext, string procedureName)
         {
             Logger.TaskNested($"Retrieving definition of [{databaseContext.QueryService.ExecutionServer.Database}].[{procedureName}]");
 

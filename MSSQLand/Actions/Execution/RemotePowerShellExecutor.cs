@@ -29,7 +29,7 @@ namespace MSSQLand.Actions.Execution
         /// Executes the PowerShell command to download and run the script from the provided URL.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Downloading and executing PowerShell script from URL: {_url}");
 

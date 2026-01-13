@@ -80,7 +80,7 @@ namespace MSSQLand.Actions.Administration
             }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Creating SQL login '{_username}'");
             Logger.TaskNested($"Password: '{_password}'");

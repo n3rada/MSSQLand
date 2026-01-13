@@ -16,12 +16,7 @@ namespace MSSQLand.Actions.Domain
     /// </summary>
     internal class AdGroups : BaseAction
     {
-        public override void ValidateArguments(string[] args)
-        {
-            // No additional arguments needed
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.Task("Retrieving Active Directory groups with SQL Server access");
 

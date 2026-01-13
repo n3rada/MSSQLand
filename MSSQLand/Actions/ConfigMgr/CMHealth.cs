@@ -22,24 +22,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 1,  LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (named, positional) = ParseActionArguments(args);
-
-            _filter = GetNamedArgument(named, "f", null)
-                   ?? GetNamedArgument(named, "filter", null)
-                   ?? GetPositionalArgument(positional, 0, "");
-
-            string limitStr = GetNamedArgument(named, "l", null)
-                           ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 1);
-            if (!string.IsNullOrEmpty(limitStr))
-            {
-                _limit = int.Parse(limitStr);
-            }
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
             Logger.TaskNested($"Enumerating ConfigMgr client health{filterMsg}");

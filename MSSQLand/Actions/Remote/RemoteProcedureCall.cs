@@ -60,7 +60,7 @@ namespace MSSQLand.Actions.Remote
             _linkedServerName = args[1].Trim();
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             string rpcValue = _action == RpcActionMode.Enable ? "true" : "false";
             string actionVerb = _action == RpcActionMode.Enable ? "Enabling" : "Disabling";

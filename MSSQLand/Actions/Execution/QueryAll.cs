@@ -16,7 +16,7 @@ namespace MSSQLand.Actions.Execution
         /// <summary>
         /// Executes the query across all databases.
         /// </summary>
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Executing across ALL accessible databases on {databaseContext.QueryService.ExecutionServer.Hostname}");
 
@@ -52,7 +52,7 @@ namespace MSSQLand.Actions.Execution
                     _query = $"USE [{dbName}]; {originalQuery}";
 
                     // Execute using base class - it returns the DataTable
-                    object? result = base.Execute(databaseContext);
+                    object result = base.Execute(databaseContext);
 
                     // Merge results if it's a DataTable
                     if (result is DataTable dbResults && dbResults.Rows.Count > 0)

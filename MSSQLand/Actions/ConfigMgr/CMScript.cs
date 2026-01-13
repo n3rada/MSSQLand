@@ -16,22 +16,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 0, Required = true, Description = "Script GUID to retrieve")]
         private string _scriptGuid = "";
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (named, positional) = ParseActionArguments(args);
-
-            _scriptGuid = GetPositionalArgument(positional, 0, "")
-                       ?? GetNamedArgument(named, "g", null)
-                       ?? GetNamedArgument(named, "guid", null)
-                       ?? "";
-
-            if (string.IsNullOrWhiteSpace(_scriptGuid))
-            {
-                throw new ArgumentException("Script GUID is required");
-            }
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Retrieving ConfigMgr script: {_scriptGuid}");
 

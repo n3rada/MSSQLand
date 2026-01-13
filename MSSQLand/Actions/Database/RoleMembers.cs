@@ -12,19 +12,7 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(Position = 0, Required = true, Description = "Server role name (e.g., sysadmin, serveradmin)")]
         private string _roleName = string.Empty;
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-            
-            _roleName = GetPositionalArgument(positionalArgs, 0);
-
-            if (string.IsNullOrEmpty(_roleName))
-            {
-                throw new ArgumentException("Role name is required. Example: sysadmin, serveradmin, securityadmin, etc.");
-            }
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Retrieving members of server role: {_roleName}");
 

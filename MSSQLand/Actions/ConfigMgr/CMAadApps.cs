@@ -21,16 +21,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by application name")]
         private string _filter = "";
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (named, positional) = ParseActionArguments(args);
-
-            _filter = GetNamedArgument(named, "f", null)
-                   ?? GetNamedArgument(named, "filter", null)
-                   ?? GetPositionalArgument(positional, 0, "");
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
             Logger.TaskNested($"Enumerating Azure AD applications{filterMsg}");

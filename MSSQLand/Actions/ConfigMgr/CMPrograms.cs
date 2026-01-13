@@ -30,32 +30,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 3, LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (named, positional) = ParseActionArguments(args);
-
-            _packageId = GetNamedArgument(named, "p", null)
-                      ?? GetNamedArgument(named, "package", null)
-                      ?? GetPositionalArgument(positional, 0, "");
-
-            _programName = GetNamedArgument(named, "n", null)
-                        ?? GetNamedArgument(named, "name", null)
-                        ?? GetPositionalArgument(positional, 1, "");
-
-            _commandLine = GetNamedArgument(named, "c", null)
-                        ?? GetNamedArgument(named, "commandline", null)
-                        ?? GetPositionalArgument(positional, 2, "");
-
-            string limitStr = GetNamedArgument(named, "l", null)
-                           ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 3);
-            if (!string.IsNullOrEmpty(limitStr))
-            {
-                _limit = int.Parse(limitStr);
-            }
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             string filterMsg = "";
             if (!string.IsNullOrEmpty(_packageId))

@@ -28,17 +28,9 @@ namespace MSSQLand.Actions.Database
     internal class LoginMap : BaseAction
     {
         [ArgumentMetadata(Position = 0, Description = "Optional: Server login name to filter mappings")]
-        private string? LoginFilter = null;
+        private string LoginFilter = null;
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-            
-            // Optional: Get login filter from positional argument
-            LoginFilter = GetPositionalArgument(positionalArgs, 0, null);
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             bool isAzureSQL = databaseContext.QueryService.IsAzureSQL();
 

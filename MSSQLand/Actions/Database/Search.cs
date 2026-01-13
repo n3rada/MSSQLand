@@ -39,7 +39,7 @@ namespace MSSQLand.Actions.Database
         private string _keyword;
 
         [ArgumentMetadata(Position = 1, Description = "Database, schema.table, or database.schema.table (defaults to current database if omitted)")]
-        private string? _target = null;
+        private string _target = null;
 
         [ArgumentMetadata(ShortName = "cn", LongName = "column-name", Description = "Search for keyword in column names only")]
         private bool _columnsOnly = false;
@@ -51,13 +51,13 @@ namespace MSSQLand.Actions.Database
         private bool _searchAllDatabases = false;
 
         [ExcludeFromArguments]
-        private string? _limitDatabase = null;
+        private string _limitDatabase = null;
 
         [ExcludeFromArguments]
-        private string? _targetTable = null;
+        private string _targetTable = null;
 
         [ExcludeFromArguments]
-        private string? _targetSchema = null;
+        private string _targetSchema = null;
 
         public override void ValidateArguments(string[] args)
         {
@@ -142,7 +142,7 @@ namespace MSSQLand.Actions.Database
             }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             string columnFilterMsg = string.IsNullOrEmpty(_columnFilter) ? "" : $" (column filter: {_columnFilter})";
             Logger.TaskNested($"Starting search for keyword: '{_keyword}'{columnFilterMsg}");
@@ -219,7 +219,7 @@ namespace MSSQLand.Actions.Database
         /// <summary>
         /// Search only column names across all accessible databases (fast, no row data scanning).
         /// </summary>
-        private object? SearchColumnsOnly(DatabaseContext databaseContext)
+        private object SearchColumnsOnly(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Searching for '{_keyword}' in column names only");
 

@@ -74,12 +74,7 @@ namespace MSSQLand.Actions.Database
             { "xp_qv", "Internal query processor procedure" }
         };
 
-        public override void ValidateArguments(string[] args)
-        {
-            // No additional arguments needed
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested("Enumerating extended stored procedures");
 

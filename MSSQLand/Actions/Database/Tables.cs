@@ -28,44 +28,16 @@ namespace MSSQLand.Actions.Database
 
         public override void ValidateArguments(string[] args)
         {
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-            
-            // Get database from positional or named arguments
-            _database = GetPositionalArgument(positionalArgs, 0);
-            if (string.IsNullOrEmpty(_database))
-            {
-                _database = GetNamedArgument(namedArgs, "database", GetNamedArgument(namedArgs, "db", null));
-            }
-            
-            // Get name filter from positional or named arguments
-            _name = GetNamedArgument(namedArgs, "n", null)
-                 ?? GetNamedArgument(namedArgs, "name", null)
-                 ?? GetPositionalArgument(positionalArgs, 1, "");
-            
-            // Column-name filter (named or positional slot 2 if provided)
-            _columnFilter = GetNamedArgument(namedArgs, "column",
-                GetNamedArgument(namedArgs, "c",
-                GetPositionalArgument(positionalArgs, 2, "")));
-
-            // Check for show-columns flag (support old --columns for backward compatibility)
-            _showColumns = namedArgs.ContainsKey("show-columns")
-                        || namedArgs.ContainsKey("sc")
-                        || namedArgs.ContainsKey("columns");
+            BindArguments(args);
 
             // If a column filter is provided, automatically show columns
             if (!string.IsNullOrEmpty(_columnFilter))
             {
                 _showColumns = true;
             }
-
-            // Check for with-rows flag
-            _withRows = namedArgs.ContainsKey("with-rows")
-                     || namedArgs.ContainsKey("r");
-            
-            // If still null, will use current database in Execute()
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             // Use the execution database if no database is specified
             string targetDatabase = string.IsNullOrEmpty(_database) 

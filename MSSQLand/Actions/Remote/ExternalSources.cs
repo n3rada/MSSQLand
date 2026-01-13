@@ -22,20 +22,12 @@ namespace MSSQLand.Actions.Remote
     /// </summary>
     internal class ExternalSources : BaseAction
     {
-
-
-        public override void ValidateArguments(string[] args)
-        {
-            // No additional arguments needed
-        }
-
-
         /// <summary>
         /// Executes the external sources action to retrieve External Data Sources.
         /// Works on Azure SQL Database, Azure Synapse, and SQL Server with PolyBase.
         /// </summary>
         /// <param name="databaseContext">The DatabaseContext for executing the query.</param>
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Retrieving External Data Sources");
 

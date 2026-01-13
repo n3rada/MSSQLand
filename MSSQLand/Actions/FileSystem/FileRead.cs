@@ -17,26 +17,10 @@ namespace MSSQLand.Actions.FileSystem
         private string _filePath;
 
         /// <summary>
-        /// Validates and binds the arguments passed to the FileRead action.
-        /// </summary>
-        /// <param name="args">The action arguments array.</param>
-        public override void ValidateArguments(string[] args)
-        {
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-            
-            _filePath = GetPositionalArgument(positionalArgs, 0);
-            
-            if (string.IsNullOrEmpty(_filePath))
-            {
-                throw new ArgumentException("File path is required. Example: fileread C:\\\\temp\\\\data.txt");
-            }
-        }
-
-        /// <summary>
         /// Executes the Read action to fetch the content of a file using OPENROWSET BULK.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Reading file: {_filePath}");
 

@@ -42,7 +42,7 @@ namespace MSSQLand.Actions.Domain
             }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Retrieving members of AD group: {_groupName}");
 

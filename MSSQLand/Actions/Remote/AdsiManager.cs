@@ -20,42 +20,29 @@ namespace MSSQLand.Actions.Remote
         private Operation _operation = Operation.List;
 
         [ArgumentMetadata(Position = 1, Description = "Server name for create/delete operations (optional for create - generates random name if omitted)")]
-        private string? _serverName = null;
+        private string _serverName = null;
 
         [ArgumentMetadata(Position = 2, Description = "Data source for the ADSI linked server (default: localhost)")]
         private string _dataSource = "localhost";
 
         public override void ValidateArguments(string[] args)
         {
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-            
-            // Parse operation (default: list)
-            string opStr = GetPositionalArgument(positionalArgs, 0, "list");
-            if (!Enum.TryParse<Operation>(opStr, true, out _operation))
-            {
-                throw new ArgumentException($"Invalid operation: {opStr}. Valid operations: list, create, delete");
-            }
-            
-            // Parse server name (optional, used for create/delete)
-            _serverName = GetPositionalArgument(positionalArgs, 1, null);
-            
-            // Parse data source (default: localhost)
-            _dataSource = GetPositionalArgument(positionalArgs, 2, "localhost");
+            BindArguments(args);
             
             // Validation
-            if ((_operation == Operation.Delete) && string.IsNullOrEmpty(_serverName))
+            if (_operation == Operation.Delete && string.IsNullOrEmpty(_serverName))
             {
                 throw new ArgumentException("Server name is required for delete operation");
             }
             
             // Generate random name for create if not provided
-            if ((_operation == Operation.Create) && string.IsNullOrEmpty(_serverName))
+            if (_operation == Operation.Create && string.IsNullOrEmpty(_serverName))
             {
                 _serverName = $"ADSI_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
             }
         }
 
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             switch (_operation)
             {
@@ -77,7 +64,7 @@ namespace MSSQLand.Actions.Remote
         /// <summary>
         /// Lists all ADSI linked servers and returns a list of their names.
         /// </summary>
-        private List<string>? ListAdsiServers(DatabaseContext databaseContext)
+        private List<string> ListAdsiServers(DatabaseContext databaseContext)
         {
             Logger.Task("Enumerating ADSI linked servers");
 

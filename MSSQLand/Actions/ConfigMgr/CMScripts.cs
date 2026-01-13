@@ -18,16 +18,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 0, ShortName = "n", LongName = "name", Description = "Filter by script name")]
         private string _name = "";
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (named, positional) = ParseActionArguments(args);
-
-            _name = GetNamedArgument(named, "n", null)
-                 ?? GetNamedArgument(named, "name", null)
-                 ?? GetPositionalArgument(positional, 0, "");
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             string filterMsg = !string.IsNullOrEmpty(_name) ? " (filtered)" : "";
             Logger.TaskNested($"Enumerating ConfigMgr scripts{filterMsg}");

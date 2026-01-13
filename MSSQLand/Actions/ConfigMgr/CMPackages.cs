@@ -43,44 +43,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 8, LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (named, positional) = ParseActionArguments(args);
-
-            _name = GetNamedArgument(named, "n", null)
-                 ?? GetNamedArgument(named, "name", null)
-                 ?? GetPositionalArgument(positional, 0, "");
-
-            _sourcePath = GetNamedArgument(named, "s", null)
-                       ?? GetNamedArgument(named, "source", null)
-                       ?? GetPositionalArgument(positional, 1, "");
-
-            _manufacturer = GetNamedArgument(named, "m", null)
-                         ?? GetNamedArgument(named, "manufacturer", null)
-                         ?? GetPositionalArgument(positional, 2, "");
-
-            _version = GetNamedArgument(named, "v", null)
-                    ?? GetNamedArgument(named, "version", null)
-                    ?? GetPositionalArgument(positional, 3, "");
-
-            _packageType = GetNamedArgument(named, "t", null)
-                        ?? GetNamedArgument(named, "type", null)
-                        ?? GetPositionalArgument(positional, 4, "");
-
-            _withPrograms = named.ContainsKey("with-programs");
-            _withDeployments = named.ContainsKey("with-deployments");
-            _noSource = named.ContainsKey("no-source");
-
-            string limitStr = GetNamedArgument(named, "l", null)
-                           ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 8);
-            if (!string.IsNullOrEmpty(limitStr))
-            {
-                _limit = int.Parse(limitStr);
-            }
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             string filterMsg = "";
             if (!string.IsNullOrEmpty(_name))

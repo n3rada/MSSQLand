@@ -41,40 +41,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 7, LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (named, positional) = ParseActionArguments(args);
-
-            _name = GetNamedArgument(named, "n", null)
-                 ?? GetNamedArgument(named, "name", null)
-                 ?? GetPositionalArgument(positional, 0, "");
-
-            _collection = GetNamedArgument(named, "c", null)
-                       ?? GetNamedArgument(named, "collection", null)
-                       ?? GetPositionalArgument(positional, 1, "");
-
-            _featureType = GetNamedArgument(named, "t", null)
-                        ?? GetNamedArgument(named, "type", null)
-                        ?? GetPositionalArgument(positional, 2, "");
-
-            _intent = GetNamedArgument(named, "i", null)
-                   ?? GetNamedArgument(named, "intent", null)
-                   ?? GetPositionalArgument(positional, 3, "");
-
-            _withErrors = named.ContainsKey("with-errors");
-            _inProgress = named.ContainsKey("in-progress");
-            _withDeploymentTypes = named.ContainsKey("with-deployment-types") || named.ContainsKey("dt");
-
-            string limitStr = GetNamedArgument(named, "l", null)
-                           ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 5);
-            if (!string.IsNullOrEmpty(limitStr))
-            {
-                _limit = int.Parse(limitStr);
-            }
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             string filterMsg = "";
             if (!string.IsNullOrEmpty(_name))
