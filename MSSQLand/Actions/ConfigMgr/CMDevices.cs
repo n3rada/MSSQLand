@@ -54,7 +54,10 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 11, LongName = "last-seen-days", Description = "Show devices seen online in last N days")]
         private int _lastSeenDays = 0;
 
-        [ArgumentMetadata(Position = 12,  LongName = "limit", Description = "Limit number of results (default: 50)")]
+        [ArgumentMetadata(Position = 12, LongName = "user-seen-days", Description = "Show devices with user activity in last N days")]
+        private int _userSeenDays = 0;
+
+        [ArgumentMetadata(Position = 13,  LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
@@ -127,6 +130,12 @@ namespace MSSQLand.Actions.ConfigMgr
                 _lastSeenDays = int.Parse(lastSeenDaysStr);
             }
 
+            string userSeenDaysStr = GetNamedArgument(named, "user-seen-days", null);
+            if (!string.IsNullOrEmpty(userSeenDaysStr))
+            {
+                _userSeenDays = int.Parse(userSeenDaysStr);
+            }
+
             string limitStr = GetNamedArgument(named, "l", null)
                            ?? GetNamedArgument(named, "limit", null)
                            ?? GetPositionalArgument(positional, 4);
@@ -150,8 +159,9 @@ namespace MSSQLand.Actions.ConfigMgr
             string clientOnlyMsg = _clientOnly ? " (client only)" : "";
             string activeOnlyMsg = _activeOnly ? " (active only)" : "";
             string lastSeenMsg = _lastSeenDays > 0 ? $" (seen in last {_lastSeenDays} days)" : "";
+            string userSeenMsg = _userSeenDays > 0 ? $" (user seen in last {_userSeenDays} days)" : "";
 
-            Logger.TaskNested($"Enumerating ConfigMgr devices{deviceMsg}{domainMsg}{usernameMsg}{ipMsg}{collectionMsg}{dnMsg}{onlineMsg}{withUsersMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeenMsg}");
+            Logger.TaskNested($"Enumerating ConfigMgr devices{deviceMsg}{domainMsg}{usernameMsg}{ipMsg}{collectionMsg}{dnMsg}{onlineMsg}{withUsersMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeenMsg}{userSeenMsg}");
             Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -266,6 +276,17 @@ namespace MSSQLand.Actions.ConfigMgr
                     if (_lastSeenDays > 0)
                     {
                         whereClause += $" AND bgb.LastOnlineTime >= DATEADD(DAY, -{_lastSeenDays}, GETDATE())";
+                    }
+
+                    // Add user-seen-days filter (devices with user activity in last N days)
+                    if (_userSeenDays > 0)
+                    {
+                        whereClause += $@" AND EXISTS (
+                            SELECT 1
+                            FROM [{db}].dbo.v_GS_SYSTEM_CONSOLE_USER cu_recent
+                            WHERE cu_recent.ResourceID = sys.ResourceID
+                            AND cu_recent.LastConsoleUse0 >= DATEADD(DAY, -{_userSeenDays}, GETDATE())
+                        )";
                     }
 
                     string topClause = _limit > 0 ? $"TOP {_limit}" : "";
