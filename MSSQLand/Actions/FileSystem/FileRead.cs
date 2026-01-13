@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.FileSystem
     internal class FileRead : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "Full path to the file to read")]
-        private string _filePath;
+        private string _filePath = "";
 
         /// <summary>
         /// Executes the Read action to fetch the content of a file using OPENROWSET BULK.

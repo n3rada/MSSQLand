@@ -16,7 +16,7 @@ namespace MSSQLand.Actions.ConfigMgr
     internal class CMScriptDelete : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "g", LongName = "guid", Description = "Script GUID to delete", Required = true)]
-        private string _scriptGuid;
+        private string _scriptGuid = "";
 
         private const string BUILT_IN_CMPIVOT_GUID = "7DC6B6F1-E7F6-43C1-96E0-E1D16BC25C14";
 

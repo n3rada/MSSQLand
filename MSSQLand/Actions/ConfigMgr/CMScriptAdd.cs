@@ -19,13 +19,13 @@ namespace MSSQLand.Actions.ConfigMgr
     internal class CMScriptAdd : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "file", Description = "PowerShell script file path", Required = true)]
-        private string _scriptFile;
+        private string _scriptFile = "";
 
         [ArgumentMetadata(Position = 1, ShortName = "n", LongName = "name", Description = "Script name (default: auto-generated)")]
-        private string _scriptName;
+        private string _scriptName = "";
 
         [ArgumentMetadata(Position = 2, ShortName = "g", LongName = "guid", Description = "Script GUID (auto-generated if not provided)")]
-        private string _scriptGuid;
+        private string _scriptGuid = "";
 
         public override void ValidateArguments(string[] args)
         {

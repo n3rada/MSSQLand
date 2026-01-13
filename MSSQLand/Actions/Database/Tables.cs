@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.Database
     internal class Tables : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "db", LongName = "database", Description = "Database name (uses current database if not specified)")]
-        private string _database;
+        private string _database = "";
 
         [ArgumentMetadata(Position = 1, ShortName = "n", LongName = "name", Description = "Filter tables by name pattern (supports wildcards %)")]
         private string _name = "";

@@ -53,7 +53,7 @@ namespace MSSQLand.Actions.ConfigMgr
     internal class CMDeploymentType : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "Deployment Type CI_ID (e.g., 16891057)")]
-        private int _ciId;
+        private int _ciId = 0;
 
         [ArgumentMetadata(LongName = "xml", Description = "Include full Policy Platform and SDM Package Digest XML output")]
         private bool _showXml = false;

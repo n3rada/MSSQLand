@@ -18,7 +18,7 @@ namespace MSSQLand.Actions.ConfigMgr
     internal class CMScriptStatus : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "t", LongName = "taskid", Description = "Task ID to check", Required = true)]
-        private string _taskId;
+        private string _taskId = "";
 
         public override void ValidateArguments(string[] args)
         {

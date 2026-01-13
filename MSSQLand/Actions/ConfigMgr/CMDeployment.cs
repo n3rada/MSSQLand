@@ -16,7 +16,7 @@ namespace MSSQLand.Actions.ConfigMgr
     internal class CMDeployment : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "Assignment ID to retrieve details for (e.g., 16779074)")]
-        private int _assignmentId;
+        private string _assignmentId = "";
 
         public override object Execute(DatabaseContext databaseContext)
         {
@@ -43,8 +43,10 @@ namespace MSSQLand.Actions.ConfigMgr
 
                 DataTable assignmentResult = null;
 
-                // Query for applications with numeric AssignmentID
-                string assignmentQuery = $@"
+                // Try v_CIAssignment first (for applications with numeric AssignmentID)
+                if (int.TryParse(_assignmentId, out int numericAssignmentId))
+                {
+                    string assignmentQuery = $@"
 SELECT 
     a.AssignmentID,
     a.AssignmentName,
@@ -97,9 +99,10 @@ SELECT
     a.SourceSite
 FROM [{db}].dbo.v_CIAssignment a
 LEFT JOIN [{db}].dbo.v_Collection c ON a.CollectionID = c.CollectionID
-WHERE a.AssignmentID = {_assignmentId}";
+WHERE a.AssignmentID = {numericAssignmentId}\";
 
                     assignmentResult = databaseContext.QueryService.ExecuteTable(assignmentQuery);
+                }
 
                 // If not found or ID is not numeric, try vSMS_Advertisement (for packages/task sequences with string OfferID)
                 if (assignmentResult == null || assignmentResult.Rows.Count == 0)

@@ -21,10 +21,10 @@ namespace MSSQLand.Actions.ConfigMgr
     internal class CMScriptRun : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "r", LongName = "resourceid", Description = "Target device ResourceID", Required = true)]
-        private string _resourceId;
+        private string _resourceId = "";
 
         [ArgumentMetadata(Position = 1, ShortName = "g", LongName = "scriptguid", Description = "Script GUID to execute", Required = true)]
-        private string _scriptGuid;
+        private string _scriptGuid = "";
 
         public override void ValidateArguments(string[] args)
         {
