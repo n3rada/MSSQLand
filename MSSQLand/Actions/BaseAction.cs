@@ -130,9 +130,10 @@ namespace MSSQLand.Actions
                         if (i + 1 < args.Length && !isBooleanFlag)
                         {
                             string nextArg = args[i + 1];
-                            // For non-boolean flags, consume next arg as value unless it looks like a multi-character flag
+                            // For non-boolean flags, consume next arg as value unless it looks like a flag
+                            // A flag is: starts with -- OR starts with - followed by letters (not digits/special chars)
                             bool looksLikeFlag = nextArg.StartsWith("--") || 
-                                               (nextArg.StartsWith("-") && nextArg.Length > 2);
+                                               (nextArg.StartsWith("-") && nextArg.Length >= 2 && char.IsLetter(nextArg[1]));
                             
                             if (!looksLikeFlag)
                             {
