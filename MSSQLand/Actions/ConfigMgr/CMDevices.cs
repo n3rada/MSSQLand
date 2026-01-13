@@ -39,8 +39,8 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 6, ShortName = "o", LongName = "online", Description = "Show only online devices (default: false)")]
         private bool _onlineOnly = false;
 
-        [ArgumentMetadata(Position = 7, LongName = "require-lastuser", Description = "Show only devices with a LastUser value (default: false)")]
-        private bool _requireLastUser = false;
+        [ArgumentMetadata(Position = 7, LongName = "users", Description = "Show only devices with users (LastConsoleUser or InventoriedUsers) (default: false)")]
+        private bool _withUsers = false;
 
         [ArgumentMetadata(Position = 8, LongName = "no-user", Description = "Show only devices without a LastUser value (default: false)")]
         private bool _noUser = false;
@@ -71,6 +71,12 @@ namespace MSSQLand.Actions.ConfigMgr
             _username = GetNamedArgument(named, "u", null)
                      ?? GetNamedArgument(named, "username", null) ?? "";
 
+            // Implicitly enable --users when --user filter is specified
+            if (!string.IsNullOrEmpty(_username))
+            {
+                _withUsers = true;
+            }
+
             _ip = GetNamedArgument(named, "i", null)
                ?? GetNamedArgument(named, "ip", null) ?? "";
 
@@ -89,10 +95,10 @@ namespace MSSQLand.Actions.ConfigMgr
                 _onlineOnly = bool.Parse(onlineStr);
             }
 
-            string requireLastUserStr = GetNamedArgument(named, "require-lastuser", null);
-            if (!string.IsNullOrEmpty(requireLastUserStr))
+            string withUsersStr = GetNamedArgument(named, "users", null);
+            if (!string.IsNullOrEmpty(withUsersStr))
             {
-                _requireLastUser = bool.Parse(requireLastUserStr);
+                _withUsers = bool.Parse(withUsersStr);
             }
 
             string noUserStr = GetNamedArgument(named, "n", null)
@@ -139,12 +145,13 @@ namespace MSSQLand.Actions.ConfigMgr
             string collectionMsg = !string.IsNullOrEmpty(_collection) ? $" (collection: {_collection})" : "";
             string dnMsg = !string.IsNullOrEmpty(_distinguishedName) ? $" (dn: {_distinguishedName})" : "";
             string onlineMsg = _onlineOnly ? " (online only)" : "";
-            string lastUserMsg = _requireLastUser ? " (with last user)" : "";
+            string withUsersMsg = _withUsers ? " (with users)" : "";
             string noUserMsg = _noUser ? " (no user)" : "";
             string clientOnlyMsg = _clientOnly ? " (client only)" : "";
             string activeOnlyMsg = _activeOnly ? " (active only)" : "";
             string lastSeenMsg = _lastSeenDays > 0 ? $" (seen in last {_lastSeenDays} days)" : "";
-            Logger.TaskNested($"Enumerating ConfigMgr devices{deviceMsg}{domainMsg}{usernameMsg}{ipMsg}{collectionMsg}{dnMsg}{onlineMsg}{lastUserMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeenMsg}");
+
+            Logger.TaskNested($"Enumerating ConfigMgr devices{deviceMsg}{domainMsg}{usernameMsg}{ipMsg}{collectionMsg}{dnMsg}{onlineMsg}{withUsersMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeenMsg}");
             Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
@@ -166,7 +173,7 @@ namespace MSSQLand.Actions.ConfigMgr
                 try
                 {
                     string whereClause = "WHERE 1=1";
-                    
+
                     // Add device name filter
                     if (!string.IsNullOrEmpty(_device))
                     {
@@ -183,11 +190,11 @@ namespace MSSQLand.Actions.ConfigMgr
                     if (!string.IsNullOrEmpty(_username))
                     {
                         whereClause += $@" AND (
-                            sys.User_Name0 LIKE '%{_username.Replace("'", "''")}%' 
+                            (sys.User_Name0 LIKE '%{_username.Replace("'", "''")}%' AND sys.User_Name0 IS NOT NULL AND sys.User_Name0 != '')
                             OR EXISTS (
-                                SELECT 1 
+                                SELECT 1
                                 FROM [{db}].dbo.v_GS_SYSTEM_CONSOLE_USER cu_filter
-                                WHERE cu_filter.ResourceID = sys.ResourceID 
+                                WHERE cu_filter.ResourceID = sys.ResourceID
                                 AND cu_filter.SystemConsoleUser0 LIKE '%{_username.Replace("'", "''")}%'
                             )
                         )";
@@ -203,10 +210,10 @@ namespace MSSQLand.Actions.ConfigMgr
                     if (!string.IsNullOrEmpty(_collection))
                     {
                         whereClause += $@" AND EXISTS (
-                            SELECT 1 
+                            SELECT 1
                             FROM [{db}].dbo.v_FullCollectionMembership cm_filter
                             INNER JOIN [{db}].dbo.v_Collection col_filter ON cm_filter.CollectionID = col_filter.CollectionID
-                            WHERE cm_filter.ResourceID = sys.ResourceID 
+                            WHERE cm_filter.ResourceID = sys.ResourceID
                             AND col_filter.Name LIKE '%{_collection.Replace("'", "''")}%'
                         )";
                     }
@@ -223,10 +230,18 @@ namespace MSSQLand.Actions.ConfigMgr
                         whereClause += " AND bgb.OnlineStatus = 1";
                     }
 
-                    // Add last user filter
-                    if (_requireLastUser)
+                    // Add users filter (devices with LastConsoleUser OR InventoriedUsers)
+                    // Skip if --user is specified since that filter already ensures users exist
+                    if (_withUsers && string.IsNullOrEmpty(_username))
                     {
-                        whereClause += " AND sys.User_Name0 IS NOT NULL AND sys.User_Name0 != ''";
+                        whereClause += $@" AND (
+                            (sys.User_Name0 IS NOT NULL AND sys.User_Name0 != '')
+                            OR EXISTS (
+                                SELECT 1
+                                FROM [{db}].dbo.v_GS_SYSTEM_CONSOLE_USER cu_users
+                                WHERE cu_users.ResourceID = sys.ResourceID
+                            )
+                        )";
                     }
 
                     // Add no user filter
@@ -302,7 +317,7 @@ FROM [{db}].dbo.v_R_System sys
 LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
 LEFT JOIN [{db}].dbo.v_CH_ClientSummary chs ON sys.ResourceID = chs.ResourceID
 {whereClause}
-ORDER BY 
+ORDER BY
     sys.Client0 DESC,
     sys.Decommissioned0 ASC,
     sys.Primary_Group_ID0 ASC,
@@ -331,7 +346,7 @@ ORDER BY
                             if (row["UserAccountControl"] != DBNull.Value && int.TryParse(row["UserAccountControl"].ToString(), out int uacValue))
                             {
                                 var flags = new System.Collections.Generic.List<string>();
-                                
+
                                 if ((uacValue & 0x0002) != 0) flags.Add("Disabled");
                                 else flags.Add("Enabled");
 
@@ -416,10 +431,10 @@ ORDER BY
                         foreach (DataRow row in devicesTable.Rows)
                         {
                             string collectionsStr = row["Collections"]?.ToString() ?? "";
-                            string[] collections = string.IsNullOrEmpty(collectionsStr) 
-                                ? Array.Empty<string>() 
+                            string[] collections = string.IsNullOrEmpty(collectionsStr)
+                                ? Array.Empty<string>()
                                 : collectionsStr.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
-                            
+
                             deviceCollections.Add(collections);
 
                             foreach (var collection in collections)
