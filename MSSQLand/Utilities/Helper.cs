@@ -217,10 +217,10 @@ namespace MSSQLand.Utilities
 
             // Positional Arguments
             argumentsTable.Rows.Add("<host>", "[Positional] Target SQL Server. Format: server,port (port defaults to 1433).");
-            argumentsTable.Rows.Add("<action>", "[Positional] Action to execute (see list below).");
+            argumentsTable.Rows.Add("<action>", "[Positional] Action to execute.");
             
             // Authentication
-            argumentsTable.Rows.Add("-c, --credentials", "[Auth] Credential type (mandatory). See credential types below.");
+            argumentsTable.Rows.Add("-c, --credentials", "[Auth] Credential type (mandatory).");
             argumentsTable.Rows.Add("-u, --username", "[Auth] Username (if required by credential type).");
             argumentsTable.Rows.Add("-p, --password", "[Auth] Password (if required by credential type).");
             argumentsTable.Rows.Add("-d, --domain", "[Auth] Domain (if required by credential type).");
