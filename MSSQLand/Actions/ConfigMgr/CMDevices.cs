@@ -348,12 +348,11 @@ LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
 LEFT JOIN [{db}].dbo.v_CH_ClientSummary chs ON sys.ResourceID = chs.ResourceID
 {whereClause}
 ORDER BY
-    sys.Client0 DESC,
-    sys.Decommissioned0 ASC,
-    sys.Primary_Group_ID0 ASC,
     bgb.OnlineStatus DESC,
+    bgb.LastOnlineTime DESC,
     chs.LastPolicyRequest DESC,
-    bgb.LastOnlineTime DESC";
+    sys.Client0 DESC,
+    sys.Decommissioned0 ASC";
 
                     DataTable devicesTable = databaseContext.QueryService.ExecuteTable(query);
 
