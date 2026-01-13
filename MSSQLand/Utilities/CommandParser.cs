@@ -85,7 +85,7 @@ namespace MSSQLand.Utilities
         {
             if (args.Length == 0)
             {
-                Helper.Show();
+                Helper.ShowQuickStart();
                 return (ParseResultType.ShowHelp, null);
             }
 
@@ -182,7 +182,7 @@ namespace MSSQLand.Utilities
                     // Check for help flag
                     if (arg == "-h" || arg == "--help")
                     {
-                        Helper.ShowAllActions();
+                        Helper.Show();
                         return (ParseResultType.ShowHelp, null);
                     }
 

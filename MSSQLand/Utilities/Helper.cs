@@ -52,55 +52,22 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
-        /// Displays basic help message with CLI arguments and credential types.
+        /// Displays concise usage + action list (no args).
         /// </summary>
-        public static void Show()
+        public static void ShowQuickStart()
         {
-            MarkdownFormatter formatter = new MarkdownFormatter();
-
-            // Usage instruction
-            Console.WriteLine("Usage: <host> [options] <action> [action-options]\n");
-            Console.WriteLine("Examples");
-            Console.WriteLine("  localhost -c token whoami");
-            Console.WriteLine("\nQuick Help");
-            Console.WriteLine("  -h, --help           - Show this basic help");
-            Console.WriteLine("  -h <keyword>         - Search for actions matching keyword");
-            Console.WriteLine("  <host> <action> -h   - Show help for specific action");
-            Console.WriteLine("  (no action)          - List all available actions");
-
-            // Provide a quick reference of top-level arguments or usage
+            Console.WriteLine("Usage: <host> -c <credential> <action> [options]");
             Console.WriteLine();
-            Console.WriteLine("CLI arguments");
-            Console.WriteLine(formatter.ConvertDataTable(getArguments()));
-
-            // Provide credential types
+            Console.WriteLine("  Example: localhost -c token whoami");
+            Console.WriteLine("  Use -h for full help");
             Console.WriteLine();
-            Console.WriteLine("Credential types");
-            Console.WriteLine(formatter.ConvertDataTable(getCredentialTypes()));
 
-            // Add Utilities Section
-            Console.WriteLine();
-            Console.WriteLine("Standalones (no database connection needed)");
-            Console.WriteLine("  --findsql <domain>   - Search for MS SQL Servers in Active Directory.");
-            Console.WriteLine();
-            Console.WriteLine("For a complete list of actions, run without specifying an action.");
-            Console.WriteLine("For detailed help on a specific action, use: <host> <action> -h");
-            Console.WriteLine();
-        } 
-
-        /// <summary>
-        /// Displays all available actions grouped by category.
-        /// </summary>
-        public static void ShowAllActions()
-        {
-            Console.WriteLine("Available Actions:\n");
-
+            // Show all actions grouped by category
             var actions = ActionFactory.GetAvailableActions();
             
-            // Group actions by category, preserving insertion order
-            var groupedActions = new List<(string Category, List<(string ActionName, string Description)>)>();
+            var groupedActions = new List<(string Category, List<string>)>();
             string currentCategory = null;
-            List<(string ActionName, string Description)> currentActions = null;
+            List<string> currentActions = null;
 
             foreach (var action in actions)
             {
@@ -111,37 +78,58 @@ namespace MSSQLand.Utilities
                         groupedActions.Add((currentCategory, currentActions));
                     }
                     currentCategory = action.Category;
-                    currentActions = new List<(string ActionName, string Description)>();
+                    currentActions = new List<string>();
                 }
-                currentActions.Add((action.ActionName, action.Description));
+                currentActions.Add(action.ActionName);
             }
             
-            // Add the last group
             if (currentActions != null && currentActions.Count > 0)
             {
                 groupedActions.Add((currentCategory, currentActions));
             }
 
-            int totalCount = 0;
             foreach (var group in groupedActions)
             {
                 Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine($"[{group.Category}]");
+                Console.Write($"[{group.Category}] ");
                 Console.ResetColor();
-                
-                foreach (var action in group.Item2)
-                {
-                    Console.WriteLine($"  {action.ActionName}");
-                    totalCount++;
-                }
-                Console.WriteLine();
+                Console.WriteLine(string.Join(", ", group.Item2));
             }
-
-            Console.WriteLine();
-            Console.WriteLine("For detailed information about a specific action, use: <host> <action> -h");
-            Console.WriteLine("Example: localhost -c token createuser -h");
             Console.WriteLine();
         }
+
+        /// <summary>
+        /// Displays full help message with CLI arguments and credential types (-h).
+        /// </summary>
+        public static void Show()
+        {
+            MarkdownFormatter formatter = new MarkdownFormatter();
+
+            Console.WriteLine("Usage: <host> [options] <action> [action-options]\n");
+            Console.WriteLine("Examples");
+            Console.WriteLine("  localhost -c token whoami");
+            Console.WriteLine("  server,1433 -c local -u sa -p pass query \"SELECT @@VERSION\"");
+            Console.WriteLine();
+
+            Console.WriteLine("Help options");
+            Console.WriteLine("  -h, --help           Show this full help");
+            Console.WriteLine("  -h <keyword>         Search actions by keyword");
+            Console.WriteLine("  <host> <action> -h   Show help for specific action");
+            Console.WriteLine("  (no args)            Quick start with action list");
+
+            Console.WriteLine();
+            Console.WriteLine("CLI arguments");
+            Console.WriteLine(formatter.ConvertDataTable(getArguments()));
+
+            Console.WriteLine();
+            Console.WriteLine("Credential types");
+            Console.WriteLine(formatter.ConvertDataTable(getCredentialTypes()));
+
+            Console.WriteLine();
+            Console.WriteLine("Standalone utilities (no database connection)");
+            Console.WriteLine("  --findsql <domain>   Find SQL Servers in Active Directory");
+            Console.WriteLine();
+        } 
 
         /// <summary>
         /// Displays help for a specific action.
