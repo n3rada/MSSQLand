@@ -197,15 +197,20 @@ namespace MSSQLand.Actions.ConfigMgr
                     }
 
                     // Add username filter (searches both LastConsoleUser and InventoriedUsers)
+                    // Combined with user-seen-days if both are specified
                     if (!string.IsNullOrEmpty(_username))
                     {
+                        string userSeenCondition = _userSeenDays > 0
+                            ? $" AND cu_filter.LastConsoleUse0 >= DATEADD(DAY, -{_userSeenDays}, GETDATE())"
+                            : "";
+
                         whereClause += $@" AND (
                             (sys.User_Name0 LIKE '%{_username.Replace("'", "''")}%' AND sys.User_Name0 IS NOT NULL AND sys.User_Name0 != '')
                             OR EXISTS (
                                 SELECT 1
                                 FROM [{db}].dbo.v_GS_SYSTEM_CONSOLE_USER cu_filter
                                 WHERE cu_filter.ResourceID = sys.ResourceID
-                                AND cu_filter.SystemConsoleUser0 LIKE '%{_username.Replace("'", "''")}%'
+                                AND cu_filter.SystemConsoleUser0 LIKE '%{_username.Replace("'", "''")}%'{userSeenCondition}
                             )
                         )";
                     }
@@ -279,7 +284,8 @@ namespace MSSQLand.Actions.ConfigMgr
                     }
 
                     // Add user-seen-days filter (devices with user activity in last N days)
-                    if (_userSeenDays > 0)
+                    // Skip if --user is specified since it's already combined with that filter
+                    if (_userSeenDays > 0 && string.IsNullOrEmpty(_username))
                     {
                         whereClause += $@" AND EXISTS (
                             SELECT 1
