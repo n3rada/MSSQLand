@@ -27,7 +27,7 @@ namespace MSSQLand.Actions.ConfigMgr
         private bool _activeOnly = false;
 
         [ArgumentMetadata(Position = 3, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 100)")]
-        private int _limit = 100;
+        private int _limit = 50;
 
         public override void ValidateArguments(string[] args)
         {
