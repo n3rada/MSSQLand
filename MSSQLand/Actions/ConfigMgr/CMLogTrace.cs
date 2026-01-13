@@ -10,48 +10,48 @@ namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
     /// Trace a deployment type GUID from ConfigMgr client logs back to its assignments, collections, and deployment settings.
-    /// 
+    ///
     /// Use Case:
     /// When investigating why an application is being installed, reinstalled, or detected on a client machine,
     /// you'll find deployment type GUIDs in client logs. This action traces those GUIDs through the ConfigMgr
     /// database to show you exactly which assignments (deployments) are responsible.
-    /// 
+    ///
     /// It answers questions like "Why is this software being installed on this device?"
-    /// 
+    ///
     /// Common Log Files (C:\Windows\CCM\Logs\):
     /// - AppDiscovery.log: Shows detection method evaluation with deployment type GUIDs
     /// - AppEnforce.log: Shows installation/uninstallation attempts with deployment type GUIDs
     /// - AppIntentEval.log: Shows application intent evaluation with deployment type GUIDs
     /// - CIAgent.log: Shows configuration item processing
-    /// 
+    ///
     /// Relationship Chain Traversed:
-    /// Log GUID → CI_DocumentStore → CI_CIDocuments → CI_ConfigurationItems (Deployment Type) 
+    /// Log GUID → CI_DocumentStore → CI_CIDocuments → CI_ConfigurationItems (Deployment Type)
     /// → CI_ConfigurationItemRelations → Application CI → v_CIAssignmentToCI → v_CIAssignment → Collections
-    /// 
+    ///
     /// Client-Side WMI Equivalents (for remote enforcement/troubleshooting):
     /// - Namespace: root\ccm\CIModels
     /// - CCM_AppDeliveryTypeSynclet: Lists deployed applications with AppDeliveryTypeId and Revision
     /// - Local_Detect_Synclet: Contains ExpressionXml (detection method) for each deployment type
     /// - CCM_AppDeliveryType: Provides EnforceApp method to trigger installation/detection remotely
     /// Note: Client logs and WMI use the same deployment type GUIDs found in server database
-    /// 
+    ///
     /// Information Displayed:
     /// - Document ID and type from policy store
     /// - Deployment type CI_ID, title, and status
     /// - Parent application CI_ID and name
     /// - All assignments deploying this application (with collections, deadlines, user notifications, etc.)
-    /// 
-    /// 
+    ///
+    ///
     /// Accepted GUID Formats:
     /// - Full: "ScopeId_xxx-xxx-xxx-xxx-xxx/DeploymentType_xxx-xxx-xxx-xxx-xxx"
     /// - Partial: "DeploymentType_xxx-xxx-xxx-xxx-xxx"
     /// - GUID only: "xxx-xxx-xxx-xxx-xxx" (will prepend DeploymentType_)
-    /// 
+    ///
     /// Examples:
     /// cm-trace "ScopeId_0072A515-CC53-4FD2-9B92-0A3F0518595C/DeploymentType_af7c1e90-5fdb-4be1-b0dd-701165673d2c"
     /// cm-trace "DeploymentType_af7c1e90-5fdb-4be1-b0dd-701165673d2c"
     /// cm-trace "af7c1e90-5fdb-4be1-b0dd-701165673d2c"
-    /// 
+    ///
     /// Typical Workflow:
     /// 1. Find deployment type GUID in C:\Windows\CCM\Logs\AppDiscovery.log or AppEnforce.log
     /// 2. Run cm-trace with the GUID to see all assignments deploying this software
@@ -60,7 +60,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// </summary>
     internal class CMLogTrace : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Description = "Deployment Type GUID from log (e.g., ScopeId_xxx/DeploymentType_xxx or just the GUID portion)")]
+        [ArgumentMetadata(Position = 0, Description = "Deployment Type GUID (a.k.a. AppDeliveryTypeId in WMI) from log or client")]
         private string _guid = "";
 
         public override void ValidateArguments(string[] args)
@@ -79,7 +79,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
             // Clean up the GUID - remove any prefix/suffix if user pasted full log line
             _guid = _guid.Trim();
-            
+
             // Extract just the GUID portion if it contains ScopeId
             if (_guid.Contains("ScopeId_"))
             {
@@ -180,7 +180,7 @@ LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties AS lcp ON ci.CI_ID = lcp.CI_
 WHERE ci.CI_ID = {deploymentTypeCiId};";
 
                 DataTable dtDetailsResult = databaseContext.QueryService.ExecuteTable(dtDetailsQuery);
-                
+
                 Logger.SuccessNested($"Title: {dtDetailsResult.Rows[0]["Title"]}");
                 Logger.SuccessNested($"Description: {dtDetailsResult.Rows[0]["Description"]}");
                 Logger.SuccessNested($"Enabled: {dtDetailsResult.Rows[0]["IsEnabled"]}");
@@ -209,10 +209,10 @@ WHERE ToCI_ID = {deploymentTypeCiId}";
                 Logger.Success($"Parent Application CI_ID: {applicationCiId}");
                 Logger.SuccessNested($"Relationship ExtFlag: {extFlags}");
                 Logger.NewLine();
-                
+
                 // Step 04: Assignments for this Application
                 string assignmentsQuery = $@"
-SELECT 
+SELECT
     a.AssignmentID,
     a.AssignmentName,
     a.CollectionID,
@@ -271,7 +271,7 @@ WHERE a.AssignmentID IN (
 );";
 
                 DataTable assignmentsResult = databaseContext.QueryService.ExecuteTable(assignmentsQuery);
-                
+
                 if (assignmentsResult.Rows.Count == 0)
                 {
                     Logger.Warning("No assignments found for this application");
