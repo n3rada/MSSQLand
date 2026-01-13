@@ -12,11 +12,15 @@ namespace MSSQLand.Actions.ConfigMgr
     /// Display comprehensive information about a specific ConfigMgr collection including all member devices.
     /// Shows collection details, membership rules, and complete list of devices/users in the collection.
     /// Use this to understand what devices are targeted by a specific collection.
+    /// Supports lookup by Collection ID or by name pattern.
     /// </summary>
     internal class CMCollection : BaseAction
     {
         [ArgumentMetadata(Position = 0, Description = "Collection ID to retrieve details for (e.g., SMS00001)")]
         private string _collectionId = "";
+
+        [ArgumentMetadata(ShortName = "n", LongName = "name", Description = "Collection name or pattern to search for")]
+        private string _collectionName = "";
 
         public override void ValidateArguments(string[] args)
         {
@@ -27,15 +31,22 @@ namespace MSSQLand.Actions.ConfigMgr
                          ?? GetNamedArgument(named, "c", null)
                          ?? "";
 
-            if (string.IsNullOrWhiteSpace(_collectionId))
+            _collectionName = GetNamedArgument(named, "n", null)
+                           ?? GetNamedArgument(named, "name", null)
+                           ?? "";
+
+            if (string.IsNullOrWhiteSpace(_collectionId) && string.IsNullOrWhiteSpace(_collectionName))
             {
-                throw new ArgumentException("Collection ID is required");
+                throw new ArgumentException("Collection ID or name is required. Use positional argument for ID or --name/-n for name search.");
             }
         }
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Retrieving comprehensive collection information for: {_collectionId}");
+            string searchMsg = !string.IsNullOrEmpty(_collectionId)
+                ? $"ID: {_collectionId}"
+                : $"name pattern: {_collectionName}";
+            Logger.TaskNested($"Retrieving comprehensive collection information for {searchMsg}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -56,9 +67,20 @@ namespace MSSQLand.Actions.ConfigMgr
                 Logger.NewLine();
                 Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
+                // Build WHERE clause based on search type
+                string whereClause;
+                if (!string.IsNullOrEmpty(_collectionId))
+                {
+                    whereClause = $"c.CollectionID = '{_collectionId.Replace("'", "''")}'";
+                }
+                else
+                {
+                    whereClause = $"c.Name LIKE '%{_collectionName.Replace("'", "''")}%'";
+                }
+
                 // Get collection details
                 string collectionQuery = $@"
-SELECT 
+SELECT
     c.CollectionID,
     c.Name,
     c.Comment,
@@ -78,7 +100,7 @@ SELECT
     c.CurrentStatus,
     c.MemberClassName
 FROM [{db}].dbo.v_Collection c
-WHERE c.CollectionID = '{_collectionId.Replace("'", "''")}';";
+WHERE {whereClause};";
 
                 DataTable collectionResult = databaseContext.QueryService.ExecuteTable(collectionQuery);
 
@@ -87,18 +109,30 @@ WHERE c.CollectionID = '{_collectionId.Replace("'", "''")}';";
                     continue;
                 }
 
+                // If searching by name and multiple matches found, list them and exit
+                if (!string.IsNullOrEmpty(_collectionName) && collectionResult.Rows.Count > 1)
+                {
+                    collectionFound = true;
+                    Logger.NewLine();
+                    Logger.Warning($"Multiple collections match '{_collectionName}':");
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(collectionResult));
+                    Logger.Info($"Found {collectionResult.Rows.Count} matching collection(s). Use the exact CollectionID to view details.");
+                    break;
+                }
+
                 collectionFound = true;
                 DataRow collection = collectionResult.Rows[0];
+                string collectionId = collection["CollectionID"].ToString();
 
                 // Display collection details
                 Logger.NewLine();
-                Logger.Info($"Collection: {collection["Name"]} ({_collectionId})");
-                
+                Logger.Info($"Collection: {collection["Name"]} ({collectionId})");
+
                 if (!string.IsNullOrEmpty(collection["Comment"].ToString()))
                 {
                     Logger.InfoNested($"Description: {collection["Comment"]}");
                 }
-                
+
                 Logger.InfoNested($"Type: {collection["TypeName"]} (CollectionType: {collection["CollectionType"]})");
                 Logger.InfoNested($"Member Count: {collection["MemberCount"]}");
                 Logger.InfoNested($"Refresh Type: {collection["RefreshType"]}");
@@ -119,8 +153,8 @@ WHERE c.CollectionID = '{_collectionId.Replace("'", "''")}';";
                 Logger.Info("Deployments Targeting This Collection");
 
                 string deploymentsQuery = $@"
-SELECT 
-    CASE 
+SELECT
+    CASE
         WHEN ds.AssignmentID = 0 THEN CAST(adv.AdvertisementID AS VARCHAR)
         ELSE CAST(ds.AssignmentID AS VARCHAR)
     END AS DeploymentID,
@@ -134,14 +168,14 @@ SELECT
     ds.DeploymentTime,
     ds.ModificationTime
 FROM [{db}].dbo.v_DeploymentSummary ds
-LEFT JOIN [{db}].dbo.v_Advertisement adv ON ds.PackageID = adv.PackageID 
-    AND adv.CollectionID = ds.CollectionID 
+LEFT JOIN [{db}].dbo.v_Advertisement adv ON ds.PackageID = adv.PackageID
+    AND adv.CollectionID = ds.CollectionID
     AND ds.FeatureType = 2
-WHERE ds.CollectionID = '{_collectionId.Replace("'", "''")}'
+WHERE ds.CollectionID = '{collectionId.Replace("'", "''")}'
 ORDER BY ds.DeploymentTime DESC;";
 
                 DataTable deploymentsResult = databaseContext.QueryService.ExecuteTable(deploymentsQuery);
-                
+
                 if (deploymentsResult.Rows.Count > 0)
                 {
                     // Add decoded FeatureType column
@@ -177,25 +211,25 @@ ORDER BY ds.DeploymentTime DESC;";
                 Logger.Info("Collection Membership Rules");
 
                 string rulesQuery = $@"
-SELECT 
+SELECT
     cq.RuleName,
     'Query' AS RuleType,
     cq.QueryExpression,
     NULL AS ResourceID,
     cq.LimitToCollectionID
 FROM [{db}].dbo.v_CollectionRuleQuery cq
-WHERE cq.CollectionID = '{_collectionId.Replace("'", "''")}'
+WHERE cq.CollectionID = '{collectionId.Replace("'", "''")}'
 UNION ALL
-SELECT 
+SELECT
     cd.RuleName,
     'Direct' AS RuleType,
     NULL AS QueryExpression,
     cd.ResourceID,
     NULL AS LimitToCollectionID
 FROM [{db}].dbo.v_CollectionRuleDirect cd
-WHERE cd.CollectionID = '{_collectionId.Replace("'", "''")}'
+WHERE cd.CollectionID = '{collectionId.Replace("'", "''")}'
 UNION ALL
-SELECT 
+SELECT
     cr.QueryName AS RuleName,
     CASE cr.RuleType
         WHEN 3 THEN 'Include Collection'
@@ -206,12 +240,12 @@ SELECT
     NULL AS ResourceID,
     cr.ReferencedCollectionID AS LimitToCollectionID
 FROM [{db}].dbo.Collection_Rules cr
-WHERE cr.CollectionID = (SELECT CollectionID FROM [{db}].dbo.Collections_G WHERE SiteID = '{_collectionId.Replace("'", "''")}')
+WHERE cr.CollectionID = (SELECT CollectionID FROM [{db}].dbo.Collections_G WHERE SiteID = '{collectionId.Replace("'", "''")}')
     AND cr.RuleType IN (3, 4)
 ORDER BY RuleType, RuleName;";
 
                 DataTable rulesResult = databaseContext.QueryService.ExecuteTable(rulesQuery);
-                
+
                 if (rulesResult.Rows.Count > 0)
                 {
                     Console.WriteLine(OutputFormatter.ConvertDataTable(rulesResult));
@@ -229,11 +263,11 @@ ORDER BY RuleType, RuleName;";
                 if (memberCount > 0)
                 {
                     string membersQuery;
-                    
+
                     if (collectionType == 2) // Device collection
                     {
                         membersQuery = $@"
-SELECT 
+SELECT
     sys.Name0 AS DeviceName,
     sys.ResourceID,
     sys.Resource_Domain_OR_Workgr0 AS Domain,
@@ -245,13 +279,13 @@ SELECT
     cm.IsDirect
 FROM [{db}].dbo.v_FullCollectionMembership cm
 INNER JOIN [{db}].dbo.v_R_System sys ON cm.ResourceID = sys.ResourceID
-WHERE cm.CollectionID = '{_collectionId.Replace("'", "''")}'
+WHERE cm.CollectionID = '{collectionId.Replace("'", "''")}'
 ORDER BY sys.Client0 DESC, sys.Name0;";
                     }
                     else // User collection
                     {
                         membersQuery = $@"
-SELECT 
+SELECT
     usr.Unique_User_Name0 AS UserName,
     usr.Full_User_Name0 AS FullName,
     usr.User_Principal_Name0 AS UPN,
@@ -261,12 +295,12 @@ SELECT
     cm.IsDirect
 FROM [{db}].dbo.v_FullCollectionMembership cm
 INNER JOIN [{db}].dbo.v_R_User usr ON cm.ResourceID = usr.ResourceID
-WHERE cm.CollectionID = '{_collectionId.Replace("'", "''")}'
+WHERE cm.CollectionID = '{collectionId.Replace("'", "''")}'
 ORDER BY usr.Unique_User_Name0;";
                     }
 
                     DataTable membersResult = databaseContext.QueryService.ExecuteTable(membersQuery);
-                    
+
                     if (membersResult.Rows.Count > 0)
                     {
                         Console.WriteLine(OutputFormatter.ConvertDataTable(membersResult));
@@ -287,7 +321,8 @@ ORDER BY usr.Unique_User_Name0;";
 
             if (!collectionFound)
             {
-                Logger.Warning($"Collection with ID '{_collectionId}' not found in any ConfigMgr database");
+                string searchTerm = !string.IsNullOrEmpty(_collectionId) ? $"ID '{_collectionId}'" : $"name '{_collectionName}'";
+                Logger.Warning($"Collection with {searchTerm} not found in any ConfigMgr database");
             }
 
             return null;
