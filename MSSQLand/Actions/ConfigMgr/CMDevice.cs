@@ -15,25 +15,10 @@ namespace MSSQLand.Actions.ConfigMgr
     /// </summary>
     internal class CMDevice : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Description = "Device name to retrieve details for")]
+        [ArgumentMetadata(Position = 0, ShortName = "n", LongName = "name", Required = true, Description = "Device name to retrieve details for")]
         private string _deviceName = "";
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (named, positional) = ParseActionArguments(args);
-
-            _deviceName = GetPositionalArgument(positional, 0, "")
-                       ?? GetNamedArgument(named, "device", null)
-                       ?? GetNamedArgument(named, "d", null)
-                       ?? "";
-
-            if (string.IsNullOrWhiteSpace(_deviceName))
-            {
-                throw new ArgumentException("Device name is required");
-            }
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Retrieving comprehensive device information for: {_deviceName}");
 
