@@ -16,7 +16,7 @@ Software entities should be open for extension but closed for modification. The 
 
 ### Liskov Substitution Principle (LSP)
 
-Subtypes should be substitutable for their base types without altering program behavior. The [BaseAction](../MSSQLand/Actions/BaseAction.cs) class ensures all derived actions (e.g., Tables, Permissions, Smb) can be used interchangeably, provided they implement `ValidateArguments` and `Execute`.
+Subtypes should be substitutable for their base types without altering program behavior. The [BaseAction](../MSSQLand/Actions/BaseAction.cs) class ensures all derived actions (e.g., Tables, Permissions, Smb) can be used interchangeably, provided they implement `Execute`.
 
 ### DRY (Don't Repeat Yourself)
 
@@ -115,45 +115,49 @@ namespace MSSQLand.Actions.Database
 {
     internal class NewAction : BaseAction
     {
-        // Positional arguments with metadata
-        [ArgumentMetadata(Position = 0, ShortName = "a", LongName = "argument", Required = false, Description = "Describe what this argument does")]
-        private string _argument;
+        /// <summary>
+        /// Arguments are automatically bound via reflection using [ArgumentMetadata].
+        /// Supports positional args, short names (-a), and long names (--argument).
+        /// Fields must have default values for .NET Framework 4.8 compatibility.
+        /// </summary>
+        [ArgumentMetadata(Position = 0, ShortName = "a", LongName = "argument", Required = true, Description = "Describe what this argument does")]
+        private string _argument = "";
 
-        // Internal properties not exposed as arguments
+        [ArgumentMetadata(Position = 1, ShortName = "c", LongName = "count", Required = false, Description = "Optional count parameter")]
+        private int _count = 10;
+
+        /// <summary>
+        /// Use [ExcludeFromArguments] for internal fields that should not be parsed from CLI.
+        /// </summary>
         [ExcludeFromArguments]
-        private string _privateVariable;
+        private string _privateVariable = "";
 
-        public override void ValidateArguments(string[] args)
-        {
-            if (args == null || args.Length == 0)
-            {
-                // No arguments provided - use defaults or throw exception if required
-                return;
-            }
+        // Note: No need to override ValidateArguments() for simple cases.
+        // BaseAction.ValidateArguments() automatically calls BindArguments() which:
+        //   1. Parses positional and named arguments
+        //   2. Binds them to fields decorated with [ArgumentMetadata]
+        //   3. Converts types automatically (string, int, bool, enum)
+        //   4. Throws MissingRequiredArgumentException for missing required args
+        //
+        // Override ValidateArguments() only for custom validation logic:
+        //
+        // public override void ValidateArguments(string[] args)
+        // {
+        //     BindArguments(args);  // Always call base binding first
+        //     
+        //     // Add custom validation
+        //     if (_count < 0)
+        //         throw new ArgumentException("Count must be positive");
+        // }
 
-            // Parse both positional and named arguments
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-
-            // Get argument from position 0 or -a or --argument
-            _argument = GetNamedArgument(namedArgs, "a")
-                     ?? GetNamedArgument(namedArgs, "argument")
-                     ?? GetPositionalArgument(positionalArgs, 0);
-
-            // Validate argument if needed
-            if (string.IsNullOrEmpty(_argument))
-            {
-                throw new ArgumentException("Argument is required. Example: MSSQLand localhost -c token newaction myvalue");
-            }
-        }
-
-        public override object? Execute(DatabaseContext databaseContext)
+        public override object Execute(DatabaseContext databaseContext)
         {
             // Log the action being performed
-            Logger.TaskNested("Performing new action operation");
+            Logger.TaskNested($"Performing action with argument: {_argument}, count: {_count}");
 
             // Your T-SQL query
             string query = @"
-                SELECT 
+                SELECT TOP (@count)
                     column1,
                     column2
                 FROM sys.some_table
@@ -186,6 +190,32 @@ namespace MSSQLand.Actions.Database
         }
     }
 }
+```
+
+### Argument Binding Reference
+
+The `[ArgumentMetadata]` attribute supports:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Position` | int | Positional index (0-based) for unnamed arguments |
+| `ShortName` | string | Single-letter flag (e.g., `-a`) |
+| `LongName` | string | Full name flag (e.g., `--argument`) |
+| `Required` | bool | If true, throws exception when missing |
+| `Description` | string | Help text for the argument |
+
+**Supported field types:** `string`, `int`, `bool`, `enum`
+
+**Usage examples:**
+```shell
+# Positional
+MSSQLand localhost -c token newaction myvalue
+
+# Named (short)
+MSSQLand localhost -c token newaction -a myvalue -c 20
+
+# Named (long)
+MSSQLand localhost -c token newaction --argument myvalue --count 20
 ```
 
 ### Step 3: Register in ActionFactory
