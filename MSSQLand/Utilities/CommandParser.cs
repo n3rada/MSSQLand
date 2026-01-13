@@ -193,12 +193,14 @@ namespace MSSQLand.Utilities
                         actionFound = true;
                         currentIndex++;
                         
-                        // Check for action-specific help
-                        if (currentIndex < args.Length && 
-                            (args[currentIndex] == "-h" || args[currentIndex] == "--help"))
+                        // Check for action-specific help anywhere in remaining arguments
+                        for (int i = currentIndex; i < args.Length; i++)
                         {
-                            Helper.ShowActionHelp(actionName);
-                            return (ParseResultType.ShowHelp, null);
+                            if (args[i] == "-h" || args[i] == "--help")
+                            {
+                                Helper.ShowActionHelp(actionName);
+                                return (ParseResultType.ShowHelp, null);
+                            }
                         }
                         break;
                     }
