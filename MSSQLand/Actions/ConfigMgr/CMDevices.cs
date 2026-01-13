@@ -1,158 +1,52 @@
-// MSSQLand/Actions/ConfigMgr/CMDevices.cs
+// MSSQLand/Actions/ConfigMgr/CMCollection.cs
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
-using System.Linq;
 
 namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
-    /// Enumerate ConfigMgr-managed devices with filtering by attributes.
-    /// Use this for device discovery, inventory queries, and finding devices by location/user/collection.
-    /// InventoriedUsers column shows all users from hardware inventory (console, RDP, scheduled tasks, services).
-    /// For detailed user statistics (logon counts, time spent), use cm-device-users.
-    /// For ConfigMgr client health diagnostics and troubleshooting, use sccm-health instead.
+    /// Display comprehensive information about a specific ConfigMgr collection including all member devices.
+    /// Shows collection details, membership rules, and complete list of devices/users in the collection.
+    /// Use this to understand what devices are targeted by a specific collection.
+    /// Supports lookup by Collection ID or by name pattern.
     /// </summary>
-    internal class CMDevices : BaseAction
+    internal class CMCollection : BaseAction
     {
-        [ArgumentMetadata(Position = 0, LongName = "device", Description = "Filter by device name")]
-        private string _device = "";
+        [ArgumentMetadata(Position = 0, Description = "Collection ID to retrieve details for (e.g., SMS00001)")]
+        private string _collectionId = "";
 
-        [ArgumentMetadata(Position = 1, ShortName = "d", LongName = "domain", Description = "Filter by domain")]
-        private string _domain = "";
-
-        [ArgumentMetadata(Position = 2, ShortName = "u", LongName = "user", Description = "Filter by username")]
-        private string _username = "";
-
-        [ArgumentMetadata(Position = 3, ShortName = "i", LongName = "ip", Description = "Filter by IP address")]
-        private string _ip = "";
-
-        [ArgumentMetadata(Position = 4, ShortName = "c", LongName = "collection", Description = "Filter by collection name")]
-        private string _collection = "";
-
-        [ArgumentMetadata(Position = 5, LongName = "dn", Description = "Filter by distinguished name (e.g., 'Domain Controllers' for DCs)")]
-        private string _distinguishedName = "";
-
-        [ArgumentMetadata(Position = 6, ShortName = "o", LongName = "online", Description = "Show only online devices (default: false)")]
-        private bool _onlineOnly = false;
-
-        [ArgumentMetadata(Position = 7, LongName = "users", Description = "Show only devices with users (LastConsoleUser or InventoriedUsers) (default: false)")]
-        private bool _withUsers = false;
-
-        [ArgumentMetadata(Position = 8, LongName = "no-user", Description = "Show only devices without a LastUser value (default: false)")]
-        private bool _noUser = false;
-
-        [ArgumentMetadata(Position = 9, LongName = "client-only", Description = "Show only devices with ConfigMgr client installed (default: false)")]
-        private bool _clientOnly = false;
-
-        [ArgumentMetadata(Position = 10, LongName = "active", Description = "Show only active (non-decommissioned) devices (default: false)")]
-        private bool _activeOnly = false;
-
-        [ArgumentMetadata(Position = 11, LongName = "last-seen-days", Description = "Show devices seen online in last N days")]
-        private int _lastSeenDays = 0;
-
-        [ArgumentMetadata(Position = 12,  LongName = "limit", Description = "Limit number of results (default: 50)")]
-        private int _limit = 50;
+        [ArgumentMetadata(ShortName = "n", LongName = "name", Description = "Collection name or pattern to search for")]
+        private string _collectionName = "";
 
         public override void ValidateArguments(string[] args)
         {
             var (named, positional) = ParseActionArguments(args);
 
-            _device = GetNamedArgument(named, "device", null)
-                   ?? GetPositionalArgument(positional, 0, "");
+            _collectionId = GetPositionalArgument(positional, 0, "")
+                         ?? GetNamedArgument(named, "collection", null)
+                         ?? GetNamedArgument(named, "c", null)
+                         ?? "";
 
-            _domain = GetNamedArgument(named, "d", null)
-                   ?? GetNamedArgument(named, "domain", null)
-                   ?? GetPositionalArgument(positional, 1, "");
+            _collectionName = GetNamedArgument(named, "n", null)
+                           ?? GetNamedArgument(named, "name", null)
+                           ?? "";
 
-            _username = GetNamedArgument(named, "u", null)
-                     ?? GetNamedArgument(named, "user", null) ?? "";
-
-            // Implicitly enable --users when --user filter is specified
-            if (!string.IsNullOrEmpty(_username))
+            if (string.IsNullOrWhiteSpace(_collectionId) && string.IsNullOrWhiteSpace(_collectionName))
             {
-                _withUsers = true;
-            }
-
-            _ip = GetNamedArgument(named, "i", null)
-               ?? GetNamedArgument(named, "ip", null) ?? "";
-
-            _collection = GetNamedArgument(named, "c", null)
-                       ?? GetNamedArgument(named, "collection", null)
-                       ?? GetPositionalArgument(positional, 2, "");
-
-            _distinguishedName = GetNamedArgument(named, "dn", null)
-                              ?? GetNamedArgument(named, "distinguished-name", null)
-                              ?? GetPositionalArgument(positional, 3, "");
-
-            string onlineStr = GetNamedArgument(named, "o", null)
-                            ?? GetNamedArgument(named, "online", null);
-            if (!string.IsNullOrEmpty(onlineStr))
-            {
-                _onlineOnly = bool.Parse(onlineStr);
-            }
-
-            string withUsersStr = GetNamedArgument(named, "users", null);
-            if (!string.IsNullOrEmpty(withUsersStr))
-            {
-                _withUsers = bool.Parse(withUsersStr);
-            }
-
-            string noUserStr = GetNamedArgument(named, "n", null)
-                            ?? GetNamedArgument(named, "no-user", null);
-            if (!string.IsNullOrEmpty(noUserStr))
-            {
-                _noUser = bool.Parse(noUserStr);
-            }
-
-            string clientOnlyStr = GetNamedArgument(named, "client-only", null);
-            if (!string.IsNullOrEmpty(clientOnlyStr))
-            {
-                _clientOnly = bool.Parse(clientOnlyStr);
-            }
-
-            string activeOnlyStr = GetNamedArgument(named, "a", null)
-                                ?? GetNamedArgument(named, "active", null);
-            if (!string.IsNullOrEmpty(activeOnlyStr))
-            {
-                _activeOnly = bool.Parse(activeOnlyStr);
-            }
-
-            string lastSeenDaysStr = GetNamedArgument(named, "last-seen-days", null);
-            if (!string.IsNullOrEmpty(lastSeenDaysStr))
-            {
-                _lastSeenDays = int.Parse(lastSeenDaysStr);
-            }
-
-            string limitStr = GetNamedArgument(named, "l", null)
-                           ?? GetNamedArgument(named, "limit", null)
-                           ?? GetPositionalArgument(positional, 4);
-            if (!string.IsNullOrEmpty(limitStr))
-            {
-                _limit = int.Parse(limitStr);
+                throw new ArgumentException("Collection ID or name is required. Use positional argument for ID or --name/-n for name search.");
             }
         }
 
         public override object? Execute(DatabaseContext databaseContext)
         {
-            string deviceMsg = !string.IsNullOrEmpty(_device) ? $" (device: {_device})" : "";
-            string domainMsg = !string.IsNullOrEmpty(_domain) ? $" (domain: {_domain})" : "";
-            string usernameMsg = !string.IsNullOrEmpty(_username) ? $" (username: {_username})" : "";
-            string ipMsg = !string.IsNullOrEmpty(_ip) ? $" (ip: {_ip})" : "";
-            string collectionMsg = !string.IsNullOrEmpty(_collection) ? $" (collection: {_collection})" : "";
-            string dnMsg = !string.IsNullOrEmpty(_distinguishedName) ? $" (dn: {_distinguishedName})" : "";
-            string onlineMsg = _onlineOnly ? " (online only)" : "";
-            string withUsersMsg = _withUsers ? " (with users)" : "";
-            string noUserMsg = _noUser ? " (no user)" : "";
-            string clientOnlyMsg = _clientOnly ? " (client only)" : "";
-            string activeOnlyMsg = _activeOnly ? " (active only)" : "";
-            string lastSeenMsg = _lastSeenDays > 0 ? $" (seen in last {_lastSeenDays} days)" : "";
-
-            Logger.TaskNested($"Enumerating ConfigMgr devices{deviceMsg}{domainMsg}{usernameMsg}{ipMsg}{collectionMsg}{dnMsg}{onlineMsg}{withUsersMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeenMsg}");
-            Logger.TaskNested($"Limit: {_limit}");
+            string searchMsg = !string.IsNullOrEmpty(_collectionId)
+                ? $"ID: {_collectionId}"
+                : $"name pattern: {_collectionName}";
+            Logger.TaskNested($"Retrieving comprehensive collection information for {searchMsg}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -164,323 +58,271 @@ namespace MSSQLand.Actions.ConfigMgr
                 return null;
             }
 
+            bool collectionFound = false;
+
             foreach (string db in databases)
             {
-                Logger.NewLine();
                 string siteCode = CMService.GetSiteCode(db);
+
+                Logger.NewLine();
                 Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
-                try
+                // Build WHERE clause based on search type
+                string whereClause;
+                if (!string.IsNullOrEmpty(_collectionId))
                 {
-                    string whereClause = "WHERE 1=1";
+                    whereClause = $"c.CollectionID = '{_collectionId.Replace("'", "''")}'";
+                }
+                else
+                {
+                    whereClause = $"c.Name LIKE '%{_collectionName.Replace("'", "''")}%'";
+                }
 
-                    // Add device name filter
-                    if (!string.IsNullOrEmpty(_device))
+                // Get collection details
+                string collectionQuery = $@"
+SELECT
+    c.CollectionID,
+    c.Name,
+    c.Comment,
+    c.CollectionType,
+    CASE c.CollectionType
+        WHEN 0 THEN 'Other'
+        WHEN 1 THEN 'User'
+        WHEN 2 THEN 'Device'
+        ELSE 'Unknown'
+    END AS TypeName,
+    c.MemberCount,
+    c.LastRefreshTime,
+    c.LastMemberChangeTime,
+    c.LastChangeTime,
+    c.EvaluationStartTime,
+    c.RefreshType,
+    c.CurrentStatus,
+    c.MemberClassName
+FROM [{db}].dbo.v_Collection c
+WHERE {whereClause};";
+
+                DataTable collectionResult = databaseContext.QueryService.ExecuteTable(collectionQuery);
+
+                if (collectionResult.Rows.Count == 0)
+                {
+                    continue;
+                }
+
+                // If searching by name and multiple matches found, list them and exit
+                if (!string.IsNullOrEmpty(_collectionName) && collectionResult.Rows.Count > 1)
+                {
+                    collectionFound = true;
+                    Logger.NewLine();
+                    Logger.Warning($"Multiple collections match '{_collectionName}':");
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(collectionResult));
+                    Logger.Info($"Found {collectionResult.Rows.Count} matching collection(s). Use the exact CollectionID to view details.");
+                    break;
+                }
+
+                collectionFound = true;
+                DataRow collection = collectionResult.Rows[0];
+                string collectionId = collection["CollectionID"].ToString();
+
+                // Display collection details
+                Logger.NewLine();
+                Logger.Info($"Collection: {collection["Name"]} ({collectionId})");
+
+                if (!string.IsNullOrEmpty(collection["Comment"].ToString()))
+                {
+                    Logger.InfoNested($"Description: {collection["Comment"]}");
+                }
+
+                Logger.InfoNested($"Type: {collection["TypeName"]} (CollectionType: {collection["CollectionType"]})");
+                Logger.InfoNested($"Member Count: {collection["MemberCount"]}");
+                Logger.InfoNested($"Refresh Type: {collection["RefreshType"]}");
+                Logger.InfoNested($"Current Status: {collection["CurrentStatus"]}");
+                Logger.InfoNested($"Last Refresh: {collection["LastRefreshTime"]}");
+                Logger.InfoNested($"Last Member Change: {collection["LastMemberChangeTime"]}");
+                Logger.InfoNested($"Evaluation Start: {collection["EvaluationStartTime"]}");
+
+                Logger.NewLine();
+                Logger.Info("Collection Properties");
+                Console.WriteLine(OutputFormatter.ConvertDataTable(collectionResult));
+
+                int memberCount = collection["MemberCount"] != DBNull.Value ? Convert.ToInt32(collection["MemberCount"]) : 0;
+                int collectionType = Convert.ToInt32(collection["CollectionType"]);
+
+                // Get deployments targeting this collection
+                Logger.NewLine();
+                Logger.Info("Deployments Targeting This Collection");
+
+                string deploymentsQuery = $@"
+SELECT
+    CASE
+        WHEN ds.AssignmentID = 0 THEN CAST(adv.AdvertisementID AS VARCHAR)
+        ELSE CAST(ds.AssignmentID AS VARCHAR)
+    END AS DeploymentID,
+    ds.SoftwareName,
+    ds.FeatureType,
+    ds.DeploymentIntent,
+    ds.NumberSuccess,
+    ds.NumberInProgress,
+    ds.NumberErrors,
+    ds.NumberUnknown,
+    ds.DeploymentTime,
+    ds.ModificationTime
+FROM [{db}].dbo.v_DeploymentSummary ds
+LEFT JOIN [{db}].dbo.v_Advertisement adv ON ds.PackageID = adv.PackageID
+    AND adv.CollectionID = ds.CollectionID
+    AND ds.FeatureType = 2
+WHERE ds.CollectionID = '{collectionId.Replace("'", "''")}'
+ORDER BY ds.DeploymentTime DESC;";
+
+                DataTable deploymentsResult = databaseContext.QueryService.ExecuteTable(deploymentsQuery);
+
+                if (deploymentsResult.Rows.Count > 0)
+                {
+                    // Add decoded FeatureType column
+                    DataColumn decodedFeatureColumn = deploymentsResult.Columns.Add("DeploymentType", typeof(string));
+                    int featureTypeIndex = deploymentsResult.Columns["FeatureType"].Ordinal;
+                    decodedFeatureColumn.SetOrdinal(featureTypeIndex);
+
+                    // Add decoded DeploymentIntent column
+                    DataColumn decodedIntentColumn = deploymentsResult.Columns.Add("Intent", typeof(string));
+                    int deploymentIntentIndex = deploymentsResult.Columns["DeploymentIntent"].Ordinal;
+                    decodedIntentColumn.SetOrdinal(deploymentIntentIndex);
+
+                    foreach (DataRow row in deploymentsResult.Rows)
                     {
-                        whereClause += $" AND sys.Name0 LIKE '%{_device.Replace("'", "''")}%'";
+                        row["DeploymentType"] = CMService.DecodeFeatureType(row["FeatureType"]);
+                        row["Intent"] = CMService.DecodeDeploymentIntent(row["DeploymentIntent"]);
                     }
 
-                    // Add domain filter
-                    if (!string.IsNullOrEmpty(_domain))
+                    // Remove raw numeric columns
+                    deploymentsResult.Columns.Remove("FeatureType");
+                    deploymentsResult.Columns.Remove("DeploymentIntent");
+
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(deploymentsResult));
+                    Logger.Success($"Found {deploymentsResult.Rows.Count} deployment(s) targeting this collection");
+                }
+                else
+                {
+                    Logger.Warning("No deployments targeting this collection");
+                }
+
+                // Get collection membership rules
+                Logger.NewLine();
+                Logger.Info("Collection Membership Rules");
+
+                string rulesQuery = $@"
+SELECT
+    cq.RuleName,
+    'Query' AS RuleType,
+    cq.QueryExpression,
+    NULL AS ResourceID,
+    cq.LimitToCollectionID
+FROM [{db}].dbo.v_CollectionRuleQuery cq
+WHERE cq.CollectionID = '{collectionId.Replace("'", "''")}'
+UNION ALL
+SELECT
+    cd.RuleName,
+    'Direct' AS RuleType,
+    NULL AS QueryExpression,
+    cd.ResourceID,
+    NULL AS LimitToCollectionID
+FROM [{db}].dbo.v_CollectionRuleDirect cd
+WHERE cd.CollectionID = '{collectionId.Replace("'", "''")}'
+UNION ALL
+SELECT
+    cr.QueryName AS RuleName,
+    CASE cr.RuleType
+        WHEN 3 THEN 'Include Collection'
+        WHEN 4 THEN 'Exclude Collection'
+        ELSE 'Other'
+    END AS RuleType,
+    NULL AS QueryExpression,
+    NULL AS ResourceID,
+    cr.ReferencedCollectionID AS LimitToCollectionID
+FROM [{db}].dbo.Collection_Rules cr
+WHERE cr.CollectionID = (SELECT CollectionID FROM [{db}].dbo.Collections_G WHERE SiteID = '{collectionId.Replace("'", "''")}')
+    AND cr.RuleType IN (3, 4)
+ORDER BY RuleType, RuleName;";
+
+                DataTable rulesResult = databaseContext.QueryService.ExecuteTable(rulesQuery);
+
+                if (rulesResult.Rows.Count > 0)
+                {
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(rulesResult));
+                    Logger.Info($"Collection has {rulesResult.Rows.Count} membership rule(s)");
+                }
+                else
+                {
+                    Logger.Warning("No membership rules found");
+                }
+
+                // Get collection members (at end for better visibility)
+                Logger.NewLine();
+                Logger.Info($"Collection Members ({memberCount})");
+
+                if (memberCount > 0)
+                {
+                    string membersQuery;
+
+                    if (collectionType == 2) // Device collection
                     {
-                        whereClause += $" AND sys.Resource_Domain_OR_Workgr0 LIKE '%{_domain.Replace("'", "''")}%'";
-                    }
-
-                    // Add username filter (searches both LastConsoleUser and InventoriedUsers)
-                    if (!string.IsNullOrEmpty(_username))
-                    {
-                        whereClause += $@" AND (
-                            (sys.User_Name0 LIKE '%{_username.Replace("'", "''")}%' AND sys.User_Name0 IS NOT NULL AND sys.User_Name0 != '')
-                            OR EXISTS (
-                                SELECT 1
-                                FROM [{db}].dbo.v_GS_SYSTEM_CONSOLE_USER cu_filter
-                                WHERE cu_filter.ResourceID = sys.ResourceID
-                                AND cu_filter.SystemConsoleUser0 LIKE '%{_username.Replace("'", "''")}%'
-                            )
-                        )";
-                    }
-
-                    // Add IP address filter
-                    if (!string.IsNullOrEmpty(_ip))
-                    {
-                        whereClause += $" AND bgb.IPAddress LIKE '{_ip.Replace("'", "''")}%'";
-                    }
-
-                    // Add collection filter
-                    if (!string.IsNullOrEmpty(_collection))
-                    {
-                        whereClause += $@" AND EXISTS (
-                            SELECT 1
-                            FROM [{db}].dbo.v_FullCollectionMembership cm_filter
-                            INNER JOIN [{db}].dbo.v_Collection col_filter ON cm_filter.CollectionID = col_filter.CollectionID
-                            WHERE cm_filter.ResourceID = sys.ResourceID
-                            AND col_filter.Name LIKE '%{_collection.Replace("'", "''")}%'
-                        )";
-                    }
-
-                    // Add distinguished name filter
-                    if (!string.IsNullOrEmpty(_distinguishedName))
-                    {
-                        whereClause += $" AND sys.Distinguished_Name0 LIKE '%{_distinguishedName.Replace("'", "''")}%'";
-                    }
-
-                    // Add online status filter
-                    if (_onlineOnly)
-                    {
-                        whereClause += " AND bgb.OnlineStatus = 1";
-                    }
-
-                    // Add users filter (devices with LastConsoleUser OR InventoriedUsers)
-                    // Skip if --user is specified since that filter already ensures users exist
-                    if (_withUsers && string.IsNullOrEmpty(_username))
-                    {
-                        whereClause += $@" AND (
-                            (sys.User_Name0 IS NOT NULL AND sys.User_Name0 != '')
-                            OR EXISTS (
-                                SELECT 1
-                                FROM [{db}].dbo.v_GS_SYSTEM_CONSOLE_USER cu_users
-                                WHERE cu_users.ResourceID = sys.ResourceID
-                            )
-                        )";
-                    }
-
-                    // Add no user filter
-                    if (_noUser)
-                    {
-                        whereClause += " AND (sys.User_Name0 IS NULL OR sys.User_Name0 = '')";
-                    }
-
-                    // Add client-only filter
-                    if (_clientOnly)
-                    {
-                        whereClause += " AND sys.Client0 = 1";
-                    }
-
-                    // Add active-only filter (non-decommissioned)
-                    if (_activeOnly)
-                    {
-                        whereClause += " AND sys.Decommissioned0 = 0";
-                    }
-
-                    // Add last-seen-days filter
-                    if (_lastSeenDays > 0)
-                    {
-                        whereClause += $" AND bgb.LastOnlineTime >= DATEADD(DAY, -{_lastSeenDays}, GETDATE())";
-                    }
-
-                    string topClause = _limit > 0 ? $"TOP {_limit}" : "";
-
-                    string query = $@"
-SELECT DISTINCT {topClause}
+                        membersQuery = $@"
+SELECT
     sys.Name0 AS DeviceName,
     sys.ResourceID,
     sys.Resource_Domain_OR_Workgr0 AS Domain,
-    sys.Primary_Group_ID0 AS PrimaryGroupRID,
-    sys.Distinguished_Name0 AS DistinguishedName,
-    sys.User_Account_Control0 AS UserAccountControl,
+    sys.User_Name0 AS LastUser,
     sys.Operating_System_Name_and0 AS OperatingSystem,
-    sys.Client0 AS Client,
+    sys.Client0 AS HasClient,
     sys.Client_Version0 AS ClientVersion,
-    sys.Decommissioned0 AS Decommissioned,
-    bgb.OnlineStatus,
-    bgb.LastOnlineTime,
-    bgb.LastOfflineTime,
-    chs.LastPolicyRequest,
-    sys.Last_Logon_Timestamp0 AS ComputerLastADAuth,
     sys.AD_Site_Name0 AS ADSite,
-    bgb.IPAddress,
-    bgb.AccessMP,
-    sys.User_Name0 AS LastConsoleUser,
-    STUFF((
-        SELECT ', ' + cu.SystemConsoleUser0
-        FROM [{db}].dbo.v_GS_SYSTEM_CONSOLE_USER cu
-        WHERE cu.ResourceID = sys.ResourceID
-        ORDER BY cu.LastConsoleUse0 DESC
-        FOR XML PATH(''), TYPE
-    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS InventoriedUsers,
-    sys.Is_Virtual_Machine0 AS IsVirtualMachine,
-    sys.Virtual_Machine_Type0 AS VMTypeRaw,
-    sys.Virtual_Machine_Host_Name0 AS VMHostName,
-    sys.ManagementAuthority AS ManagementAuthority,
-    sys.AADDeviceID,
-    sys.AADTenantID,
-    sys.Creation_Date0 AS RegisteredDate,
-    sys.SMS_Unique_Identifier0 AS SMSID,
-    STUFF((
-        SELECT ', ' + col.Name
-        FROM [{db}].dbo.v_FullCollectionMembership cm
-        INNER JOIN [{db}].dbo.v_Collection col ON cm.CollectionID = col.CollectionID
-        WHERE cm.ResourceID = sys.ResourceID AND col.CollectionType = 2
-        FOR XML PATH(''), TYPE
-    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS Collections
-FROM [{db}].dbo.v_R_System sys
-LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
-LEFT JOIN [{db}].dbo.v_CH_ClientSummary chs ON sys.ResourceID = chs.ResourceID
-{whereClause}
-ORDER BY
-    sys.Client0 DESC,
-    sys.Decommissioned0 ASC,
-    sys.Primary_Group_ID0 ASC,
-    bgb.OnlineStatus DESC,
-    chs.LastPolicyRequest DESC,
-    bgb.LastOnlineTime DESC";
-
-                    DataTable devicesTable = databaseContext.QueryService.ExecuteTable(query);
-
-                    if (devicesTable.Rows.Count == 0)
+    cm.IsDirect
+FROM [{db}].dbo.v_FullCollectionMembership cm
+INNER JOIN [{db}].dbo.v_R_System sys ON cm.ResourceID = sys.ResourceID
+WHERE cm.CollectionID = '{collectionId.Replace("'", "''")}'
+ORDER BY sys.Client0 DESC, sys.Name0;";
+                    }
+                    else // User collection
                     {
-                        Logger.NewLine();
-                        Logger.Warning("No devices found");
-                        continue;
+                        membersQuery = $@"
+SELECT
+    usr.Unique_User_Name0 AS UserName,
+    usr.Full_User_Name0 AS FullName,
+    usr.User_Principal_Name0 AS UPN,
+    usr.Mail0 AS Email,
+    usr.department0 AS Department,
+    usr.title0 AS Title,
+    cm.IsDirect
+FROM [{db}].dbo.v_FullCollectionMembership cm
+INNER JOIN [{db}].dbo.v_R_User usr ON cm.ResourceID = usr.ResourceID
+WHERE cm.CollectionID = '{collectionId.Replace("'", "''")}'
+ORDER BY usr.Unique_User_Name0;";
                     }
 
-                    // Decode UserAccountControl flags
-                    if (devicesTable.Columns.Contains("UserAccountControl"))
+                    DataTable membersResult = databaseContext.QueryService.ExecuteTable(membersQuery);
+
+                    if (membersResult.Rows.Count > 0)
                     {
-                        DataColumn decodedUacColumn = devicesTable.Columns.Add("AccountStatus", typeof(string));
-                        int uacIndex = devicesTable.Columns["UserAccountControl"].Ordinal;
-                        decodedUacColumn.SetOrdinal(uacIndex);
-
-                        foreach (DataRow row in devicesTable.Rows)
-                        {
-                            if (row["UserAccountControl"] != DBNull.Value && int.TryParse(row["UserAccountControl"].ToString(), out int uacValue))
-                            {
-                                var flags = new System.Collections.Generic.List<string>();
-
-                                if ((uacValue & 0x0002) != 0) flags.Add("Disabled");
-                                else flags.Add("Enabled");
-
-                                if ((uacValue & 0x0020) != 0) flags.Add("NoPassword");
-                                if ((uacValue & 0x0040) != 0) flags.Add("PwdCantChange");
-                                if ((uacValue & 0x0080) != 0) flags.Add("EncryptedPwd");
-                                if ((uacValue & 0x0200) != 0) flags.Add("NormalAccount");
-                                if ((uacValue & 0x0800) != 0) flags.Add("InterdomainTrust");
-                                if ((uacValue & 0x1000) != 0) flags.Add("WorkstationTrust");
-                                if ((uacValue & 0x2000) != 0) flags.Add("ServerTrust");
-                                if ((uacValue & 0x10000) != 0) flags.Add("PwdNeverExpires");
-                                if ((uacValue & 0x20000) != 0) flags.Add("LockedOut");
-                                if ((uacValue & 0x40000) != 0) flags.Add("PwdExpired");
-                                if ((uacValue & 0x80000) != 0) flags.Add("TrustedForDelegation");
-
-                                row["AccountStatus"] = string.Join(", ", flags);
-                            }
-                        }
-                        devicesTable.Columns.Remove("UserAccountControl");
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(membersResult));
+                        Logger.Success($"Listed {membersResult.Rows.Count} member(s)");
                     }
-
-                    // Decode Virtual_Machine_Type
-                    if (devicesTable.Columns.Contains("VMTypeRaw"))
+                    else
                     {
-                        DataColumn decodedVmTypeColumn = devicesTable.Columns.Add("VMType", typeof(string));
-                        int vmTypeIndex = devicesTable.Columns["VMTypeRaw"].Ordinal;
-                        decodedVmTypeColumn.SetOrdinal(vmTypeIndex);
-
-                        foreach (DataRow row in devicesTable.Rows)
-                        {
-                            if (row["VMTypeRaw"] != DBNull.Value && int.TryParse(row["VMTypeRaw"].ToString(), out int vmType))
-                            {
-                                row["VMType"] = vmType switch
-                                {
-                                    0 => "Physical",
-                                    1 => "Hyper-V",
-                                    2 => "VMware",
-                                    3 => "Xen",
-                                    4 => "VirtualBox",
-                                    _ => $"Unknown ({vmType})"
-                                };
-                            }
-                        }
-                        devicesTable.Columns.Remove("VMTypeRaw");
+                        Logger.Warning("No members found (member count may be stale)");
                     }
-
-                    // Decode ManagementAuthority
-                    if (devicesTable.Columns.Contains("ManagementAuthority"))
-                    {
-                        DataColumn decodedAuthorityColumn = devicesTable.Columns.Add("Management", typeof(string));
-                        int authorityIndex = devicesTable.Columns["ManagementAuthority"].Ordinal;
-                        decodedAuthorityColumn.SetOrdinal(authorityIndex);
-
-                        foreach (DataRow row in devicesTable.Rows)
-                        {
-                            if (row["ManagementAuthority"] != DBNull.Value && int.TryParse(row["ManagementAuthority"].ToString(), out int authority))
-                            {
-                                row["Management"] = authority switch
-                                {
-                                    0 => "ConfigMgr",
-                                    1 => "Intune",
-                                    2 => "Co-Managed",
-                                    4 => "EAS (Exchange)",
-                                    _ => $"Unknown ({authority})"
-                                };
-                            }
-                        }
-                        devicesTable.Columns.Remove("ManagementAuthority");
-                    }
-
-                    // Add UniqueCollections column - shows collections NOT shared by all devices
-                    devicesTable.Columns.Add("UniqueCollections", typeof(string));
-
-                    // Only compute unique collections if there are multiple devices
-                    if (devicesTable.Rows.Count > 1)
-                    {
-                        var collectionCounts = new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                        var deviceCollections = new System.Collections.Generic.List<string[]>(devicesTable.Rows.Count);
-                        int totalDevices = devicesTable.Rows.Count;
-
-                        // Single pass: count collections and store splits
-                        foreach (DataRow row in devicesTable.Rows)
-                        {
-                            string collectionsStr = row["Collections"]?.ToString() ?? "";
-                            string[] collections = string.IsNullOrEmpty(collectionsStr)
-                                ? Array.Empty<string>()
-                                : collectionsStr.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
-
-                            deviceCollections.Add(collections);
-
-                            foreach (var collection in collections)
-                            {
-                                if (collectionCounts.ContainsKey(collection))
-                                    collectionCounts[collection]++;
-                                else
-                                    collectionCounts[collection] = 1;
-                            }
-                        }
-
-                        // Find collections that are NOT in all devices
-                        var uniqueCollectionNames = new System.Collections.Generic.HashSet<string>(
-                            collectionCounts.Where(kvp => kvp.Value < totalDevices).Select(kvp => kvp.Key),
-                            StringComparer.OrdinalIgnoreCase
-                        );
-
-                        // Populate UniqueCollections using pre-split arrays
-                        for (int i = 0; i < devicesTable.Rows.Count; i++)
-                        {
-                            var collections = deviceCollections[i];
-                            if (collections.Length > 0)
-                            {
-                                var uniqueOnes = collections.Where(c => uniqueCollectionNames.Contains(c));
-                                devicesTable.Rows[i]["UniqueCollections"] = string.Join(", ", uniqueOnes);
-                            }
-                        }
-                    }
-
-                    // If dataTables is not empty
-                    if (devicesTable.Rows.Count > 0)
-                    {
-                        Console.WriteLine(OutputFormatter.ConvertDataTable(devicesTable));
-
-                        Logger.Success($"Found {devicesTable.Rows.Count} device(s)");
-                        Logger.SuccessNested("Use 'cm-device-users' to see detailed user logon statistics per device");
-                    }
-                    else {
-                        Logger.Warning("No devices found");
-                    }
-
                 }
-                catch (Exception ex)
+                else
                 {
-                    Logger.Error($"Failed to enumerate devices: {ex.Message}");
+                    Logger.Warning("Collection has no members");
                 }
+
+                break; // Found collection, no need to check other databases
+            }
+
+            if (!collectionFound)
+            {
+                string searchTerm = !string.IsNullOrEmpty(_collectionId) ? $"ID '{_collectionId}'" : $"name '{_collectionName}'";
+                Logger.Warning($"Collection with {searchTerm} not found in any ConfigMgr database");
             }
 
             return null;
