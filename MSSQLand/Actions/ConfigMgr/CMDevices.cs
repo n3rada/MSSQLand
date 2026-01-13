@@ -298,6 +298,17 @@ SELECT DISTINCT {topClause}
     sys.Resource_Domain_OR_Workgr0 AS Domain,
     sys.Primary_Group_ID0 AS PrimaryGroupRID,
     sys.Distinguished_Name0 AS DistinguishedName,
+    sys.User_Name0 AS LastConsoleUser,
+    STUFF((
+        SELECT ', ' + cu.SystemConsoleUser0
+            + ' (' + CONVERT(VARCHAR(10), cu.LastConsoleUse0, 120)
+            + ', ' + CAST(ISNULL(cu.NumberOfConsoleLogons0, 0) AS VARCHAR) + ' logons'
+            + ', ' + CAST(ISNULL(cu.TotalUserConsoleMinutes0, 0) AS VARCHAR) + ' min)'
+        FROM [{db}].dbo.v_GS_SYSTEM_CONSOLE_USER cu
+        WHERE cu.ResourceID = sys.ResourceID
+        ORDER BY cu.LastConsoleUse0 DESC
+        FOR XML PATH(''), TYPE
+    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS InventoriedUsers,
     sys.User_Account_Control0 AS UserAccountControl,
     sys.Operating_System_Name_and0 AS OperatingSystem,
     sys.Client0 AS Client,
@@ -311,17 +322,6 @@ SELECT DISTINCT {topClause}
     sys.AD_Site_Name0 AS ADSite,
     bgb.IPAddress,
     bgb.AccessMP,
-    sys.User_Name0 AS LastConsoleUser,
-    STUFF((
-        SELECT ', ' + cu.SystemConsoleUser0
-            + ' (' + CONVERT(VARCHAR(10), cu.LastConsoleUse0, 120)
-            + ', ' + CAST(ISNULL(cu.NumberOfConsoleLogons0, 0) AS VARCHAR) + ' logons'
-            + ', ' + CAST(ISNULL(cu.TotalUserConsoleMinutes0, 0) AS VARCHAR) + ' min)'
-        FROM [{db}].dbo.v_GS_SYSTEM_CONSOLE_USER cu
-        WHERE cu.ResourceID = sys.ResourceID
-        ORDER BY cu.LastConsoleUse0 DESC
-        FOR XML PATH(''), TYPE
-    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS InventoriedUsers,
     sys.Is_Virtual_Machine0 AS IsVirtualMachine,
     sys.Virtual_Machine_Type0 AS VMTypeRaw,
     sys.Virtual_Machine_Host_Name0 AS VMHostName,
