@@ -197,22 +197,33 @@ namespace MSSQLand.Actions.ConfigMgr
                     }
 
                     // Add username filter (searches both LastConsoleUser and InventoriedUsers)
-                    // Combined with user-seen-days if both are specified
+                    // When user-seen-days is specified, only use v_GS_SYSTEM_CONSOLE_USER since it has date info
                     if (!string.IsNullOrEmpty(_username))
                     {
-                        string userSeenCondition = _userSeenDays > 0
-                            ? $" AND cu_filter.LastConsoleUse0 >= DATEADD(DAY, -{_userSeenDays}, GETDATE())"
-                            : "";
-
-                        whereClause += $@" AND (
-                            (sys.User_Name0 LIKE '%{_username.Replace("'", "''")}%' AND sys.User_Name0 IS NOT NULL AND sys.User_Name0 != '')
-                            OR EXISTS (
+                        if (_userSeenDays > 0)
+                        {
+                            // Only search in v_GS_SYSTEM_CONSOLE_USER when date filtering is required
+                            whereClause += $@" AND EXISTS (
                                 SELECT 1
                                 FROM [{db}].dbo.v_GS_SYSTEM_CONSOLE_USER cu_filter
                                 WHERE cu_filter.ResourceID = sys.ResourceID
-                                AND cu_filter.SystemConsoleUser0 LIKE '%{_username.Replace("'", "''")}%'{userSeenCondition}
-                            )
-                        )";
+                                AND cu_filter.SystemConsoleUser0 LIKE '%{_username.Replace("'", "''")}%'
+                                AND cu_filter.LastConsoleUse0 >= DATEADD(DAY, -{_userSeenDays}, GETDATE())
+                            )";
+                        }
+                        else
+                        {
+                            // Without date filtering, search both LastConsoleUser and InventoriedUsers
+                            whereClause += $@" AND (
+                                (sys.User_Name0 LIKE '%{_username.Replace("'", "''")}%' AND sys.User_Name0 IS NOT NULL AND sys.User_Name0 != '')
+                                OR EXISTS (
+                                    SELECT 1
+                                    FROM [{db}].dbo.v_GS_SYSTEM_CONSOLE_USER cu_filter
+                                    WHERE cu_filter.ResourceID = sys.ResourceID
+                                    AND cu_filter.SystemConsoleUser0 LIKE '%{_username.Replace("'", "''")}%'
+                                )
+                            )";
+                        }
                     }
 
                     // Add IP address filter
