@@ -127,12 +127,35 @@ namespace MSSQLand.Utilities
 
                 if (args[0] == "-findsql" || args[0] == "--findsql")
                 {
-                    string adDomain = args.Length > 1 
-                        ? args[1] 
-                        : throw new ArgumentException("FindSQLServers requires a domain argument. Example: --findsql corp.com");
+                    string adDomain = null;
+                    bool forest = false;
                     
-                    // Check for --forest flag
-                    bool forest = args.Length > 2 && (args[2] == "--forest" || args[2] == "-f");
+                    // Parse optional arguments
+                    for (int i = 1; i < args.Length; i++)
+                    {
+                        if (args[i] == "--forest" || args[i] == "-f")
+                        {
+                            forest = true;
+                        }
+                        else if (!IsFlag(args[i]) && adDomain == null)
+                        {
+                            adDomain = args[i];
+                        }
+                    }
+                    
+                    // If no domain specified, try to get the current domain
+                    if (string.IsNullOrEmpty(adDomain))
+                    {
+                        try
+                        {
+                            adDomain = System.DirectoryServices.ActiveDirectory.Domain.GetCurrentDomain().Name;
+                            Logger.Info($"No domain specified, using current domain: {adDomain}");
+                        }
+                        catch
+                        {
+                            throw new ArgumentException("FindSQLServers requires a domain argument (not domain-joined). Example: --findsql corp.com");
+                        }
+                    }
                     
                     Logger.Info("FindSQLServers utility mode - no database connection required");
                     FindSQLServers.Execute(adDomain, forest);
