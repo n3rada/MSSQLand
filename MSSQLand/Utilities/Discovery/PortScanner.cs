@@ -132,11 +132,19 @@ namespace MSSQLand.Utilities.Discovery
             var cts = new CancellationTokenSource();
 
             // Phase 1: Known ports
-            Logger.Info($"Testing {KnownPorts.Length} known ports");
+            Logger.Info($"Testing {KnownPorts.Length} known ports ({string.Join(", ", KnownPorts)})");
             var knownStopwatch = Stopwatch.StartNew();
             var knownResults = ScanPortsParallel(ip, KnownPorts, timeoutMs, maxParallelism, stopOnFirst ? cts : null);
             knownStopwatch.Stop();
-            Logger.InfoNested($"Completed in {knownStopwatch.ElapsedMilliseconds}ms");
+            
+            if (knownResults.Count > 0)
+            {
+                Logger.SuccessNested($"Found {knownResults.Count}: {string.Join(", ", knownResults.Select(r => r.Port))} ({knownStopwatch.ElapsedMilliseconds}ms)");
+            }
+            else
+            {
+                Logger.InfoNested($"None found ({knownStopwatch.ElapsedMilliseconds}ms)");
+            }
 
             if (stopOnFirst && knownResults.Count > 0)
             {
@@ -155,7 +163,15 @@ namespace MSSQLand.Utilities.Discovery
             ephemeralStopwatch.Stop();
             
             int portsPerSec = (int)(ephemeralCount * 1000L / Math.Max(1, ephemeralStopwatch.ElapsedMilliseconds));
-            Logger.InfoNested($"Completed in {ephemeralStopwatch.Elapsed.TotalSeconds:F1}s ({portsPerSec} ports/sec)");
+            
+            if (ephemeralResults.Count > 0)
+            {
+                Logger.SuccessNested($"Found {ephemeralResults.Count}: {string.Join(", ", ephemeralResults.Select(r => r.Port))} ({ephemeralStopwatch.Elapsed.TotalSeconds:F1}s, {portsPerSec} ports/sec)");
+            }
+            else
+            {
+                Logger.InfoNested($"None found ({ephemeralStopwatch.Elapsed.TotalSeconds:F1}s, {portsPerSec} ports/sec)");
+            };
 
             var allResults = knownResults.Concat(ephemeralResults).OrderBy(r => r.Port).ToList();
             bool stoppedEarly = stopOnFirst && allResults.Count > 0;
