@@ -160,8 +160,8 @@ namespace MSSQLand.Utilities.Discovery
                             ? dnsHostName
                             : (portDelimiterIndex == -1 ? serviceInstance : serviceInstance.Substring(0, portDelimiterIndex));
 
-                        // Add or update server entry
-                        if (!serverMap.TryGetValue(serverName, out ServerInfo serverInfo))
+                        // Key by objectSid to prevent duplicates when dnshostname is not available
+                        if (!serverMap.TryGetValue(objectSid, out ServerInfo serverInfo))
                         {
                             serverInfo = new ServerInfo
                             {
@@ -172,7 +172,12 @@ namespace MSSQLand.Utilities.Discovery
                                 Description = description,
                                 Instances = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                             };
-                            serverMap[serverName] = serverInfo;
+                            serverMap[objectSid] = serverInfo;
+                        }
+                        // Update server name if we now have a better one (FQDN)
+                        else if (!string.IsNullOrEmpty(dnsHostName) && !serverInfo.ServerName.Contains("."))
+                        {
+                            serverInfo.ServerName = dnsHostName;
                         }
 
                         serverInfo.Instances.Add(instanceOrPort);
@@ -185,9 +190,9 @@ namespace MSSQLand.Utilities.Discovery
                     // Use dnshostname (already extracted above) or fall back to cn
                     string serverName = !string.IsNullOrEmpty(dnsHostName) ? dnsHostName : cn;
 
-                    if (!string.IsNullOrEmpty(serverName) && !serverMap.ContainsKey(serverName))
+                    if (!string.IsNullOrEmpty(serverName) && !serverMap.ContainsKey(objectSid))
                     {
-                        serverMap[serverName] = new ServerInfo
+                        serverMap[objectSid] = new ServerInfo
                         {
                             ServerName = serverName,
                             AccountName = accountName,
