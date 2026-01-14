@@ -32,6 +32,8 @@ namespace MSSQLand.Services.Credentials
             }
             catch (SqlException ex)
             {
+                Logger.Info($"Error {ex.Number}: {ex.Message}");
+                Logger.NewLine();
                 // Error 18456 = Login failed - server IS alive and responding
                 if (ex.Number == 18456)
                 {
