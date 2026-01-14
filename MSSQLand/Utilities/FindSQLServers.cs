@@ -12,6 +12,30 @@ namespace MSSQLand.Utilities
     /// <summary>
     /// Standalone utility for enumerating SQL Servers in an Active Directory domain via LDAP queries.
     /// Does not require database authentication or connection.
+    /// 
+    /// <para>
+    /// <b>How it works:</b>
+    /// Queries Active Directory for objects with Kerberos Service Principal Names (SPNs) starting with "MSSQLSvc".
+    /// SQL Server registers SPNs in the format: MSSQLSvc/hostname:port or MSSQLSvc/hostname:instancename
+    /// </para>
+    /// 
+    /// <para>
+    /// <b>PowerShell equivalent:</b>
+    /// <code>
+    /// # Domain-only query (LDAP):
+    /// ([adsisearcher]::new([adsi]"LDAP://corp.local", "(servicePrincipalName=MSSQL*)")).FindAll()
+    /// 
+    /// # Forest-wide query (Global Catalog):
+    /// ([adsisearcher]::new([adsi]"GC://corp.local", "(servicePrincipalName=MSSQL*)")).FindAll()
+    /// </code>
+    /// </para>
+    /// 
+    /// <para>
+    /// <b>Limitations:</b>
+    /// - Only finds SQL Servers with registered SPNs (Kerberos authentication enabled)
+    /// - IP addresses are resolved via DNS, not stored in LDAP
+    /// - lastLogonTimestamp has ~14 day replication delay
+    /// </para>
     /// </summary>
     public static class FindSQLServers
     {
