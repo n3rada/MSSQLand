@@ -175,7 +175,7 @@ ORDER BY [Database];";
                     bool isVulnerable = trustworthy && ownerIsSysadmin == "YES";
                     row["Vulnerable"] = isVulnerable ? "YES" : "NO";
 
-                    // Determine if exploitable
+                    // Determine if exploitable: vulnerable + db_owner
                     bool isExploitable = isVulnerable && currentUserIsDbOwner == "YES";
                     row["Exploitable"] = isExploitable ? "YES" : "NO";
 
@@ -204,11 +204,12 @@ ORDER BY [Database];";
                     if (exploitable > 0)
                     {
                         Logger.Warning($"{exploitable} of {vulnerable} vulnerable database(s) are immediately exploitable (you are db_owner)");
-                        Logger.WarningNested($"Use 'trustworthy <database> -e' to escalate to sysadmin");
+                        Logger.WarningNested($"Use 'trustworthy -d <database> -e' to escalate to sysadmin");
                     }
                     else
                     {
                         Logger.InfoNested("None are currently exploitable by your user (not db_owner)");
+                        Logger.InfoNested("Note: msdb is default but still exploitable if you gain db_owner");
                     }
                 }
                 else if (results.Rows.Cast<DataRow>().Any(r => Convert.ToBoolean(r["Trustworthy"])))
