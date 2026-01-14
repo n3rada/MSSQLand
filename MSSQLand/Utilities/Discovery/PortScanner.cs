@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,50 +11,35 @@ using System.Threading.Tasks;
 namespace MSSQLand.Utilities.Discovery
 {
     /// <summary>
-    /// Scans TCP ports to discover SQL Server instances by validating TDS (Tabular Data Stream) protocol.
-    /// More reliable than SQL Browser as it validates actual listening ports, not configured values.
+    /// TCP port scanner with TDS protocol validation for SQL Server discovery.
     /// 
-    /// <para>
-    /// <b>How it works:</b>
-    /// 1. Attempts TCP connection to each port
-    /// 2. Sends TDS prelogin packet
-    /// 3. If server responds with TDS, it's a SQL Server
-    /// </para>
+    /// <para><b>Strategy:</b></para>
+    /// <list type="number">
+    /// <item>DNS resolution cached upfront</item>
+    /// <item>Parallel TCP connect + TDS validation</item>
+    /// <item>Edges-to-middle scanning for faster discovery</item>
+    /// </list>
     /// 
-    /// <para>
-    /// <b>OPSEC Note:</b> This performs active TCP connections which may be logged by firewalls/IDS.
-    /// Use SQL Browser (-browse) first for quieter discovery.
-    /// </para>
+    /// <para><b>OPSEC Note:</b> Active TCP connections may be logged. Use -browse first.</para>
     /// </summary>
     public static class PortScanner
     {
         /// <summary>
-        /// Known SQL Server ports seen in the wild.
-        /// These are tried first before scanning ephemeral port ranges.
-        /// 
-        /// Add ports you encounter in your engagements to speed up future scans.
+        /// Known SQL Server ports. Scanned first before ephemeral range.
         /// </summary>
         public static readonly int[] KnownPorts = new int[]
         {
-            // Official/documented ports
-            1433,   // Default SQL Server instance
-
-            // Seen in the wild
-            14711,
-            14712,
+            1433,   // Default instance
+            14711, 14712,  // Seen in the wild
         };
 
-        // IANA ephemeral port range (Windows uses this for named instances)
         private const int EphemeralStart = 49152;
         private const int EphemeralEnd = 65535;
 
-        private const int DefaultTimeoutMs = 300;
-        private const int DefaultParallelism = 500;  // Max concurrent connections
+        private const int DefaultTimeoutMs = 500;
+        private const int DefaultParallelism = 500;
         private const int TdsPreloginPacketType = 0x12;
 
-        /// <summary>
-        /// Result of a port scan indicating a SQL Server was found.
-        /// </summary>
         public class ScanResult
         {
             public int Port { get; set; }
@@ -62,291 +48,229 @@ namespace MSSQLand.Utilities.Discovery
         }
 
         /// <summary>
-        /// Scans known ports first, then ephemeral range from both ends toward middle.
-        /// Stops as soon as a SQL Server is found.
+        /// Scan: known ports first, then ephemeral range.
         /// </summary>
-        /// <param name="hostname">The hostname or IP to scan</param>
-        /// <param name="timeoutMs">Connection timeout in milliseconds</param>
-        /// <param name="maxParallelism">Maximum concurrent connections</param>
-        /// <param name="stopOnFirst">If true, stops scanning after first SQL Server is found</param>
-        /// <returns>List of ports that respond with TDS protocol</returns>
         public static List<ScanResult> Scan(string hostname, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism, bool stopOnFirst = true)
         {
-            var results = new ConcurrentBag<ScanResult>();
-            var found = new ManualResetEventSlim(false);
             var globalStopwatch = Stopwatch.StartNew();
+            
+            // Resolve DNS once upfront
+            IPAddress ip;
+            try
+            {
+                ip = ResolveHostname(hostname);
+                Logger.InfoNested($"Resolved to {ip}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"DNS resolution failed: {ex.Message}");
+                return new List<ScanResult>();
+            }
 
-            // Phase 1: Scan known ports first
-            Logger.Info($"Testing {KnownPorts.Length} known ports");
+            var cts = new CancellationTokenSource();
+
+            // Phase 1: Known ports
+            Logger.Info($"Phase 1: Testing {KnownPorts.Length} known ports");
             var knownStopwatch = Stopwatch.StartNew();
-            var knownResults = ScanPortsParallel(hostname, KnownPorts, timeoutMs, maxParallelism, stopOnFirst ? found : null);
+            var knownResults = ScanPortsParallel(ip, KnownPorts, timeoutMs, maxParallelism, stopOnFirst ? cts : null);
             knownStopwatch.Stop();
             Logger.InfoNested($"Completed in {knownStopwatch.ElapsedMilliseconds}ms");
-            
-            foreach (var r in knownResults)
+
+            if (stopOnFirst && knownResults.Count > 0)
             {
-                results.Add(r);
+                LogSummary(hostname, knownResults, globalStopwatch);
+                return knownResults;
             }
 
-            if (stopOnFirst && results.Count > 0)
-            {
-                globalStopwatch.Stop();
-                Logger.NewLine();
-                Logger.Info($"Total scan time: {globalStopwatch.ElapsedMilliseconds}ms");
-                return results.OrderBy(r => r.Port).ToList();
-            }
-
+            // Phase 2: Ephemeral range
             Logger.NewLine();
-
-            // Phase 2: Scan ephemeral range from both ends toward middle
             int ephemeralCount = EphemeralEnd - EphemeralStart + 1;
-            Logger.Info($"Scanning IANA ephemeral range ({EphemeralStart}-{EphemeralEnd}) - {ephemeralCount} ports");
-            Logger.InfoNested("Windows allocates dynamic ports here for named instances");
-            Logger.InfoNested("Scanning from edges toward middle for faster discovery");
+            Logger.Info($"Phase 2: Scanning ephemeral range ({EphemeralStart}-{EphemeralEnd}) - {ephemeralCount} ports");
+            Logger.InfoNested("Strategy: edges-to-middle for faster discovery");
             
             var ephemeralStopwatch = Stopwatch.StartNew();
             var ephemeralPorts = GenerateEdgesToMiddle(EphemeralStart, EphemeralEnd);
-            var ephemeralResults = ScanPortsParallel(hostname, ephemeralPorts, timeoutMs, maxParallelism, stopOnFirst ? found : null);
+            var ephemeralResults = ScanPortsParallel(ip, ephemeralPorts, timeoutMs, maxParallelism, stopOnFirst ? cts : null);
             ephemeralStopwatch.Stop();
-            Logger.InfoNested($"Completed in {ephemeralStopwatch.Elapsed.TotalSeconds:F1}s");
             
-            foreach (var r in ephemeralResults)
-            {
-                results.Add(r);
-            }
+            int portsPerSec = (int)(ephemeralCount * 1000L / Math.Max(1, ephemeralStopwatch.ElapsedMilliseconds));
+            Logger.InfoNested($"Completed in {ephemeralStopwatch.Elapsed.TotalSeconds:F1}s ({portsPerSec} ports/sec)");
 
-            globalStopwatch.Stop();
-            Logger.NewLine();
-            Logger.Info($"Total scan time: {globalStopwatch.Elapsed.TotalSeconds:F1}s");
-
-            return results.OrderBy(r => r.Port).ToList();
+            var allResults = knownResults.Concat(ephemeralResults).OrderBy(r => r.Port).ToList();
+            LogSummary(hostname, allResults, globalStopwatch);
+            return allResults;
         }
 
         /// <summary>
-        /// Generates port list starting from both ends of a range, meeting in the middle.
-        /// Example for range 1-10: 1, 10, 2, 9, 3, 8, 4, 7, 5, 6
-        /// This is effective for ephemeral ports as Windows allocates from the start,
-        /// but long-running services may have grabbed early ports.
+        /// Parallel port scanning with TDS validation.
         /// </summary>
-        private static int[] GenerateEdgesToMiddle(int start, int end)
-        {
-            var ports = new List<int>();
-            int low = start;
-            int high = end;
-
-            while (low <= high)
-            {
-                ports.Add(low);
-                if (low != high)
-                {
-                    ports.Add(high);
-                }
-                low++;
-                high--;
-            }
-
-            return ports.ToArray();
-        }
-
-        /// <summary>
-        /// Scans known SQL Server ports only.
-        /// Uses parallel scanning for speed.
-        /// </summary>
-        /// <param name="hostname">The hostname or IP to scan</param>
-        /// <param name="timeoutMs">Connection timeout in milliseconds</param>
-        /// <param name="maxParallelism">Maximum concurrent connections</param>
-        /// <returns>List of ports that respond with TDS protocol</returns>
-        public static List<ScanResult> ScanKnownPorts(string hostname, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism)
-        {
-            return ScanPortsParallel(hostname, KnownPorts, timeoutMs, maxParallelism, null);
-        }
-
-        /// <summary>
-        /// Scans specific ports in parallel on the specified host.
-        /// </summary>
-        /// <param name="stopSignal">Optional signal to stop scanning early (e.g., when first result found)</param>
-        private static List<ScanResult> ScanPortsParallel(string hostname, int[] ports, int timeoutMs, int maxParallelism, ManualResetEventSlim stopSignal)
+        private static List<ScanResult> ScanPortsParallel(IPAddress ip, int[] ports, int timeoutMs, int maxParallelism, CancellationTokenSource stopCts)
         {
             var results = new ConcurrentBag<ScanResult>();
             var semaphore = new SemaphoreSlim(maxParallelism);
-            var cts = new CancellationTokenSource();
-            var tasks = new List<Task>();
 
-            // Link stop signal to cancellation if provided
-            if (stopSignal != null)
+            var tasks = ports.Select(port => Task.Run(async () =>
             {
-                Task.Run(() =>
-                {
-                    stopSignal.Wait();
-                    cts.Cancel();
-                });
-            }
+                if (stopCts?.IsCancellationRequested == true)
+                    return;
 
-            foreach (int port in ports)
-            {
-                if (cts.Token.IsCancellationRequested)
-                    break;
-
-                tasks.Add(Task.Run(async () =>
+                await semaphore.WaitAsync().ConfigureAwait(false);
+                try
                 {
-                    if (cts.Token.IsCancellationRequested)
+                    if (stopCts?.IsCancellationRequested == true)
                         return;
 
-                    await semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
-                    try
+                    var result = ProbePort(ip, port, timeoutMs);
+                    if (result != null)
                     {
-                        if (cts.Token.IsCancellationRequested)
-                            return;
+                        results.Add(result);
+                        stopCts?.Cancel();
+                    }
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            })).ToArray();
 
-                        var result = ProbePort(hostname, port, timeoutMs);
-                        if (result != null)
-                        {
-                            results.Add(result);
-                            stopSignal?.Set();  // Signal to stop other scans
-                        }
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        // Expected when stopping early
-                    }
-                    finally
-                    {
-                        semaphore.Release();
-                    }
-                }, cts.Token));
-            }
+            try { Task.WaitAll(tasks); } catch { }
 
-            try
-            {
-                Task.WaitAll(tasks.ToArray());
-            }
-            catch (AggregateException)
-            {
-                // Some tasks were cancelled, that's expected
-            }
-            
             return results.OrderBy(r => r.Port).ToList();
         }
 
         /// <summary>
-        /// Probes a single port to check if it's running SQL Server.
-        /// Sends a TDS prelogin packet and validates the response.
+        /// Probes a single port: TCP connect + TDS validation.
         /// </summary>
-        private static ScanResult ProbePort(string hostname, int port, int timeoutMs)
+        private static ScanResult ProbePort(IPAddress ip, int port, int timeoutMs)
         {
             try
             {
                 using (var client = new TcpClient())
                 {
-                    // Set connect timeout
-                    var connectResult = client.BeginConnect(hostname, port, null, null);
-                    bool connected = connectResult.AsyncWaitHandle.WaitOne(timeoutMs);
-                    
-                    if (!connected)
-                    {
-                        return null; // Connection timeout
-                    }
+                    // Connect with timeout
+                    var connectTask = client.ConnectAsync(ip, port);
+                    if (!connectTask.Wait(timeoutMs))
+                        return null;
 
-                    try
-                    {
-                        client.EndConnect(connectResult);
-                    }
-                    catch
-                    {
-                        return null; // Connection refused
-                    }
+                    if (!client.Connected)
+                        return null;
 
-                    // Port is open - now validate TDS
+                    // Port is open - validate TDS
                     var stream = client.GetStream();
                     stream.ReadTimeout = timeoutMs;
                     stream.WriteTimeout = timeoutMs;
 
                     // Send TDS prelogin packet
-                    // TDS packet header: Type (1 byte), Status (1 byte), Length (2 bytes), SPID (2 bytes), PacketID (1 byte), Window (1 byte)
-                    // Minimal prelogin: just the header with type 0x12 (prelogin)
-                    byte[] preloginPacket = new byte[]
-                    {
-                        TdsPreloginPacketType, // Packet type: Prelogin
-                        0x01,                   // Status: End of message
-                        0x00, 0x08,            // Length: 8 bytes (just header)
-                        0x00, 0x00,            // SPID: 0
-                        0x00,                   // PacketID: 0
-                        0x00                    // Window: 0
-                    };
+                    byte[] prelogin = { TdsPreloginPacketType, 0x01, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00 };
+                    stream.Write(prelogin, 0, prelogin.Length);
 
-                    stream.Write(preloginPacket, 0, preloginPacket.Length);
-
-                    // Try to read response
+                    // Read response
                     byte[] response = new byte[8];
-                    int bytesRead = 0;
-                    
+                    int bytesRead;
                     try
                     {
                         bytesRead = stream.Read(response, 0, response.Length);
                     }
-                    catch (System.IO.IOException)
+                    catch
                     {
-                        // Read timeout - not SQL Server or filtered
                         return null;
                     }
 
                     if (bytesRead > 0)
                     {
-                        // Check if response looks like TDS
-                        // TDS prelogin response has type 0x04 (tabular result) or 0x12 (prelogin response)
-                        byte responseType = response[0];
-                        
-                        if (responseType == 0x04 || responseType == 0x12)
+                        byte type = response[0];
+                        // TDS response types: 0x04 (tabular) or 0x12 (prelogin)
+                        if (type == 0x04 || type == 0x12)
                         {
-                            return new ScanResult
-                            {
-                                Port = port,
-                                IsTds = true,
-                                ResponseInfo = $"TDS response type: 0x{responseType:X2}"
-                            };
-                        }
-                        else if (bytesRead >= 4)
-                        {
-                            // Could still be SQL Server with different response
-                            return new ScanResult
-                            {
-                                Port = port,
-                                IsTds = false,
-                                ResponseInfo = $"Unknown response: 0x{response[0]:X2} 0x{response[1]:X2} 0x{response[2]:X2} 0x{response[3]:X2}"
-                            };
+                            return new ScanResult { Port = port, IsTds = true, ResponseInfo = $"TDS 0x{type:X2}" };
                         }
                     }
                 }
             }
-            catch (SocketException)
-            {
-                // Connection failed - port closed or filtered
-            }
-            catch (Exception)
-            {
-                // Other error
-            }
+            catch (AggregateException) { }
+            catch (SocketException) { }
+            catch { }
 
             return null;
         }
 
         /// <summary>
-        /// Logs scan results to the console.
+        /// Resolves hostname to IP (cached for all port checks).
         /// </summary>
+        private static IPAddress ResolveHostname(string hostname)
+        {
+            if (IPAddress.TryParse(hostname, out var ip))
+                return ip;
+
+            var addresses = Dns.GetHostAddresses(hostname);
+            return addresses.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork) 
+                   ?? addresses.First();
+        }
+
+        /// <summary>
+        /// Generates ports from edges toward middle: 49152, 65535, 49153, 65534...
+        /// </summary>
+        private static int[] GenerateEdgesToMiddle(int start, int end)
+        {
+            var ports = new int[end - start + 1];
+            int low = start, high = end, i = 0;
+            while (low <= high)
+            {
+                ports[i++] = low++;
+                if (low <= high)
+                    ports[i++] = high--;
+            }
+            return ports;
+        }
+
+        /// <summary>
+        /// Scans known ports only.
+        /// </summary>
+        public static List<ScanResult> ScanKnownPorts(string hostname, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism)
+        {
+            try
+            {
+                var ip = ResolveHostname(hostname);
+                return ScanPortsParallel(ip, KnownPorts, timeoutMs, maxParallelism, null);
+            }
+            catch
+            {
+                return new List<ScanResult>();
+            }
+        }
+
+        private static void LogSummary(string hostname, List<ScanResult> results, Stopwatch stopwatch)
+        {
+            stopwatch.Stop();
+            Logger.NewLine();
+            Logger.Info($"Total scan time: {stopwatch.Elapsed.TotalSeconds:F1}s");
+
+            if (results.Count == 0)
+            {
+                Logger.Warning("No SQL Server ports found");
+            }
+            else
+            {
+                Logger.Success($"Found {results.Count} SQL Server port(s):");
+                foreach (var r in results.OrderBy(r => r.Port))
+                {
+                    Logger.SuccessNested($"{hostname}:{r.Port}");
+                }
+            }
+        }
+
         public static void LogResults(string hostname, List<ScanResult> results)
         {
             Logger.NewLine();
-            
             if (results.Count == 0)
             {
                 Logger.Warning("No SQL Server ports found");
                 return;
             }
-
             Logger.Success($"Found {results.Count} SQL Server port(s):");
-            foreach (var result in results)
+            foreach (var r in results.OrderBy(r => r.Port))
             {
-                Logger.SuccessNested($"{hostname}:{result.Port}");
+                Logger.SuccessNested($"{hostname}:{r.Port}");
             }
         }
     }
