@@ -18,8 +18,17 @@ namespace MSSQLand.Utilities.Discovery
     /// <para><b>Strategy:</b></para>
     /// <list type="number">
     /// <item>DNS resolution cached upfront</item>
-    /// <item>Parallel TCP connect + TDS validation</item>
+    /// <item>Parallel TCP connect + TDS validation (500 concurrent)</item>
     /// <item>Edges-to-middle scanning for faster discovery</item>
+    /// </list>
+    /// 
+    /// <para><b>Expected timing for ephemeral range (16,384 ports):</b></para>
+    /// <para>With 500 concurrent connections and 500ms timeout:</para>
+    /// <para>Batches = 16,384 / 500 ≈ 33 waves</para>
+    /// <list type="bullet">
+    /// <item>Best case (closed ports RST fast): ~5-10s</item>
+    /// <item>Average (some filtering): ~15-25s</item>
+    /// <item>Worst case (all filtered, full timeout): 33 × 500ms ≈ 17s + overhead = ~25-35s</item>
     /// </list>
     /// 
     /// <para><b>OPSEC Note:</b> Active TCP connections may be logged. Use -browse first.</para>
