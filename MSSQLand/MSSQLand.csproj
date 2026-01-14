@@ -201,6 +201,7 @@
     <Compile Include="Utilities\SidParser.cs" />
 
     <Compile Include="Utilities\Discovery\FindSqlServers.cs" />
+    <Compile Include="Utilities\Discovery\PortScanner.cs" />
     <Compile Include="Utilities\Discovery\SqlBrowser.cs" />
 
     <Compile Include="Utilities\Formatters\CsvFormatter.cs" />
