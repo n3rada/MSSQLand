@@ -7,7 +7,6 @@ using System;
 using System.Data;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Text;
 using System.Xml;
 
@@ -315,76 +314,56 @@ ORDER BY ds.DeploymentTime DESC;";
             return null;
         }
 
+        /// <summary>
+        /// Decompresses ConfigMgr task sequence data.
+        /// Format: [4-byte uncompressed length (LE)] + [DEFLATE-compressed Unicode (UTF-16 LE) string]
+        /// </summary>
         private string DecompressSequence(byte[] compressedData)
         {
-            // ConfigMgr stores task sequences as GZip-compressed XML
-            // Safety check: if compressed data is > 10MB, likely corrupt or wrong column
+            if (compressedData == null || compressedData.Length < 5)
+            {
+                throw new InvalidDataException("Sequence data is empty or too small");
+            }
+
+            // Safety check: compressed data > 10MB is suspicious
             if (compressedData.Length > 10 * 1024 * 1024)
             {
-                throw new InvalidDataException($"Sequence data too large ({Misc.FormatByteSize(compressedData.Length, false)}) - possible data corruption");
+                throw new InvalidDataException($"Sequence data too large ({Misc.FormatByteSize(compressedData.Length, false)}) - possible corruption");
             }
+
+            // First 4 bytes = uncompressed length (little-endian)
+            int uncompressedLength = BitConverter.ToInt32(compressedData, 0);
             
-            // Debug: show first bytes
-            string hexDump = BitConverter.ToString(compressedData.Take(16).ToArray()).Replace("-", " ");
-            Logger.Trace($"Sequence data: {compressedData.Length} bytes, first 16 bytes: {hexDump}");
-            
-            // Skip first 4 bytes (size header) if present
-            int offset = 0;
-            
-            // Check for GZip magic number (0x1F 0x8B)
-            if (compressedData.Length > 2 && compressedData[0] == 0x1F && compressedData[1] == 0x8B)
+            // Sanity check: uncompressed size should be reasonable (< 100MB)
+            if (uncompressedLength < 0 || uncompressedLength > 100 * 1024 * 1024)
             {
-                Logger.Info("Detected GZip format (magic: 0x1F 0x8B)");
-                offset = 0; // Already GZip format
+                throw new InvalidDataException($"Invalid uncompressed length header: {uncompressedLength}");
             }
-            else if (compressedData.Length > 6 && compressedData[4] == 0x1F && compressedData[5] == 0x8B)
-            {
-                Logger.Info("Detected 4-byte header + GZip format");
-                // Might have 4-byte size header before GZip data
-                offset = 4;
-            }
-            else
-            {
-                Logger.Warning($"No GZip magic found. First bytes: {hexDump}");
-            }
+
+            Logger.Trace($"Sequence: {Misc.FormatByteSize(compressedData.Length, false)} compressed, {Misc.FormatByteSize(uncompressedLength, false)} uncompressed");
 
             try
             {
-                using (var inputStream = new MemoryStream(compressedData, offset, compressedData.Length - offset))
-                using (var gzipStream = new GZipStream(inputStream, CompressionMode.Decompress))
+                // Remaining bytes are DEFLATE-compressed Unicode string
+                using (var inputStream = new MemoryStream(compressedData, 4, compressedData.Length - 4))
+                using (var deflateStream = new DeflateStream(inputStream, CompressionMode.Decompress))
                 using (var outputStream = new MemoryStream())
                 {
-                    gzipStream.CopyTo(outputStream);
+                    deflateStream.CopyTo(outputStream);
                     byte[] decompressed = outputStream.ToArray();
-                    
-                    // Safety check: decompressed XML > 50MB is suspicious
-                    if (decompressed.Length > 50 * 1024 * 1024)
-                    {
-                        throw new InvalidDataException($"Decompressed sequence too large ({Misc.FormatByteSize(decompressed.Length, false)}) - possible bomb");
-                    }
-                    
-                    string xml = Encoding.UTF8.GetString(decompressed);
-                    Logger.Success($"Decompressed {Misc.FormatByteSize(decompressed.Length, false)}, first chars: {xml.Substring(0, Math.Min(100, xml.Length))}");
-                    return xml;
+
+                    // ConfigMgr stores as Unicode (UTF-16 LE)
+                    return Encoding.Unicode.GetString(decompressed);
                 }
+            }
+            catch (InvalidDataException)
+            {
+                // Rethrow our own exceptions
+                throw;
             }
             catch (Exception ex)
             {
-                Logger.Warning($"GZip decompression failed: {ex.Message}");
-                
-                // If GZip fails, try as plain UTF-8 (some older versions)
-                try
-                {
-                    string plainUtf8 = Encoding.UTF8.GetString(compressedData);
-                    Logger.Info("Trying plain UTF-8 decoding");
-                    return plainUtf8;
-                }
-                catch
-                {
-                    // Try Unicode
-                    Logger.Info("Trying Unicode decoding");
-                    return Encoding.Unicode.GetString(compressedData);
-                }
+                throw new InvalidDataException($"DEFLATE decompression failed: {ex.Message}", ex);
             }
         }
 
