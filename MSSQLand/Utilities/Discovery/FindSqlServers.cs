@@ -40,7 +40,7 @@ namespace MSSQLand.Utilities.Discovery
     /// - lastLogonTimestamp has ~14 day replication delay
     /// </para>
     /// </summary>
-    public static class FindSQLServers
+    public static class FindSqlServers
     {
         /// <summary>
         /// Enumerates SQL Servers in the specified Active Directory domain.
