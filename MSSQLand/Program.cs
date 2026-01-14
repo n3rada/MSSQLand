@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data.SqlClient;
 using System.Diagnostics;
+using System.Text;
 using MSSQLand.Models;
 using MSSQLand.Services;
 using MSSQLand.Utilities;
@@ -13,6 +14,9 @@ namespace MSSQLand
     {
         static int Main(string[] args)
         {
+            // Force UTF-8 output encoding for consistent cross-platform handling
+            Console.OutputEncoding = Encoding.UTF8;
+            Console.InputEncoding = Encoding.UTF8;
             // Parse command-line arguments
             CommandArgs arguments;
             try
