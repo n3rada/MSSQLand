@@ -113,7 +113,10 @@ namespace MSSQLand
                     }
 
                     Logger.NewLine();
-                    bannerWidth = Logger.Banner($"From: {Environment.MachineName} ({localTimeZone.Id}, {DateTime.Now:HH:mm:ss} UTC{formattedOffset})\nTo: {targetInfo}");
+                    bannerWidth = Logger.Banner(
+                        $@"From: {Environment.MachineName}
+                        {localTimeZone.Id} {DateTime.Now:HH:mm:ss} UTC{formattedOffset}
+                        To: {targetInfo}");
                     Logger.NewLine();
 
                     Logger.Banner($"Start at {startTime:yyyy-MM-dd HH:mm:ss:fffff} UTC", totalWidth: bannerWidth);
