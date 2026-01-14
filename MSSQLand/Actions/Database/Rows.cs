@@ -10,106 +10,65 @@ namespace MSSQLand.Actions.Database
 {
     public class Rows : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "Table name in format: [table], [schema.table], or [database.schema.table]")]
-        private string _fqtn; // Store the full qualified table name argument
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Table name: [table], [schema.table], or [database.schema.table]")]
+        private string _fqtn = "";
 
-        [ArgumentMetadata(Position = 1, ShortName = "l", LongName = "limit", Description = "Maximum number of rows to retrieve (default: 25)")]
+        [ArgumentMetadata(Position = 1, ShortName = "l", LongName = "limit", Description = "Maximum rows to retrieve (default: 25)")]
         private int _limit = 25;
 
-        [ArgumentMetadata(Position = 2, LongName = "all", Description = "Retrieve all rows without limit")]
+        [ArgumentMetadata(LongName = "all", Description = "Retrieve all rows without limit")]
         private bool _all = false;
-
-        [ExcludeFromArguments]
-        private string _database;
-        
-        [ExcludeFromArguments]
-        private string _schema = null; // Let SQL Server use user's default schema
-        
-        [ExcludeFromArguments]
-        private string _table;
 
         public override void ValidateArguments(string[] args)
         {
-            if (args == null || args.Length == 0)
-            {
-                throw new ArgumentException("Rows action requires at least a Table Name as an argument or a Fully Qualified Table Name (FQTN) in the format 'database.schema.table'.");
-            }
-
-            // Parse arguments using the base class method
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-
-            // Get the FQTN from the first positional argument
-            _fqtn = GetPositionalArgument(positionalArgs, 0);
+            BindArguments(args);
 
             if (string.IsNullOrEmpty(_fqtn))
             {
-                throw new ArgumentException("Rows action requires at least a Table Name as an argument or a Fully Qualified Table Name (FQTN) in the format 'database.schema.table'.");
+                throw new ArgumentException("Table name is required. Format: [table], [schema.table], or [database.schema.table]");
             }
 
-            // Parse the table name to extract database, schema, and table
-            string[] parts = _fqtn.Split('.');
-
-            if (parts.Length == 3) // Format: database.schema.table
+            // Validate the FQTN can be parsed
+            try
             {
-                _database = parts[0];
-                _schema = parts[1];
-                _table = parts[2];
+                Misc.ParseQualifiedTableName(_fqtn);
             }
-            else if (parts.Length == 2) // Format: schema.table
+            catch (ArgumentException ex)
             {
-                _database = null; // Use the current database
-                _schema = parts[0];
-                _table = parts[1];
-            }
-            else if (parts.Length == 1) // Format: table (use current database and user's default schema)
-            {
-                _database = null; // Use the current database
-                _schema = null; // Let SQL Server use user's default schema
-                _table = parts[0];
-            }
-            else
-            {
-                throw new ArgumentException("Invalid format. Use: [table], [schema.table], or [database.schema.table].");
+                throw new ArgumentException($"Invalid table name: {ex.Message}");
             }
 
-            if (string.IsNullOrEmpty(_table))
-            {
-                throw new ArgumentException("Table name cannot be empty.");
-            }
-
-            // Parse limit from named arguments or second positional argument
-            string limitStr = GetNamedArgument(namedArgs, "limit", GetNamedArgument(namedArgs, "l", GetPositionalArgument(positionalArgs, 1, "50")));
-            if (!int.TryParse(limitStr, out _limit))
-            {
-                throw new ArgumentException($"Invalid limit value: {limitStr}. Limit must be an integer.");
-            }
-
-            // Check for --all flag
-            _all = namedArgs.ContainsKey("all");
-
-            // If --all is specified, set limit to 0 (no limit)
+            // If --all is specified, override limit
             if (_all)
             {
                 _limit = 0;
             }
 
-            // Validate limit
             if (_limit < 0)
             {
-                throw new ArgumentException($"Invalid limit value: {_limit}. Limit must be a non-negative integer.");
+                throw new ArgumentException($"Limit must be a non-negative integer, got: {_limit}");
             }
         }
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            // Use the execution database if no database is specified
-            if (string.IsNullOrEmpty(_database))
+            // Parse the FQTN
+            var (database, schema, table) = Misc.ParseQualifiedTableName(_fqtn);
+
+            // Use execution database if none specified
+            if (string.IsNullOrEmpty(database))
             {
-                _database = databaseContext.QueryService.ExecutionServer.Database;
+                database = databaseContext.QueryService.ExecutionServer.Database;
             }
 
-            // Build the target table name
-            string targetTable = Misc.BuildQualifiedTableName(_database, _schema, _table);
+            // Validate table name after parsing
+            if (string.IsNullOrEmpty(table))
+            {
+                throw new ArgumentException("Table name cannot be empty.");
+            }
+
+            // Build the qualified table name for the query
+            string targetTable = Misc.BuildQualifiedTableName(database, schema, table);
             
             Logger.TaskNested($"Retrieving rows from {targetTable}");
             
@@ -123,14 +82,9 @@ namespace MSSQLand.Actions.Database
             }
 
             // Build query with optional TOP
-            string query = $"SELECT";
-            
-            if (_limit > 0)
-            {
-                query += $" TOP ({_limit})";
-            }
-            
-            query += $" * FROM {targetTable};";
+            string query = _limit > 0
+                ? $"SELECT TOP ({_limit}) * FROM {targetTable};"
+                : $"SELECT * FROM {targetTable};";
 
             DataTable rows = databaseContext.QueryService.ExecuteTable(query);
 
