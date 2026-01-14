@@ -1,6 +1,10 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MSSQLand.Utilities.Discovery
 {
@@ -22,18 +26,28 @@ namespace MSSQLand.Utilities.Discovery
     /// </summary>
     public static class PortScanner
     {
-        // Common SQL Server ports to check first
-        private static readonly int[] CommonPorts = new int[]
+        /// <summary>
+        /// Known SQL Server ports seen in the wild.
+        /// These are tried first before scanning ephemeral port ranges.
+        /// 
+        /// Add ports you encounter in your engagements to speed up future scans.
+        /// </summary>
+        public static readonly int[] KnownPorts = new int[]
         {
-            1433,  // Default instance
-            1435,  // Common alternate
-            2433,  // Common alternate
-            14330, // Common high port
-            // Dynamic port range commonly used by named instances
-            49152, 49153, 49154, 49155, 49156, 49157, 49158, 49159, 49160
+            // Official/documented ports
+            1433,   // Default SQL Server instance
+
+            // Seen in the wild
+            14711,
+            14712,
         };
 
+        // IANA ephemeral port range (Windows uses this for named instances)
+        private const int EphemeralStart = 49152;
+        private const int EphemeralEnd = 65535;
+
         private const int DefaultTimeoutMs = 500;
+        private const int DefaultParallelism = 100;  // Max concurrent connections
         private const int TdsPreloginPacketType = 0x12;
 
         /// <summary>
@@ -47,51 +61,148 @@ namespace MSSQLand.Utilities.Discovery
         }
 
         /// <summary>
-        /// Scans common SQL Server ports on the specified host.
+        /// Scans known ports first, then ephemeral range from both ends toward middle.
+        /// Stops as soon as a SQL Server is found.
         /// </summary>
         /// <param name="hostname">The hostname or IP to scan</param>
         /// <param name="timeoutMs">Connection timeout in milliseconds</param>
+        /// <param name="maxParallelism">Maximum concurrent connections</param>
+        /// <param name="stopOnFirst">If true, stops scanning after first SQL Server is found</param>
         /// <returns>List of ports that respond with TDS protocol</returns>
-        public static List<ScanResult> ScanCommonPorts(string hostname, int timeoutMs = DefaultTimeoutMs)
+        public static List<ScanResult> Scan(string hostname, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism, bool stopOnFirst = true)
         {
-            return ScanPorts(hostname, CommonPorts, timeoutMs);
+            var results = new ConcurrentBag<ScanResult>();
+            var found = new ManualResetEventSlim(false);
+
+            // Phase 1: Scan known ports first
+            Logger.Debug($"Scanning {KnownPorts.Length} known ports...");
+            var knownResults = ScanPortsParallel(hostname, KnownPorts, timeoutMs, maxParallelism, stopOnFirst ? found : null);
+            foreach (var r in knownResults)
+            {
+                results.Add(r);
+            }
+
+            if (stopOnFirst && results.Count > 0)
+            {
+                return results.OrderBy(r => r.Port).ToList();
+            }
+
+            // Phase 2: Scan ephemeral range from both ends toward middle
+            Logger.Debug($"Scanning ephemeral range {EphemeralStart}-{EphemeralEnd} (edges to middle)...");
+            var ephemeralPorts = GenerateEdgesToMiddle(EphemeralStart, EphemeralEnd);
+            var ephemeralResults = ScanPortsParallel(hostname, ephemeralPorts, timeoutMs, maxParallelism, stopOnFirst ? found : null);
+            foreach (var r in ephemeralResults)
+            {
+                results.Add(r);
+            }
+
+            return results.OrderBy(r => r.Port).ToList();
         }
 
         /// <summary>
-        /// Scans a range of ports on the specified host.
+        /// Generates port list starting from both ends of a range, meeting in the middle.
+        /// Example for range 1-10: 1, 10, 2, 9, 3, 8, 4, 7, 5, 6
+        /// This is effective for ephemeral ports as Windows allocates from the start,
+        /// but long-running services may have grabbed early ports.
         /// </summary>
-        /// <param name="hostname">The hostname or IP to scan</param>
-        /// <param name="startPort">Start of port range</param>
-        /// <param name="endPort">End of port range</param>
-        /// <param name="timeoutMs">Connection timeout in milliseconds</param>
-        /// <returns>List of ports that respond with TDS protocol</returns>
-        public static List<ScanResult> ScanRange(string hostname, int startPort, int endPort, int timeoutMs = DefaultTimeoutMs)
+        private static int[] GenerateEdgesToMiddle(int start, int end)
         {
             var ports = new List<int>();
-            for (int p = startPort; p <= endPort; p++)
+            int low = start;
+            int high = end;
+
+            while (low <= high)
             {
-                ports.Add(p);
+                ports.Add(low);
+                if (low != high)
+                {
+                    ports.Add(high);
+                }
+                low++;
+                high--;
             }
-            return ScanPorts(hostname, ports.ToArray(), timeoutMs);
+
+            return ports.ToArray();
         }
 
         /// <summary>
-        /// Scans specific ports on the specified host.
+        /// Scans known SQL Server ports only.
+        /// Uses parallel scanning for speed.
         /// </summary>
-        private static List<ScanResult> ScanPorts(string hostname, int[] ports, int timeoutMs)
+        /// <param name="hostname">The hostname or IP to scan</param>
+        /// <param name="timeoutMs">Connection timeout in milliseconds</param>
+        /// <param name="maxParallelism">Maximum concurrent connections</param>
+        /// <returns>List of ports that respond with TDS protocol</returns>
+        public static List<ScanResult> ScanKnownPorts(string hostname, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism)
         {
-            var results = new List<ScanResult>();
+            return ScanPortsParallel(hostname, KnownPorts, timeoutMs, maxParallelism, null);
+        }
+
+        /// <summary>
+        /// Scans specific ports in parallel on the specified host.
+        /// </summary>
+        /// <param name="stopSignal">Optional signal to stop scanning early (e.g., when first result found)</param>
+        private static List<ScanResult> ScanPortsParallel(string hostname, int[] ports, int timeoutMs, int maxParallelism, ManualResetEventSlim stopSignal)
+        {
+            var results = new ConcurrentBag<ScanResult>();
+            var semaphore = new SemaphoreSlim(maxParallelism);
+            var cts = new CancellationTokenSource();
+            var tasks = new List<Task>();
+
+            // Link stop signal to cancellation if provided
+            if (stopSignal != null)
+            {
+                Task.Run(() =>
+                {
+                    stopSignal.Wait();
+                    cts.Cancel();
+                });
+            }
 
             foreach (int port in ports)
             {
-                var result = ProbePort(hostname, port, timeoutMs);
-                if (result != null)
+                if (cts.Token.IsCancellationRequested)
+                    break;
+
+                tasks.Add(Task.Run(async () =>
                 {
-                    results.Add(result);
-                }
+                    if (cts.Token.IsCancellationRequested)
+                        return;
+
+                    await semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
+                    try
+                    {
+                        if (cts.Token.IsCancellationRequested)
+                            return;
+
+                        var result = ProbePort(hostname, port, timeoutMs);
+                        if (result != null)
+                        {
+                            results.Add(result);
+                            stopSignal?.Set();  // Signal to stop other scans
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Expected when stopping early
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                }, cts.Token));
             }
 
-            return results;
+            try
+            {
+                Task.WaitAll(tasks.ToArray());
+            }
+            catch (AggregateException)
+            {
+                // Some tasks were cancelled, that's expected
+            }
+            
+            return results.OrderBy(r => r.Port).ToList();
         }
 
         /// <summary>
@@ -212,8 +323,7 @@ namespace MSSQLand.Utilities.Discovery
             {
                 string status = result.IsTds ? "[TDS Confirmed]" : "[Possible]";
                 Logger.SuccessNested($"Port {result.Port} {status}");
-                Logger.InfoNested($"  Connection: {hostname}:{result.Port}");
-                Logger.Debug($"  {result.ResponseInfo}");
+                Logger.Debug(result.ResponseInfo);
             }
         }
     }
