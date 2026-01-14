@@ -240,9 +240,7 @@ namespace MSSQLand.Utilities
                     
                     if (nextArg == "-browse" || nextArg == "--browse")
                     {
-                        Logger.Info($"Querying SQL Browser service on {hostArg} (UDP 1434)");
-                        Logger.NewLine();
-                        
+                        Logger.Info($"Querying SQL Browser service on {hostArg} (UDP 1434)");                        
                         var instances = SqlBrowser.Query(hostArg);
                         SqlBrowser.LogInstances(hostArg, instances);
                         
