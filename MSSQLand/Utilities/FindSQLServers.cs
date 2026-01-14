@@ -27,6 +27,7 @@ namespace MSSQLand.Utilities
             }
 
             Logger.TaskNested($"Lurking for MS SQL Servers on Active Directory domain: {domain}");
+            Logger.TaskNested("This method discovers servers with Kerberos SPNs registered in AD.");
 
             // Initialize domain service based on the provided domain
             ADirectoryService domainService = new($"LDAP://{domain}");
