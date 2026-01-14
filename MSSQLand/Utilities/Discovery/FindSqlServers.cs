@@ -50,11 +50,12 @@ namespace MSSQLand.Utilities.Discovery
             ADirectoryService domainService = new($"{protocol}://{domain}");
             LdapQueryService ldapService = new(domainService);
 
-            // LDAP filter: Find objects with MSSQLSvc SPNs OR computers with "SQL" in name or description
+            // LDAP filter: Find computers with MSSQLSvc SPNs OR computers with "SQL" in name or description
+            // All conditions require objectCategory=computer to exclude user/service accounts
             // OU-based searching only works with LDAP, not GC (distinguishedName is not indexed in Global Catalog)
             string ldapFilter = forest
-                ? "(|(servicePrincipalName=MSSQLSvc*)(&(objectCategory=computer)(cn=*SQL*))(&(objectCategory=computer)(description=*SQL*)))"
-                : "(|(servicePrincipalName=MSSQLSvc*)(&(objectCategory=computer)(cn=*SQL*))(&(objectCategory=computer)(description=*SQL*))(&(objectCategory=computer)(distinguishedName=*OU=*SQL*)))";
+                ? "(|(&(objectCategory=computer)(servicePrincipalName=MSSQLSvc*))(&(objectCategory=computer)(cn=*SQL*))(&(objectCategory=computer)(description=*SQL*)))"
+                : "(|(&(objectCategory=computer)(servicePrincipalName=MSSQLSvc*))(&(objectCategory=computer)(cn=*SQL*))(&(objectCategory=computer)(description=*SQL*))(&(objectCategory=computer)(distinguishedName=*OU=*SQL*)))";
 
             // Use lastLogonTimestamp instead of lastLogon - it's replicated across DCs
             string[] ldapAttributes = { "cn", "dnshostname", "samaccountname", "objectsid", "serviceprincipalname", "lastLogonTimestamp", "description", "distinguishedName" };
