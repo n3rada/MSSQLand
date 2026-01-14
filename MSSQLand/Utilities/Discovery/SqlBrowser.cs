@@ -152,7 +152,7 @@ namespace MSSQLand.Utilities.Discovery
         {
             if (instances.Count == 0)
             {
-                Logger.InfoNested("SQL Browser service not available or no instances found");
+                Logger.Warning("SQL Browser service not available or no instances found");
                 return;
             }
 
