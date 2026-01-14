@@ -141,6 +141,8 @@ namespace MSSQLand.Utilities.Discovery
 
             // Phase 2: Ephemeral range
             int ephemeralCount = EphemeralEnd - EphemeralStart + 1;
+
+            Logger.NewLine();
             Logger.Info($"Scanning ephemeral range ({EphemeralStart}-{EphemeralEnd}) - {ephemeralCount} ports");
             Logger.InfoNested("Strategy: edges-to-middle for faster discovery");
             
@@ -363,6 +365,7 @@ namespace MSSQLand.Utilities.Discovery
             Logger.InfoNested($"Resolved to {ip}");
             var globalStopwatch = Stopwatch.StartNew();
 
+            Logger.NewLine();
             Logger.InfoNested($"Testing ports: {FormatPortList(ports)}");
 
             var results = ScanPortsParallel(ip, ports, timeoutMs, maxParallelism, null);
