@@ -236,17 +236,21 @@ namespace MSSQLand.Utilities
             // Server Options
             argumentsTable.Rows.Add("-l, --links", "[Server] Linked server chain. Format: server1:user1,server2:user2,...");
             
-            // Output & Logging            argumentsTable.Rows.Add("--output-format, --format", "[Output] Output format: table (default), csv, json, markdown.");
+            // Output & Logging
+            argumentsTable.Rows.Add("--output-format, --format", "[Output] Output format: table (default), csv, json, markdown.");
             argumentsTable.Rows.Add("--silent", "[Output] Enable silent mode. No logging, only results.");
             argumentsTable.Rows.Add("--debug", "[Output] Enable debug mode for detailed logs.");
             argumentsTable.Rows.Add("--trace", "[Output] Enable trace mode for verbose debugging logs.");
-            
-            // Help & Utilities
+
+            // Help
             argumentsTable.Rows.Add("-h, --help", "[Help] Display help. Use with action for action-specific help.");
             argumentsTable.Rows.Add("--version", "[Help] Display version information.");
-            argumentsTable.Rows.Add("-findsql [domain] [--global-catalog|--gc]", "[Utility] Find SQL Servers via AD SPNs. Use --global-catalog or -gc for forest-wide search (Global Catalog). --forest/-forest also supported for compatibility.");
-            argumentsTable.Rows.Add("<host> -browse", "[Utility] Query SQL Browser service (UDP 1434) for instances and ports.");
-            argumentsTable.Rows.Add("<host> -portscan [--all]", "[Utility] Scan for SQL ports via TDS. Stops on first hit unless --all.");
+
+            // Discovery
+            argumentsTable.Rows.Add("[Discovery]", "");
+            argumentsTable.Rows.Add("-findsql [domain] [--global-catalog|--gc]", "[Discovery] Find SQL Servers via AD SPNs. Use --global-catalog or -gc for forest-wide search (Global Catalog). --forest/-forest also supported for compatibility.");
+            argumentsTable.Rows.Add("<host> -browse", "[Discovery] Query SQL Browser service (UDP 1434) for instances and ports.");
+            argumentsTable.Rows.Add("<host> -portscan [--all]", "[Discovery] Scan for SQL ports via TDS. Stops on first hit unless --all.");
 
             return argumentsTable;
         }
