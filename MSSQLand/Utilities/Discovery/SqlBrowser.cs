@@ -157,6 +157,9 @@ namespace MSSQLand.Utilities.Discovery
             }
 
             Logger.Info($"SQL Browser returned {instances.Count} instance(s):");
+            Logger.InfoNested("Note: Ports are configured values, not necessarily the current listening ports");
+            Logger.NewLine();
+            
             foreach (var instance in instances)
             {
                 string portInfo = instance.TcpPort.HasValue ? $"TCP {instance.TcpPort}" : "No TCP";
