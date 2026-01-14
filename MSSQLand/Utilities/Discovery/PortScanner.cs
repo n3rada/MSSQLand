@@ -446,10 +446,35 @@ namespace MSSQLand.Utilities.Discovery
 
             Logger.NewLine();
             Logger.InfoNested($"Testing ports: {FormatPortList(ports)}");
+            
+            // Apply edges-to-middle strategy for better discovery (especially for large ranges)
+            if (ports.Length > 10)
+            {
+                Logger.InfoNested("Strategy: edges-to-middle for faster discovery");
+                ports = ReorderEdgesToMiddle(ports);
+            }
 
             var results = ScanPortsParallel(ip, ports, timeoutMs, maxParallelism, null);
             LogSummary(hostname, results, globalStopwatch);
             return results;
+        }
+        
+        /// <summary>
+        /// Reorders an array of ports to scan from edges toward middle.
+        /// Preserves original port order but reorders for optimal discovery.
+        /// </summary>
+        private static int[] ReorderEdgesToMiddle(int[] ports)
+        {
+            var sorted = ports.OrderBy(p => p).ToArray();
+            var reordered = new int[sorted.Length];
+            int low = 0, high = sorted.Length - 1, i = 0;
+            while (low <= high)
+            {
+                reordered[i++] = sorted[low++];
+                if (low <= high)
+                    reordered[i++] = sorted[high--];
+            }
+            return reordered;
         }
 
         /// <summary>
