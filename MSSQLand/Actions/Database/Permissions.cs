@@ -22,63 +22,39 @@ namespace MSSQLand.Actions.Database
     /// </summary>
     internal class Permissions : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Description = "Fully Qualified Table Name (database.schema.table) or empty for your permissions")]
-        private string _fqtn;
-
-        [ExcludeFromArguments]
-        private string _database;
-        
-        [ExcludeFromArguments]
-        private string _schema = null; // Let SQL Server use user's default schema
-        
-        [ExcludeFromArguments]
-        private string _table;
+        [ArgumentMetadata(Position = 0, Description = "Table name: [schema.table] or [database.schema.table], or empty for your permissions")]
+        private string _fqtn = "";
 
         public override void ValidateArguments(string[] args)
         {
-            if (args == null || args.Length == 0)
+            BindArguments(args);
+
+            // Empty is valid - shows server and database permissions
+            if (string.IsNullOrEmpty(_fqtn))
             {
-                // No arguments - will show server and database permissions
                 return;
             }
 
-            // Parse both positional and named arguments
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-
-            // Get table name from position 0
-            string tableName = GetPositionalArgument(positionalArgs, 0);
-
-            if (string.IsNullOrEmpty(tableName))
+            // Validate FQTN can be parsed and has at least schema.table
+            try
             {
-                throw new ArgumentException("Invalid format for the argument. Expected 'database.schema.table', 'schema.table', or nothing to return current server permissions.");
+                var (_, schema, table) = Misc.ParseQualifiedTableName(_fqtn);
+                
+                // For permissions, we require at least schema.table
+                if (string.IsNullOrEmpty(schema) || string.IsNullOrEmpty(table))
+                {
+                    throw new ArgumentException("Table name must include schema. Use: [schema.table] or [database.schema.table]");
+                }
             }
-
-            _fqtn = tableName;
-
-            // Parse the table name to extract database, schema, and table
-            string[] parts = tableName.Split('.');
-
-            if (parts.Length == 3) // Format: database.schema.table
+            catch (ArgumentException)
             {
-                _database = parts[0];
-                _schema = parts[1]; // Use explicitly specified schema
-                _table = parts[2];
-            }
-            else if (parts.Length == 2) // Format: schema.table (current database)
-            {
-                _database = null; // Use current database
-                _schema = parts[0]; // Use explicitly specified schema
-                _table = parts[1];
-            }
-            else
-            {
-                throw new ArgumentException("Invalid format for the argument. Expected 'database.schema.table', 'schema.table', or nothing to return current server permissions.");
+                throw new ArgumentException("Invalid table name format. Use: [schema.table] or [database.schema.table]");
             }
         }
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            if (string.IsNullOrEmpty(_table))
+            if (string.IsNullOrEmpty(_fqtn))
             {
                 Logger.TaskNested("Listing permissions of the current user on server and accessible databases");
                 Logger.NewLine();
@@ -101,30 +77,24 @@ namespace MSSQLand.Actions.Database
                 return null;
             }
 
+            // Parse the FQTN
+            var (database, schema, table) = Misc.ParseQualifiedTableName(_fqtn);
+
             // Use the execution database if no database is specified
-            if (string.IsNullOrEmpty(_database))
+            if (string.IsNullOrEmpty(database))
             {
-                _database = databaseContext.QueryService.ExecutionServer.Database;
+                database = databaseContext.QueryService.ExecutionServer.Database;
             }
 
-            // Build the target table name based on what was specified
-            string targetTable;
-            if (!string.IsNullOrEmpty(_schema))
-            {
-                targetTable = $"[{_schema}].[{_table}]";
-            }
-            else
-            {
-                // No schema specified - let SQL Server use the user's default schema
-                targetTable = $"..[{_table}]";
-            }
+            // Build the target table name (schema is guaranteed non-null from validation)
+            string targetTable = $"[{schema}].[{table}]";
 
-            Logger.TaskNested($"Listing permissions for {databaseContext.UserService.MappedUser} on [{_database}]{targetTable}");
+            Logger.TaskNested($"Listing permissions for {databaseContext.UserService.MappedUser} on [{database}]{targetTable}");
 
-            // Build USE statement if specific database is different from current
-            string useStatement = string.IsNullOrEmpty(_database) || _database == databaseContext.QueryService.ExecutionServer.Database
+            // Build USE statement if database is different from current
+            string useStatement = database == databaseContext.QueryService.ExecutionServer.Database
                 ? ""
-                : $"USE [{_database}];";
+                : $"USE [{database}];";
 
             // Query to get permissions
             string query = $@"

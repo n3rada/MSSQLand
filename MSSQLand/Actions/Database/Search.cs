@@ -98,24 +98,31 @@ namespace MSSQLand.Actions.Database
             // Parse target to determine what it is
             if (!string.IsNullOrEmpty(_target))
             {
-                string[] parts = _target.Split('.');
-
-                if (parts.Length == 3) // database.schema.table
+                // Try to parse as FQTN - handles bracketed names correctly
+                try
                 {
-                    _limitDatabase = parts[0];
-                    _targetSchema = parts[1];
-                    _targetTable = parts[2];
+                    var (database, schema, table) = Misc.ParseQualifiedTableName(_target);
+                    
+                    if (!string.IsNullOrEmpty(database) && !string.IsNullOrEmpty(schema) && !string.IsNullOrEmpty(table))
+                    {
+                        // database.schema.table
+                        _limitDatabase = database;
+                        _targetSchema = schema;
+                        _targetTable = table;
+                    }
+                    else if (!string.IsNullOrEmpty(schema) && !string.IsNullOrEmpty(table))
+                    {
+                        // schema.table (current database)
+                        _targetSchema = schema;
+                        _targetTable = table;
+                    }
+                    else if (!string.IsNullOrEmpty(table))
+                    {
+                        // Single identifier = database name (not table name for search)
+                        _limitDatabase = table;
+                    }
                 }
-                else if (parts.Length == 2) // schema.table (current database)
-                {
-                    _targetSchema = parts[0];
-                    _targetTable = parts[1];
-                }
-                else if (parts.Length == 1) // just database name
-                {
-                    _limitDatabase = parts[0];
-                }
-                else
+                catch (ArgumentException)
                 {
                     throw new ArgumentException("Invalid target format. Use: database, schema.table, or database.schema.table");
                 }

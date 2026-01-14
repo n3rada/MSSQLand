@@ -66,7 +66,27 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private void ValidateProcedureFormat(string procedureName)
         {
-            if (string.IsNullOrEmpty(procedureName) || !procedureName.Contains("."))
+            if (string.IsNullOrEmpty(procedureName))
+            {
+                throw new ArgumentException("Procedure name cannot be empty.");
+            }
+
+            try
+            {
+                var (database, schema, procedure) = Misc.ParseQualifiedTableName(procedureName);
+                
+                // We require schema.procedure (2 parts), not database.schema.procedure (3 parts)
+                if (!string.IsNullOrEmpty(database))
+                {
+                    throw new ArgumentException($"Use 'schema.procedure' format, not database-qualified. Got: '{procedureName}'");
+                }
+                
+                if (string.IsNullOrEmpty(schema) || string.IsNullOrEmpty(procedure))
+                {
+                    throw new ArgumentException($"Procedure name must be in 'schema.procedure' format. Got: '{procedureName}'");
+                }
+            }
+            catch (ArgumentException)
             {
                 throw new ArgumentException($"Procedure name must be in 'schema.procedure' format. Got: '{procedureName}'");
             }
@@ -204,12 +224,15 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private DataTable ExecuteProcedure(DatabaseContext databaseContext, string procedureName, string procedureArgs)
         {
-            Logger.Task($"Executing [{databaseContext.QueryService.ExecutionServer.Database}].[{procedureName}]");
+            // Parse schema.procedure using the FQTN parser
+            var (_, schema, procedure) = Misc.ParseQualifiedTableName(procedureName);
+
+            Logger.Task($"Executing [{databaseContext.QueryService.ExecutionServer.Database}].[{schema}].[{procedure}]");
             if (!string.IsNullOrEmpty(procedureArgs))
                 Logger.TaskNested($"With arguments: {procedureArgs}");
 
             // Use schema-qualified name in EXEC
-            string query = $"EXEC [{procedureName.Replace(".", "].[")}] {procedureArgs};";
+            string query = $"EXEC [{schema}].[{procedure}] {procedureArgs};";
 
             try
             {
@@ -232,12 +255,10 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private object ReadProcedureDefinition(DatabaseContext databaseContext, string procedureName)
         {
-            Logger.TaskNested($"Retrieving definition of [{databaseContext.QueryService.ExecutionServer.Database}].[{procedureName}]");
+            // Parse schema.procedure using the FQTN parser
+            var (_, schema, procedure) = Misc.ParseQualifiedTableName(procedureName);
 
-            // Parse schema.procedure format
-            string[] parts = procedureName.Split('.');
-            string schema = parts[0];
-            string procedure = parts[1];
+            Logger.TaskNested($"Retrieving definition of [{databaseContext.QueryService.ExecutionServer.Database}].[{schema}].[{procedure}]");
 
             string query = $@"
                 SELECT 
