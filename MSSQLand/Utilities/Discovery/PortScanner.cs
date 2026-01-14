@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
@@ -46,8 +47,8 @@ namespace MSSQLand.Utilities.Discovery
         private const int EphemeralStart = 49152;
         private const int EphemeralEnd = 65535;
 
-        private const int DefaultTimeoutMs = 500;
-        private const int DefaultParallelism = 100;  // Max concurrent connections
+        private const int DefaultTimeoutMs = 300;
+        private const int DefaultParallelism = 500;  // Max concurrent connections
         private const int TdsPreloginPacketType = 0x12;
 
         /// <summary>
@@ -73,10 +74,15 @@ namespace MSSQLand.Utilities.Discovery
         {
             var results = new ConcurrentBag<ScanResult>();
             var found = new ManualResetEventSlim(false);
+            var globalStopwatch = Stopwatch.StartNew();
 
             // Phase 1: Scan known ports first
-            Logger.Info($"Testing {KnownPorts.Length} known ports (1433, custom static ports)");
+            Logger.Info($"Testing {KnownPorts.Length} known ports");
+            var knownStopwatch = Stopwatch.StartNew();
             var knownResults = ScanPortsParallel(hostname, KnownPorts, timeoutMs, maxParallelism, stopOnFirst ? found : null);
+            knownStopwatch.Stop();
+            Logger.InfoNested($"Completed in {knownStopwatch.ElapsedMilliseconds}ms");
+            
             foreach (var r in knownResults)
             {
                 results.Add(r);
@@ -84,21 +90,34 @@ namespace MSSQLand.Utilities.Discovery
 
             if (stopOnFirst && results.Count > 0)
             {
+                globalStopwatch.Stop();
+                Logger.NewLine();
+                Logger.Info($"Total scan time: {globalStopwatch.ElapsedMilliseconds}ms");
                 return results.OrderBy(r => r.Port).ToList();
             }
 
             Logger.NewLine();
 
             // Phase 2: Scan ephemeral range from both ends toward middle
-            Logger.Info($"Scanning IANA ephemeral range ({EphemeralStart}-{EphemeralEnd})");
+            int ephemeralCount = EphemeralEnd - EphemeralStart + 1;
+            Logger.Info($"Scanning IANA ephemeral range ({EphemeralStart}-{EphemeralEnd}) - {ephemeralCount} ports");
             Logger.InfoNested("Windows allocates dynamic ports here for named instances");
             Logger.InfoNested("Scanning from edges toward middle for faster discovery");
+            
+            var ephemeralStopwatch = Stopwatch.StartNew();
             var ephemeralPorts = GenerateEdgesToMiddle(EphemeralStart, EphemeralEnd);
             var ephemeralResults = ScanPortsParallel(hostname, ephemeralPorts, timeoutMs, maxParallelism, stopOnFirst ? found : null);
+            ephemeralStopwatch.Stop();
+            Logger.InfoNested($"Completed in {ephemeralStopwatch.Elapsed.TotalSeconds:F1}s");
+            
             foreach (var r in ephemeralResults)
             {
                 results.Add(r);
             }
+
+            globalStopwatch.Stop();
+            Logger.NewLine();
+            Logger.Info($"Total scan time: {globalStopwatch.Elapsed.TotalSeconds:F1}s");
 
             return results.OrderBy(r => r.Port).ToList();
         }
