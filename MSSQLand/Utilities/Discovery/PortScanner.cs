@@ -266,6 +266,53 @@ namespace MSSQLand.Utilities.Discovery
             }
         }
 
+        /// <summary>
+        /// Scans specific ports provided by the user.
+        /// Examples: single port, range, or comma-separated list.
+        /// </summary>
+        public static List<ScanResult> ScanPorts(string hostname, int[] ports, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism)
+        {
+            var globalStopwatch = Stopwatch.StartNew();
+
+            // Resolve DNS once upfront
+            IPAddress ip;
+            try
+            {
+                ip = ResolveHostname(hostname);
+                Logger.InfoNested($"Resolved to {ip}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"DNS resolution failed: {ex.Message}");
+                return new List<ScanResult>();
+            }
+
+            Logger.InfoNested($"Testing ports: {FormatPortList(ports)}");
+            Logger.NewLine();
+
+            var results = ScanPortsParallel(ip, ports, timeoutMs, maxParallelism, null);
+            LogSummary(hostname, results, globalStopwatch);
+            return results;
+        }
+
+        /// <summary>
+        /// Formats port list for display (collapses ranges).
+        /// </summary>
+        private static string FormatPortList(int[] ports)
+        {
+            if (ports.Length == 1)
+                return ports[0].ToString();
+            if (ports.Length <= 5)
+                return string.Join(", ", ports);
+            
+            // Collapse to range if contiguous
+            var sorted = ports.OrderBy(p => p).ToArray();
+            if (sorted[sorted.Length - 1] - sorted[0] == sorted.Length - 1)
+                return $"{sorted[0]}-{sorted[sorted.Length - 1]}";
+            
+            return $"{sorted[0]}, {sorted[1]}, ... ({ports.Length} ports)";
+        }
+
         private static void LogSummary(string hostname, List<ScanResult> results, Stopwatch stopwatch)
         {
             stopwatch.Stop();
