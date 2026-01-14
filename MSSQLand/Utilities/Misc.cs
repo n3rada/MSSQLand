@@ -224,7 +224,7 @@ namespace MSSQLand.Utilities
         /// StripBrackets("database") => "database"
         /// StripBrackets(null) => null
         /// </example>
-        public static string StripBrackets(string identifier)
+        private static string StripBrackets(string identifier)
         {
             if (string.IsNullOrEmpty(identifier))
                 return identifier;
