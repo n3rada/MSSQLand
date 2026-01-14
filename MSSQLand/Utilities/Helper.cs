@@ -162,6 +162,19 @@ namespace MSSQLand.Utilities
             Console.WriteLine();
         }
 
+        /// <summary>
+        /// Displays available credential types.
+        /// </summary>
+        public static void ShowCredentialTypes()
+        {
+            MarkdownFormatter formatter = new MarkdownFormatter();
+            Console.WriteLine("Available credential types:\n");
+            Console.WriteLine(formatter.ConvertDataTable(getCredentialTypes()));
+            Console.WriteLine("Usage: <host> -c <type> [auth-options] <action>");
+            Console.WriteLine("Example: localhost -c local -u sa -p 'password' whoami");
+            Console.WriteLine();
+        }
+
         private static DataTable getCredentialTypes()
         {
             // Build a DataTable for credentials

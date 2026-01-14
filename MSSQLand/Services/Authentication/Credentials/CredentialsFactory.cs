@@ -51,6 +51,15 @@ namespace MSSQLand.Services.Credentials
                 )
             },
             {
+                "domain",
+                new CredentialMetadata(
+                    name: "domain",
+                    description: "Domain account authentication via impersonation",
+                    requiredArguments: new List<string> { "username", "password", "domain" },
+                    factory: () => new WindowsCredentials()
+                )
+            },
+            {
                 "windows",
                 new CredentialMetadata(
                     name: "windows",

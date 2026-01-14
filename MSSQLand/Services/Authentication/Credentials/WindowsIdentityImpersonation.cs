@@ -1,5 +1,7 @@
 ﻿using Microsoft.Win32.SafeHandles;
+using MSSQLand.Utilities;
 using System;
+using System.ComponentModel;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -18,14 +20,20 @@ namespace MSSQLand.Services.Credentials
 
         internal WindowsIdentityImpersonation(string domain, string username, string password)
         {
+            Logger.Trace($"LogonUser: {domain}\\{username} (LOGON32_LOGON_NEW_CREDENTIALS)");
+            
             bool ok = LogonUser(username, domain, password, Logon32LogonNewCredentials, 0, out this._handle);
             if (!ok)
             {
                 int errorCode = Marshal.GetLastWin32Error();
-                throw new ApplicationException($"Could not impersonate the user. LogonUser returned error code {errorCode}.");
+                string errorMessage = new Win32Exception(errorCode).Message;
+                Logger.Trace($"LogonUser failed: error {errorCode} - {errorMessage}");
+                throw new ApplicationException($"Impersonation failed for {domain}\\{username}: {errorMessage} (Win32 error {errorCode})");
             }
 
+            Logger.Trace($"LogonUser succeeded, impersonating token");
             this._context = WindowsIdentity.Impersonate(this._handle.DangerousGetHandle());
+            Logger.Trace($"Now impersonating: {WindowsIdentity.GetCurrent().Name}");
         }
 
         public void Dispose()

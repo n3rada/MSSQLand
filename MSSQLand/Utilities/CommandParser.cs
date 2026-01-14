@@ -377,6 +377,17 @@ namespace MSSQLand.Utilities
                     // Parse global flags
                     if (IsGlobalArgument(arg, "credentials", "c"))
                     {
+                        // Check if -c is used without a value - show available credential types
+                        int separatorIndex = arg.IndexOfAny(new[] { ':', '=' });
+                        bool hasInlineValue = separatorIndex > 0 && separatorIndex < arg.Length - 1;
+                        bool hasNextValue = currentIndex + 1 < args.Length && !IsFlag(args[currentIndex + 1]);
+                        
+                        if (!hasInlineValue && !hasNextValue)
+                        {
+                            Helper.ShowCredentialTypes();
+                            return (ParseResultType.ShowHelp, null);
+                        }
+                        
                         parsedArgs.CredentialType = ExtractFlagValue(arg, args, ref currentIndex);
                     }
                     else if (IsGlobalArgument(arg, "links", "l"))
