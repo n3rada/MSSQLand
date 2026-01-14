@@ -41,7 +41,7 @@ namespace MSSQLand.Utilities
             { "roles", (typeof(Roles), "List all database roles and their members in the current database.", null) },
             { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).", null) },
             { "permissions", (typeof(Permissions), "Enumerate user and role permissions.", null) },
-            { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.", null) },
+            { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.", new[] { "impersonation" }) },
             { "trustworthy", (typeof(Trustworthy), "Detect and exploit privilege escalation via TRUSTWORTHY database setting (db_owner → sysadmin).", null) },
             { "oledb-providers", (typeof(OleDbProvidersInfo), "Retrieve information about installed OLE DB providers and their configurations.", null) },
 
