@@ -149,7 +149,6 @@ namespace MSSQLand.Utilities
                         try
                         {
                             adDomain = System.DirectoryServices.ActiveDirectory.Domain.GetCurrentDomain().Name;
-                            Logger.Info($"No domain specified, using current domain: {adDomain}");
                         }
                         catch
                         {
@@ -157,7 +156,6 @@ namespace MSSQLand.Utilities
                         }
                     }
                     
-                    Logger.Info("FindSQLServers utility mode - no database connection required");
                     FindSQLServers.Execute(adDomain, forest);
                     return (ParseResultType.UtilityMode, null);
                 }
