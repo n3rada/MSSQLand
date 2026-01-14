@@ -41,7 +41,7 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(Position = 1, Description = "Database, schema.table, or database.schema.table (defaults to current database if omitted)")]
         private string _target = null;
 
-        [ArgumentMetadata(ShortName = "cn", LongName = "column-name", Description = "Search for keyword in column names only")]
+        [ArgumentMetadata(LongName = "column-name", Description = "Search for keyword in column names only")]
         private bool _columnsOnly = false;
 
         [ArgumentMetadata(ShortName = "c", LongName = "column", Description = "Filter to search only in columns matching this pattern (e.g., -c=%CI_ID%)")]
