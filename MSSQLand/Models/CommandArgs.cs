@@ -1,4 +1,6 @@
-﻿using MSSQLand.Actions;
+﻿// MSSQLand/Models/CommandArgs.cs
+
+using MSSQLand.Actions;
 
 namespace MSSQLand.Models
 {
