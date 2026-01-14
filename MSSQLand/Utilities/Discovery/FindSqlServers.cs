@@ -144,9 +144,9 @@ namespace MSSQLand.Utilities.Discovery
                 }
 
                 // Fallback: construct FQDN from cn + domain suffix extracted from distinguishedName
-                if (string.IsNullOrEmpty(dnsHostName) && !string.IsNullOrEmpty(cn) && !string.IsNullOrEmpty(distinguishedName))
+                // Also applies when dnshostname has no domain suffix (no dot)
+                if ((string.IsNullOrEmpty(dnsHostName) || !dnsHostName.Contains(".")) && !string.IsNullOrEmpty(cn) && !string.IsNullOrEmpty(distinguishedName))
                 {
-                    // Extract domain from DN: "CN=...,DC=D31,DC=tes,DC=local" -> "D31.tes.local"
                     var dcParts = distinguishedName
                         .Split(',')
                         .Where(p => p.Trim().StartsWith("DC=", StringComparison.OrdinalIgnoreCase))
@@ -204,6 +204,7 @@ namespace MSSQLand.Utilities.Discovery
                                 ObjectSid = objectSid,
                                 LastLogon = lastLogonDate,
                                 Description = description,
+                                DistinguishedName = distinguishedName,
                                 Instances = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                             };
                             serverMap[objectSid] = serverInfo;
@@ -231,6 +232,7 @@ namespace MSSQLand.Utilities.Discovery
                             ObjectSid = objectSid,
                             LastLogon = lastLogonDate,
                             Description = description,
+                            DistinguishedName = distinguishedName,
                             Instances = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                         };
                     }
@@ -256,6 +258,7 @@ namespace MSSQLand.Utilities.Discovery
                 Logger.Info($"Domain: {domainGroup.Key} ({domainGroup.Count()})");
 
                 DataTable resultTable = new();
+                resultTable.Columns.Add("distinguishedName", typeof(string));
                 resultTable.Columns.Add("dnsHostName", typeof(string));
                 resultTable.Columns.Add("Description", typeof(string));
                 resultTable.Columns.Add("Instances", typeof(string));
@@ -265,6 +268,7 @@ namespace MSSQLand.Utilities.Discovery
                 foreach (var server in domainGroup.OrderByDescending(s => s.LastLogon))
                 {
                     resultTable.Rows.Add(
+                        server.DistinguishedName ?? "",
                         server.ServerName,
                         server.Description ?? "",
                         string.Join(", ", server.Instances.OrderBy(i => i)),
@@ -288,6 +292,7 @@ namespace MSSQLand.Utilities.Discovery
             public string ObjectSid { get; set; }
             public string LastLogon { get; set; }
             public string Description { get; set; } = "";
+            public string DistinguishedName { get; set; } = "";
             public HashSet<string> Instances { get; set; }
         }
     }
