@@ -1,6 +1,7 @@
 ﻿// MSSQLand/Models/CommandArgs.cs
 
 using MSSQLand.Actions;
+using System.Net;
 
 namespace MSSQLand.Models
 {
@@ -33,6 +34,11 @@ namespace MSSQLand.Models
         /// The primary target server to interact with.
         /// </summary>
         public Server Host { get; set; }
+
+        /// <summary>
+        /// The resolved IP address of the target server (null for named pipes or localhost).
+        /// </summary>
+        public IPAddress ResolvedIpAddress { get; set; }
 
         /// <summary>
         /// A list of linked servers in the server chain.

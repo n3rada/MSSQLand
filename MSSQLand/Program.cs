@@ -105,8 +105,15 @@ namespace MSSQLand
                     TimeSpan offset = localTimeZone.BaseUtcOffset;
                     string formattedOffset = $"{(offset.Hours >= 0 ? "+" : "-")}{Math.Abs(offset.Hours)}:{Math.Abs(offset.Minutes):D2}";
 
+                    // Build target info
+                    string targetInfo = arguments.Host.Hostname;
+                    if (arguments.ResolvedIpAddress != null)
+                    {
+                        targetInfo = $"{arguments.Host.Hostname} ({arguments.ResolvedIpAddress})";
+                    }
+
                     Logger.NewLine();
-                    bannerWidth = Logger.Banner($"Executing from: {Environment.MachineName}\nTime Zone: {localTimeZone.Id}\nLocal Time: {DateTime.Now:HH:mm:ss}, UTC Offset: {formattedOffset}");
+                    bannerWidth = Logger.Banner($"From: {Environment.MachineName} ({localTimeZone.Id}, {DateTime.Now:HH:mm:ss} UTC{formattedOffset})\nTo: {targetInfo}");
                     Logger.NewLine();
 
                     Logger.Banner($"Start at {startTime:yyyy-MM-dd HH:mm:ss:fffff} UTC", totalWidth: bannerWidth);

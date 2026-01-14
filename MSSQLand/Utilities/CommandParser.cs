@@ -291,8 +291,7 @@ namespace MSSQLand.Utilities
                         var addresses = Misc.ValidateDnsResolution(parsedArgs.Host.Hostname, throwOnFailure: true);
                         // Prefer IPv4
                         resolvedIp = addresses?.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) 
-                                   ?? addresses?.First();
-                    }
+                                   ?? addresses?.First();                        parsedArgs.ResolvedIpAddress = resolvedIp;                    }
                     catch (Exception ex)
                     {
                         Logger.Error($"DNS resolution failed: {ex.Message}");
