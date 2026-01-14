@@ -53,17 +53,21 @@ namespace MSSQLand.Actions.Database
                 );
 
                 // Categorize in C# for separate display
+                // Order by creation date descending (newest first), then by name
                 var accessibleRows = allDatabases.AsEnumerable()
                     .Where(r => Convert.ToBoolean(r["Accessible"]))
-                    .OrderBy(r => r["name"].ToString());
+                    .OrderByDescending(r => r["crdate"])
+                    .ThenBy(r => r["name"].ToString());
 
                 var visibleNotAccessibleRows = allDatabases.AsEnumerable()
                     .Where(r => Convert.ToBoolean(r["Visible"]) && !Convert.ToBoolean(r["Accessible"]))
-                    .OrderBy(r => r["name"].ToString());
+                    .OrderByDescending(r => r["crdate"])
+                    .ThenBy(r => r["name"].ToString());
 
                 var hiddenRows = allDatabases.AsEnumerable()
                     .Where(r => !Convert.ToBoolean(r["Visible"]))
-                    .OrderBy(r => r["name"].ToString());
+                    .OrderByDescending(r => r["crdate"])
+                    .ThenBy(r => r["name"].ToString());
 
                 // Output each category separately for clarity
                 if (accessibleRows.Any())
