@@ -57,7 +57,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 12, LongName = "user-seen-days", Description = "Show devices with user activity in last N days")]
         private int _userSeenDays = 0;
 
-        [ArgumentMetadata(Position = 13,  LongName = "limit", Description = "Limit number of results (default: 25)")]
+        [ArgumentMetadata(Position = 13, LongName = "limit", Description = "Limit number of results (default: 25)")]
         private int _limit = 25;
 
         public override void ValidateArguments(string[] args)
@@ -381,53 +381,6 @@ ORDER BY
                             }
                         }
                         devicesTable.Columns.Remove("ManagementAuthority");
-                    }
-
-                    // Add UniqueCollections column - shows collections NOT shared by all devices
-                    devicesTable.Columns.Add("UniqueCollections", typeof(string));
-
-                    // Only compute unique collections if there are multiple devices
-                    if (devicesTable.Rows.Count > 1)
-                    {
-                        var collectionCounts = new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                        var deviceCollections = new System.Collections.Generic.List<string[]>(devicesTable.Rows.Count);
-                        int totalDevices = devicesTable.Rows.Count;
-
-                        // Single pass: count collections and store splits
-                        foreach (DataRow row in devicesTable.Rows)
-                        {
-                            string collectionsStr = row["Collections"]?.ToString() ?? "";
-                            string[] collections = string.IsNullOrEmpty(collectionsStr)
-                                ? Array.Empty<string>()
-                                : collectionsStr.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
-
-                            deviceCollections.Add(collections);
-
-                            foreach (var collection in collections)
-                            {
-                                if (collectionCounts.ContainsKey(collection))
-                                    collectionCounts[collection]++;
-                                else
-                                    collectionCounts[collection] = 1;
-                            }
-                        }
-
-                        // Find collections that are NOT in all devices
-                        var uniqueCollectionNames = new System.Collections.Generic.HashSet<string>(
-                            collectionCounts.Where(kvp => kvp.Value < totalDevices).Select(kvp => kvp.Key),
-                            StringComparer.OrdinalIgnoreCase
-                        );
-
-                        // Populate UniqueCollections using pre-split arrays
-                        for (int i = 0; i < devicesTable.Rows.Count; i++)
-                        {
-                            var collections = deviceCollections[i];
-                            if (collections.Length > 0)
-                            {
-                                var uniqueOnes = collections.Where(c => uniqueCollectionNames.Contains(c));
-                                devicesTable.Rows[i]["UniqueCollections"] = string.Join(", ", uniqueOnes);
-                            }
-                        }
                     }
 
                     // If dataTables is not empty
