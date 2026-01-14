@@ -74,7 +74,7 @@ namespace MSSQLand.Utilities.Discovery
             // This catches both properly configured SQL Servers and those without Kerberos SPNs
             const string ldapFilter = "(|(servicePrincipalName=MSSQL*)(&(objectCategory=computer)(cn=*SQL*)))";
             // Use lastLogonTimestamp instead of lastLogon - it's replicated across DCs
-            string[] ldapAttributes = { "cn", "dnshostname", "samaccountname", "objectsid", "serviceprincipalname", "lastLogonTimestamp" };
+            string[] ldapAttributes = { "cn", "dnshostname", "samaccountname", "objectsid", "serviceprincipalname", "lastLogonTimestamp", "description" };
 
             // Execute the LDAP query
             Dictionary<string, Dictionary<string, object[]>> ldapResults = ldapService.ExecuteQuery(ldapFilter, ldapAttributes);
@@ -119,6 +119,12 @@ namespace MSSQLand.Utilities.Discovery
                     }
                 }
 
+                string description = "";
+                if (ldapEntry.TryGetValue("description", out object[] descValues) && descValues?.Length > 0)
+                {
+                    description = descValues[0]?.ToString() ?? "";
+                }
+
                 // Check for MSSQLSvc SPNs
                 bool hasSqlSpn = false;
                 ldapEntry.TryGetValue("serviceprincipalname", out object[] spnValues);
@@ -159,6 +165,7 @@ namespace MSSQLand.Utilities.Discovery
                                 AccountName = accountName,
                                 ObjectSid = objectSid,
                                 LastLogon = lastLogonDate,
+                                Description = description,
                                 Instances = new HashSet<string>(StringComparer.OrdinalIgnoreCase),
                                 DiscoveryMethod = "SPN"
                             };
@@ -191,6 +198,7 @@ namespace MSSQLand.Utilities.Discovery
                             AccountName = accountName,
                             ObjectSid = objectSid,
                             LastLogon = lastLogonDate,
+                            Description = description,
                             Instances = new HashSet<string>(StringComparer.OrdinalIgnoreCase),
                             DiscoveryMethod = "Name"
                         };
@@ -207,6 +215,7 @@ namespace MSSQLand.Utilities.Discovery
             // Build output table
             DataTable resultTable = new();
             resultTable.Columns.Add("dnsHostName", typeof(string));
+            resultTable.Columns.Add("Description", typeof(string));
             resultTable.Columns.Add("Instances", typeof(string));
             resultTable.Columns.Add("Source", typeof(string));
             resultTable.Columns.Add("sAMAccountName", typeof(string));
@@ -221,6 +230,7 @@ namespace MSSQLand.Utilities.Discovery
             {
                 resultTable.Rows.Add(
                     server.ServerName,
+                    server.Description.Length > 50 ? server.Description.Substring(0, 47) + "..." : server.Description,
                     string.Join(", ", server.Instances.OrderBy(i => i)),
                     server.DiscoveryMethod,
                     server.AccountName,
@@ -243,6 +253,7 @@ namespace MSSQLand.Utilities.Discovery
             public string AccountName { get; set; }
             public string ObjectSid { get; set; }
             public string LastLogon { get; set; }
+            public string Description { get; set; }
             public HashSet<string> Instances { get; set; }
             public string DiscoveryMethod { get; set; }
         }
