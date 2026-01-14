@@ -118,8 +118,9 @@ namespace MSSQLand.Utilities
 
             Console.WriteLine();
             Console.WriteLine("Standalone utilities (no database connection)");
-            Console.WriteLine("\t--findsql <domain>            Find SQL Servers via SPNs in a domain");
-            Console.WriteLine("\t--findsql <domain> --forest   Query entire forest (Global Catalog)");
+            Console.WriteLine("\t-findsql [domain]             Find SQL Servers via SPNs in a domain");
+            Console.WriteLine("\t-findsql [domain] --forest    Query entire forest (Global Catalog)");
+            Console.WriteLine("\t-browse <hostname>            Query SQL Browser for instances/ports");
             Console.WriteLine();
         } 
 
@@ -225,6 +226,7 @@ namespace MSSQLand.Utilities
             argumentsTable.Rows.Add("-h, --help", "[Help] Display help. Use with action for action-specific help.");
             argumentsTable.Rows.Add("--version", "[Help] Display version information.");
             argumentsTable.Rows.Add("-findsql [domain] [--forest]", "[Utility] Find SQL Servers via AD SPNs. Use --forest for forest-wide search.");
+            argumentsTable.Rows.Add("-browse <hostname>", "[Utility] Query SQL Browser service (UDP 1434) for instances and ports.");
 
             return argumentsTable;
         }

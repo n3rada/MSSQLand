@@ -9,6 +9,7 @@ using MSSQLand.Actions;
 using MSSQLand.Exceptions;
 using MSSQLand.Models;
 using MSSQLand.Services.Credentials;
+using MSSQLand.Utilities.Discovery;
 using MSSQLand.Utilities.Formatters;
 
 namespace MSSQLand.Utilities
@@ -161,11 +162,28 @@ namespace MSSQLand.Utilities
                         }
                         catch
                         {
-                            throw new ArgumentException("FindSQLServers requires a domain argument (not domain-joined). Example: -findsql corp.com [--forest]");
+                            throw new ArgumentException("FindSqlServers requires a domain argument (not domain-joined). Example: -findsql corp.com [--forest]");
                         }
                     }
                     
-                    FindSQLServers.Execute(adDomain, forest);
+                    FindSqlServers.Execute(adDomain, forest);
+                    return (ParseResultType.UtilityMode, null);
+                }
+
+                if (args[0] == "-browse" || args[0] == "--browse")
+                {
+                    if (args.Length < 2 || IsFlag(args[1]))
+                    {
+                        throw new ArgumentException("SQL Browser requires a hostname. Example: -browse sqlserver.domain.com");
+                    }
+                    
+                    string hostname = args[1];
+                    Logger.Info($"Querying SQL Browser service on {hostname} (UDP 1434)...");
+                    Logger.NewLine();
+                    
+                    var instances = SqlBrowser.Query(hostname);
+                    SqlBrowser.LogInstances(hostname, instances);
+                    
                     return (ParseResultType.UtilityMode, null);
                 }
 

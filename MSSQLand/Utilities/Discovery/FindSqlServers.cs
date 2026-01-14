@@ -7,7 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Security.Principal;
 
-namespace MSSQLand.Utilities
+namespace MSSQLand.Utilities.Discovery
 {
     /// <summary>
     /// Standalone utility for enumerating SQL Servers in an Active Directory domain via LDAP queries.

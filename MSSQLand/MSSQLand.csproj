@@ -195,11 +195,13 @@
     <Compile Include="Services\Authentication\Credentials\WindowsIdentityImpersonation.cs" />
 
     <Compile Include="Utilities\CommandParser.cs" />
-    <Compile Include="Utilities\FindSQLServers.cs" />
     <Compile Include="Utilities\Helper.cs" />
     <Compile Include="Utilities\Logger.cs" />
     <Compile Include="Utilities\Misc.cs" />
     <Compile Include="Utilities\SidParser.cs" />
+
+    <Compile Include="Utilities\Discovery\FindSqlServers.cs" />
+    <Compile Include="Utilities\Discovery\SqlBrowser.cs" />
 
     <Compile Include="Utilities\Formatters\CsvFormatter.cs" />
     <Compile Include="Utilities\Formatters\IOutputFormatter.cs" />
