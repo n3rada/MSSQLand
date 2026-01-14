@@ -19,7 +19,7 @@ namespace MSSQLand.Actions.ConfigMgr
     internal class CMDevices : BaseAction
     {
         [ArgumentMetadata(Position = 0, ShortName = "n", LongName = "name", Description = "Filter by device name")]
-        private string _device = "";
+        private string _name = "";
 
         [ArgumentMetadata(Position = 1, ShortName = "d", LongName = "domain", Description = "Filter by domain")]
         private string _domain = "";
@@ -73,7 +73,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            string deviceMsg = !string.IsNullOrEmpty(_device) ? $" (device: {_device})" : "";
+            string deviceMsg = !string.IsNullOrEmpty(_name) ? $" (device: {_name})" : "";
             string domainMsg = !string.IsNullOrEmpty(_domain) ? $" (domain: {_domain})" : "";
             string usernameMsg = !string.IsNullOrEmpty(_username) ? $" (username: {_username})" : "";
             string ipMsg = !string.IsNullOrEmpty(_ip) ? $" (ip: {_ip})" : "";
@@ -111,9 +111,9 @@ namespace MSSQLand.Actions.ConfigMgr
                     string whereClause = "WHERE 1=1";
 
                     // Add device name filter
-                    if (!string.IsNullOrEmpty(_device))
+                    if (!string.IsNullOrEmpty(_name))
                     {
-                        whereClause += $" AND sys.Name0 LIKE '%{_device.Replace("'", "''")}%'";
+                        whereClause += $" AND sys.Name0 LIKE '%{_name.Replace("'", "''")}%'";
                     }
 
                     // Add domain filter
