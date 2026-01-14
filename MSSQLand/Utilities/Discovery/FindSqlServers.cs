@@ -60,8 +60,18 @@ namespace MSSQLand.Utilities.Discovery
             // Use lastLogonTimestamp instead of lastLogon - it's replicated across DCs
             string[] ldapAttributes = { "cn", "dnshostname", "samaccountname", "objectsid", "serviceprincipalname", "lastLogonTimestamp", "description", "distinguishedName" };
 
-            // Execute the LDAP query
-            Dictionary<string, Dictionary<string, object[]>> ldapResults = ldapService.ExecuteQuery(ldapFilter, ldapAttributes);
+            // Execute the LDAP query, fallback to GC if LDAP fails
+            Dictionary<string, Dictionary<string, object[]>> ldapResults;
+            try
+            {
+                ldapResults = ldapService.ExecuteQuery(ldapFilter, ldapAttributes);
+            }
+            catch (Exception ex) when (!forest)
+            {
+                Logger.Warning($"LDAP query failed: {ex.Message}");
+                Logger.WarningNested("Falling back to Global Catalog");
+                return Execute(domain, forest: true);
+            }
 
             // Track unique servers with their instances
             var serverMap = new Dictionary<string, ServerInfo>(StringComparer.OrdinalIgnoreCase);
