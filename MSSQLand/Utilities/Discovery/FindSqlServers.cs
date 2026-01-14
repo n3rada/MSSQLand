@@ -11,7 +11,7 @@ namespace MSSQLand.Utilities.Discovery
     /// <summary>
     /// Standalone utility for enumerating SQL Servers in an Active Directory domain via LDAP queries.
     /// Does not require database authentication or connection.
-    /// 
+    ///
     /// <para>
     /// <b>How it works:</b>
     /// Queries Active Directory using two methods:
@@ -19,18 +19,18 @@ namespace MSSQLand.Utilities.Discovery
     /// 2. Computer accounts with "SQL" in their name (naming convention heuristic)
     /// SQL Server registers SPNs in the format: MSSQLSvc/hostname:port or MSSQLSvc/hostname:instancename
     /// </para>
-    /// 
+    ///
     /// <para>
     /// <b>PowerShell equivalent:</b>
     /// <code>
     /// # Domain-only query (LDAP):
     /// ([adsisearcher]::new([adsi]"LDAP://corp.local", "(|(servicePrincipalName=MSSQL*)(&(objectCategory=computer)(cn=*SQL*)))")).FindAll()
-    /// 
+    ///
     /// # Forest-wide query (Global Catalog):
     /// ([adsisearcher]::new([adsi]"GC://corp.local", "(|(servicePrincipalName=MSSQL*)(&(objectCategory=computer)(cn=*SQL*)))")).FindAll()
     /// </code>
     /// </para>
-    /// 
+    ///
     /// <para>
     /// <b>Limitations:</b>
     /// - SPN-based discovery: Only finds SQL Servers with registered SPNs
@@ -56,24 +56,31 @@ namespace MSSQLand.Utilities.Discovery
 
             string protocol = forest ? "GC" : "LDAP";
             string scope = forest ? "forest-wide (Global Catalog)" : "domain";
-            
+
             Logger.Task($"Lurking for MS SQL Servers on Active Directory {scope}: {domain}");
-            Logger.TaskNested("Discovery methods: MSSQLSvc SPNs + computers with 'SQL' in name, description, or OU.");
-            
+
             if (forest)
             {
-                Logger.TaskNested("Using Global Catalog (port 3268) to query all domains in the forest.");
+                Logger.TaskNested("Discovery methods: MSSQLSvc SPNs + computers with 'SQL' in name or description.");
+                Logger.TaskNested("Using Global Catalog (port 3268) - OU-based search disabled (not indexed in GC).");
+            }
+            else
+            {
+                Logger.TaskNested("Discovery methods: MSSQLSvc SPNs + computers with 'SQL' in name, description, or OU.");
             }
 
             // Initialize domain service based on the provided domain
             ADirectoryService domainService = new($"{protocol}://{domain}");
             LdapQueryService ldapService = new(domainService);
 
-            // LDAP filter: Find objects with MSSQLSvc SPNs OR computers with "SQL" in name, description, or OU
-            // This catches both properly configured SQL Servers and those without Kerberos SPNs
-            const string ldapFilter = "(|(servicePrincipalName=MSSQLSvc*)(&(objectCategory=computer)(cn=*SQL*))(&(objectCategory=computer)(description=*SQL*))(&(objectCategory=computer)(distinguishedName=*OU=*SQL*)))";
+            // LDAP filter: Find objects with MSSQLSvc SPNs OR computers with "SQL" in name or description
+            // OU-based searching only works with LDAP, not GC (distinguishedName is not indexed in Global Catalog)
+            string ldapFilter = forest
+                ? "(|(servicePrincipalName=MSSQLSvc*)(&(objectCategory=computer)(cn=*SQL*))(&(objectCategory=computer)(description=*SQL*)))"
+                : "(|(servicePrincipalName=MSSQLSvc*)(&(objectCategory=computer)(cn=*SQL*))(&(objectCategory=computer)(description=*SQL*))(&(objectCategory=computer)(distinguishedName=*OU=*SQL*)))";
+
             // Use lastLogonTimestamp instead of lastLogon - it's replicated across DCs
-            string[] ldapAttributes = { "cn", "dnshostname", "samaccountname", "objectsid", "serviceprincipalname", "lastLogonTimestamp", "description" };
+            string[] ldapAttributes = { "cn", "dnshostname", "samaccountname", "objectsid", "serviceprincipalname", "lastLogonTimestamp", "description", "distinguishedName" };
 
             // Execute the LDAP query
             Dictionary<string, Dictionary<string, object[]>> ldapResults = ldapService.ExecuteQuery(ldapFilter, ldapAttributes);
@@ -124,10 +131,22 @@ namespace MSSQLand.Utilities.Discovery
                     description = descValues[0]?.ToString() ?? "";
                 }
 
+                string distinguishedName = "";
+                if (ldapEntry.TryGetValue("distinguishedname", out object[] dnValues) && dnValues?.Length > 0)
+                {
+                    distinguishedName = dnValues[0]?.ToString() ?? "";
+                }
+
+                string cn = "";
+                if (ldapEntry.TryGetValue("cn", out object[] cnVals) && cnVals?.Length > 0)
+                {
+                    cn = cnVals[0]?.ToString() ?? "";
+                }
+
                 // Check for MSSQLSvc SPNs
                 bool hasSqlSpn = false;
                 ldapEntry.TryGetValue("serviceprincipalname", out object[] spnValues);
-                
+
                 if (spnValues != null && spnValues.Length > 0)
                 {
                     foreach (string spn in spnValues.Cast<string>())
@@ -175,7 +194,7 @@ namespace MSSQLand.Utilities.Discovery
                     }
                 }
 
-                // If no SQL SPN found, this entry matched by computer name containing "SQL"
+                // If no SQL SPN found, determine which condition matched
                 if (!hasSqlSpn)
                 {
                     // Get server name from dnshostname or cn
@@ -184,13 +203,16 @@ namespace MSSQLand.Utilities.Discovery
                     {
                         serverName = dnsValues[0]?.ToString();
                     }
-                    if (string.IsNullOrEmpty(serverName) && ldapEntry.TryGetValue("cn", out object[] cnValues) && cnValues?.Length > 0)
+                    if (string.IsNullOrEmpty(serverName) && !string.IsNullOrEmpty(cn))
                     {
-                        serverName = cnValues[0]?.ToString();
+                        serverName = cn;
                     }
 
                     if (!string.IsNullOrEmpty(serverName) && !serverMap.ContainsKey(serverName))
                     {
+                        // Determine discovery method based on what matched
+                        string discoveryMethod = DetermineDiscoveryMethod(cn, description, distinguishedName);
+
                         serverMap[serverName] = new ServerInfo
                         {
                             ServerName = serverName,
@@ -199,7 +221,7 @@ namespace MSSQLand.Utilities.Discovery
                             LastLogon = lastLogonDate,
                             Description = description,
                             Instances = new HashSet<string>(StringComparer.OrdinalIgnoreCase),
-                            DiscoveryMethod = "Name"
+                            DiscoveryMethod = discoveryMethod
                         };
                     }
                 }
@@ -240,10 +262,45 @@ namespace MSSQLand.Utilities.Discovery
             Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
 
             int spnCount = serverMap.Values.Count(s => s.DiscoveryMethod == "SPN");
-            int nameCount = serverMap.Values.Count(s => s.DiscoveryMethod == "Name");
+            int heuristicCount = serverMap.Values.Count(s => s.DiscoveryMethod != "SPN");
             int totalInstances = serverMap.Values.Where(s => s.DiscoveryMethod == "SPN").Sum(s => s.Instances.Count);
-            Logger.Success($"{serverMap.Count} unique SQL Server(s) found: {spnCount} via SPN ({totalInstances} instance(s)), {nameCount} via naming convention.");
+            Logger.Success($"{serverMap.Count} unique SQL Server(s) found: {spnCount} via SPN ({totalInstances} instance(s)), {heuristicCount} via heuristics.");
             return serverMap.Count;
+        }
+
+        /// <summary>
+        /// Determines how a computer was discovered based on its properties.
+        /// </summary>
+        private static string DetermineDiscoveryMethod(string cn, string description, string distinguishedName)
+        {
+            var methods = new List<string>();
+
+            if (!string.IsNullOrEmpty(cn) && cn.IndexOf("SQL", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                methods.Add("Name");
+            }
+
+            if (!string.IsNullOrEmpty(description) && description.IndexOf("SQL", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                methods.Add("Desc");
+            }
+
+            // Check if any OU in the DN contains "SQL"
+            if (!string.IsNullOrEmpty(distinguishedName) && distinguishedName.IndexOf("OU=", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                // Extract OU portions and check for SQL
+                foreach (string part in distinguishedName.Split(','))
+                {
+                    if (part.Trim().StartsWith("OU=", StringComparison.OrdinalIgnoreCase) &&
+                        part.IndexOf("SQL", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        methods.Add("OU");
+                        break;
+                    }
+                }
+            }
+
+            return methods.Count > 0 ? string.Join("+", methods) : "Unknown";
         }
 
         private class ServerInfo
