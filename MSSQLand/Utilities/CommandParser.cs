@@ -167,50 +167,6 @@ namespace MSSQLand.Utilities
                     return (ParseResultType.UtilityMode, null);
                 }
 
-                if (args[0] == "-browse" || args[0] == "--browse")
-                {
-                    if (args.Length < 2 || IsFlag(args[1]))
-                    {
-                        throw new ArgumentException("SQL Browser requires a hostname. Example: -browse sqlserver.domain.com");
-                    }
-                    
-                    string hostname = args[1];
-                    Logger.Info($"Querying SQL Browser service on {hostname} (UDP 1434)...");
-                    Logger.NewLine();
-                    
-                    var instances = SqlBrowser.Query(hostname);
-                    SqlBrowser.LogInstances(hostname, instances);
-                    
-                    return (ParseResultType.UtilityMode, null);
-                }
-
-                if (args[0] == "-portscan" || args[0] == "--portscan")
-                {
-                    if (args.Length < 2 || IsFlag(args[1]))
-                    {
-                        throw new ArgumentException("Port scan requires a hostname. Example: -portscan sqlserver.domain.com");
-                    }
-                    
-                    string hostname = args[1];
-                    bool scanAll = args.Length > 2 && (args[2] == "--all" || args[2] == "-a");
-                    
-                    Logger.Info($"Scanning {hostname} for SQL Server ports (TDS validation)");
-                    if (scanAll)
-                    {
-                        Logger.InfoNested("Find all instances (full ephemeral range)");
-                    }
-                    else
-                    {
-                        Logger.InfoNested("Stop on first hit (use --all to find all)");
-                    }
-                    Logger.NewLine();
-                    
-                    var results = PortScanner.Scan(hostname, stopOnFirst: !scanAll);
-                    PortScanner.LogResults(hostname, results);
-                    
-                    return (ParseResultType.UtilityMode, null);
-                }
-
                 // First pass: extract --trace, --debug and --silent flags from anywhere in the arguments
                 var filteredArgs = new List<string>();
                 for (int i = 0; i < args.Length; i++)
@@ -248,6 +204,44 @@ namespace MSSQLand.Utilities
 
                 hostArg = args[currentIndex++];
                 parsedArgs.Host = Server.ParseServer(hostArg);
+
+                // Check for utility modes that work on a specific host
+                if (currentIndex < args.Length)
+                {
+                    string nextArg = args[currentIndex];
+                    
+                    if (nextArg == "-browse" || nextArg == "--browse")
+                    {
+                        Logger.Info($"Querying SQL Browser service on {hostArg} (UDP 1434)");
+                        Logger.NewLine();
+                        
+                        var instances = SqlBrowser.Query(hostArg);
+                        SqlBrowser.LogInstances(hostArg, instances);
+                        
+                        return (ParseResultType.UtilityMode, null);
+                    }
+                    
+                    if (nextArg == "-portscan" || nextArg == "--portscan")
+                    {
+                        bool scanAll = currentIndex + 1 < args.Length && (args[currentIndex + 1] == "--all" || args[currentIndex + 1] == "-a");
+                        
+                        Logger.Info($"Scanning {hostArg} for SQL Server ports (TDS validation)");
+                        if (scanAll)
+                        {
+                            Logger.InfoNested("Find all instances (full ephemeral range)");
+                        }
+                        else
+                        {
+                            Logger.InfoNested("Stop on first hit (use --all to find all)");
+                        }
+                        Logger.NewLine();
+                        
+                        var results = PortScanner.Scan(hostArg, stopOnFirst: !scanAll);
+                        PortScanner.LogResults(hostArg, results);
+                        
+                        return (ParseResultType.UtilityMode, null);
+                    }
+                }
 
                 // Parse global flags until we hit the action (non-flag positional arg)
                 while (currentIndex < args.Length && !actionFound)
