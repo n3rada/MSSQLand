@@ -43,12 +43,6 @@ namespace MSSQLand.Services.Credentials
                     Logger.Success("SQL Server is alive and responding");
                     Logger.SuccessNested("Server rejected empty credentials (expected)");
                 }
-                // Error 64 = Pre-login handshake failed - server IS alive, network/protocol issue
-                else if (ex.Number == 64)
-                {
-                    Logger.Success("Server is alive (responded during pre-login handshake)");
-                    Logger.Warning("Connection failed during TDS handshake.");
-                }
                 // Error 1225 = Connection refused - server alive but not listening
                 else if (ex.Number == 1225)
                 {
@@ -66,6 +60,12 @@ namespace MSSQLand.Services.Credentials
                 {
                     Logger.Error("Network path not found");
                     Logger.ErrorNested("Server unreachable. Check hostname/IP and network connectivity");
+                }
+                // Error 64 = Network error / connection dropped
+                else if (ex.Number == 64)
+                {
+                    Logger.Error("Network error");
+                    Logger.ErrorNested("Connection failed. Server may be unreachable or not a SQL Server");
                 }
                 // Other SQL errors still indicate the server responded
                 else
