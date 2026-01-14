@@ -281,11 +281,15 @@ namespace MSSQLand.Utilities
                 parsedArgs.Host = Server.ParseServer(hostArg);
                 
                 // Validate DNS resolution for the target server (skip for named pipes)
+                IPAddress resolvedIp = null;
                 if (!parsedArgs.Host.UsesNamedPipe)
                 {
                     try
                     {
-                        Misc.ValidateDnsResolution(parsedArgs.Host.Hostname, throwOnFailure: true);
+                        var addresses = Misc.ValidateDnsResolution(parsedArgs.Host.Hostname, throwOnFailure: true);
+                        // Prefer IPv4
+                        resolvedIp = addresses?.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) 
+                                   ?? addresses?.First();
                     }
                     catch (Exception ex)
                     {
@@ -337,7 +341,7 @@ namespace MSSQLand.Utilities
                         if (customPorts != null)
                         {
                             Logger.Info($"Scanning {hostArg} for SQL Server on {customPorts.Length} port(s)");
-                            PortScanner.ScanPorts(hostArg, customPorts);
+                            PortScanner.ScanPorts(resolvedIp, hostArg, customPorts);
                         }
                         else
                         {
@@ -350,7 +354,7 @@ namespace MSSQLand.Utilities
                             {
                                 Logger.InfoNested("Stop on first hit (use --all to find all)");
                             }                            
-                            PortScanner.Scan(hostArg, stopOnFirst: !scanAll);
+                            PortScanner.Scan(resolvedIp, hostArg, stopOnFirst: !scanAll);
                         }
                         
                         return (ParseResultType.UtilityMode, null);

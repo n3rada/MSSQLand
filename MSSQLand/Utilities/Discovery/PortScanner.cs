@@ -110,24 +110,11 @@ namespace MSSQLand.Utilities.Discovery
         /// <summary>
         /// Scan: known ports first, then ephemeral range.
         /// </summary>
-        public static List<ScanResult> Scan(string hostname, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism, bool stopOnFirst = true)
+        public static List<ScanResult> Scan(IPAddress ip, string hostname, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism, bool stopOnFirst = true)
         {
-
             Logger.TaskNested("Using TDS prelogin packet for SQL Server validation");
+            Logger.InfoNested($"Resolved to {ip}");
             var globalStopwatch = Stopwatch.StartNew();
-            
-            // Resolve DNS once upfront
-            IPAddress ip;
-            try
-            {
-                ip = ResolveHostname(hostname);
-                Logger.InfoNested($"Resolved to {ip}");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"DNS resolution failed: {ex.Message}");
-                return new List<ScanResult>();
-            }
 
             var cts = new CancellationTokenSource();
 
@@ -324,19 +311,6 @@ namespace MSSQLand.Utilities.Discovery
         }
 
         /// <summary>
-        /// Resolves hostname to IP (cached for all port checks).
-        /// </summary>
-        private static IPAddress ResolveHostname(string hostname)
-        {
-            if (IPAddress.TryParse(hostname, out var ip))
-                return ip;
-
-            var addresses = Dns.GetHostAddresses(hostname);
-            return addresses.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork) 
-                   ?? addresses.First();
-        }
-
-        /// <summary>
         /// Generates ports from edges toward middle: 49152, 65535, 49153, 65534...
         /// </summary>
         private static int[] GenerateEdgesToMiddle(int start, int end)
@@ -359,7 +333,19 @@ namespace MSSQLand.Utilities.Discovery
         {
             try
             {
-                var ip = ResolveHostname(hostname);
+                // Resolve hostname to IP
+                IPAddress ip;
+                if (IPAddress.TryParse(hostname, out ip))
+                {
+                    // Already an IP
+                }
+                else
+                {
+                    var addresses = Misc.ValidateDnsResolution(hostname, throwOnFailure: true);
+                    ip = addresses?.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork) 
+                       ?? addresses?.First();
+                }
+                
                 return ScanPortsParallel(ip, KnownPorts, timeoutMs, maxParallelism, null);
             }
             catch
@@ -372,22 +358,10 @@ namespace MSSQLand.Utilities.Discovery
         /// Scans specific ports provided by the user.
         /// Examples: single port, range, or comma-separated list.
         /// </summary>
-        public static List<ScanResult> ScanPorts(string hostname, int[] ports, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism)
+        public static List<ScanResult> ScanPorts(IPAddress ip, string hostname, int[] ports, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism)
         {
+            Logger.InfoNested($"Resolved to {ip}");
             var globalStopwatch = Stopwatch.StartNew();
-
-            // Resolve DNS once upfront
-            IPAddress ip;
-            try
-            {
-                ip = ResolveHostname(hostname);
-                Logger.InfoNested($"Resolved to {ip}");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"DNS resolution failed: {ex.Message}");
-                return new List<ScanResult>();
-            }
 
             Logger.InfoNested($"Testing ports: {FormatPortList(ports)}");
 
