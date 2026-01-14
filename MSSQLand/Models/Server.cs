@@ -78,15 +78,14 @@ namespace MSSQLand.Models
 
         /// <summary>
         /// Gets the connection target for SQL Server connection string.
-        /// Returns named pipe path if configured, otherwise tcp:hostname,port to force TCP/IP.
+        /// Returns named pipe path if configured, otherwise hostname,port.
         /// </summary>
         public string GetConnectionTarget()
         {
             if (UsesNamedPipe)
                 return NamedPipe;
             
-            // Always use tcp: prefix to force TCP/IP protocol and avoid Named Pipes fallback
-            return $"tcp:{Hostname},{Port}";
+            return Port == 1433 ? Hostname : $"{Hostname},{Port}";
         }
 
         /// <summary>
