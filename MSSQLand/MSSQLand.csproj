@@ -189,6 +189,7 @@
     <Compile Include="Services\Authentication\Credentials\CredentialsFactory.cs" />
     <Compile Include="Services\Authentication\Credentials\EntraIDCredentials.cs" />
     <Compile Include="Services\Authentication\Credentials\LocalCredentials.cs" />
+    <Compile Include="Services\Authentication\Credentials\ProbeCredentials.cs" />
     <Compile Include="Services\Authentication\Credentials\TokenCredentials.cs" />
     <Compile Include="Services\Authentication\Credentials\WindowsCredentials.cs" />
     <Compile Include="Services\Authentication\Credentials\WindowsIdentityImpersonation.cs" />
