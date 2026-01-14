@@ -140,7 +140,7 @@ namespace MSSQLand.Utilities.Discovery
 
             if (stopOnFirst && knownResults.Count > 0)
             {
-                LogSummary(hostname, knownResults, globalStopwatch);
+                LogSummary(hostname, knownResults, globalStopwatch, stoppedEarly: true);
                 return knownResults;
             }
 
@@ -158,7 +158,8 @@ namespace MSSQLand.Utilities.Discovery
             Logger.InfoNested($"Completed in {ephemeralStopwatch.Elapsed.TotalSeconds:F1}s ({portsPerSec} ports/sec)");
 
             var allResults = knownResults.Concat(ephemeralResults).OrderBy(r => r.Port).ToList();
-            LogSummary(hostname, allResults, globalStopwatch);
+            bool stoppedEarly = stopOnFirst && allResults.Count > 0;
+            LogSummary(hostname, allResults, globalStopwatch, stoppedEarly);
             return allResults;
         }
 
@@ -397,7 +398,7 @@ namespace MSSQLand.Utilities.Discovery
             return $"{sorted[0]}, {sorted[1]}, ... ({ports.Length} ports)";
         }
 
-        private static void LogSummary(string hostname, List<ScanResult> results, Stopwatch stopwatch)
+        private static void LogSummary(string hostname, List<ScanResult> results, Stopwatch stopwatch, bool stoppedEarly = false)
         {
             stopwatch.Stop();
             Logger.NewLine();
@@ -412,7 +413,11 @@ namespace MSSQLand.Utilities.Discovery
                 Logger.Success($"Found {results.Count} SQL Server port(s):");
                 foreach (var r in results.OrderBy(r => r.Port))
                 {
-                    Logger.SuccessNested($"{hostname}:{r.Port}");
+                    Logger.SuccessNested($"{r.Port}");
+                }
+                if (stoppedEarly)
+                {
+                    Logger.InfoNested("Stopped after first hit (use --all to find more)");
                 }
             }
         }
