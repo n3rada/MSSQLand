@@ -227,10 +227,9 @@ namespace MSSQLand.Utilities.Discovery
                 })
                 .ThenBy(s => s.ServerName))
             {
-                string desc = server.Description ?? "";
                 resultTable.Rows.Add(
                     server.ServerName,
-                    desc.Length > 50 ? desc.Substring(0, 47) + "..." : desc,
+                    server.Description ?? "",
                     string.Join(", ", server.Instances.OrderBy(i => i)),
                     server.DiscoveryMethod,
                     server.AccountName,
