@@ -8,6 +8,7 @@ using System.IO.Compression;
 using System.IO;
 using System.Security.Cryptography;
 using System.Xml;
+using System.Linq;
 
 namespace MSSQLand.Utilities
 {
@@ -83,6 +84,67 @@ namespace MSSQLand.Utilities
             using var outputStream = new MemoryStream();
             gzipStream.CopyTo(outputStream);
             return outputStream.ToArray();
+        }
+
+        /// <summary>
+        /// Validates DNS resolution for a hostname and returns resolved IP addresses.
+        /// Skips validation for localhost-like addresses and named pipes.
+        /// </summary>
+        /// <param name="hostname">The hostname to resolve.</param>
+        /// <param name="throwOnFailure">If true, throws ArgumentException on failure. If false, returns null.</param>
+        /// <returns>Array of resolved IP addresses, or null if resolution fails and throwOnFailure is false.</returns>
+        /// <exception cref="ArgumentException">Thrown when DNS resolution fails and throwOnFailure is true.</exception>
+        public static IPAddress[] ValidateDnsResolution(string hostname, bool throwOnFailure = true)
+        {
+            if (string.IsNullOrWhiteSpace(hostname))
+            {
+                if (throwOnFailure)
+                    throw new ArgumentException("Hostname cannot be null or empty.");
+                return null;
+            }
+
+            // Skip validation for localhost-like addresses
+            string lower = hostname.ToLowerInvariant();
+            if (lower == "localhost" ||
+                lower == "127.0.0.1" ||
+                lower == "::1" ||
+                lower == "(local)" ||
+                lower == ".")
+            {
+                Logger.Debug($"Skipping DNS resolution for localhost address: {hostname}");
+                return null;
+            }
+
+            // Try to parse as IP address first
+            if (IPAddress.TryParse(hostname, out IPAddress ipAddress))
+            {
+                Logger.Debug($"Hostname is already an IP address: {hostname}");
+                return new[] { ipAddress };
+            }
+
+            // Perform DNS resolution
+            try
+            {
+                Logger.Debug($"Resolving hostname: {hostname}");
+                IPAddress[] addresses = Dns.GetHostAddresses(hostname);
+                if (addresses.Length > 0)
+                {
+                    Logger.Debug($"Resolved to: {string.Join(", ", addresses.Select(a => a.ToString()))}");
+                    return addresses;
+                }
+                else
+                {
+                    if (throwOnFailure)
+                        throw new ArgumentException($"DNS resolution for '{hostname}' returned no addresses.");
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (throwOnFailure)
+                    throw new ArgumentException($"DNS resolution failed for '{hostname}': {ex.Message}. Verify the hostname and network connectivity.");
+                return null;
+            }
         }
 
         /// <summary>

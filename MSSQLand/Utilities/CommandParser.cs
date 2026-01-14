@@ -279,6 +279,20 @@ namespace MSSQLand.Utilities
 
                 hostArg = args[currentIndex++];
                 parsedArgs.Host = Server.ParseServer(hostArg);
+                
+                // Validate DNS resolution for the target server (skip for named pipes)
+                if (!parsedArgs.Host.UsesNamedPipe)
+                {
+                    try
+                    {
+                        Misc.ValidateDnsResolution(parsedArgs.Host.Hostname, throwOnFailure: true);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"DNS resolution failed: {ex.Message}");
+                        return (ParseResultType.InvalidInput, null);
+                    }
+                }
 
                 // Check for utility modes that work on a specific host
                 if (currentIndex < args.Length)
