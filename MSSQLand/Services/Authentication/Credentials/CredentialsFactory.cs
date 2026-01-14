@@ -33,6 +33,15 @@ namespace MSSQLand.Services.Credentials
         private static readonly Dictionary<string, CredentialMetadata> _credentialRegistry = new(StringComparer.OrdinalIgnoreCase)
         {
             {
+                "probe",
+                new CredentialMetadata(
+                    name: "probe",
+                    description: "Test if SQL Server is alive (no auth, just connectivity check)",
+                    requiredArguments: new List<string>(),
+                    factory: () => new ProbeCredentials()
+                )
+            },
+            {
                 "token",
                 new CredentialMetadata(
                     name: "token",

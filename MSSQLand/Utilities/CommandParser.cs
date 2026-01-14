@@ -363,27 +363,8 @@ namespace MSSQLand.Utilities
                 // Check if credential type is provided
                 if (string.IsNullOrWhiteSpace(parsedArgs.CredentialType))
                 {
-                Logger.Error("Missing required argument: -c or --credentials.");
-                DataTable credentialsTable = new();
-                credentialsTable.Columns.Add("Type", typeof(string));
-                credentialsTable.Columns.Add("Description", typeof(string));
-                credentialsTable.Columns.Add("Required Arguments", typeof(string));
-                credentialsTable.Columns.Add("Optional Arguments", typeof(string));
-
-                var credentials = CredentialsFactory.GetAvailableCredentials();
-                foreach (var credential in credentials.Values)
-                {
-                    string requiredArgs = credential.RequiredArguments.Count > 0
-                        ? string.Join(", ", credential.RequiredArguments)
-                        : "None";
-                    
-                    string optionalArgs = credential.OptionalArguments.Count > 0
-                        ? string.Join(", ", credential.OptionalArguments)
-                        : "-";
-                    
-                    credentialsTable.Rows.Add(credential.Name, credential.Description, requiredArgs, optionalArgs);
-                }                    Console.WriteLine(OutputFormatter.ConvertDataTable(credentialsTable));
-                    return (ParseResultType.InvalidInput, null);
+                    // No credentials specified - use probe mode to just test connectivity
+                    parsedArgs.CredentialType = "probe";
                 }
 
                 if (connectionTimeout.HasValue)
@@ -520,6 +501,81 @@ namespace MSSQLand.Utilities
             if (requiredArgs.Count == 0 && (!string.IsNullOrEmpty(username) || !string.IsNullOrEmpty(password) || !string.IsNullOrEmpty(domain)))
             {
                 throw new ArgumentException($"Extra arguments provided for {credentialType} credentials, which do not require additional parameters.");
+            }
+        }
+
+        /// <summary>
+        /// Probes a SQL Server to check if it's alive and responding.
+        /// Uses SQL authentication with empty credentials - server will reject but confirms it's a SQL Server.
+        /// </summary>
+        private static void ProbeServer(string target, int timeoutSeconds)
+        {
+            var server = Server.ParseServer(target);
+            string connectionString = $"Server={server.Hostname},{server.Port};Database=master;User Id=;Password=;Connection Timeout={timeoutSeconds};Encrypt=True;TrustServerCertificate=True;";
+
+            Logger.TaskNested($"Probing SQL Server: {server.Hostname}:{server.Port}");
+            Logger.TaskNested($"Timeout: {timeoutSeconds} seconds");
+
+            // Resolve IP first
+            try
+            {
+                var ipAddresses = System.Net.Dns.GetHostAddresses(server.Hostname);
+                if (ipAddresses.Length > 0)
+                {
+                    Logger.InfoNested($"Resolved IP: {ipAddresses[0]}");
+                }
+            }
+            catch
+            {
+                Logger.WarningNested("Could not resolve hostname");
+            }
+
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+            try
+            {
+                using (var connection = new System.Data.SqlClient.SqlConnection(connectionString))
+                {
+                    connection.Open();
+                    // If we get here, something's wrong (empty creds shouldn't work)
+                    stopwatch.Stop();
+                    Logger.Warning($"Unexpected: Connection succeeded with empty credentials! ({stopwatch.ElapsedMilliseconds}ms)");
+                }
+            }
+            catch (System.Data.SqlClient.SqlException ex)
+            {
+                stopwatch.Stop();
+
+                // Error 18456 = Login failed - this means the server IS alive and responding
+                if (ex.Number == 18456)
+                {
+                    Logger.Success($"SQL Server is alive and responding ({stopwatch.ElapsedMilliseconds}ms)");
+                    Logger.SuccessNested($"Server rejected login (expected behavior)");
+                    Logger.InfoNested($"Version hint from error: SQL Server is running");
+                }
+                // Error -2 or -1 = Timeout / connection failed
+                else if (ex.Number == -2 || ex.Number == -1)
+                {
+                    Logger.Error($"Connection timeout after {timeoutSeconds} seconds");
+                    Logger.ErrorNested("Server did not respond - may be offline, blocked, or not a SQL Server");
+                }
+                // Error 53 = Network path not found
+                else if (ex.Number == 53)
+                {
+                    Logger.Error("Network path not found");
+                    Logger.ErrorNested("Server unreachable - check hostname/IP and network connectivity");
+                }
+                // Other errors still indicate the server responded
+                else
+                {
+                    Logger.Success($"SQL Server responded ({stopwatch.ElapsedMilliseconds}ms)");
+                    Logger.InfoNested($"Error {ex.Number}: {ex.Message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                Logger.Error($"Probe failed: {ex.Message}");
             }
         }
 
