@@ -363,7 +363,6 @@ namespace MSSQLand.Utilities.Discovery
             }
 
             Logger.InfoNested($"Testing ports: {FormatPortList(ports)}");
-            Logger.NewLine();
 
             var results = ScanPortsParallel(ip, ports, timeoutMs, maxParallelism, null);
             LogSummary(hostname, results, globalStopwatch);
