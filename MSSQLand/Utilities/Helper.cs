@@ -65,36 +65,25 @@ namespace MSSQLand.Utilities
             // Show all actions grouped by category
             var actions = ActionFactory.GetAvailableActions();
             
-            var groupedActions = new List<(string Category, List<string>)>();
-            string currentCategory = null;
-            List<string> currentActions = null;
+            // Group by category using dictionary to consolidate
+            var groupedActions = new Dictionary<string, List<string>>();
 
             foreach (var action in actions)
             {
-                if (action.Category != currentCategory)
+                if (!groupedActions.ContainsKey(action.Category))
                 {
-                    if (currentActions != null)
-                    {
-                        groupedActions.Add((currentCategory, currentActions));
-                    }
-                    currentCategory = action.Category;
-                    currentActions = new List<string>();
+                    groupedActions[action.Category] = new List<string>();
                 }
-                currentActions.Add(action.ActionName);
-            }
-            
-            if (currentActions != null && currentActions.Count > 0)
-            {
-                groupedActions.Add((currentCategory, currentActions));
+                groupedActions[action.Category].Add(action.ActionName);
             }
 
             Console.WriteLine("Available actions:");
             foreach (var group in groupedActions)
             {
                 Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.Write($"[{group.Category}] ");
+                Console.Write($"[{group.Key}] ");
                 Console.ResetColor();
-                Console.WriteLine(string.Join(", ", group.Item2));
+                Console.WriteLine(string.Join(", ", group.Value));
             }
             Console.WriteLine();
         }
