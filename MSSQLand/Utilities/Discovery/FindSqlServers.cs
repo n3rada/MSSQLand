@@ -71,7 +71,7 @@ namespace MSSQLand.Utilities.Discovery
 
             // LDAP filter: Find objects with MSSQLSvc SPNs OR computers with "SQL" in name, description, or OU
             // This catches both properly configured SQL Servers and those without Kerberos SPNs
-            const string ldapFilter = "(|(servicePrincipalName=MSSQL*)(&(objectCategory=computer)(cn=*SQL*))(&(objectCategory=computer)(description=*SQL*))(&(objectCategory=computer)(distinguishedName=*OU=*SQL*)))";
+            const string ldapFilter = "(|(servicePrincipalName=MSSQLSvc*)(&(objectCategory=computer)(cn=*SQL*))(&(objectCategory=computer)(description=*SQL*))(&(objectCategory=computer)(distinguishedName=*OU=*SQL*)))";
             // Use lastLogonTimestamp instead of lastLogon - it's replicated across DCs
             string[] ldapAttributes = { "cn", "dnshostname", "samaccountname", "objectsid", "serviceprincipalname", "lastLogonTimestamp", "description" };
 
