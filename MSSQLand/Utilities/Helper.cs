@@ -43,7 +43,7 @@ namespace MSSQLand.Utilities
                 {
                     foreach (var arg in action.Arguments)
                     {
-                        Console.WriteLine($"  > {arg}");
+                        Console.WriteLine($"\t> {arg}");
                     }
                 }
 
@@ -58,8 +58,8 @@ namespace MSSQLand.Utilities
         {
             Console.WriteLine("Usage: <host> -c <credential> <action> [options]");
             Console.WriteLine();
-            Console.WriteLine("  Example: localhost -c token whoami");
-            Console.WriteLine("  Use -h for full help");
+            Console.WriteLine("\tExample: localhost -c token whoami");
+            Console.WriteLine("\tUse -h for full help");
             Console.WriteLine();
 
             // Show all actions grouped by category
@@ -88,6 +88,7 @@ namespace MSSQLand.Utilities
                 groupedActions.Add((currentCategory, currentActions));
             }
 
+            Console.WriteLine("Available actions:");
             foreach (var group in groupedActions)
             {
                 Console.ForegroundColor = ConsoleColor.Cyan;
@@ -107,15 +108,14 @@ namespace MSSQLand.Utilities
 
             Console.WriteLine("Usage: <host> [options] <action> [action-options]\n");
             Console.WriteLine("Examples");
-            Console.WriteLine("  localhost -c token whoami");
-            Console.WriteLine("  server,1433 -c local -u sa -p pass query \"SELECT @@VERSION\"");
+            Console.WriteLine("\tlocalhost@Clients -c token tables --name 'invoice' --columns");
             Console.WriteLine();
 
             Console.WriteLine("Help options");
-            Console.WriteLine("  -h, --help           Show this full help");
-            Console.WriteLine("  -h <keyword>         Search actions by keyword");
-            Console.WriteLine("  <host> <action> -h   Show help for specific action");
-            Console.WriteLine("  (no args)            Quick start with action list");
+            Console.WriteLine("\t-h, --help           Show this full help");
+            Console.WriteLine("\t-h <keyword>         Search actions by keyword");
+            Console.WriteLine("\t<host> <action> -h   Show help for specific action");
+            Console.WriteLine("\t(no args)            Quick start with action list");
 
             Console.WriteLine();
             Console.WriteLine("CLI arguments");
@@ -127,7 +127,7 @@ namespace MSSQLand.Utilities
 
             Console.WriteLine();
             Console.WriteLine("Standalone utilities (no database connection)");
-            Console.WriteLine("  --findsql <domain>   Find SQL Servers in Active Directory");
+            Console.WriteLine("\t--findsql <domain>   Find SQL Servers in Active Directory");
             Console.WriteLine();
         } 
 
@@ -157,7 +157,7 @@ namespace MSSQLand.Utilities
                 Console.WriteLine("Arguments");
                 foreach (var arg in action.Arguments)
                 {
-                    Console.WriteLine($"  > {arg}");
+                    Console.WriteLine($"\t> {arg}");
                 }
             }
             else
