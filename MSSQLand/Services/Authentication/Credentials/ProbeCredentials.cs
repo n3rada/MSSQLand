@@ -12,8 +12,8 @@ namespace MSSQLand.Services.Credentials
     {
         public ProbeCredentials()
         {
-            // Short timeout for probing - we just want to know if it's alive
-            SetConnectionTimeout(5);
+            // Reasonable timeout for probing - allows for network latency
+            SetConnectionTimeout(10);
         }
 
         public override SqlConnection Authenticate(string sqlServer, string database, string username = null, string password = null, string domain = null)
