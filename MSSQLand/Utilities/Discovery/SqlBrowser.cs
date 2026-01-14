@@ -156,12 +156,12 @@ namespace MSSQLand.Utilities.Discovery
                 return;
             }
 
-            Logger.Info($"SQL Browser returned {instances.Count} instance(s):");
-            Logger.InfoNested("Note: Ports are configured values, not necessarily the current listening ports");
-            Logger.NewLine();
+            Logger.Success($"SQL Browser returned {instances.Count} instance(s):");
+            Logger.SuccessNested("Note: Ports are configured values, not necessarily the current listening ports");
             
             foreach (var instance in instances)
             {
+                Logger.NewLine();
                 string portInfo = instance.TcpPort.HasValue ? $"TCP {instance.TcpPort}" : "No TCP";
                 string clustered = instance.IsClustered ? " [Clustered]" : "";
                 Logger.Info($"{instance.InstanceName}: {portInfo}, Version {instance.Version}{clustered}");
