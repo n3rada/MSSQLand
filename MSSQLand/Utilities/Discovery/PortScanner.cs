@@ -67,6 +67,8 @@ namespace MSSQLand.Utilities.Discovery
         private static int _adaptiveTimeoutMs = DefaultTimeoutMs;
         private static readonly object _timingLock = new object();
         private static List<long> _responseTimes = new List<long>();
+        private static int _timeoutCount = 0;
+        private static int _responseCount = 0;
 
         /// <summary>
         /// Minimal valid TDS prelogin packet for SQL Server detection.
@@ -130,6 +132,8 @@ namespace MSSQLand.Utilities.Discovery
         public static List<ScanResult> Scan(IPAddress ip, string hostname, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism, bool stopOnFirst = true)
         {
             Logger.TaskNested("Using TDS prelogin packet for SQL Server validation");
+            Logger.InfoNested("Strategy: edges-to-middle for faster discovery");
+
             var globalStopwatch = Stopwatch.StartNew();
 
             // Reset adaptive timeout for new scan
@@ -137,6 +141,8 @@ namespace MSSQLand.Utilities.Discovery
             {
                 _adaptiveTimeoutMs = timeoutMs;
                 _responseTimes.Clear();
+                _timeoutCount = 0;
+                _responseCount = 0;
             }
 
             var cts = new CancellationTokenSource();
@@ -165,23 +171,79 @@ namespace MSSQLand.Utilities.Discovery
                 return knownResults;
             }
 
-            // Phase 2: Ephemeral range (most dynamic SQL Server instances)
-            int ephemeralCount = EphemeralEnd - EphemeralStart + 1;
+            // Firewall detection: Count known ports + sample additional random ports
+            Logger.NewLine();
+            int targetSampleSize = 50;
+            int additionalSamplesNeeded = Math.Max(0, targetSampleSize - KnownPorts.Length);
+            
+            // Counters already include known ports scan, just add additional samples
+            var random = new Random();
+            var sampledPorts = new HashSet<int>();
+            var ephemeralRange = Enumerable.Range(EphemeralStart, EphemeralEnd - EphemeralStart + 1).ToArray();
+            
+            // Select additional random ports to reach target sample size
+            while (sampledPorts.Count < additionalSamplesNeeded && sampledPorts.Count < ephemeralRange.Length)
+            {
+                sampledPorts.Add(ephemeralRange[random.Next(ephemeralRange.Length)]);
+            }
+            
+            var sampleStopwatch = Stopwatch.StartNew();
+            var sampleResults = sampledPorts.Count > 0 
+                ? ScanPortsParallel(ip, sampledPorts.ToArray(), timeoutMs, maxParallelism, null)
+                : new List<ScanResult>();
+            sampleStopwatch.Stop();
+            
+            // Calculate timeout ratio using known ports + additional samples
+            int totalSampled = KnownPorts.Length + sampledPorts.Count;
+            int totalResponded = knownResults.Count + sampleResults.Count;
+            int timedOut;
+            int responsesReceived;
+            lock (_timingLock)
+            {
+                timedOut = _timeoutCount;
+                responsesReceived = _responseCount;
+            }
+            
+            int closed = totalSampled - timedOut - totalResponded;
+            double timeoutRatio = (double)timedOut / totalSampled;
+            bool heavilyFiltered = timeoutRatio > 0.80;
+            
+            if (heavilyFiltered)
+            {
+                Logger.InfoNested($"Timeout ratio: {timeoutRatio:P0} - Heavily filtered (slow scan ahead)");
+            }
+            
+            if (sampleResults.Count > 0)
+            {
+                Logger.SuccessNested($"Found {sampleResults.Count} in sample: {string.Join(", ", sampleResults.Select(r => r.Port))}");
+                
+                if (stopOnFirst)
+                {
+                    var allResults = knownResults.Concat(sampleResults).OrderBy(r => r.Port).ToList();
+                    LogSummary(hostname, allResults, globalStopwatch, stoppedEarly: true);
+                    return allResults;
+                }
+            }
+
+            // Phase 2: Ephemeral range (excluding additional sample ports)
+            var ephemeralPortsToScan = Enumerable.Range(EphemeralStart, EphemeralEnd - EphemeralStart + 1)
+                .Where(p => !sampledPorts.Contains(p))
+                .ToArray();
+            int ephemeralCount = ephemeralPortsToScan.Length;
 
             // Log adaptive timeout if it changed
             int currentAdaptiveTimeout;
             lock (_timingLock) { currentAdaptiveTimeout = _adaptiveTimeoutMs; }
 
             Logger.NewLine();
-            Logger.Info($"Scanning ephemeral range ({EphemeralStart}-{EphemeralEnd}) - {ephemeralCount} ports");
+            Logger.Info($"Scanning remaining ephemeral range - {ephemeralCount} ports ({additionalSamplesNeeded} already tested)");
             if (currentAdaptiveTimeout < timeoutMs)
             {
                 Logger.InfoNested($"Adaptive timeout: {currentAdaptiveTimeout}ms (reduced from {timeoutMs}ms based on observed RTT)");
             }
-            Logger.InfoNested("Strategy: edges-to-middle for faster discovery");
 
             var ephemeralStopwatch = Stopwatch.StartNew();
-            var ephemeralPorts = GenerateEdgesToMiddle(EphemeralStart, EphemeralEnd);
+            var ephemeralPorts = ReorderEdgesToMiddle(ephemeralPortsToScan);
             var ephemeralResults = ScanPortsParallel(ip, ephemeralPorts, timeoutMs, maxParallelism, stopOnFirst ? cts : null);
             ephemeralStopwatch.Stop();
 
@@ -196,14 +258,29 @@ namespace MSSQLand.Utilities.Discovery
                 Logger.InfoNested($"None found ({ephemeralStopwatch.Elapsed.TotalSeconds:F1}s, {ephemeralPortsPerSec} ports/sec)");
             }
             
-            if (stopOnFirst && ephemeralResults.Count > 0)
+            // Combine sample results with full ephemeral scan results
+            var allEphemeralResults = sampleResults.Concat(ephemeralResults).OrderBy(r => r.Port).ToList();
+            
+            if (stopOnFirst && allEphemeralResults.Count > 0)
             {
-                var allResults = knownResults.Concat(ephemeralResults).OrderBy(r => r.Port).ToList();
+                var allResults = knownResults.Concat(allEphemeralResults).OrderBy(r => r.Port).ToList();
                 LogSummary(hostname, allResults, globalStopwatch, stoppedEarly: true);
                 return allResults;
             }
 
             // Phase 3: Middle range (1433-49151, excluding known ports already scanned)
+            // Skip if heavily filtered to avoid wasting time
+            if (heavilyFiltered)
+            {
+                Logger.NewLine();
+                Logger.Info($"Skipping middle range scan ({MiddleRangeStart}-{MiddleRangeEnd}) - heavily filtered network detected");
+                Logger.InfoNested("Use manual port specification if you suspect SQL Server in this range");
+                
+                var finalResults = knownResults.Concat(allEphemeralResults).OrderBy(r => r.Port).ToList();
+                LogSummary(hostname, finalResults, globalStopwatch);
+                return finalResults;
+            }
+            
             var middlePorts = GenerateMiddleRangePorts();
             int middleCount = middlePorts.Length;
             
@@ -211,7 +288,6 @@ namespace MSSQLand.Utilities.Discovery
             {
                 Logger.NewLine();
                 Logger.Info($"Scanning middle range ({MiddleRangeStart}-{MiddleRangeEnd}, excluding known ports) - {middleCount} ports");
-                Logger.InfoNested("Strategy: edges-to-middle for faster discovery");
                 
                 var middleStopwatch = Stopwatch.StartNew();
                 var reorderedMiddlePorts = ReorderEdgesToMiddle(middlePorts);
@@ -229,13 +305,13 @@ namespace MSSQLand.Utilities.Discovery
                     Logger.InfoNested($"None found ({middleStopwatch.Elapsed.TotalSeconds:F1}s, {middlePortsPerSec} ports/sec)");
                 }
                 
-                var allResults = knownResults.Concat(ephemeralResults).Concat(middleResults).OrderBy(r => r.Port).ToList();
+                var allResults = knownResults.Concat(allEphemeralResults).Concat(middleResults).OrderBy(r => r.Port).ToList();
                 bool stoppedEarly = stopOnFirst && allResults.Count > 0;
                 LogSummary(hostname, allResults, globalStopwatch, stoppedEarly);
                 return allResults;
             }
 
-            var finalResults = knownResults.Concat(ephemeralResults).OrderBy(r => r.Port).ToList();
+            var finalResults = knownResults.Concat(allEphemeralResults).OrderBy(r => r.Port).ToList();
             LogSummary(hostname, finalResults, globalStopwatch);
             return finalResults;
         }
@@ -304,6 +380,7 @@ namespace MSSQLand.Utilities.Discovery
 
                     if (completedTask == timeoutTask)
                     {
+                        lock (_timingLock) { _timeoutCount++; }
                         Logger.Trace($"Port {port}: Connect timeout ({effectiveTimeout}ms)");
                         return null;
                     }
@@ -318,6 +395,7 @@ namespace MSSQLand.Utilities.Discovery
                     catch (SocketException ex)
                     {
                         // Port closed/refused - still useful for timing (RST received)
+                        lock (_timingLock) { _responseCount++; }
                         UpdateAdaptiveTimeout(responseMs, initialTimeoutMs);
                         Logger.Trace($"Port {port}: SocketException {ex.SocketErrorCode} ({responseMs}ms)");
                         return null;
