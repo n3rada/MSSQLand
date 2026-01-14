@@ -9,35 +9,12 @@ using System.Security.Principal;
 namespace MSSQLand.Utilities.Discovery
 {
     /// <summary>
-    /// Standalone utility for enumerating SQL Servers in an Active Directory domain via LDAP queries.
-    /// Does not require database authentication or connection.
-    ///
-    /// <para>
-    /// <b>How it works:</b>
-    /// Queries Active Directory using two methods:
-    /// 1. Objects with Kerberos SPNs starting with "MSSQLSvc" (confirmed SQL Servers)
-    /// 2. Computer accounts with "SQL" in their name (naming convention heuristic)
-    /// SQL Server registers SPNs in the format: MSSQLSvc/hostname:port or MSSQLSvc/hostname:instancename
-    /// </para>
-    ///
-    /// <para>
-    /// <b>PowerShell equivalent:</b>
+    /// Enumerates SQL Servers in Active Directory via LDAP.
+    /// Discovers servers by MSSQLSvc SPNs (e.g., MSSQLSvc/hostname:port) and computers with "SQL" in name, description, or OU.
     /// <code>
-    /// # Domain-only query (LDAP):
-    /// ([adsisearcher]::new([adsi]"LDAP://corp.local", "(|(servicePrincipalName=MSSQL*)(&(objectCategory=computer)(cn=*SQL*)))")).FindAll()
-    ///
-    /// # Forest-wide query (Global Catalog):
-    /// ([adsisearcher]::new([adsi]"GC://corp.local", "(|(servicePrincipalName=MSSQL*)(&(objectCategory=computer)(cn=*SQL*)))")).FindAll()
+    /// # PowerShell equivalent:
+    /// ([adsisearcher]::new([adsi]"GC://corp.local", "(servicePrincipalName=MSSQLSvc*)")).FindAll() | % { $_.Properties.GetEnumerator() | % { "$($_.Name) = $($_.Value -join ', ')" } }
     /// </code>
-    /// </para>
-    ///
-    /// <para>
-    /// <b>Limitations:</b>
-    /// - SPN-based discovery: Only finds SQL Servers with registered SPNs
-    /// - Name-based discovery: May include false positives (MySQL, backup servers, etc.)
-    /// - IP addresses are resolved via DNS, not stored in LDAP
-    /// - lastLogonTimestamp has ~14 day replication delay
-    /// </para>
     /// </summary>
     public static class FindSqlServers
     {
@@ -255,8 +232,8 @@ namespace MSSQLand.Utilities.Discovery
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
 
-            int totalInstances = serverMap.Values.Sum(s => s.Instances.Count);
-            Logger.Success($"{serverMap.Count} unique SQL Server(s) found ({totalInstances} instance(s)).");
+            int withInstances = serverMap.Values.Count(s => s.Instances.Count > 0);
+            Logger.Success($"{serverMap.Count} SQL Server(s) found, {withInstances} with known instances.");
             return serverMap.Count;
         }
 
