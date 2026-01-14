@@ -153,21 +153,9 @@ namespace MSSQLand.Utilities.Discovery
                         // Add or update server entry
                         if (!serverMap.TryGetValue(serverName, out ServerInfo serverInfo))
                         {
-                            string serverIpAddress;
-                            try
-                            {
-                                IPAddress[] ipAddresses = Dns.GetHostAddresses(serverName);
-                                serverIpAddress = ipAddresses.Length > 0 ? ipAddresses[0].ToString() : "-";
-                            }
-                            catch (Exception)
-                            {
-                                serverIpAddress = "-";
-                            }
-
                             serverInfo = new ServerInfo
                             {
                                 ServerName = serverName,
-                                IpAddress = serverIpAddress,
                                 AccountName = accountName,
                                 ObjectSid = objectSid,
                                 LastLogon = lastLogonDate,
@@ -197,21 +185,9 @@ namespace MSSQLand.Utilities.Discovery
 
                     if (!string.IsNullOrEmpty(serverName) && !serverMap.ContainsKey(serverName))
                     {
-                        string serverIpAddress;
-                        try
-                        {
-                            IPAddress[] ipAddresses = Dns.GetHostAddresses(serverName);
-                            serverIpAddress = ipAddresses.Length > 0 ? ipAddresses[0].ToString() : "-";
-                        }
-                        catch (Exception)
-                        {
-                            serverIpAddress = "-";
-                        }
-
                         serverMap[serverName] = new ServerInfo
                         {
                             ServerName = serverName,
-                            IpAddress = serverIpAddress,
                             AccountName = accountName,
                             ObjectSid = objectSid,
                             LastLogon = lastLogonDate,
@@ -231,7 +207,6 @@ namespace MSSQLand.Utilities.Discovery
             // Build output table
             DataTable resultTable = new();
             resultTable.Columns.Add("dnsHostName", typeof(string));
-            resultTable.Columns.Add("IP (DNS Resolution)", typeof(string));
             resultTable.Columns.Add("Instances", typeof(string));
             resultTable.Columns.Add("Source", typeof(string));
             resultTable.Columns.Add("sAMAccountName", typeof(string));
@@ -246,7 +221,6 @@ namespace MSSQLand.Utilities.Discovery
             {
                 resultTable.Rows.Add(
                     server.ServerName,
-                    server.IpAddress,
                     string.Join(", ", server.Instances.OrderBy(i => i)),
                     server.DiscoveryMethod,
                     server.AccountName,
@@ -266,7 +240,6 @@ namespace MSSQLand.Utilities.Discovery
         private class ServerInfo
         {
             public string ServerName { get; set; }
-            public string IpAddress { get; set; }
             public string AccountName { get; set; }
             public string ObjectSid { get; set; }
             public string LastLogon { get; set; }
