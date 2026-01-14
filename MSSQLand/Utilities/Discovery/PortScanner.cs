@@ -14,14 +14,14 @@ namespace MSSQLand.Utilities.Discovery
 {
     /// <summary>
     /// TCP port scanner with TDS protocol validation for SQL Server discovery.
-    /// 
+    ///
     /// <para><b>Strategy:</b></para>
     /// <list type="number">
     /// <item>DNS resolution cached upfront</item>
     /// <item>Parallel TCP connect + TDS validation (500 concurrent)</item>
     /// <item>Edges-to-middle scanning for faster discovery</item>
     /// </list>
-    /// 
+    ///
     /// <para><b>Expected timing for ephemeral range (16,384 ports):</b></para>
     /// <para>With 500 concurrent connections and 500ms timeout:</para>
     /// <para>Batches = 16,384 / 500 ≈ 33 waves</para>
@@ -30,34 +30,48 @@ namespace MSSQLand.Utilities.Discovery
     /// <item>Average (some filtering): ~15-25s</item>
     /// <item>Worst case (all filtered, full timeout): 33 × 500ms ≈ 17s + overhead = ~25-35s</item>
     /// </list>
-    /// 
+    ///
     /// <para><b>OPSEC Note:</b> Active TCP connections may be logged. Use -browse first.</para>
     /// </summary>
     public static class PortScanner
     {
         /// <summary>
         /// Known SQL Server ports. Scanned first before ephemeral range.
+        /// Covers common SQL ports below the ephemeral range (49152+).
         /// </summary>
         public static readonly int[] KnownPorts = new int[]
         {
-            1433,   // Default instance
-            14711, 14712,  // Seen in the wild
+            1433,                           // Default instance
+            1434, 1435, 1436,               // SQL Browser and nearby
+            1491, 1533, 1668,
+            5001,
+            8564,
+            14333, 14336, 14337, 14346,     // Custom high ports
+            14711, 14712,
+            15001,
+            17001,
         };
 
         private const int EphemeralStart = 49152;
         private const int EphemeralEnd = 65535;
 
         private const int DefaultTimeoutMs = 500;
+        private const int MinTimeoutMs = 50;
         private const int DefaultParallelism = 500;
         private const int TdsPreloginPacketType = 0x12;
 
+        // Adaptive timeout tracking
+        private static int _adaptiveTimeoutMs = DefaultTimeoutMs;
+        private static readonly object _timingLock = new object();
+        private static List<long> _responseTimes = new List<long>();
+
         /// <summary>
         /// Minimal valid TDS prelogin packet for SQL Server detection.
-        /// 
+        ///
         /// <para><b>TDS Protocol Overview:</b></para>
         /// <para>SQL Server uses the Tabular Data Stream (TDS) protocol. Before authentication,
         /// the client sends a PRELOGIN packet (type 0x12) to negotiate version, encryption, etc.</para>
-        /// 
+        ///
         /// <para><b>Detection Strategy:</b></para>
         /// <para>We send a minimal but valid PRELOGIN packet. SQL Server responds with either:</para>
         /// <list type="bullet">
@@ -65,12 +79,12 @@ namespace MSSQLand.Utilities.Discovery
         /// <item>0x04 (TABULAR response) - Error/info response (still confirms SQL Server)</item>
         /// </list>
         /// <para>Non-SQL services will either: close connection, timeout, or send different data.</para>
-        /// 
+        ///
         /// <para><b>Packet Structure:</b></para>
         /// <para>Header (8 bytes): Type, Status, Length (big-endian), SPID, PacketID, Window</para>
         /// <para>Options: VERSION, ENCRYPTION, INSTOPT, THREADID, MARS, then 0xFF terminator</para>
         /// <para>Option data follows, referenced by offsets in the option list.</para>
-        /// 
+        ///
         /// <para><b>Reference:</b> MS-TDS specification section 2.2.6.4 (PRELOGIN)</para>
         /// </summary>
         private static readonly byte[] TdsPreloginPacket = new byte[]
@@ -82,7 +96,7 @@ namespace MSSQLand.Utilities.Discovery
             0x00, 0x00, // SPID: 0 (assigned by server)
             0x01,       // PacketID: 1
             0x00,       // Window: 0
-            
+
             // Prelogin option list (5 bytes per option: token, offset[2], length[2])
             // Offsets are relative to start of packet (after 8-byte header = position 8)
             0x00, 0x00, 0x15, 0x00, 0x06,  // VERSION: offset 21, length 6
@@ -91,7 +105,7 @@ namespace MSSQLand.Utilities.Discovery
             0x03, 0x00, 0x1D, 0x00, 0x04,  // THREADID: offset 29, length 4
             0x04, 0x00, 0x21, 0x00, 0x01,  // MARS: offset 33, length 1
             0xFF,                          // TERMINATOR
-            
+
             // Option data (referenced by offsets above)
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // VERSION: 0.0.0.0, subbuild 0
             0x02,                                 // ENCRYPTION: NOT_SUP (don't require encryption)
@@ -113,8 +127,14 @@ namespace MSSQLand.Utilities.Discovery
         public static List<ScanResult> Scan(IPAddress ip, string hostname, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism, bool stopOnFirst = true)
         {
             Logger.TaskNested("Using TDS prelogin packet for SQL Server validation");
-            Logger.InfoNested($"Resolved to {ip}");
             var globalStopwatch = Stopwatch.StartNew();
+
+            // Reset adaptive timeout for new scan
+            lock (_timingLock)
+            {
+                _adaptiveTimeoutMs = timeoutMs;
+                _responseTimes.Clear();
+            }
 
             var cts = new CancellationTokenSource();
 
@@ -123,7 +143,7 @@ namespace MSSQLand.Utilities.Discovery
             var knownStopwatch = Stopwatch.StartNew();
             var knownResults = ScanPortsParallel(ip, KnownPorts, timeoutMs, maxParallelism, stopOnFirst ? cts : null);
             knownStopwatch.Stop();
-            
+
             if (knownResults.Count > 0)
             {
                 Logger.SuccessNested($"Found {knownResults.Count}: {string.Join(", ", knownResults.Select(r => r.Port))} ({knownStopwatch.ElapsedMilliseconds}ms)");
@@ -142,17 +162,25 @@ namespace MSSQLand.Utilities.Discovery
             // Phase 2: Ephemeral range
             int ephemeralCount = EphemeralEnd - EphemeralStart + 1;
 
+            // Log adaptive timeout if it changed
+            int currentAdaptiveTimeout;
+            lock (_timingLock) { currentAdaptiveTimeout = _adaptiveTimeoutMs; }
+
             Logger.NewLine();
             Logger.Info($"Scanning ephemeral range ({EphemeralStart}-{EphemeralEnd}) - {ephemeralCount} ports");
+            if (currentAdaptiveTimeout < timeoutMs)
+            {
+                Logger.InfoNested($"Adaptive timeout: {currentAdaptiveTimeout}ms (reduced from {timeoutMs}ms based on observed RTT)");
+            }
             Logger.InfoNested("Strategy: edges-to-middle for faster discovery");
-            
+
             var ephemeralStopwatch = Stopwatch.StartNew();
             var ephemeralPorts = GenerateEdgesToMiddle(EphemeralStart, EphemeralEnd);
             var ephemeralResults = ScanPortsParallel(ip, ephemeralPorts, timeoutMs, maxParallelism, stopOnFirst ? cts : null);
             ephemeralStopwatch.Stop();
-            
+
             int portsPerSec = (int)(ephemeralCount * 1000L / Math.Max(1, ephemeralStopwatch.ElapsedMilliseconds));
-            
+
             if (ephemeralResults.Count > 0)
             {
                 Logger.SuccessNested($"Found {ephemeralResults.Count}: {string.Join(", ", ephemeralResults.Select(r => r.Port))} ({ephemeralStopwatch.Elapsed.TotalSeconds:F1}s, {portsPerSec} ports/sec)");
@@ -207,24 +235,37 @@ namespace MSSQLand.Utilities.Discovery
 
         /// <summary>
         /// Probes a single port asynchronously: TCP connect + TDS validation.
+        /// Uses adaptive timeout based on observed response times.
         /// </summary>
-        private static async Task<ScanResult> ProbePortAsync(IPAddress ip, int port, int timeoutMs)
+        private static async Task<ScanResult> ProbePortAsync(IPAddress ip, int port, int initialTimeoutMs)
         {
+            var probeStopwatch = Stopwatch.StartNew();
+
+            // Use adaptive timeout (may be lower than initial after we learn RTT)
+            int effectiveTimeout;
+            lock (_timingLock)
+            {
+                effectiveTimeout = _adaptiveTimeoutMs;
+            }
+
             try
             {
                 using (var client = new TcpClient())
                 {
-                    // Connect with timeout
+                    // Connect with adaptive timeout
                     var connectTask = client.ConnectAsync(ip, port);
-                    var timeoutTask = Task.Delay(timeoutMs);
-                    
+                    var timeoutTask = Task.Delay(effectiveTimeout);
+
                     var completedTask = await Task.WhenAny(connectTask, timeoutTask).ConfigureAwait(false);
-                    
+
                     if (completedTask == timeoutTask)
                     {
-                        Logger.Trace($"Port {port}: Connect timeout");
+                        Logger.Trace($"Port {port}: Connect timeout ({effectiveTimeout}ms)");
                         return null;
                     }
+
+                    // Record response time for adaptive timeout
+                    long responseMs = probeStopwatch.ElapsedMilliseconds;
 
                     try
                     {
@@ -232,7 +273,9 @@ namespace MSSQLand.Utilities.Discovery
                     }
                     catch (SocketException ex)
                     {
-                        Logger.Trace($"Port {port}: SocketException {ex.SocketErrorCode}");
+                        // Port closed/refused - still useful for timing (RST received)
+                        UpdateAdaptiveTimeout(responseMs, initialTimeoutMs);
+                        Logger.Trace($"Port {port}: SocketException {ex.SocketErrorCode} ({responseMs}ms)");
                         return null;
                     }
 
@@ -242,12 +285,14 @@ namespace MSSQLand.Utilities.Discovery
                         return null;
                     }
 
-                    Logger.Trace($"Port {port}: Connected, sending TDS prelogin");
+                    // Connected - record timing
+                    UpdateAdaptiveTimeout(responseMs, initialTimeoutMs);
+                    Logger.Trace($"Port {port}: Connected in {responseMs}ms, sending TDS prelogin");
 
                     // Port is open - validate TDS
                     var stream = client.GetStream();
-                    stream.ReadTimeout = timeoutMs;
-                    stream.WriteTimeout = timeoutMs;
+                    stream.ReadTimeout = effectiveTimeout;
+                    stream.WriteTimeout = effectiveTimeout;
 
                     // Send proper TDS prelogin packet
                     await stream.WriteAsync(TdsPreloginPacket, 0, TdsPreloginPacket.Length).ConfigureAwait(false);
@@ -258,14 +303,14 @@ namespace MSSQLand.Utilities.Discovery
                     try
                     {
                         var readTask = stream.ReadAsync(response, 0, response.Length);
-                        var readTimeoutTask = Task.Delay(timeoutMs);
-                        
+                        var readTimeoutTask = Task.Delay(effectiveTimeout);
+
                         if (await Task.WhenAny(readTask, readTimeoutTask).ConfigureAwait(false) == readTimeoutTask)
                         {
                             Logger.Trace($"Port {port}: Read timeout");
                             return null;
                         }
-                        
+
                         bytesRead = await readTask.ConfigureAwait(false);
                     }
                     catch (Exception ex)
@@ -278,7 +323,7 @@ namespace MSSQLand.Utilities.Discovery
                     {
                         byte type = response[0];
                         Logger.Trace($"Port {port}: Got {bytesRead} bytes, type=0x{type:X2}");
-                        
+
                         // TDS response types: 0x04 (tabular) or 0x12 (prelogin)
                         if (type == 0x04 || type == 0x12)
                         {
@@ -313,6 +358,36 @@ namespace MSSQLand.Utilities.Discovery
         }
 
         /// <summary>
+        /// Updates adaptive timeout based on observed response times.
+        /// Uses max of last N samples * multiplier to avoid false positives from network jitter.
+        /// </summary>
+        private static void UpdateAdaptiveTimeout(long responseMs, int initialTimeoutMs)
+        {
+            lock (_timingLock)
+            {
+                _responseTimes.Add(responseMs);
+
+                // Need at least 3 samples before adapting
+                if (_responseTimes.Count >= 3)
+                {
+                    // Use max of recent samples * 3 + 20% buffer to avoid false negatives
+                    var recentSamples = _responseTimes.Skip(Math.Max(0, _responseTimes.Count - 10)).ToList();
+                    long maxResponseMs = recentSamples.Max();
+                    int baseTimeout = (int)(maxResponseMs * 3);
+                    int newTimeout = Math.Max(MinTimeoutMs, baseTimeout + (baseTimeout / 5)); // +20% buffer
+
+                    // Only reduce, never increase beyond initial
+                    if (newTimeout < _adaptiveTimeoutMs)
+                    {
+                        int oldTimeout = _adaptiveTimeoutMs;
+                        _adaptiveTimeoutMs = newTimeout;
+                        Logger.InfoNested($"Timeout: {oldTimeout}ms -> {newTimeout}ms (max RTT: {maxResponseMs}ms)");
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Generates ports from edges toward middle: 49152, 65535, 49153, 65534...
         /// </summary>
         private static int[] GenerateEdgesToMiddle(int start, int end)
@@ -344,10 +419,10 @@ namespace MSSQLand.Utilities.Discovery
                 else
                 {
                     var addresses = Misc.ValidateDnsResolution(hostname, throwOnFailure: true);
-                    ip = addresses?.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork) 
+                    ip = addresses?.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)
                        ?? addresses?.First();
                 }
-                
+
                 return ScanPortsParallel(ip, KnownPorts, timeoutMs, maxParallelism, null);
             }
             catch
@@ -382,12 +457,12 @@ namespace MSSQLand.Utilities.Discovery
                 return ports[0].ToString();
             if (ports.Length <= 5)
                 return string.Join(", ", ports);
-            
+
             // Collapse to range if contiguous
             var sorted = ports.OrderBy(p => p).ToArray();
             if (sorted[sorted.Length - 1] - sorted[0] == sorted.Length - 1)
                 return $"{sorted[0]}-{sorted[sorted.Length - 1]}";
-            
+
             return $"{sorted[0]}, {sorted[1]}, ... ({ports.Length} ports)";
         }
 
