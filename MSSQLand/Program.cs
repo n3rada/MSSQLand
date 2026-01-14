@@ -13,8 +13,6 @@ namespace MSSQLand
     {
         static int Main(string[] args)
         {
-
-
             // Parse command-line arguments
             CommandArgs arguments;
             try
@@ -88,23 +86,24 @@ namespace MSSQLand
             {
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 DateTime startTime = DateTime.UtcNow;
-
-                // Get time zone details
-                DateTime localTime = DateTime.Now;
-                TimeZoneInfo localTimeZone = TimeZoneInfo.Local;
-                string timeZoneId = localTimeZone.Id;
-                TimeSpan offset = localTimeZone.BaseUtcOffset;
-                string formattedOffset = $"{(offset.Hours >= 0 ? "+" : "-")}{Math.Abs(offset.Hours)}:{Math.Abs(offset.Minutes):D2}";
                 int bannerWidth = 0;
+                bool executionStarted = false;
 
                 try
                 {
+                    // Get time zone details
+                    TimeZoneInfo localTimeZone = TimeZoneInfo.Local;
+                    TimeSpan offset = localTimeZone.BaseUtcOffset;
+                    string formattedOffset = $"{(offset.Hours >= 0 ? "+" : "-")}{Math.Abs(offset.Hours)}:{Math.Abs(offset.Minutes):D2}";
+
                     Logger.NewLine();
-                    bannerWidth = Logger.Banner($"Executing from: {Environment.MachineName}\nTime Zone ID: {timeZoneId}\nLocal Time: {localTime:HH:mm:ss}, UTC Offset: {formattedOffset}");
+                    bannerWidth = Logger.Banner($"Executing from: {Environment.MachineName}\nTime Zone: {localTimeZone.Id}\nLocal Time: {DateTime.Now:HH:mm:ss}, UTC Offset: {formattedOffset}");
                     Logger.NewLine();
 
                     Logger.Banner($"Start at {startTime:yyyy-MM-dd HH:mm:ss:fffff} UTC", totalWidth: bannerWidth);
                     Logger.NewLine();
+                    
+                    executionStarted = true;
 
                     // Log connection information
                     SqlConnection connection = authService.Connection;
@@ -204,7 +203,7 @@ namespace MSSQLand
                 }
                 finally
                 {
-                    if (bannerWidth > 0)
+                    if (executionStarted)
                     {
                         stopwatch.Stop();
                         DateTime endTime = DateTime.UtcNow;
