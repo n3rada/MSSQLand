@@ -38,7 +38,6 @@ namespace MSSQLand.Utilities
             { "xprocs", (typeof(ExtendedProcs), "Enumerate available extended stored procedures on the server.", null) },
             { "users", (typeof(Users), "List all database users.", null) },
             { "hashes", (typeof(Hashes), "Dump SQL Server login password hashes in hashcat format.", null) },
-            { "loginmap", (typeof(LoginMap), "Map server logins to database users across all accessible databases.", null) },
             { "roles", (typeof(Roles), "List all database roles and their members in the current database.", null) },
             { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).", null) },
             { "permissions", (typeof(Permissions), "Enumerate user and role permissions.", null) },

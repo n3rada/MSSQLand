@@ -89,7 +89,6 @@
     <Compile Include="Actions\Database\Hashes.cs" />
     <Compile Include="Actions\Database\Impersonation.cs" />
     <Compile Include="Actions\Database\Info.cs" />
-    <Compile Include="Actions\Database\LoginMap.cs" />
     <Compile Include="Actions\Database\OleDbProvidersInfo.cs" />
     <Compile Include="Actions\Database\Permissions.cs" />
     <Compile Include="Actions\Database\Procedures.cs" />
