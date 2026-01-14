@@ -18,7 +18,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// </summary>
     internal class CMDevices : BaseAction
     {
-        [ArgumentMetadata(Position = 0, LongName = "device", Description = "Filter by device name")]
+        [ArgumentMetadata(Position = 0, ShortName = "n", LongName = "name", Description = "Filter by device name")]
         private string _device = "";
 
         [ArgumentMetadata(Position = 1, ShortName = "d", LongName = "domain", Description = "Filter by domain")]
