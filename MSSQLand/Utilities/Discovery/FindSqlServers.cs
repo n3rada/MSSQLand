@@ -147,6 +147,13 @@ namespace MSSQLand.Utilities.Discovery
                 bool hasSqlSpn = false;
                 ldapEntry.TryGetValue("serviceprincipalname", out object[] spnValues);
 
+                // Get dnshostname for FQDN (preferred over parsing from SPN)
+                string dnsHostName = null;
+                if (ldapEntry.TryGetValue("dnshostname", out object[] dnsValues) && dnsValues?.Length > 0)
+                {
+                    dnsHostName = dnsValues[0]?.ToString();
+                }
+
                 if (spnValues != null && spnValues.Length > 0)
                 {
                     foreach (string spn in spnValues.Cast<string>())
@@ -166,13 +173,15 @@ namespace MSSQLand.Utilities.Discovery
                         string serviceInstance = spn.Substring(serviceDelimiterIndex + 1);
 
                         int portDelimiterIndex = serviceInstance.IndexOf(':');
-                        string serverName = portDelimiterIndex == -1
-                            ? serviceInstance
-                            : serviceInstance.Substring(0, portDelimiterIndex);
 
                         string instanceOrPort = portDelimiterIndex == -1
                             ? "default"
                             : serviceInstance.Substring(portDelimiterIndex + 1);
+
+                        // Use dnshostname (FQDN) if available, otherwise fall back to SPN hostname
+                        string serverName = !string.IsNullOrEmpty(dnsHostName)
+                            ? dnsHostName
+                            : (portDelimiterIndex == -1 ? serviceInstance : serviceInstance.Substring(0, portDelimiterIndex));
 
                         // Add or update server entry
                         if (!serverMap.TryGetValue(serverName, out ServerInfo serverInfo))
@@ -184,8 +193,7 @@ namespace MSSQLand.Utilities.Discovery
                                 ObjectSid = objectSid,
                                 LastLogon = lastLogonDate,
                                 Description = description,
-                                Instances = new HashSet<string>(StringComparer.OrdinalIgnoreCase),
-                                DiscoveryMethod = "SPN"
+                                Instances = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                             };
                             serverMap[serverName] = serverInfo;
                         }
@@ -197,22 +205,11 @@ namespace MSSQLand.Utilities.Discovery
                 // If no SQL SPN found, determine which condition matched
                 if (!hasSqlSpn)
                 {
-                    // Get server name from dnshostname or cn
-                    string serverName = null;
-                    if (ldapEntry.TryGetValue("dnshostname", out object[] dnsValues) && dnsValues?.Length > 0)
-                    {
-                        serverName = dnsValues[0]?.ToString();
-                    }
-                    if (string.IsNullOrEmpty(serverName) && !string.IsNullOrEmpty(cn))
-                    {
-                        serverName = cn;
-                    }
+                    // Use dnshostname (already extracted above) or fall back to cn
+                    string serverName = !string.IsNullOrEmpty(dnsHostName) ? dnsHostName : cn;
 
                     if (!string.IsNullOrEmpty(serverName) && !serverMap.ContainsKey(serverName))
                     {
-                        // Determine discovery method based on what matched
-                        string discoveryMethod = DetermineDiscoveryMethod(cn, description, distinguishedName);
-
                         serverMap[serverName] = new ServerInfo
                         {
                             ServerName = serverName,
@@ -220,8 +217,7 @@ namespace MSSQLand.Utilities.Discovery
                             ObjectSid = objectSid,
                             LastLogon = lastLogonDate,
                             Description = description,
-                            Instances = new HashSet<string>(StringComparer.OrdinalIgnoreCase),
-                            DiscoveryMethod = discoveryMethod
+                            Instances = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                         };
                     }
                 }
@@ -238,7 +234,6 @@ namespace MSSQLand.Utilities.Discovery
             resultTable.Columns.Add("dnsHostName", typeof(string));
             resultTable.Columns.Add("Description", typeof(string));
             resultTable.Columns.Add("Instances", typeof(string));
-            resultTable.Columns.Add("Source", typeof(string));
             resultTable.Columns.Add("sAMAccountName", typeof(string));
             resultTable.Columns.Add("lastLogonTimestamp", typeof(string));
 
@@ -253,7 +248,6 @@ namespace MSSQLand.Utilities.Discovery
                     server.ServerName,
                     server.Description ?? "",
                     string.Join(", ", server.Instances.OrderBy(i => i)),
-                    server.DiscoveryMethod,
                     server.AccountName,
                     server.LastLogon
                 );
@@ -261,46 +255,9 @@ namespace MSSQLand.Utilities.Discovery
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
 
-            int spnCount = serverMap.Values.Count(s => s.DiscoveryMethod == "SPN");
-            int heuristicCount = serverMap.Values.Count(s => s.DiscoveryMethod != "SPN");
-            int totalInstances = serverMap.Values.Where(s => s.DiscoveryMethod == "SPN").Sum(s => s.Instances.Count);
-            Logger.Success($"{serverMap.Count} unique SQL Server(s) found: {spnCount} via SPN ({totalInstances} instance(s)), {heuristicCount} via heuristics.");
+            int totalInstances = serverMap.Values.Sum(s => s.Instances.Count);
+            Logger.Success($"{serverMap.Count} unique SQL Server(s) found ({totalInstances} instance(s)).");
             return serverMap.Count;
-        }
-
-        /// <summary>
-        /// Determines how a computer was discovered based on its properties.
-        /// </summary>
-        private static string DetermineDiscoveryMethod(string cn, string description, string distinguishedName)
-        {
-            var methods = new List<string>();
-
-            if (!string.IsNullOrEmpty(cn) && cn.IndexOf("SQL", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                methods.Add("Name");
-            }
-
-            if (!string.IsNullOrEmpty(description) && description.IndexOf("SQL", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                methods.Add("Desc");
-            }
-
-            // Check if any OU in the DN contains "SQL"
-            if (!string.IsNullOrEmpty(distinguishedName) && distinguishedName.IndexOf("OU=", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                // Extract OU portions and check for SQL
-                foreach (string part in distinguishedName.Split(','))
-                {
-                    if (part.Trim().StartsWith("OU=", StringComparison.OrdinalIgnoreCase) &&
-                        part.IndexOf("SQL", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        methods.Add("OU");
-                        break;
-                    }
-                }
-            }
-
-            return methods.Count > 0 ? string.Join("+", methods) : "Unknown";
         }
 
         private class ServerInfo
@@ -311,7 +268,6 @@ namespace MSSQLand.Utilities.Discovery
             public string LastLogon { get; set; }
             public string Description { get; set; } = "";
             public HashSet<string> Instances { get; set; }
-            public string DiscoveryMethod { get; set; }
         }
     }
 }
