@@ -79,6 +79,52 @@ namespace MSSQLand.Utilities
             throw new ArgumentException($"Flag {arg} requires a value. Use: {arg}:value, {arg}=value, or {arg} value");
         }
 
+        /// <summary>
+        /// Parses port specification: single port, range (start-end), or comma-separated list.
+        /// Examples: "65184", "65180-65190", "1433,5000,65184"
+        /// </summary>
+        private static int[] ParsePortSpec(string spec)
+        {
+            try
+            {
+                // Range: 65180-65190
+                if (spec.Contains("-") && !spec.Contains(","))
+                {
+                    var parts = spec.Split('-');
+                    if (parts.Length == 2 && int.TryParse(parts[0], out int start) && int.TryParse(parts[1], out int end))
+                    {
+                        if (start > 0 && end <= 65535 && start <= end)
+                        {
+                            return Enumerable.Range(start, end - start + 1).ToArray();
+                        }
+                    }
+                    return null;
+                }
+
+                // Comma-separated list: 1433,5000,65184
+                if (spec.Contains(","))
+                {
+                    var ports = spec.Split(',')
+                        .Select(p => p.Trim())
+                        .Where(p => int.TryParse(p, out int port) && port > 0 && port <= 65535)
+                        .Select(p => int.Parse(p))
+                        .Distinct()
+                        .OrderBy(p => p)
+                        .ToArray();
+                    return ports.Length > 0 ? ports : null;
+                }
+
+                // Single port: 65184
+                if (int.TryParse(spec, out int singlePort) && singlePort > 0 && singlePort <= 65535)
+                {
+                    return new[] { singlePort };
+                }
+            }
+            catch { }
+
+            return null;
+        }
+
         public (ParseResultType, CommandArgs?) Parse(string[] args)
         {
             if (args.Length == 0)
@@ -249,20 +295,50 @@ namespace MSSQLand.Utilities
                     
                     if (nextArg == "-portscan" || nextArg == "--portscan")
                     {
-                        bool scanAll = currentIndex + 1 < args.Length && (args[currentIndex + 1] == "--all" || args[currentIndex + 1] == "-a");
+                        // Check for port specification or flags
+                        int[] customPorts = null;
+                        bool scanAll = false;
                         
-                        Logger.Info($"Scanning {hostArg} for SQL Server ports (TDS validation)");
-                        if (scanAll)
+                        if (currentIndex + 1 < args.Length)
                         {
-                            Logger.InfoNested("Find all instances (full ephemeral range)");
+                            string nextVal = args[currentIndex + 1];
+                            if (nextVal == "--all" || nextVal == "-a")
+                            {
+                                scanAll = true;
+                            }
+                            else if (!nextVal.StartsWith("-"))
+                            {
+                                // Parse port specification: single, range (49152-65535), or list (1433,5000,65184)
+                                customPorts = ParsePortSpec(nextVal);
+                                if (customPorts == null || customPorts.Length == 0)
+                                {
+                                    Logger.Error($"Invalid port specification: {nextVal}");
+                                    Logger.InfoNested("Examples: 65184, 65180-65190, 1433,5000,65184");
+                                    return (ParseResultType.UtilityMode, null);
+                                }
+                            }
+                        }
+                        
+                        if (customPorts != null)
+                        {
+                            Logger.Info($"Scanning {hostArg} for SQL Server on {customPorts.Length} port(s)");
+                            PortScanner.ScanPorts(hostArg, customPorts);
                         }
                         else
                         {
-                            Logger.InfoNested("Stop on first hit (use --all to find all)");
+                            Logger.Info($"Scanning {hostArg} for SQL Server ports (TDS validation)");
+                            if (scanAll)
+                            {
+                                Logger.InfoNested("Find all instances (full ephemeral range)");
+                            }
+                            else
+                            {
+                                Logger.InfoNested("Stop on first hit (use --all to find all)");
+                            }
+                            Logger.NewLine();
+                            
+                            PortScanner.Scan(hostArg, stopOnFirst: !scanAll);
                         }
-                        Logger.NewLine();
-                        
-                        PortScanner.Scan(hostArg, stopOnFirst: !scanAll);
                         
                         return (ParseResultType.UtilityMode, null);
                     }
