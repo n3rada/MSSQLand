@@ -15,7 +15,9 @@ namespace MSSQLand.Utilities
     /// 
     /// <para>
     /// <b>How it works:</b>
-    /// Queries Active Directory for objects with Kerberos Service Principal Names (SPNs) starting with "MSSQLSvc".
+    /// Queries Active Directory using two methods:
+    /// 1. Objects with Kerberos SPNs starting with "MSSQLSvc" (confirmed SQL Servers)
+    /// 2. Computer accounts with "SQL" in their name (naming convention heuristic)
     /// SQL Server registers SPNs in the format: MSSQLSvc/hostname:port or MSSQLSvc/hostname:instancename
     /// </para>
     /// 
@@ -23,16 +25,17 @@ namespace MSSQLand.Utilities
     /// <b>PowerShell equivalent:</b>
     /// <code>
     /// # Domain-only query (LDAP):
-    /// ([adsisearcher]::new([adsi]"LDAP://corp.local", "(servicePrincipalName=MSSQL*)")).FindAll()
+    /// ([adsisearcher]::new([adsi]"LDAP://corp.local", "(|(servicePrincipalName=MSSQL*)(&amp;(objectCategory=computer)(cn=*SQL*)))")).FindAll()
     /// 
     /// # Forest-wide query (Global Catalog):
-    /// ([adsisearcher]::new([adsi]"GC://corp.local", "(servicePrincipalName=MSSQL*)")).FindAll()
+    /// ([adsisearcher]::new([adsi]"GC://corp.local", "(|(servicePrincipalName=MSSQL*)(&amp;(objectCategory=computer)(cn=*SQL*)))")).FindAll()
     /// </code>
     /// </para>
     /// 
     /// <para>
     /// <b>Limitations:</b>
-    /// - Only finds SQL Servers with registered SPNs (Kerberos authentication enabled)
+    /// - SPN-based discovery: Only finds SQL Servers with registered SPNs
+    /// - Name-based discovery: May include false positives (MySQL, backup servers, etc.)
     /// - IP addresses are resolved via DNS, not stored in LDAP
     /// - lastLogonTimestamp has ~14 day replication delay
     /// </para>
@@ -56,7 +59,7 @@ namespace MSSQLand.Utilities
             string scope = forest ? "forest-wide (Global Catalog)" : "domain";
             
             Logger.Task($"Lurking for MS SQL Servers on Active Directory {scope}: {domain}");
-            Logger.TaskNested("This method discovers servers with Kerberos SPNs registered in AD.");
+            Logger.TaskNested("Discovery methods: MSSQLSvc SPNs + computers with 'SQL' in name.");
             
             if (forest)
             {
@@ -67,11 +70,11 @@ namespace MSSQLand.Utilities
             ADirectoryService domainService = new($"{protocol}://{domain}");
             LdapQueryService ldapService = new(domainService);
 
-            // LDAP filter and properties for MS SQL SPNs
-            // SQL Server SPNs use the service class "MSSQLSvc"
-            const string ldapFilter = "(servicePrincipalName=MSSQL*)";
+            // LDAP filter: Find objects with MSSQLSvc SPNs OR computers with "SQL" in name
+            // This catches both properly configured SQL Servers and those without Kerberos SPNs
+            const string ldapFilter = "(|(servicePrincipalName=MSSQL*)(&(objectCategory=computer)(cn=*SQL*)))";
             // Use lastLogonTimestamp instead of lastLogon - it's replicated across DCs
-            string[] ldapAttributes = { "cn", "samaccountname", "objectsid", "serviceprincipalname", "lastLogonTimestamp" };
+            string[] ldapAttributes = { "cn", "dnshostname", "samaccountname", "objectsid", "serviceprincipalname", "lastLogonTimestamp" };
 
             // Execute the LDAP query
             Dictionary<string, Dictionary<string, object[]>> ldapResults = ldapService.ExecuteQuery(ldapFilter, ldapAttributes);
@@ -81,12 +84,6 @@ namespace MSSQLand.Utilities
 
             foreach (Dictionary<string, object[]> ldapEntry in ldapResults.Values)
             {
-                // Check if serviceprincipalname exists
-                if (!ldapEntry.TryGetValue("serviceprincipalname", out object[] spnValues) || spnValues == null || spnValues.Length == 0)
-                {
-                    continue;
-                }
-
                 // Extract LDAP properties with null checks
                 string accountName = ldapEntry.TryGetValue("samaccountname", out object[] samValues) && samValues?.Length > 0
                     ? samValues[0]?.ToString() ?? "(unknown)"
@@ -122,35 +119,84 @@ namespace MSSQLand.Utilities
                     }
                 }
 
-                foreach (string spn in spnValues.Cast<string>())
+                // Check for MSSQLSvc SPNs
+                bool hasSqlSpn = false;
+                ldapEntry.TryGetValue("serviceprincipalname", out object[] spnValues);
+                
+                if (spnValues != null && spnValues.Length > 0)
                 {
-                    // Skip non-SQL SPNs
-                    if (!spn.StartsWith("MSSQLSvc", StringComparison.OrdinalIgnoreCase))
+                    foreach (string spn in spnValues.Cast<string>())
                     {
-                        continue;
+                        if (!spn.StartsWith("MSSQLSvc", StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        hasSqlSpn = true;
+                        int serviceDelimiterIndex = spn.IndexOf('/');
+                        if (serviceDelimiterIndex < 0)
+                        {
+                            continue;
+                        }
+
+                        string serviceInstance = spn.Substring(serviceDelimiterIndex + 1);
+
+                        int portDelimiterIndex = serviceInstance.IndexOf(':');
+                        string serverName = portDelimiterIndex == -1
+                            ? serviceInstance
+                            : serviceInstance.Substring(0, portDelimiterIndex);
+
+                        string instanceOrPort = portDelimiterIndex == -1
+                            ? "default"
+                            : serviceInstance.Substring(portDelimiterIndex + 1);
+
+                        // Add or update server entry
+                        if (!serverMap.TryGetValue(serverName, out ServerInfo serverInfo))
+                        {
+                            string serverIpAddress;
+                            try
+                            {
+                                IPAddress[] ipAddresses = Dns.GetHostAddresses(serverName);
+                                serverIpAddress = ipAddresses.Length > 0 ? ipAddresses[0].ToString() : "-";
+                            }
+                            catch (Exception)
+                            {
+                                serverIpAddress = "-";
+                            }
+
+                            serverInfo = new ServerInfo
+                            {
+                                ServerName = serverName,
+                                IpAddress = serverIpAddress,
+                                AccountName = accountName,
+                                ObjectSid = objectSid,
+                                LastLogon = lastLogonDate,
+                                Instances = new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                                DiscoveryMethod = "SPN"
+                            };
+                            serverMap[serverName] = serverInfo;
+                        }
+
+                        serverInfo.Instances.Add(instanceOrPort);
+                    }
+                }
+
+                // If no SQL SPN found, this entry matched by computer name containing "SQL"
+                if (!hasSqlSpn)
+                {
+                    // Get server name from dnshostname or cn
+                    string serverName = null;
+                    if (ldapEntry.TryGetValue("dnshostname", out object[] dnsValues) && dnsValues?.Length > 0)
+                    {
+                        serverName = dnsValues[0]?.ToString();
+                    }
+                    if (string.IsNullOrEmpty(serverName) && ldapEntry.TryGetValue("cn", out object[] cnValues) && cnValues?.Length > 0)
+                    {
+                        serverName = cnValues[0]?.ToString();
                     }
 
-                    int serviceDelimiterIndex = spn.IndexOf('/');
-                    if (serviceDelimiterIndex < 0)
+                    if (!string.IsNullOrEmpty(serverName) && !serverMap.ContainsKey(serverName))
                     {
-                        continue;
-                    }
-
-                    string serviceInstance = spn.Substring(serviceDelimiterIndex + 1);
-
-                    int portDelimiterIndex = serviceInstance.IndexOf(':');
-                    string serverName = portDelimiterIndex == -1
-                        ? serviceInstance
-                        : serviceInstance.Substring(0, portDelimiterIndex);
-
-                    string instanceOrPort = portDelimiterIndex == -1
-                        ? "default"
-                        : serviceInstance.Substring(portDelimiterIndex + 1);
-
-                    // Add or update server entry
-                    if (!serverMap.TryGetValue(serverName, out ServerInfo serverInfo))
-                    {
-                        // Resolve the server's IP address
                         string serverIpAddress;
                         try
                         {
@@ -162,19 +208,17 @@ namespace MSSQLand.Utilities
                             serverIpAddress = "-";
                         }
 
-                        serverInfo = new ServerInfo
+                        serverMap[serverName] = new ServerInfo
                         {
                             ServerName = serverName,
                             IpAddress = serverIpAddress,
                             AccountName = accountName,
                             ObjectSid = objectSid,
                             LastLogon = lastLogonDate,
-                            Instances = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                            Instances = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "(name match)" },
+                            DiscoveryMethod = "Name"
                         };
-                        serverMap[serverName] = serverInfo;
                     }
-
-                    serverInfo.Instances.Add(instanceOrPort);
                 }
             }
 
@@ -186,29 +230,31 @@ namespace MSSQLand.Utilities
 
             // Build output table
             DataTable resultTable = new();
-            resultTable.Columns.Add("Server", typeof(string));
-            resultTable.Columns.Add("DNS Resolution", typeof(string));
+            resultTable.Columns.Add("dnsHostName", typeof(string));
+            resultTable.Columns.Add("IP (DNS)", typeof(string));
             resultTable.Columns.Add("Instances", typeof(string));
-            resultTable.Columns.Add("Service Account", typeof(string));
-            resultTable.Columns.Add("Account SID", typeof(string));
-            resultTable.Columns.Add("Last Logon", typeof(string));
+            resultTable.Columns.Add("Source", typeof(string));
+            resultTable.Columns.Add("sAMAccountName", typeof(string));
+            resultTable.Columns.Add("lastLogonTimestamp", typeof(string));
 
-            foreach (var server in serverMap.Values.OrderBy(s => s.ServerName))
+            foreach (var server in serverMap.Values.OrderBy(s => s.DiscoveryMethod).ThenBy(s => s.ServerName))
             {
                 resultTable.Rows.Add(
                     server.ServerName,
                     server.IpAddress,
                     string.Join(", ", server.Instances.OrderBy(i => i)),
+                    server.DiscoveryMethod,
                     server.AccountName,
-                    server.ObjectSid,
                     server.LastLogon
                 );
             }
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
 
-            int totalInstances = serverMap.Values.Sum(s => s.Instances.Count);
-            Logger.Success($"{serverMap.Count} unique SQL Server(s) found with {totalInstances} instance(s).");
+            int spnCount = serverMap.Values.Count(s => s.DiscoveryMethod == "SPN");
+            int nameCount = serverMap.Values.Count(s => s.DiscoveryMethod == "Name");
+            int totalInstances = serverMap.Values.Where(s => s.DiscoveryMethod == "SPN").Sum(s => s.Instances.Count);
+            Logger.Success($"{serverMap.Count} unique SQL Server(s) found: {spnCount} via SPN ({totalInstances} instance(s)), {nameCount} via naming convention.");
             return serverMap.Count;
         }
 
@@ -220,6 +266,7 @@ namespace MSSQLand.Utilities
             public string ObjectSid { get; set; }
             public string LastLogon { get; set; }
             public HashSet<string> Instances { get; set; }
+            public string DiscoveryMethod { get; set; }
         }
     }
 }
