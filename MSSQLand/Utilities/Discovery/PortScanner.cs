@@ -44,6 +44,7 @@ namespace MSSQLand.Utilities.Discovery
             1433,                           // Default instance
             1434, 1435, 1436,               // SQL Browser and nearby
             1491, 1533, 1668,
+            14711, 14712,
             5001,
             8564,
             14333, 14336, 14337, 14346,     // Custom high ports
