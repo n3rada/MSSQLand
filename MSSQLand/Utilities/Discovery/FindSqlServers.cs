@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Net;
 using System.Security.Principal;
 
 namespace MSSQLand.Utilities.Discovery
