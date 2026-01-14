@@ -58,7 +58,7 @@ namespace MSSQLand.Utilities.Discovery
             string scope = forest ? "forest-wide (Global Catalog)" : "domain";
             
             Logger.Task($"Lurking for MS SQL Servers on Active Directory {scope}: {domain}");
-            Logger.TaskNested("Discovery methods: MSSQLSvc SPNs + computers with 'SQL' in name.");
+            Logger.TaskNested("Discovery methods: MSSQLSvc SPNs + computers with 'SQL' in name or description.");
             
             if (forest)
             {
@@ -69,9 +69,9 @@ namespace MSSQLand.Utilities.Discovery
             ADirectoryService domainService = new($"{protocol}://{domain}");
             LdapQueryService ldapService = new(domainService);
 
-            // LDAP filter: Find objects with MSSQLSvc SPNs OR computers with "SQL" in name
+            // LDAP filter: Find objects with MSSQLSvc SPNs OR computers with "SQL" in name OR description
             // This catches both properly configured SQL Servers and those without Kerberos SPNs
-            const string ldapFilter = "(|(servicePrincipalName=MSSQL*)(&(objectCategory=computer)(cn=*SQL*)))";
+            const string ldapFilter = "(|(servicePrincipalName=MSSQL*)(&(objectCategory=computer)(cn=*SQL*))(&(objectCategory=computer)(description=*SQL*)))";
             // Use lastLogonTimestamp instead of lastLogon - it's replicated across DCs
             string[] ldapAttributes = { "cn", "dnshostname", "samaccountname", "objectsid", "serviceprincipalname", "lastLogonTimestamp", "description" };
 
