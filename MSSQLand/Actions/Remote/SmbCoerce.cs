@@ -10,7 +10,7 @@ namespace MSSQLand.Actions.Remote
     internal class SmbCoerce : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "UNC path")]
-        private string _uncPath;
+        private string _uncPath = "";
 
         /// <summary>
         /// Validates the arguments passed to the SmbCoerce action.

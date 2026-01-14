@@ -23,10 +23,10 @@ namespace MSSQLand.Actions.FileSystem
     internal class Upload : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "Local file path to upload")]
-        private string _localPath;
+        private string _localPath = "";
 
         [ArgumentMetadata(Position = 1, Description = "Remote destination path (defaults to C:\\Windows\\Tasks\\)")]
-        private string _remotePath;
+        private string _remotePath = "";
 
         private FileInfo _localFileInfo;
 

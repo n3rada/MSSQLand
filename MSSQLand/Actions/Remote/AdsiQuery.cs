@@ -15,16 +15,16 @@ namespace MSSQLand.Actions.Remote
     internal class AdsiQuery : BaseAction
     {
         [ArgumentMetadata(Position = 0, Description = "ADSI server name (optional - creates temporary server if omitted)")]
-        private string _adsiServerName;
+        private string _adsiServerName = "";
 
         [ArgumentMetadata(Position = 1, Description = "LDAP query string or preset (users, computers, groups, admins, ou, all)")]
-        private string _ldapQuery;
+        private string _ldapQuery = "";
 
         [ArgumentMetadata(Position = 2, Description = "Quick query preset: users, computers, groups, admins, ou, or custom (default: users)")]
         private string _preset = "users";
 
         [ArgumentMetadata(Position = 3, Description = "FQDN (required for presets)")]
-        private string _domainFqdn;
+        private string _domainFqdn = "";
 
         private bool _usingTempServer = false;
 

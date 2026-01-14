@@ -9,7 +9,7 @@ namespace MSSQLand.Actions.Execution
     internal class RemotePowerShellExecutor : PowerShell
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "URL of PowerShell script to download and execute")]
-        private string _url;
+        private string _url = "";
 
         /// <summary>
         /// Validates the arguments passed to the PowerShellScriptDownloader action.

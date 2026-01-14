@@ -34,7 +34,7 @@ namespace MSSQLand.Actions.FileSystem
     internal class Tree : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = false, Description = "Directory path to display (default: current directory)")]
-        private string _path;
+        private string _path = ".";
 
         [ArgumentMetadata(Position = 1, ShortName = "d", LongName = "depth", Description = "Directory depth to traverse (1-255)")]
         private int _depth = 3;

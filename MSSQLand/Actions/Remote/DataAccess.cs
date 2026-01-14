@@ -37,7 +37,7 @@ namespace MSSQLand.Actions.Remote
         private DataAccessMode _action;
         
         [ArgumentMetadata(Position = 1, Required = true, Description = "Linked server name")]
-        private string _linkedServerName;
+        private string _linkedServerName = "";
 
         public override void ValidateArguments(string[] args)
         {

@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.Domain
     internal class AdMembers : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "AD group name")]
-        private string _groupName;
+        private string _groupName = "";
 
         [ExcludeFromArguments]
         private bool _useOpenQuery = false;

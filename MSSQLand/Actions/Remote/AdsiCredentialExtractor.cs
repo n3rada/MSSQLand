@@ -21,7 +21,7 @@ namespace MSSQLand.Actions.Remote
         private Mode _mode = Mode.Self;
         
         [ArgumentMetadata(Position = 1, Description = "Target ADSI server name (required for link mode)")]
-        private string _targetServer;
+        private string _targetServer = "";
 
 
         public override void ValidateArguments(string[] args)

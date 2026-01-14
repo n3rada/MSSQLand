@@ -22,7 +22,7 @@ namespace MSSQLand.Actions.Execution
     internal class Run : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "Remote file path to execute")]
-        private string _filePath;
+        private string _filePath = "";
 
         [ArgumentMetadata(Position = 1, ShortName = "w", LongName = "wait", Description = "Execute synchronously (wait for completion)")]
         private bool _captureOutput = false;

@@ -11,7 +11,7 @@ namespace MSSQLand.Actions.Execution
     internal class XpCmd : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "Operating system command to execute")]
-        private string _command;
+        private string _command = "";
 
         /// <summary>
         /// Validates the arguments passed to the Shell action.
