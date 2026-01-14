@@ -276,9 +276,9 @@ namespace MSSQLand.Utilities.Discovery
                 Logger.Info($"Skipping middle range scan ({MiddleRangeStart}-{MiddleRangeEnd}) - heavily filtered network detected");
                 Logger.InfoNested("Use manual port specification if you suspect SQL Server in this range");
                 
-                var finalResults = knownResults.Concat(allEphemeralResults).OrderBy(r => r.Port).ToList();
-                LogSummary(hostname, finalResults, globalStopwatch);
-                return finalResults;
+                var combinedResults = knownResults.Concat(allEphemeralResults).OrderBy(r => r.Port).ToList();
+                LogSummary(hostname, combinedResults, globalStopwatch);
+                return combinedResults;
             }
             
             var middlePorts = GenerateMiddleRangePorts();
