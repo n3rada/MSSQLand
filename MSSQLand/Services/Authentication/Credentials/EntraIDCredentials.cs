@@ -10,8 +10,13 @@ namespace MSSQLand.Services.Credentials
             
             // Azure SQL requires proper certificate validation
             TrustServerCertificate = false;
-            
-            var connectionString = $"Server={sqlServer}; Database={database}; Authentication=Active Directory Password; User ID={username}; Password={password};";
+
+            // Azure SQL Database requires a database - default to master if not specified
+            // Unlike on-premises SQL Server, Azure doesn't have login-level default databases
+            if (string.IsNullOrEmpty(database))
+                database = "master";
+
+            var connectionString = $"Server={sqlServer}; Database={database}; Authentication=Active Directory Password; User ID={username}; Password={password};";";
             return CreateSqlConnection(connectionString);
         }
     }

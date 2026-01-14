@@ -22,7 +22,8 @@ namespace MSSQLand.Services.Credentials
             using (new WindowsIdentityImpersonation(effectiveDomain, username, password))
             {
                 // Connection string with Integrated Security (uses impersonated token)
-                var connectionString = $"Server={sqlServer}; Database={database}; Integrated Security=True;";
+                // Database is optional - if not specified, uses login's default database
+                var connectionString = $"Server={sqlServer};{(string.IsNullOrEmpty(database) ? "" : $" Database={database};")} Integrated Security=True;";
                 return CreateSqlConnection(connectionString);
             }
         }
