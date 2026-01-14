@@ -274,7 +274,9 @@ ORDER BY bg.Name;";
                             .Select(r => r["GroupID"].ToString())
                             .Distinct());
 
-                        Logger.Success($"Device is assigned to {boundaryResult.AsEnumerable().Select(r => r["GroupID"]).Distinct().Count()} boundary group(s)");
+                        int boundaryGroupCount = boundaryResult.AsEnumerable().Select(r => r["GroupID"]).Distinct().Count();
+                        int boundaryCount = boundaryResult.Rows.Count;
+                        Logger.Success($"Device is assigned to {boundaryGroupCount} boundary group(s) containing {boundaryCount} boundary definition(s)");
 
                         // Get distribution points for these boundary groups
                         if (!string.IsNullOrEmpty(groupIds))
