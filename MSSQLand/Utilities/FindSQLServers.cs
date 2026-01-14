@@ -18,19 +18,28 @@ namespace MSSQLand.Utilities
         /// Enumerates SQL Servers in the specified Active Directory domain.
         /// </summary>
         /// <param name="domain">The Active Directory domain to query (e.g., corp.com)</param>
+        /// <param name="forest">If true, queries the Global Catalog for forest-wide results</param>
         /// <returns>Number of SQL Servers found</returns>
-        public static int Execute(string domain)
+        public static int Execute(string domain, bool forest = false)
         {
             if (string.IsNullOrWhiteSpace(domain))
             {
                 throw new ArgumentException("Active Directory domain is required. Please provide a valid domain name (e.g., corp.com).");
             }
 
-            Logger.TaskNested($"Lurking for MS SQL Servers on Active Directory domain: {domain}");
+            string protocol = forest ? "GC" : "LDAP";
+            string scope = forest ? "forest-wide (Global Catalog)" : "domain";
+            
+            Logger.TaskNested($"Lurking for MS SQL Servers on Active Directory {scope}: {domain}");
             Logger.TaskNested("This method discovers servers with Kerberos SPNs registered in AD.");
+            
+            if (forest)
+            {
+                Logger.TaskNested("Using Global Catalog (port 3268) to query all domains in the forest.");
+            }
 
             // Initialize domain service based on the provided domain
-            ADirectoryService domainService = new($"LDAP://{domain}");
+            ADirectoryService domainService = new($"{protocol}://{domain}");
             LdapQueryService ldapService = new(domainService);
 
             // LDAP filter and properties for MS SQL SPNs

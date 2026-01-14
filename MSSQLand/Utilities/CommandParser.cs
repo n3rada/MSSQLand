@@ -129,10 +129,13 @@ namespace MSSQLand.Utilities
                 {
                     string adDomain = args.Length > 1 
                         ? args[1] 
-                        : throw new ArgumentException("FindSQLServers requires a domain argument. Example: -findsql corp.com");
+                        : throw new ArgumentException("FindSQLServers requires a domain argument. Example: --findsql corp.com");
+                    
+                    // Check for --forest flag
+                    bool forest = args.Length > 2 && (args[2] == "--forest" || args[2] == "-f");
                     
                     Logger.Info("FindSQLServers utility mode - no database connection required");
-                    FindSQLServers.Execute(adDomain);
+                    FindSQLServers.Execute(adDomain, forest);
                     return (ParseResultType.UtilityMode, null);
                 }
 

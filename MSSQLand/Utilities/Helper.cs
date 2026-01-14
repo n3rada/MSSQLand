@@ -118,7 +118,8 @@ namespace MSSQLand.Utilities
 
             Console.WriteLine();
             Console.WriteLine("Standalone utilities (no database connection)");
-            Console.WriteLine("\t--findsql <domain>   Find SQL Servers in Active Directory");
+            Console.WriteLine("\t--findsql <domain>            Find SQL Servers via SPNs in a domain");
+            Console.WriteLine("\t--findsql <domain> --forest   Query entire forest (Global Catalog)");
             Console.WriteLine();
         } 
 
