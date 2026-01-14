@@ -17,7 +17,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// </summary>
     internal class CMCollections : BaseAction
     {
-        [ArgumentMetadata(Position = 0, ShortName = "id", LongName = "collection-id", Description = "Search by CollectionID")]
+        [ArgumentMetadata(Position = 0, LongName = "collection-id", Description = "Search by CollectionID")]
         private string _collectionId = "";
 
         [ArgumentMetadata(Position = 1, ShortName = "n", LongName = "name", Description = "Search by collection name")]
@@ -29,7 +29,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 3,  LongName = "limit", Description = "Limit number of results (default: 50)")]
         private int _limit = 50;
 
-        [ArgumentMetadata(ShortName = "wm", LongName = "with-members", Description = "Only show collections with members (MemberCount > 0)")]
+        [ArgumentMetadata(LongName = "with-members", Description = "Only show collections with members (MemberCount > 0)")]
         private bool _withMembers = false;
 
         public override object Execute(DatabaseContext databaseContext)
