@@ -51,44 +51,53 @@ namespace MSSQLand.Utilities.Discovery
         private const int DefaultParallelism = 500;
         private const int TdsPreloginPacketType = 0x12;
 
-        // Minimal valid TDS prelogin packet
-        // Header: Type=0x12, Status=0x01, Length=0x002F (47 bytes), SPID=0, PacketID=1, Window=0
-        // Payload: VERSION option at offset 26, ENCRYPTION at 31, INSTOPT at 33, THREADID at 35, MARS at 39, TERMINATOR
+        /// <summary>
+        /// Minimal valid TDS prelogin packet for SQL Server detection.
+        /// 
+        /// <para><b>TDS Protocol Overview:</b></para>
+        /// <para>SQL Server uses the Tabular Data Stream (TDS) protocol. Before authentication,
+        /// the client sends a PRELOGIN packet (type 0x12) to negotiate version, encryption, etc.</para>
+        /// 
+        /// <para><b>Detection Strategy:</b></para>
+        /// <para>We send a minimal but valid PRELOGIN packet. SQL Server responds with either:</para>
+        /// <list type="bullet">
+        /// <item>0x12 (PRELOGIN response) - Standard prelogin negotiation</item>
+        /// <item>0x04 (TABULAR response) - Error/info response (still confirms SQL Server)</item>
+        /// </list>
+        /// <para>Non-SQL services will either: close connection, timeout, or send different data.</para>
+        /// 
+        /// <para><b>Packet Structure:</b></para>
+        /// <para>Header (8 bytes): Type, Status, Length (big-endian), SPID, PacketID, Window</para>
+        /// <para>Options: VERSION, ENCRYPTION, INSTOPT, THREADID, MARS, then 0xFF terminator</para>
+        /// <para>Option data follows, referenced by offsets in the option list.</para>
+        /// 
+        /// <para><b>Reference:</b> MS-TDS specification section 2.2.6.4 (PRELOGIN)</para>
+        /// </summary>
         private static readonly byte[] TdsPreloginPacket = new byte[]
         {
             // TDS Header (8 bytes)
             0x12,       // Packet type: Pre-Login
-            0x01,       // Status: EOM
-            0x00, 0x2F, // Length: 47 bytes (big-endian)
-            0x00, 0x00, // SPID
-            0x01,       // PacketID
-            0x00,       // Window
+            0x01,       // Status: EOM (End of Message)
+            0x00, 0x2F, // Length: 47 bytes total (big-endian)
+            0x00, 0x00, // SPID: 0 (assigned by server)
+            0x01,       // PacketID: 1
+            0x00,       // Window: 0
             
-            // Prelogin options (offsets point to data after option list)
-            // VERSION: token=0x00, offset=0x0015 (21), length=0x0006
-            0x00, 0x00, 0x15, 0x00, 0x06,
-            // ENCRYPTION: token=0x01, offset=0x001B (27), length=0x0001
-            0x01, 0x00, 0x1B, 0x00, 0x01,
-            // INSTOPT: token=0x02, offset=0x001C (28), length=0x0001
-            0x02, 0x00, 0x1C, 0x00, 0x01,
-            // THREADID: token=0x03, offset=0x001D (29), length=0x0004
-            0x03, 0x00, 0x1D, 0x00, 0x04,
-            // MARS: token=0x04, offset=0x0021 (33), length=0x0001
-            0x04, 0x00, 0x21, 0x00, 0x01,
-            // TERMINATOR
-            0xFF,
+            // Prelogin option list (5 bytes per option: token, offset[2], length[2])
+            // Offsets are relative to start of packet (after 8-byte header = position 8)
+            0x00, 0x00, 0x15, 0x00, 0x06,  // VERSION: offset 21, length 6
+            0x01, 0x00, 0x1B, 0x00, 0x01,  // ENCRYPTION: offset 27, length 1
+            0x02, 0x00, 0x1C, 0x00, 0x01,  // INSTOPT: offset 28, length 1
+            0x03, 0x00, 0x1D, 0x00, 0x04,  // THREADID: offset 29, length 4
+            0x04, 0x00, 0x21, 0x00, 0x01,  // MARS: offset 33, length 1
+            0xFF,                          // TERMINATOR
             
-            // Option data
-            // VERSION: 0.0.0.0, subbuild 0
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            // ENCRYPTION: 0x02 = ENCRYPT_NOT_SUP
-            0x02,
-            // INSTOPT: empty string (null terminator)
-            0x00,
-            // THREADID: 0
-            0x00, 0x00, 0x00, 0x00,
-            // MARS: 0 = off
-            0x00
+            // Option data (referenced by offsets above)
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // VERSION: 0.0.0.0, subbuild 0
+            0x02,                                 // ENCRYPTION: NOT_SUP (don't require encryption)
+            0x00,                                 // INSTOPT: empty instance name
+            0x00, 0x00, 0x00, 0x00,               // THREADID: 0
+            0x00                                  // MARS: disabled
         };
 
         public class ScanResult
@@ -103,6 +112,8 @@ namespace MSSQLand.Utilities.Discovery
         /// </summary>
         public static List<ScanResult> Scan(string hostname, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism, bool stopOnFirst = true)
         {
+
+            Logger.TaskNested("Using TDS prelogin packet for SQL Server validation");
             var globalStopwatch = Stopwatch.StartNew();
             
             // Resolve DNS once upfront
@@ -121,7 +132,7 @@ namespace MSSQLand.Utilities.Discovery
             var cts = new CancellationTokenSource();
 
             // Phase 1: Known ports
-            Logger.Info($"Phase 1: Testing {KnownPorts.Length} known ports");
+            Logger.Info($"Testing {KnownPorts.Length} known ports");
             var knownStopwatch = Stopwatch.StartNew();
             var knownResults = ScanPortsParallel(ip, KnownPorts, timeoutMs, maxParallelism, stopOnFirst ? cts : null);
             knownStopwatch.Stop();
@@ -134,9 +145,8 @@ namespace MSSQLand.Utilities.Discovery
             }
 
             // Phase 2: Ephemeral range
-            Logger.NewLine();
             int ephemeralCount = EphemeralEnd - EphemeralStart + 1;
-            Logger.Info($"Phase 2: Scanning ephemeral range ({EphemeralStart}-{EphemeralEnd}) - {ephemeralCount} ports");
+            Logger.Info($"Scanning ephemeral range ({EphemeralStart}-{EphemeralEnd}) - {ephemeralCount} ports");
             Logger.InfoNested("Strategy: edges-to-middle for faster discovery");
             
             var ephemeralStopwatch = Stopwatch.StartNew();

@@ -335,9 +335,7 @@ namespace MSSQLand.Utilities
                             else
                             {
                                 Logger.InfoNested("Stop on first hit (use --all to find all)");
-                            }
-                            Logger.NewLine();
-                            
+                            }                            
                             PortScanner.Scan(hostArg, stopOnFirst: !scanAll);
                         }
                         
