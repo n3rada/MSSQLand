@@ -18,33 +18,36 @@ namespace MSSQLand.Actions.Database
     /// - Mode: data + headers.
     /// 
     /// Options:
-    /// - --database <name>: search in specific database.
-    /// - --all / -a: search across all accessible databases.
+    /// - -d/--database <name>: search in specific database.
+    /// - -a/--all: search across all accessible databases.
     /// - <schema.table> or <database.schema.table>: limit to one table (positional arg).
-    /// - --column-name / -cn: search for keyword in column names only.
-    /// - -c=<pattern> / --column=<pattern>: search data only in columns matching pattern.
+    /// - --column-name: search for keyword in column names only (fast, no row scanning).
+    /// - -c/--column <pattern>: search data only in columns matching pattern.
     /// 
     /// Examples:
     /// - search password                           (search 'password' in all data, current database)
     /// - search password --all                     (search in all accessible databases)
-    /// - search password --database Clients        (search in specific database)
+    /// - search password -d Clients                (search in specific database)
     /// - search password --column-name             (search 'password' in column names only)
-    /// - search 16891057 -c=%CI_ID%               (search '16891057' only in columns matching %CI_ID%)
+    /// - search 16891057 -c %CI_ID%                (search '16891057' only in columns matching %CI_ID%)
     /// - search admin dbo.users                    (search in specific table)
     /// - search token --column-name --all          (search 'token' in column names across all DBs)
     /// </summary>
     internal class Search : BaseAction
     {
-        [ArgumentMetadata(Position = 0, ShortName = "k", LongName = "keyword", Required = true, Description = "Keyword to search for")]
-        private string _keyword;
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Keyword to search for")]
+        private string _keyword = "";
 
-        [ArgumentMetadata(Position = 1, Description = "Database, schema.table, or database.schema.table (defaults to current database if omitted)")]
-        private string _target = null;
+        [ArgumentMetadata(Position = 1, Description = "Target: database name, schema.table, or database.schema.table")]
+        private string _target = "";
 
-        [ArgumentMetadata(LongName = "column-name", Description = "Search for keyword in column names only")]
+        [ArgumentMetadata(ShortName = "d", LongName = "database", Description = "Search in specific database")]
+        private string _database = "";
+
+        [ArgumentMetadata(LongName = "column-name", Description = "Search for keyword in column names only (fast)")]
         private bool _columnsOnly = false;
 
-        [ArgumentMetadata(ShortName = "c", LongName = "column", Description = "Filter to search only in columns matching this pattern (e.g., -c=%CI_ID%)")]
+        [ArgumentMetadata(ShortName = "c", LongName = "column", Description = "Filter to columns matching this pattern (e.g., -c %CI_ID%)")]
         private string _columnFilter = "";
 
         [ArgumentMetadata(ShortName = "a", LongName = "all", Description = "Search across all accessible databases")]
@@ -61,44 +64,16 @@ namespace MSSQLand.Actions.Database
 
         public override void ValidateArguments(string[] args)
         {
-            if (args == null || args.Length == 0)
-            {
-                throw new ArgumentException("Keyword is required. Usage: search <keyword> [-c] [-a] [-t table]");
-            }
-
-            // Parse both positional and named arguments
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-
-            // Get keyword from position 0 or -k/--keyword
-            _keyword = GetNamedArgument(namedArgs, "k")
-                    ?? GetNamedArgument(namedArgs, "keyword")
-                    ?? GetPositionalArgument(positionalArgs, 0);
+            BindArguments(args);
 
             if (string.IsNullOrEmpty(_keyword))
             {
-                throw new ArgumentException("Keyword is required. Usage: search <keyword> [target] [-c]");
+                throw new ArgumentException("Keyword is required. Usage: search <keyword> [target] [--all]");
             }
 
-            // Column name search flag
-            if (namedArgs.ContainsKey("cn") || namedArgs.ContainsKey("column-name"))
-            {
-                _columnsOnly = true;
-            }
-
-            // Column filter for limiting search to specific column patterns
-            var colFilterArg = GetNamedArgument(namedArgs, "c", GetNamedArgument(namedArgs, "column", null));
-            if (!string.IsNullOrEmpty(colFilterArg))
-            {
-                _columnFilter = colFilterArg;
-            }
-
-            // Get target from position 1
-            _target = GetPositionalArgument(positionalArgs, 1);
-
-            // Parse target to determine what it is
+            // Parse target to determine what it is (database, schema.table, or database.schema.table)
             if (!string.IsNullOrEmpty(_target))
             {
-                // Try to parse as FQTN - handles bracketed names correctly
                 try
                 {
                     var (database, schema, table) = Misc.ParseQualifiedTableName(_target);
@@ -128,23 +103,16 @@ namespace MSSQLand.Actions.Database
                 }
             }
 
-            // Check for --all flag
-            if (namedArgs.ContainsKey("a") || namedArgs.ContainsKey("all"))
+            // Handle --database flag (overrides positional target if both specify database)
+            if (!string.IsNullOrEmpty(_database))
             {
-                _searchAllDatabases = true;
-            }
-
-            // Database scope override
-            var dbArg = GetNamedArgument(namedArgs, "database", GetNamedArgument(namedArgs, "db", null));
-            if (!string.IsNullOrEmpty(dbArg))
-            {
-                if (string.Equals(dbArg, "all", StringComparison.OrdinalIgnoreCase) || dbArg == "*")
+                if (string.Equals(_database, "all", StringComparison.OrdinalIgnoreCase) || _database == "*")
                 {
                     _searchAllDatabases = true;
                 }
                 else
                 {
-                    _limitDatabase = dbArg;
+                    _limitDatabase = _database;
                 }
             }
         }
