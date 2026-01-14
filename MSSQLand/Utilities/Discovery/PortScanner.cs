@@ -51,6 +51,46 @@ namespace MSSQLand.Utilities.Discovery
         private const int DefaultParallelism = 500;
         private const int TdsPreloginPacketType = 0x12;
 
+        // Minimal valid TDS prelogin packet
+        // Header: Type=0x12, Status=0x01, Length=0x002F (47 bytes), SPID=0, PacketID=1, Window=0
+        // Payload: VERSION option at offset 26, ENCRYPTION at 31, INSTOPT at 33, THREADID at 35, MARS at 39, TERMINATOR
+        private static readonly byte[] TdsPreloginPacket = new byte[]
+        {
+            // TDS Header (8 bytes)
+            0x12,       // Packet type: Pre-Login
+            0x01,       // Status: EOM
+            0x00, 0x2F, // Length: 47 bytes (big-endian)
+            0x00, 0x00, // SPID
+            0x01,       // PacketID
+            0x00,       // Window
+            
+            // Prelogin options (offsets point to data after option list)
+            // VERSION: token=0x00, offset=0x0015 (21), length=0x0006
+            0x00, 0x00, 0x15, 0x00, 0x06,
+            // ENCRYPTION: token=0x01, offset=0x001B (27), length=0x0001
+            0x01, 0x00, 0x1B, 0x00, 0x01,
+            // INSTOPT: token=0x02, offset=0x001C (28), length=0x0001
+            0x02, 0x00, 0x1C, 0x00, 0x01,
+            // THREADID: token=0x03, offset=0x001D (29), length=0x0004
+            0x03, 0x00, 0x1D, 0x00, 0x04,
+            // MARS: token=0x04, offset=0x0021 (33), length=0x0001
+            0x04, 0x00, 0x21, 0x00, 0x01,
+            // TERMINATOR
+            0xFF,
+            
+            // Option data
+            // VERSION: 0.0.0.0, subbuild 0
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            // ENCRYPTION: 0x02 = ENCRYPT_NOT_SUP
+            0x02,
+            // INSTOPT: empty string (null terminator)
+            0x00,
+            // THREADID: 0
+            0x00, 0x00, 0x00, 0x00,
+            // MARS: 0 = off
+            0x00
+        };
+
         public class ScanResult
         {
             public int Port { get; set; }
@@ -193,9 +233,8 @@ namespace MSSQLand.Utilities.Discovery
                     stream.ReadTimeout = timeoutMs;
                     stream.WriteTimeout = timeoutMs;
 
-                    // Send TDS prelogin packet
-                    byte[] prelogin = { TdsPreloginPacketType, 0x01, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00 };
-                    await stream.WriteAsync(prelogin, 0, prelogin.Length).ConfigureAwait(false);
+                    // Send proper TDS prelogin packet
+                    await stream.WriteAsync(TdsPreloginPacket, 0, TdsPreloginPacket.Length).ConfigureAwait(false);
 
                     // Read response with timeout
                     byte[] response = new byte[8];
