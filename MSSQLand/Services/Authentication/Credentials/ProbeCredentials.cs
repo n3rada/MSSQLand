@@ -22,23 +22,23 @@ namespace MSSQLand.Services.Credentials
             // Extract hostname for Named Pipes fallback
             string hostname = ExtractHostname(sqlServer);
             
-            // Try TCP first (more common, faster)
-            Logger.Info($"Probing SQL Server via TCP: {sqlServer}");
+            // Try default connection first
+            Logger.Info($"Probing SQL Server: {sqlServer}");
             Logger.InfoNested("Using empty credentials to test if server is alive");
             Logger.NewLine();
 
-            var tcpResult = TryProbe($"Server={sqlServer}; Database=master; Integrated Security=False; User Id=; Password=;");
+            var result = TryProbe($"Server={sqlServer}; Database=master; Integrated Security=False; User Id=; Password=;");
             
-            if (tcpResult != ProbeResult.Timeout)
+            if (result != ProbeResult.Timeout)
             {
                 // Got a response (success or error) - server is alive
                 return null;
             }
 
-            // TCP timed out - try Named Pipes as fallback
+            // Timed out - try Named Pipes as fallback
             Logger.NewLine();
             string pipePath = $@"np:\\{hostname}\pipe\sql\query";
-            Logger.Info($"TCP timed out, trying Named Pipes: {pipePath}");
+            Logger.Info($"Timed out, trying Named Pipes: {pipePath}");
             Logger.InfoNested("Named Pipes response would confirm server is alive");
             Logger.NewLine();
 
