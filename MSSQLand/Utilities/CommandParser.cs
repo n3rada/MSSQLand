@@ -167,7 +167,7 @@ namespace MSSQLand.Utilities
                     return (ParseResultType.UtilityMode, null);
                 }
 
-                // First pass: extract --trace, --debug and --silent flags from anywhere in the arguments
+                // First pass: extract --trace, --debug, --silent, and --format flags from anywhere in the arguments
                 var filteredArgs = new List<string>();
                 for (int i = 0; i < args.Length; i++)
                 {
@@ -182,6 +182,34 @@ namespace MSSQLand.Utilities
                     else if (args[i] == "--silent")
                     {
                         Logger.IsSilentModeEnabled = true;
+                    }
+                    else if (args[i].StartsWith("--output-format", StringComparison.OrdinalIgnoreCase) ||
+                             args[i].StartsWith("--output=", StringComparison.OrdinalIgnoreCase) ||
+                             args[i].StartsWith("--format", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string formatValue = null;
+                        int sepIndex = args[i].IndexOfAny(new[] { ':', '=' });
+                        if (sepIndex > 0 && sepIndex < args[i].Length - 1)
+                        {
+                            formatValue = args[i].Substring(sepIndex + 1);
+                        }
+                        else if (i + 1 < args.Length && !args[i + 1].StartsWith("-"))
+                        {
+                            formatValue = args[++i];
+                        }
+                        
+                        if (!string.IsNullOrEmpty(formatValue))
+                        {
+                            try
+                            {
+                                OutputFormatter.SetFormat(formatValue);
+                            }
+                            catch (ArgumentException ex)
+                            {
+                                var availableFormats = string.Join(", ", OutputFormatter.GetAvailableFormats());
+                                throw new ArgumentException($"{ex.Message}. Available formats: {availableFormats}");
+                            }
+                        }
                     }
                     else
                     {
@@ -283,19 +311,6 @@ namespace MSSQLand.Utilities
                     {
                         parsedArgs.LinkedServers = new LinkedServers(ExtractFlagValue(arg, args, ref currentIndex));
                     }
-                    else if (IsGlobalArgument(arg, "output-format", null) || IsGlobalArgument(arg, "output", null))
-                    {
-                        string outputFormat = ExtractFlagValue(arg, args, ref currentIndex);
-                        try
-                        {
-                            OutputFormatter.SetFormat(outputFormat);
-                        }
-                        catch (ArgumentException ex)
-                        {
-                            var availableFormats = string.Join(", ", OutputFormatter.GetAvailableFormats());
-                            throw new ArgumentException($"{ex.Message}. Available formats: {availableFormats}");
-                        }
-                    }
                     else if (IsGlobalArgument(arg, "timeout", null))
                     {
                         if (connectionTimeout.HasValue)
@@ -376,7 +391,6 @@ namespace MSSQLand.Utilities
                         Logger.Info("Available global arguments");
                         Logger.InfoNested("-c, --credentials: Credential type for authentication");
                         Logger.InfoNested("-l, --links: Linked server chain");
-                        Logger.InfoNested("--output-format, --format: Output format (table, csv, json, markdown)");
                         Logger.InfoNested("--timeout: Connection timeout in seconds");
                         Logger.InfoNested("-u, --username: Username for authentication");
                         Logger.InfoNested("-p, --password: Password for authentication");
