@@ -53,10 +53,12 @@ namespace MSSQLand.Utilities.Discovery
             17001,
         };
 
+        private const int MiddleRangeStart = 1433;   // Start of middle range
+        private const int MiddleRangeEnd = 49151;    // Before ephemeral range
         private const int EphemeralStart = 49152;
         private const int EphemeralEnd = 65535;
 
-        private const int DefaultTimeoutMs = 500;
+        private const int DefaultTimeoutMs = 400;
         private const int MinTimeoutMs = 50;
         private const int DefaultParallelism = 500;
         private const int TdsPreloginPacketType = 0x12;
@@ -163,7 +165,7 @@ namespace MSSQLand.Utilities.Discovery
                 return knownResults;
             }
 
-            // Phase 2: Ephemeral range
+            // Phase 2: Ephemeral range (most dynamic SQL Server instances)
             int ephemeralCount = EphemeralEnd - EphemeralStart + 1;
 
             // Log adaptive timeout if it changed
@@ -183,21 +185,59 @@ namespace MSSQLand.Utilities.Discovery
             var ephemeralResults = ScanPortsParallel(ip, ephemeralPorts, timeoutMs, maxParallelism, stopOnFirst ? cts : null);
             ephemeralStopwatch.Stop();
 
-            int portsPerSec = (int)(ephemeralCount * 1000L / Math.Max(1, ephemeralStopwatch.ElapsedMilliseconds));
+            int ephemeralPortsPerSec = (int)(ephemeralCount * 1000L / Math.Max(1, ephemeralStopwatch.ElapsedMilliseconds));
 
             if (ephemeralResults.Count > 0)
             {
-                Logger.SuccessNested($"Found {ephemeralResults.Count}: {string.Join(", ", ephemeralResults.Select(r => r.Port))} ({ephemeralStopwatch.Elapsed.TotalSeconds:F1}s, {portsPerSec} ports/sec)");
+                Logger.SuccessNested($"Found {ephemeralResults.Count}: {string.Join(", ", ephemeralResults.Select(r => r.Port))} ({ephemeralStopwatch.Elapsed.TotalSeconds:F1}s, {ephemeralPortsPerSec} ports/sec)");
             }
             else
             {
-                Logger.InfoNested($"None found ({ephemeralStopwatch.Elapsed.TotalSeconds:F1}s, {portsPerSec} ports/sec)");
-            };
+                Logger.InfoNested($"None found ({ephemeralStopwatch.Elapsed.TotalSeconds:F1}s, {ephemeralPortsPerSec} ports/sec)");
+            }
+            
+            if (stopOnFirst && ephemeralResults.Count > 0)
+            {
+                var allResults = knownResults.Concat(ephemeralResults).OrderBy(r => r.Port).ToList();
+                LogSummary(hostname, allResults, globalStopwatch, stoppedEarly: true);
+                return allResults;
+            }
 
-            var allResults = knownResults.Concat(ephemeralResults).OrderBy(r => r.Port).ToList();
-            bool stoppedEarly = stopOnFirst && allResults.Count > 0;
-            LogSummary(hostname, allResults, globalStopwatch, stoppedEarly);
-            return allResults;
+            // Phase 3: Middle range (1433-49151, excluding known ports already scanned)
+            var middlePorts = GenerateMiddleRangePorts();
+            int middleCount = middlePorts.Length;
+            
+            if (middleCount > 0)
+            {
+                Logger.NewLine();
+                Logger.Info($"Scanning middle range ({MiddleRangeStart}-{MiddleRangeEnd}, excluding known ports) - {middleCount} ports");
+                Logger.InfoNested("Strategy: edges-to-middle for faster discovery");
+                
+                var middleStopwatch = Stopwatch.StartNew();
+                var reorderedMiddlePorts = ReorderEdgesToMiddle(middlePorts);
+                var middleResults = ScanPortsParallel(ip, reorderedMiddlePorts, timeoutMs, maxParallelism, stopOnFirst ? cts : null);
+                middleStopwatch.Stop();
+                
+                int middlePortsPerSec = (int)(middleCount * 1000L / Math.Max(1, middleStopwatch.ElapsedMilliseconds));
+                
+                if (middleResults.Count > 0)
+                {
+                    Logger.SuccessNested($"Found {middleResults.Count}: {string.Join(", ", middleResults.Select(r => r.Port))} ({middleStopwatch.Elapsed.TotalSeconds:F1}s, {middlePortsPerSec} ports/sec)");
+                }
+                else
+                {
+                    Logger.InfoNested($"None found ({middleStopwatch.Elapsed.TotalSeconds:F1}s, {middlePortsPerSec} ports/sec)");
+                }
+                
+                var allResults = knownResults.Concat(ephemeralResults).Concat(middleResults).OrderBy(r => r.Port).ToList();
+                bool stoppedEarly = stopOnFirst && allResults.Count > 0;
+                LogSummary(hostname, allResults, globalStopwatch, stoppedEarly);
+                return allResults;
+            }
+
+            var finalResults = knownResults.Concat(ephemeralResults).OrderBy(r => r.Port).ToList();
+            LogSummary(hostname, finalResults, globalStopwatch);
+            return finalResults;
         }
 
         /// <summary>
@@ -408,31 +448,31 @@ namespace MSSQLand.Utilities.Discovery
         }
 
         /// <summary>
+        /// Generates middle range ports (1433-49151) excluding known ports.
+        /// Creates multiple ranges to avoid re-scanning known ports.
+        /// </summary>
+        private static int[] GenerateMiddleRangePorts()
+        {
+            var knownPortsSet = new HashSet<int>(KnownPorts);
+            var middlePorts = new List<int>();
+            
+            for (int port = MiddleRangeStart; port <= MiddleRangeEnd; port++)
+            {
+                if (!knownPortsSet.Contains(port))
+                {
+                    middlePorts.Add(port);
+                }
+            }
+            
+            return middlePorts.ToArray();
+        }
+
+        /// <summary>
         /// Scans known ports only.
         /// </summary>
-        public static List<ScanResult> ScanKnownPorts(string hostname, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism)
+        public static List<ScanResult> ScanKnownPorts(IPAddress ip, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism)
         {
-            try
-            {
-                // Resolve hostname to IP
-                IPAddress ip;
-                if (IPAddress.TryParse(hostname, out ip))
-                {
-                    // Already an IP
-                }
-                else
-                {
-                    var addresses = Misc.ValidateDnsResolution(hostname, throwOnFailure: true);
-                    ip = addresses?.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)
-                       ?? addresses?.First();
-                }
-
-                return ScanPortsParallel(ip, KnownPorts, timeoutMs, maxParallelism, null);
-            }
-            catch
-            {
-                return new List<ScanResult>();
-            }
+            return ScanPortsParallel(ip, KnownPorts, timeoutMs, maxParallelism, null);
         }
 
         /// <summary>
