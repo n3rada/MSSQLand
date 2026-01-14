@@ -258,8 +258,8 @@ namespace MSSQLand.Utilities.Discovery
                 Logger.Info($"Domain: {domainGroup.Key} ({domainGroup.Count()})");
 
                 DataTable resultTable = new();
-                resultTable.Columns.Add("distinguishedName", typeof(string));
                 resultTable.Columns.Add("dnsHostName", typeof(string));
+                resultTable.Columns.Add("OrganizationalUnits", typeof(string));
                 resultTable.Columns.Add("Description", typeof(string));
                 resultTable.Columns.Add("Instances", typeof(string));
                 resultTable.Columns.Add("sAMAccountName", typeof(string));
@@ -267,9 +267,19 @@ namespace MSSQLand.Utilities.Discovery
 
                 foreach (var server in domainGroup.OrderByDescending(s => s.LastLogon))
                 {
+                    // Extract only OU parts from distinguishedName
+                    string organizationalUnits = "";
+                    if (!string.IsNullOrEmpty(server.DistinguishedName))
+                    {
+                        var ouParts = server.DistinguishedName
+                            .Split(',')
+                            .Where(p => p.Trim().StartsWith("OU=", StringComparison.OrdinalIgnoreCase));
+                        organizationalUnits = string.Join(",", ouParts);
+                    }
+
                     resultTable.Rows.Add(
-                        server.DistinguishedName ?? "",
                         server.ServerName,
+                        organizationalUnits,
                         server.Description ?? "",
                         string.Join(", ", server.Instances.OrderBy(i => i)),
                         server.AccountName,
