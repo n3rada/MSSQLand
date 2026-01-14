@@ -441,7 +441,6 @@ namespace MSSQLand.Utilities.Discovery
         /// </summary>
         public static List<ScanResult> ScanPorts(IPAddress ip, string hostname, int[] ports, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism)
         {
-            Logger.InfoNested($"Resolved to {ip}");
             var globalStopwatch = Stopwatch.StartNew();
 
             Logger.NewLine();
