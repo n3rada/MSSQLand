@@ -142,8 +142,6 @@ namespace MSSQLand.Utilities.Discovery
             {
                 LogSummary(hostname, knownResults, globalStopwatch, stoppedEarly: true);
                 return knownResults;
-            } else {
-                Logger.InfoNested("No known ports found");
             }
 
             // Phase 2: Ephemeral range
