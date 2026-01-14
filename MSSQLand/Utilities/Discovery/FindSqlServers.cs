@@ -124,11 +124,35 @@ namespace MSSQLand.Utilities.Discovery
                 bool hasSqlSpn = false;
                 ldapEntry.TryGetValue("serviceprincipalname", out object[] spnValues);
 
-                // Get dnshostname for FQDN (preferred over parsing from SPN)
+                // Get dnshostname for FQDN (preferred)
                 string dnsHostName = null;
                 if (ldapEntry.TryGetValue("dnshostname", out object[] dnsValues) && dnsValues?.Length > 0)
                 {
                     dnsHostName = dnsValues[0]?.ToString();
+                    Logger.Trace($"[{cn}] dnshostname: {dnsHostName}");
+                }
+
+                // Fallback: construct FQDN from cn + domain suffix extracted from distinguishedName
+                if (string.IsNullOrEmpty(dnsHostName) && !string.IsNullOrEmpty(cn) && !string.IsNullOrEmpty(distinguishedName))
+                {
+                    // Extract domain from DN: "CN=...,DC=D31,DC=tes,DC=local" -> "D31.tes.local"
+                    var dcParts = distinguishedName
+                        .Split(',')
+                        .Where(p => p.Trim().StartsWith("DC=", StringComparison.OrdinalIgnoreCase))
+                        .Select(p => p.Trim().Substring(3));
+
+                    if (dcParts.Any())
+                    {
+                        dnsHostName = $"{cn}.{string.Join(".", dcParts)}";
+                        Logger.Trace($"[{cn}] Constructed FQDN from DN: {dnsHostName}");
+                    }
+                }
+
+                // Last resort: just use cn
+                if (string.IsNullOrEmpty(dnsHostName) && !string.IsNullOrEmpty(cn))
+                {
+                    dnsHostName = cn;
+                    Logger.Trace($"[{cn}] Using cn only (no domain info)");
                 }
 
                 if (spnValues != null && spnValues.Length > 0)
@@ -155,14 +179,13 @@ namespace MSSQLand.Utilities.Discovery
                             ? "default"
                             : serviceInstance.Substring(portDelimiterIndex + 1);
 
-                        // Use dnshostname (FQDN) if available, otherwise fall back to SPN hostname
-                        string serverName = !string.IsNullOrEmpty(dnsHostName)
-                            ? dnsHostName
-                            : (portDelimiterIndex == -1 ? serviceInstance : serviceInstance.Substring(0, portDelimiterIndex));
+                        // Use pre-resolved hostname (dnshostname or constructed FQDN)
+                        string serverName = dnsHostName ?? cn ?? "(unknown)";
 
                         // Key by objectSid to prevent duplicates when dnshostname is not available
                         if (!serverMap.TryGetValue(objectSid, out ServerInfo serverInfo))
                         {
+                            Logger.Trace($"[{cn}] New server: {serverName} (SID: {objectSid})");
                             serverInfo = new ServerInfo
                             {
                                 ServerName = serverName,
@@ -174,24 +197,22 @@ namespace MSSQLand.Utilities.Discovery
                             };
                             serverMap[objectSid] = serverInfo;
                         }
-                        // Update server name if we now have a better one (FQDN)
-                        else if (!string.IsNullOrEmpty(dnsHostName) && !serverInfo.ServerName.Contains("."))
-                        {
-                            serverInfo.ServerName = dnsHostName;
-                        }
+
+                        Logger.Trace($"[{cn}] SPN: {spn} -> Instance: {instanceOrPort}");
+
 
                         serverInfo.Instances.Add(instanceOrPort);
                     }
                 }
 
-                // If no SQL SPN found, determine which condition matched
+                // If no SQL SPN found, matched by name/description/OU containing "SQL"
                 if (!hasSqlSpn)
                 {
-                    // Use dnshostname (already extracted above) or fall back to cn
                     string serverName = !string.IsNullOrEmpty(dnsHostName) ? dnsHostName : cn;
 
                     if (!string.IsNullOrEmpty(serverName) && !serverMap.ContainsKey(objectSid))
                     {
+                        Logger.Trace($"[{cn}] No MSSQLSvc SPN, matched by name/description/OU: {serverName}");
                         serverMap[objectSid] = new ServerInfo
                         {
                             ServerName = serverName,
