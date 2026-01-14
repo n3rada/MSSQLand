@@ -405,7 +405,6 @@ namespace MSSQLand.Utilities
                         if (matches.Count > 0)
                         {
                             Logger.Error($"Action '{ex.ActionName}' not found. Did you mean one of these?");
-                            Logger.NewLine();
                             
                             DataTable matchTable = new();
                             matchTable.Columns.Add("Action", typeof(string));
