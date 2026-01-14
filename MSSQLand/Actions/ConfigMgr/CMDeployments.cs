@@ -35,7 +35,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 5, LongName = "in-progress", Description = "Show only deployments in progress")]
         private bool _inProgress = false;
 
-        [ArgumentMetadata(Position = 6, ShortName = "dt", LongName = "with-deployment-types", Description = "Show only deployments with deployment types (Applications)")]
+        [ArgumentMetadata(Position = 6, LongName = "with-deployment-types", Description = "Show only deployments with deployment types (Applications)")]
         private bool _withDeploymentTypes = false;
 
         [ArgumentMetadata(Position = 7, LongName = "limit", Description = "Limit number of results (default: 50)")]
