@@ -224,7 +224,7 @@ namespace MSSQLand.Utilities
             // Help & Utilities
             argumentsTable.Rows.Add("-h, --help", "[Help] Display help. Use with action for action-specific help.");
             argumentsTable.Rows.Add("--version", "[Help] Display version information.");
-            argumentsTable.Rows.Add("--findsql <domain>", "[Utility] Find SQL Servers in Active Directory (standalone).");
+            argumentsTable.Rows.Add("-findsql [domain] [--forest]", "[Utility] Find SQL Servers via AD SPNs. Use --forest for forest-wide search.");
 
             return argumentsTable;
         }

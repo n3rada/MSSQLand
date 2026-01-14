@@ -143,16 +143,25 @@ namespace MSSQLand.Utilities
                         }
                     }
                     
-                    // If no domain specified, try to get the current domain
+                    // If no domain specified, try to get the current domain or forest root
                     if (string.IsNullOrEmpty(adDomain))
                     {
                         try
                         {
-                            adDomain = System.DirectoryServices.ActiveDirectory.Domain.GetCurrentDomain().Name;
+                            var currentDomain = System.DirectoryServices.ActiveDirectory.Domain.GetCurrentDomain();
+                            if (forest)
+                            {
+                                // For forest-wide search, use the forest root domain
+                                adDomain = currentDomain.Forest.RootDomain.Name;
+                            }
+                            else
+                            {
+                                adDomain = currentDomain.Name;
+                            }
                         }
                         catch
                         {
-                            throw new ArgumentException("FindSQLServers requires a domain argument (not domain-joined). Example: --findsql corp.com");
+                            throw new ArgumentException("FindSQLServers requires a domain argument (not domain-joined). Example: -findsql corp.com [--forest]");
                         }
                     }
                     
