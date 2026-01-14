@@ -25,10 +25,10 @@ namespace MSSQLand.Utilities
     /// <b>PowerShell equivalent:</b>
     /// <code>
     /// # Domain-only query (LDAP):
-    /// ([adsisearcher]::new([adsi]"LDAP://corp.local", "(|(servicePrincipalName=MSSQL*)(&amp;(objectCategory=computer)(cn=*SQL*)))")).FindAll()
+    /// ([adsisearcher]::new([adsi]"LDAP://corp.local", "(|(servicePrincipalName=MSSQL*)(&(objectCategory=computer)(cn=*SQL*)))")).FindAll()
     /// 
     /// # Forest-wide query (Global Catalog):
-    /// ([adsisearcher]::new([adsi]"GC://corp.local", "(|(servicePrincipalName=MSSQL*)(&amp;(objectCategory=computer)(cn=*SQL*)))")).FindAll()
+    /// ([adsisearcher]::new([adsi]"GC://corp.local", "(|(servicePrincipalName=MSSQL*)(&(objectCategory=computer)(cn=*SQL*)))")).FindAll()
     /// </code>
     /// </para>
     /// 
