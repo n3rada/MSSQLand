@@ -553,7 +553,7 @@ namespace MSSQLand.Utilities.Discovery
                 }
                 if (stoppedEarly)
                 {
-                    Logger.InfoNested("Stopped after first hit (use --all to find more)");
+                    Logger.InfoNested($"Stopped early after finding {results.Count} port(s) - use --all to continue full scan");
                 }
             }
         }
