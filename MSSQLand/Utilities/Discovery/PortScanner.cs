@@ -158,26 +158,35 @@ namespace MSSQLand.Utilities.Discovery
             {
                 using (var client = new TcpClient())
                 {
-                    // Connect with timeout using async + CancellationToken
-                    using (var cts = new CancellationTokenSource(timeoutMs))
+                    // Connect with timeout
+                    var connectTask = client.ConnectAsync(ip, port);
+                    var timeoutTask = Task.Delay(timeoutMs);
+                    
+                    var completedTask = await Task.WhenAny(connectTask, timeoutTask).ConfigureAwait(false);
+                    
+                    if (completedTask == timeoutTask)
                     {
-                        try
-                        {
-                            await client.ConnectAsync(ip, port).ConfigureAwait(false);
-                            
-                            // Check if we connected before timeout
-                            if (cts.IsCancellationRequested || !client.Connected)
-                                return null;
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            return null;
-                        }
-                        catch (SocketException)
-                        {
-                            return null;
-                        }
+                        Logger.Trace($"Port {port}: Connect timeout");
+                        return null;
                     }
+
+                    try
+                    {
+                        await connectTask.ConfigureAwait(false); // Propagate any exception
+                    }
+                    catch (SocketException ex)
+                    {
+                        Logger.Trace($"Port {port}: SocketException {ex.SocketErrorCode}");
+                        return null;
+                    }
+
+                    if (!client.Connected)
+                    {
+                        Logger.Trace($"Port {port}: Not connected after await");
+                        return null;
+                    }
+
+                    Logger.Trace($"Port {port}: Connected, sending TDS prelogin");
 
                     // Port is open - validate TDS
                     var stream = client.GetStream();
@@ -188,35 +197,62 @@ namespace MSSQLand.Utilities.Discovery
                     byte[] prelogin = { TdsPreloginPacketType, 0x01, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00 };
                     await stream.WriteAsync(prelogin, 0, prelogin.Length).ConfigureAwait(false);
 
-                    // Read response
+                    // Read response with timeout
                     byte[] response = new byte[8];
                     int bytesRead;
                     try
                     {
-                        using (var readCts = new CancellationTokenSource(timeoutMs))
+                        var readTask = stream.ReadAsync(response, 0, response.Length);
+                        var readTimeoutTask = Task.Delay(timeoutMs);
+                        
+                        if (await Task.WhenAny(readTask, readTimeoutTask).ConfigureAwait(false) == readTimeoutTask)
                         {
-                            bytesRead = await stream.ReadAsync(response, 0, response.Length).ConfigureAwait(false);
+                            Logger.Trace($"Port {port}: Read timeout");
+                            return null;
                         }
+                        
+                        bytesRead = await readTask.ConfigureAwait(false);
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        Logger.Trace($"Port {port}: Read exception: {ex.GetType().Name}");
                         return null;
                     }
 
                     if (bytesRead > 0)
                     {
                         byte type = response[0];
+                        Logger.Trace($"Port {port}: Got {bytesRead} bytes, type=0x{type:X2}");
+                        
                         // TDS response types: 0x04 (tabular) or 0x12 (prelogin)
                         if (type == 0x04 || type == 0x12)
                         {
+                            Logger.Trace($"Port {port}: TDS confirmed!");
                             return new ScanResult { Port = port, IsTds = true, ResponseInfo = $"TDS 0x{type:X2}" };
                         }
+                        else
+                        {
+                            Logger.Trace($"Port {port}: Not TDS (type 0x{type:X2})");
+                        }
+                    }
+                    else
+                    {
+                        Logger.Trace($"Port {port}: No bytes read");
                     }
                 }
             }
-            catch (AggregateException) { }
-            catch (SocketException) { }
-            catch { }
+            catch (AggregateException ex)
+            {
+                Logger.Trace($"Port {port}: AggregateException: {ex.InnerException?.Message}");
+            }
+            catch (SocketException ex)
+            {
+                Logger.Trace($"Port {port}: SocketException: {ex.SocketErrorCode}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Trace($"Port {port}: Exception: {ex.GetType().Name}: {ex.Message}");
+            }
 
             return null;
         }
