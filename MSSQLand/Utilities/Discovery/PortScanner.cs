@@ -75,7 +75,7 @@ namespace MSSQLand.Utilities.Discovery
             var found = new ManualResetEventSlim(false);
 
             // Phase 1: Scan known ports first
-            Logger.Debug($"Scanning {KnownPorts.Length} known ports...");
+            Logger.Info($"Testing {KnownPorts.Length} known ports (1433, custom static ports)");
             var knownResults = ScanPortsParallel(hostname, KnownPorts, timeoutMs, maxParallelism, stopOnFirst ? found : null);
             foreach (var r in knownResults)
             {
@@ -87,8 +87,12 @@ namespace MSSQLand.Utilities.Discovery
                 return results.OrderBy(r => r.Port).ToList();
             }
 
+            Logger.NewLine();
+
             // Phase 2: Scan ephemeral range from both ends toward middle
-            Logger.Debug($"Scanning ephemeral range {EphemeralStart}-{EphemeralEnd} (edges to middle)...");
+            Logger.Info($"Scanning IANA ephemeral range ({EphemeralStart}-{EphemeralEnd})");
+            Logger.InfoNested("Windows allocates dynamic ports here for named instances");
+            Logger.InfoNested("Scanning from edges toward middle for faster discovery");
             var ephemeralPorts = GenerateEdgesToMiddle(EphemeralStart, EphemeralEnd);
             var ephemeralResults = ScanPortsParallel(hostname, ephemeralPorts, timeoutMs, maxParallelism, stopOnFirst ? found : null);
             foreach (var r in ephemeralResults)
@@ -312,6 +316,8 @@ namespace MSSQLand.Utilities.Discovery
         /// </summary>
         public static void LogResults(string hostname, List<ScanResult> results)
         {
+            Logger.NewLine();
+            
             if (results.Count == 0)
             {
                 Logger.Warning("No SQL Server ports found");
@@ -321,9 +327,7 @@ namespace MSSQLand.Utilities.Discovery
             Logger.Success($"Found {results.Count} SQL Server port(s):");
             foreach (var result in results)
             {
-                string status = result.IsTds ? "[TDS Confirmed]" : "[Possible]";
-                Logger.SuccessNested($"Port {result.Port} {status}");
-                Logger.Debug(result.ResponseInfo);
+                Logger.SuccessNested($"{hostname}:{result.Port}");
             }
         }
     }
