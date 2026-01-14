@@ -187,6 +187,33 @@ namespace MSSQLand.Utilities
                     return (ParseResultType.UtilityMode, null);
                 }
 
+                if (args[0] == "-portscan" || args[0] == "--portscan")
+                {
+                    if (args.Length < 2 || IsFlag(args[1]))
+                    {
+                        throw new ArgumentException("Port scan requires a hostname. Example: -portscan sqlserver.domain.com");
+                    }
+                    
+                    string hostname = args[1];
+                    bool scanAll = args.Length > 2 && (args[2] == "--all" || args[2] == "-a");
+                    
+                    Logger.Info($"Scanning {hostname} for SQL Server ports (TDS validation)");
+                    if (scanAll)
+                    {
+                        Logger.InfoNested("Find all instances (full ephemeral range)");
+                    }
+                    else
+                    {
+                        Logger.InfoNested("Stop on first hit (use --all to find all)");
+                    }
+                    Logger.NewLine();
+                    
+                    var results = PortScanner.Scan(hostname, stopOnFirst: !scanAll);
+                    PortScanner.LogResults(hostname, results);
+                    
+                    return (ParseResultType.UtilityMode, null);
+                }
+
                 // First pass: extract --trace, --debug and --silent flags from anywhere in the arguments
                 var filteredArgs = new List<string>();
                 for (int i = 0; i < args.Length; i++)

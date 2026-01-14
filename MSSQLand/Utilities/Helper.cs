@@ -121,6 +121,8 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t-findsql [domain]             Find SQL Servers via SPNs in a domain");
             Console.WriteLine("\t-findsql [domain] --forest    Query entire forest (Global Catalog)");
             Console.WriteLine("\t-browse <hostname>            Query SQL Browser for instances/ports");
+            Console.WriteLine("\t-portscan <hostname>          Scan for SQL Server ports (TDS validation)");
+            Console.WriteLine("\t-portscan <hostname> --all    Find all SQL ports (don't stop on first)");
             Console.WriteLine();
         } 
 
@@ -227,6 +229,7 @@ namespace MSSQLand.Utilities
             argumentsTable.Rows.Add("--version", "[Help] Display version information.");
             argumentsTable.Rows.Add("-findsql [domain] [--forest]", "[Utility] Find SQL Servers via AD SPNs. Use --forest for forest-wide search.");
             argumentsTable.Rows.Add("-browse <hostname>", "[Utility] Query SQL Browser service (UDP 1434) for instances and ports.");
+            argumentsTable.Rows.Add("-portscan <hostname> [--all]", "[Utility] Scan for SQL ports via TDS. Stops on first hit unless --all.");
 
             return argumentsTable;
         }
