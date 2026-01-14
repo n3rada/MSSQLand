@@ -215,7 +215,7 @@ namespace MSSQLand.Utilities.Discovery
                             AccountName = accountName,
                             ObjectSid = objectSid,
                             LastLogon = lastLogonDate,
-                            Instances = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "(name match)" },
+                            Instances = new HashSet<string>(StringComparer.OrdinalIgnoreCase),
                             DiscoveryMethod = "Name"
                         };
                     }
@@ -237,7 +237,12 @@ namespace MSSQLand.Utilities.Discovery
             resultTable.Columns.Add("sAMAccountName", typeof(string));
             resultTable.Columns.Add("lastLogonTimestamp", typeof(string));
 
-            foreach (var server in serverMap.Values.OrderBy(s => s.DiscoveryMethod).ThenBy(s => s.ServerName))
+            foreach (var server in serverMap.Values
+                .OrderBy(s => {
+                    int dotIndex = s.ServerName.IndexOf('.');
+                    return dotIndex > 0 ? s.ServerName.Substring(dotIndex + 1) : string.Empty;
+                })
+                .ThenBy(s => s.ServerName))
             {
                 resultTable.Rows.Add(
                     server.ServerName,
