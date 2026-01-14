@@ -21,6 +21,8 @@ namespace MSSQLand.Services.Credentials
             Logger.Info($"Probing SQL Server: {sqlServer}");
             Logger.InfoNested("Using empty credentials to test if server is alive");
 
+            Logger.NewLine();
+
             // Use SQL auth with empty credentials
             // Server will reject with error 18456 (login failed) = server is alive
             var connectionString = $"Server={sqlServer}; Database=master; Integrated Security=False; User Id=; Password=;";
