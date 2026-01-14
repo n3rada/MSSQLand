@@ -42,7 +42,11 @@ namespace MSSQLand.Utilities
             return (char)(value < 10 ? '0' + value : (upper ? 'A' : 'a') + (value - 10));
         }
 
-
+        /// <summary>
+        /// Decodes a Base64-encoded string and decompresses it using GZip.
+        /// </summary>
+        /// <param name="encoded">The Base64-encoded, GZip-compressed data.</param>
+        /// <returns>The decompressed byte array.</returns>
         public static byte[] DecodeAndDecompress(string encoded)
         {
             byte[] compressedBytes = Convert.FromBase64String(encoded);
@@ -53,6 +57,14 @@ namespace MSSQLand.Utilities
             return outputStream.ToArray();
         }
 
+        /// <summary>
+        /// Converts a hexadecimal string to a byte array.
+        /// </summary>
+        /// <param name="hex">The hexadecimal string (must have even length).</param>
+        /// <returns>The byte array representation of the hex string.</returns>
+        /// <example>
+        /// HexStringToBytes("48656C6C6F") => { 0x48, 0x65, 0x6C, 0x6C, 0x6F } ("Hello")
+        /// </example>
         public static byte[] HexStringToBytes(string hex)
         {
             int length = hex.Length;
@@ -64,6 +76,14 @@ namespace MSSQLand.Utilities
             return bytes;
         }
 
+        /// <summary>
+        /// Converts a byte array to a lowercase hexadecimal string.
+        /// </summary>
+        /// <param name="bytes">The byte array to convert.</param>
+        /// <returns>A lowercase hexadecimal string representation.</returns>
+        /// <example>
+        /// BytesToHexString(new byte[] { 0x48, 0x65, 0x6C, 0x6C, 0x6F }) => "48656c6c6f"
+        /// </example>
         public static string BytesToHexString(byte[] bytes)
         {
             StringBuilder hex = new StringBuilder(bytes.Length * 2);
@@ -74,6 +94,11 @@ namespace MSSQLand.Utilities
             return hex.ToString();
         }
 
+        /// <summary>
+        /// Gets a random available TCP port on the loopback interface.
+        /// Binds a socket to port 0 which causes the OS to assign an available ephemeral port.
+        /// </summary>
+        /// <returns>An available TCP port number.</returns>
         public static int GetRandomUnusedPort()
         {
             using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -104,6 +129,17 @@ namespace MSSQLand.Utilities
             return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
         }
 
+        /// <summary>
+        /// Detects the text encoding of a byte array by examining its Byte Order Mark (BOM).
+        /// Supports UTF-8, UTF-16 LE, and UTF-16 BE encodings.
+        /// </summary>
+        /// <param name="data">The byte array to analyze.</param>
+        /// <returns>A tuple containing the detected encoding and the BOM length in bytes.</returns>
+        /// <example>
+        /// DetectEncoding(new byte[] { 0xEF, 0xBB, 0xBF, ... }) => (Encoding.UTF8, 3)
+        /// DetectEncoding(new byte[] { 0xFF, 0xFE, ... }) => (Encoding.Unicode, 2)  // UTF-16 LE
+        /// DetectEncoding(new byte[] { 0x48, 0x65, ... }) => (Encoding.UTF8, 0)     // No BOM, default UTF-8
+        /// </example>
         public static (Encoding Encoding, int BomLength) DetectEncoding(byte[] data)
         {
             if (data == null || data.Length == 0)
@@ -122,6 +158,14 @@ namespace MSSQLand.Utilities
             return (Encoding.UTF8, 0);
         }
 
+        /// <summary>
+        /// Decodes a byte array to a string using the specified encoding, starting at the given offset.
+        /// Typically used after <see cref="DetectEncoding"/> to skip the BOM bytes.
+        /// </summary>
+        /// <param name="data">The byte array containing text data.</param>
+        /// <param name="encoding">The encoding to use for decoding.</param>
+        /// <param name="offset">The starting offset (typically the BOM length).</param>
+        /// <returns>The decoded string, or empty string if data is null or too short.</returns>
         public static string DecodeText(byte[] data, Encoding encoding, int offset)
         {
             if (data == null || data.Length <= offset)
