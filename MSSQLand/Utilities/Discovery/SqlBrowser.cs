@@ -164,7 +164,7 @@ namespace MSSQLand.Utilities.Discovery
             {
                 string portInfo = instance.TcpPort.HasValue ? $"TCP {instance.TcpPort}" : "No TCP";
                 string clustered = instance.IsClustered ? " [Clustered]" : "";
-                Logger.InfoNested($"{instance.InstanceName}: {portInfo}, Version {instance.Version}{clustered}");
+                Logger.Info($"{instance.InstanceName}: {portInfo}, Version {instance.Version}{clustered}");
                 Logger.InfoNested($"  Connection: {instance.GetConnectionTarget(hostname)}");
             }
         }
