@@ -22,21 +22,21 @@ namespace MSSQLand.Utilities.Discovery
         /// Enumerates SQL Servers in the specified Active Directory domain.
         /// </summary>
         /// <param name="domain">The Active Directory domain to query</param>
-        /// <param name="forest">If true, queries the Global Catalog for forest-wide results</param>
+        /// <param name="globalCatalog">If true, queries the Global Catalog for forest-wide results</param>
         /// <returns>Number of SQL Servers found</returns>
-        public static int Execute(string domain, bool forest = false)
+        public static int Execute(string domain, bool globalCatalog = false)
         {
             if (string.IsNullOrWhiteSpace(domain))
             {
                 throw new ArgumentException("Active Directory domain is required. Please provide a valid domain name.");
             }
 
-            string protocol = forest ? "GC" : "LDAP";
-            string scope = forest ? "forest-wide (Global Catalog)" : "domain";
+            string protocol = globalCatalog ? "GC" : "LDAP";
+            string scope = globalCatalog ? "forest-wide (Global Catalog)" : "domain";
 
             Logger.Task($"Lurking for MS SQL Servers on Active Directory {scope}: {domain}");
 
-            if (forest)
+            if (globalCatalog)
             {
                 Logger.TaskNested("Discovery methods: MSSQLSvc SPNs + computers with 'SQL' in name or description.");
                 Logger.TaskNested("Using Global Catalog (port 3268) - OU-based search disabled (not indexed in GC).");
@@ -53,7 +53,7 @@ namespace MSSQLand.Utilities.Discovery
             // LDAP filter: Find computers with MSSQLSvc SPNs OR computers with "SQL" in name or description
             // All conditions require objectCategory=computer to exclude user/service accounts
             // OU-based searching only works with LDAP, not GC (distinguishedName is not indexed in Global Catalog)
-            string ldapFilter = forest
+            string ldapFilter = globalCatalog
                 ? "(|(&(objectCategory=computer)(servicePrincipalName=MSSQLSvc*))(&(objectCategory=computer)(cn=*SQL*))(&(objectCategory=computer)(description=*SQL*)))"
                 : "(|(&(objectCategory=computer)(servicePrincipalName=MSSQLSvc*))(&(objectCategory=computer)(cn=*SQL*))(&(objectCategory=computer)(description=*SQL*))(&(objectCategory=computer)(distinguishedName=*OU=*SQL*)))";
 
@@ -66,11 +66,11 @@ namespace MSSQLand.Utilities.Discovery
             {
                 ldapResults = ldapService.ExecuteQuery(ldapFilter, ldapAttributes);
             }
-            catch (Exception ex) when (!forest)
+            catch (Exception ex) when (!globalCatalog)
             {
                 Logger.Warning($"LDAP query failed: {ex.Message}");
                 Logger.WarningNested("Falling back to Global Catalog");
-                return Execute(domain, forest: true);
+                return Execute(domain, globalCatalog: true);
             }
 
             // Track unique servers with their instances
