@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.Database
         public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested("Enumerating databases");
-            
+
             bool isAzureSQL = databaseContext.QueryService.IsAzureSQL();
             DataTable allDatabases;
 
@@ -23,7 +23,7 @@ namespace MSSQLand.Actions.Database
                 // Azure SQL Database: Only show current database (can't enumerate other databases)
                 // in Azure SQL Database the owner is always dbo
                 allDatabases = databaseContext.QueryService.ExecuteTable(
-                    @"SELECT 
+                    @"SELECT
                         DB_ID() AS dbid,
                         DB_NAME() AS name,
                         CAST(1 AS BIT) AS Visible,
@@ -39,7 +39,7 @@ namespace MSSQLand.Actions.Database
             {
                 // On-premises SQL Server: Full database enumeration
                 allDatabases = databaseContext.QueryService.ExecuteTable(
-                    @"SELECT 
+                    @"SELECT
                         db.dbid,
                         db.name,
                         CASE WHEN d.database_id IS NOT NULL THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS Visible,
@@ -49,14 +49,51 @@ namespace MSSQLand.Actions.Database
                         db.crdate,
                         db.filename
                     FROM master.dbo.sysdatabases db
-                    LEFT JOIN master.sys.databases d ON db.name = d.name
-                    ORDER BY db.name ASC, Visible DESC, Accessible DESC, Trustworthy DESC, db.crdate DESC;"
+                    LEFT JOIN master.sys.databases d ON db.name = d.name;"
                 );
+
+                // Categorize in C# for separate display
+                var accessibleRows = allDatabases.AsEnumerable()
+                    .Where(r => Convert.ToBoolean(r["Accessible"]))
+                    .OrderBy(r => r["name"].ToString());
+
+                var visibleNotAccessibleRows = allDatabases.AsEnumerable()
+                    .Where(r => Convert.ToBoolean(r["Visible"]) && !Convert.ToBoolean(r["Accessible"]))
+                    .OrderBy(r => r["name"].ToString());
+
+                var hiddenRows = allDatabases.AsEnumerable()
+                    .Where(r => !Convert.ToBoolean(r["Visible"]))
+                    .OrderBy(r => r["name"].ToString());
+
+                // Output each category separately for clarity
+                if (accessibleRows.Any())
+                {
+                    DataTable accessibleTable = accessibleRows.CopyToDataTable();
+                    Logger.Info($"Accessible Databases ({accessibleTable.Rows.Count}):");
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(accessibleTable));
+                }
+
+                if (visibleNotAccessibleRows.Any())
+                {
+                    DataTable visibleTable = visibleNotAccessibleRows.CopyToDataTable();
+                    Logger.Info($"Visible but Not Accessible Databases ({visibleTable.Rows.Count}):");
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(visibleTable));
+                }
+
+                if (hiddenRows.Any())
+                {
+                    DataTable hiddenTable = hiddenRows.CopyToDataTable();
+                    Logger.Info($"Hidden Databases ({hiddenTable.Rows.Count}):");
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(hiddenTable));
+                }
+
+                Logger.Success($"Retrieved {allDatabases.Rows.Count} database(s) total: {accessibleRows.Count()} accessible, {visibleNotAccessibleRows.Count()} visible-only, {hiddenRows.Count()} hidden");
+                return allDatabases;
             }
 
-            // Output the final table
+            // Output for Azure SQL (single category)
             Console.WriteLine(OutputFormatter.ConvertDataTable(allDatabases));
-            
+
             Logger.Success($"Retrieved {allDatabases.Rows.Count} database(s)");
 
             return allDatabases;
