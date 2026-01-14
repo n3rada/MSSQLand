@@ -138,6 +138,8 @@ namespace MSSQLand.Utilities.Discovery
 
             var cts = new CancellationTokenSource();
 
+            Logger.NewLine();
+
             // Phase 1: Known ports
             Logger.Info($"Testing {KnownPorts.Length} known ports");
             Logger.InfoNested($"{string.Join(", ", KnownPorts)}");
