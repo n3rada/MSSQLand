@@ -22,7 +22,8 @@ namespace MSSQLand.Services.Credentials
             Logger.InfoNested("Using empty credentials to test if server is alive");
             Logger.NewLine();
 
-            // SqlClient will try TCP first, then Named Pipes automatically
+            // Use SQL auth with empty credentials - avoids sending Kerberos ticket
+            // Server will reject with 18456 = alive, or network error = unreachable
             var connectionString = $"Server={sqlServer}; Database=master; Integrated Security=False; User Id=; Password=;";
 
             try
