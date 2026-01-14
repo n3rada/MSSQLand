@@ -31,7 +31,7 @@ namespace MSSQLand.Utilities
             string protocol = forest ? "GC" : "LDAP";
             string scope = forest ? "forest-wide (Global Catalog)" : "domain";
             
-            Logger.TaskNested($"Lurking for MS SQL Servers on Active Directory {scope}: {domain}");
+            Logger.Task($"Lurking for MS SQL Servers on Active Directory {scope}: {domain}");
             Logger.TaskNested("This method discovers servers with Kerberos SPNs registered in AD.");
             
             if (forest)
@@ -162,7 +162,7 @@ namespace MSSQLand.Utilities
             // Build output table
             DataTable resultTable = new();
             resultTable.Columns.Add("Server", typeof(string));
-            resultTable.Columns.Add("IP", typeof(string));
+            resultTable.Columns.Add("DNS Resolution", typeof(string));
             resultTable.Columns.Add("Instances", typeof(string));
             resultTable.Columns.Add("Service Account", typeof(string));
             resultTable.Columns.Add("Account SID", typeof(string));
