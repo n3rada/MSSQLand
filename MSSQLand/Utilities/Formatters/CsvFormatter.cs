@@ -20,31 +20,6 @@ namespace MSSQLand.Utilities.Formatters
         private const char Separator = ';';
 
         /// <summary>
-        /// Sanitizes a string to ensure it contains only valid UTF-8 characters.
-        /// </summary>
-        private static string SanitizeToUtf8(string input)
-        {
-            if (string.IsNullOrEmpty(input))
-                return input ?? "";
-
-            var sb = new StringBuilder(input.Length);
-            foreach (char c in input)
-            {
-                if (c == '\t' || c == '\n' || c == '\r')
-                    sb.Append(c);
-                else if (c < 0x20)
-                    sb.Append(' ');
-                else if (c == 0xA0)
-                    sb.Append(' ');
-                else if (c >= 0x80 && c <= 0x9F)
-                    sb.Append('?');
-                else
-                    sb.Append(c);
-            }
-            return sb.ToString();
-        }
-
-        /// <summary>
         /// Escapes CSV values by wrapping in quotes if they contain separators, quotes, or newlines.
         /// </summary>
         private static string EscapeCsvValue(string value)
@@ -54,7 +29,7 @@ namespace MSSQLand.Utilities.Formatters
                 return "";
             }
 
-            string sanitized = SanitizeToUtf8(value);
+            string sanitized = Misc.SanitizeToUtf8(value);
             if (sanitized.Contains(Separator) || sanitized.Contains('"') || sanitized.Contains('\n') || sanitized.Contains('\r'))
             {
                 return $"\"{sanitized.Replace("\"", "\"\"")}\"";

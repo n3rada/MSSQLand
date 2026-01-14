@@ -16,6 +16,34 @@ namespace MSSQLand.Utilities
         private static readonly Random _random = new Random();
 
         /// <summary>
+        /// Sanitizes a string to ensure it contains only valid UTF-8 characters.
+        /// Replaces Windows-1252 control characters and other invalid bytes with safe alternatives.
+        /// </summary>
+        /// <param name="input">The string to sanitize</param>
+        /// <returns>A UTF-8 safe string</returns>
+        public static string SanitizeToUtf8(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return input ?? "";
+
+            var sb = new StringBuilder(input.Length);
+            foreach (char c in input)
+            {
+                if (c == '\t' || c == '\n' || c == '\r')
+                    sb.Append(c);  // Keep common whitespace
+                else if (c < 0x20)
+                    sb.Append(' ');  // Control characters -> space
+                else if (c == 0xA0)
+                    sb.Append(' ');  // Non-breaking space -> regular space
+                else if (c >= 0x80 && c <= 0x9F)
+                    sb.Append('?');  // Windows-1252 control range
+                else
+                    sb.Append(c);
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
         /// Generates a random number within the specified range (inclusive of min, exclusive of max).
         /// </summary>
         /// <param name="min">The inclusive lower bound of the random number.</param>
