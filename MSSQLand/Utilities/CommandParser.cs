@@ -173,14 +173,14 @@ namespace MSSQLand.Utilities
                 if (args[0] == "-findsql" || args[0] == "--findsql")
                 {
                     string adDomain = null;
-                    bool forest = false;
+                    bool useGlobalCatalog = false;
                     
                     // Parse optional arguments
                     for (int i = 1; i < args.Length; i++)
                     {
-                        if (args[i] == "--forest" || args[i] == "-forest")
+                        if (args[i] == "--global-catalog" || args[i] == "-gc" || args[i] == "--forest" || args[i] == "-forest") // backward compatibility
                         {
-                            forest = true;
+                            useGlobalCatalog = true;
                         }
                         else if (!IsFlag(args[i]) && adDomain == null)
                         {
@@ -194,7 +194,7 @@ namespace MSSQLand.Utilities
                         try
                         {
                             var currentDomain = System.DirectoryServices.ActiveDirectory.Domain.GetCurrentDomain();
-                            if (forest)
+                            if (useGlobalCatalog)
                             {
                                 // For forest-wide search, use the forest root domain
                                 adDomain = currentDomain.Forest.RootDomain.Name;
@@ -210,7 +210,7 @@ namespace MSSQLand.Utilities
                         }
                     }
                     
-                    FindSqlServers.Execute(adDomain, forest);
+                    FindSqlServers.Execute(adDomain, useGlobalCatalog);
                     return (ParseResultType.UtilityMode, null);
                 }
 
