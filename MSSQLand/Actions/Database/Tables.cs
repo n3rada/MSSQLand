@@ -23,7 +23,7 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(ShortName = "c", LongName = "column", Description = "Filter tables containing a column name pattern (supports wildcards %)")]
         private string _columnFilter = "";
 
-        [ArgumentMetadata(ShortName = "r", LongName = "with-rows", Description = "Filter out tables with 0 rows")]
+        [ArgumentMetadata(ShortName = "r", LongName = "rows", Description = "Filter out tables with 0 rows")]
         private bool _withRows = false;
 
         public override void ValidateArguments(string[] args)
