@@ -39,7 +39,25 @@ namespace MSSQLand.Actions.Database
                 AND name NOT LIKE '##MS_%##'
                 ORDER BY name;";
 
-            DataTable hashTable = databaseContext.QueryService.ExecuteTable(query);
+            DataTable hashTable;
+            try
+            {
+                hashTable = databaseContext.QueryService.ExecuteTable(query);
+            }
+            catch (Exception ex)
+            {
+                // Permission denied or other error
+                if (ex.Message.Contains("permission") || ex.Message.Contains("denied") || ex.Message.Contains("SELECT"))
+                {
+                    Logger.Error("Insufficient permissions to read sys.sql_logins");
+                    Logger.ErrorNested("Requires VIEW SERVER STATE or sysadmin role");
+                }
+                else
+                {
+                    Logger.Error($"Failed to query password hashes: {ex.Message}");
+                }
+                return null;
+            }
 
             if (hashTable.Rows.Count == 0)
             {
