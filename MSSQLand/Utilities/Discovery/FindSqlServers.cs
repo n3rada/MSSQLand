@@ -232,34 +232,41 @@ namespace MSSQLand.Utilities.Discovery
                 return 0;
             }
 
-            // Build output table
-            DataTable resultTable = new();
-            resultTable.Columns.Add("dnsHostName", typeof(string));
-            resultTable.Columns.Add("Description", typeof(string));
-            resultTable.Columns.Add("Instances", typeof(string));
-            resultTable.Columns.Add("sAMAccountName", typeof(string));
-            resultTable.Columns.Add("lastLogonTimestamp", typeof(string));
-
-            foreach (var server in serverMap.Values
-                .OrderBy(s => {
+            // Group servers by domain (extracted from FQDN)
+            var serversByDomain = serverMap.Values
+                .GroupBy(s => {
                     int dotIndex = s.ServerName.IndexOf('.');
-                    return dotIndex > 0 ? s.ServerName.Substring(dotIndex + 1) : string.Empty;
+                    return dotIndex > 0 ? s.ServerName.Substring(dotIndex + 1).ToUpperInvariant() : "(unknown domain)";
                 })
-                .ThenBy(s => s.ServerName))
+                .OrderBy(g => g.Key);
+
+            foreach (var domainGroup in serversByDomain)
             {
-                resultTable.Rows.Add(
-                    server.ServerName,
-                    server.Description ?? "",
-                    string.Join(", ", server.Instances.OrderBy(i => i)),
-                    server.AccountName,
-                    server.LastLogon
-                );
+                Logger.Info($"Domain: {domainGroup.Key} ({domainGroup.Count()})");
+
+                DataTable resultTable = new();
+                resultTable.Columns.Add("dnsHostName", typeof(string));
+                resultTable.Columns.Add("Description", typeof(string));
+                resultTable.Columns.Add("Instances", typeof(string));
+                resultTable.Columns.Add("sAMAccountName", typeof(string));
+                resultTable.Columns.Add("lastLogonTimestamp", typeof(string));
+
+                foreach (var server in domainGroup.OrderByDescending(s => s.LastLogon))
+                {
+                    resultTable.Rows.Add(
+                        server.ServerName,
+                        server.Description ?? "",
+                        string.Join(", ", server.Instances.OrderBy(i => i)),
+                        server.AccountName,
+                        server.LastLogon
+                    );
+                }
+
+                Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
             }
 
-            Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
-
             int withInstances = serverMap.Values.Count(s => s.Instances.Count > 0);
-            Logger.Success($"{serverMap.Count} SQL Server(s) found, {withInstances} with known instances.");
+            Logger.Success($"{serverMap.Count} SQL Server(s) found across {serversByDomain.Count()} domain(s), {withInstances} with known instances.");
             return serverMap.Count;
         }
 
