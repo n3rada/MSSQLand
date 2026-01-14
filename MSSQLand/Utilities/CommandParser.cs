@@ -178,7 +178,7 @@ namespace MSSQLand.Utilities
                     // Parse optional arguments
                     for (int i = 1; i < args.Length; i++)
                     {
-                        if (args[i] == "--global-catalog" || args[i] == "-gc" || args[i] == "--forest" || args[i] == "-forest") // backward compatibility
+                        if (args[i] == "--global-catalog" || args[i] == "-gc" || args[i] == "--gc")
                         {
                             useGlobalCatalog = true;
                         }

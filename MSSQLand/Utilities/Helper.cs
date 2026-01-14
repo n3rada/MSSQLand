@@ -117,11 +117,16 @@ namespace MSSQLand.Utilities
             Console.WriteLine(formatter.ConvertDataTable(getCredentialTypes()));
 
             Console.WriteLine();
-            Console.WriteLine("Standalone utilities (no database connection)");
-            Console.WriteLine("\t-findsql [domain]             Find SQL Servers via SPNs in a domain");
-            Console.WriteLine("\t-findsql [domain] --forest    Query entire forest (Global Catalog)");
-            Console.WriteLine("\t<host> -browse                Query SQL Browser for instances/ports");
-            Console.WriteLine("\t<host> -portscan [--all]      Scan for SQL Server ports (TDS validation)");
+            Console.WriteLine("Discovery utilities (no database connection)");
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine("[Discovery]");
+            Console.ResetColor();
+            Console.WriteLine("\t-findsql [domain]                 Find SQL Servers via SPNs in a domain");
+            Console.WriteLine("\t-findsql [domain] --global-catalog Query entire forest (Global Catalog, preferred)");
+            Console.WriteLine("\t-findsql [domain] -gc              (short form for --global-catalog)");
+            Console.WriteLine("\t-findsql [domain] --forest/-forest  (legacy, supported for compatibility)");
+            Console.WriteLine("\t<host> -browse                      Query SQL Browser for instances/ports");
+            Console.WriteLine("\t<host> -portscan [--all]            Scan for SQL Server ports (TDS validation)");
             Console.WriteLine();
         } 
 
@@ -239,7 +244,7 @@ namespace MSSQLand.Utilities
             // Help & Utilities
             argumentsTable.Rows.Add("-h, --help", "[Help] Display help. Use with action for action-specific help.");
             argumentsTable.Rows.Add("--version", "[Help] Display version information.");
-            argumentsTable.Rows.Add("-findsql [domain] [--forest]", "[Utility] Find SQL Servers via AD SPNs. Use --forest for forest-wide search.");
+            argumentsTable.Rows.Add("-findsql [domain] [--global-catalog|--gc]", "[Utility] Find SQL Servers via AD SPNs. Use --global-catalog or -gc for forest-wide search (Global Catalog). --forest/-forest also supported for compatibility.");
             argumentsTable.Rows.Add("<host> -browse", "[Utility] Query SQL Browser service (UDP 1434) for instances and ports.");
             argumentsTable.Rows.Add("<host> -portscan [--all]", "[Utility] Scan for SQL ports via TDS. Stops on first hit unless --all.");
 
