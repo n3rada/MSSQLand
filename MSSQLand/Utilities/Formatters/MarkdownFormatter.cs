@@ -17,6 +17,51 @@ namespace MSSQLand.Utilities.Formatters
         public string FormatName => "markdown";
 
         /// <summary>
+        /// Sanitizes a string to ensure it contains only valid UTF-8 characters.
+        /// Replaces invalid characters and control characters with safe alternatives.
+        /// </summary>
+        private static string SanitizeToUtf8(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return input ?? "";
+
+            var sb = new StringBuilder(input.Length);
+            foreach (char c in input)
+            {
+                if (c == '\t' || c == '\n' || c == '\r')
+                {
+                    // Keep common whitespace
+                    sb.Append(c);
+                }
+                else if (c < 0x20)
+                {
+                    // Replace control characters with space
+                    sb.Append(' ');
+                }
+                else if (c == 0xA0)
+                {
+                    // Non-breaking space (common in Windows-1252) -> regular space
+                    sb.Append(' ');
+                }
+                else if (c >= 0x80 && c <= 0x9F)
+                {
+                    // Windows-1252 control range - replace with ?
+                    sb.Append('?');
+                }
+                else if (char.IsHighSurrogate(c) || char.IsLowSurrogate(c))
+                {
+                    // Handle surrogate pairs - keep valid ones
+                    sb.Append(c);
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
         /// Converts a byte array to a hexadecimal string representation.
         /// </summary>
         private static string ByteArrayToHexString(byte[] bytes)
@@ -106,7 +151,7 @@ namespace MSSQLand.Utilities.Formatters
                         object value = reader.GetValue(i);
                         string cellValue = value is byte[] byteArray
                             ? ByteArrayToHexString(byteArray)
-                            : value?.ToString() ?? "";
+                            : SanitizeToUtf8(value?.ToString() ?? "");
 
                         row[i] = cellValue;
                         columnWidths[i] = Math.Max(columnWidths[i], cellValue.Length);
@@ -188,7 +233,7 @@ namespace MSSQLand.Utilities.Formatters
                     object value = row[i];
                     string cellValue = value is byte[] byteArray
                         ? ByteArrayToHexString(byteArray)
-                        : value?.ToString() ?? "";
+                        : SanitizeToUtf8(value?.ToString() ?? "");
 
                     columnWidths[i] = Math.Max(columnWidths[i], cellValue.Length);
                 }
@@ -214,7 +259,7 @@ namespace MSSQLand.Utilities.Formatters
                     object value = row[i];
                     string cellValue = value is byte[] byteArray
                         ? ByteArrayToHexString(byteArray)
-                        : value?.ToString() ?? "";
+                        : SanitizeToUtf8(value?.ToString() ?? "");
 
                     sqlStringBuilder.Append("| ").Append(cellValue.PadRight(columnWidths[i])).Append(" ");
                 }
