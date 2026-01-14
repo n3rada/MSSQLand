@@ -285,6 +285,82 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
+        /// Parses a fully qualified table name into its components (database, schema, table).
+        /// Handles bracketed identifiers correctly, including names with embedded dots.
+        /// </summary>
+        /// <param name="fqtn">The fully qualified table name to parse.</param>
+        /// <returns>Tuple of (database, schema, table) - database and schema may be null.</returns>
+        /// <example>
+        /// ParseQualifiedTableName("Users") => (null, null, "Users")
+        /// ParseQualifiedTableName("dbo.Users") => (null, "dbo", "Users")
+        /// ParseQualifiedTableName("master.dbo.Users") => ("master", "dbo", "Users")
+        /// ParseQualifiedTableName("[my.db].[dbo].[table]") => ("my.db", "dbo", "table")
+        /// ParseQualifiedTableName("[CM_PSC]..[v_R_System]") => ("CM_PSC", null, "v_R_System")
+        /// </example>
+        public static (string Database, string Schema, string Table) ParseQualifiedTableName(string fqtn)
+        {
+            if (string.IsNullOrWhiteSpace(fqtn))
+                throw new ArgumentException("Table name cannot be null or empty.", nameof(fqtn));
+
+            var parts = new System.Collections.Generic.List<string>();
+            var current = new StringBuilder();
+            bool inBrackets = false;
+
+            for (int i = 0; i < fqtn.Length; i++)
+            {
+                char c = fqtn[i];
+
+                if (c == '[' && !inBrackets)
+                {
+                    inBrackets = true;
+                }
+                else if (c == ']' && inBrackets)
+                {
+                    // Check for escaped bracket ]]
+                    if (i + 1 < fqtn.Length && fqtn[i + 1] == ']')
+                    {
+                        current.Append(']');
+                        i++; // Skip next bracket
+                    }
+                    else
+                    {
+                        inBrackets = false;
+                    }
+                }
+                else if (c == '.' && !inBrackets)
+                {
+                    // Separator found - add current part and reset
+                    parts.Add(current.ToString());
+                    current.Clear();
+                }
+                else
+                {
+                    current.Append(c);
+                }
+            }
+
+            // Add final part
+            parts.Add(current.ToString());
+
+            // Validate and return based on part count
+            return parts.Count switch
+            {
+                1 => (null, null, NullIfEmpty(parts[0])),
+                2 => (null, NullIfEmpty(parts[0]), NullIfEmpty(parts[1])),
+                3 => (NullIfEmpty(parts[0]), NullIfEmpty(parts[1]), NullIfEmpty(parts[2])),
+                _ => throw new ArgumentException($"Invalid table name format: '{fqtn}'. Expected [table], [schema.table], or [database.schema.table].")
+            };
+        }
+
+        /// <summary>
+        /// Returns null if the string is empty or whitespace, otherwise returns the trimmed string.
+        /// </summary>
+        private static string NullIfEmpty(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        /// <summary>
         /// Builds a fully qualified table name in SQL Server format.
         /// Handles empty schema by using the double-dot notation (database..table).
         /// Automatically strips brackets from inputs to prevent double-bracketing.
