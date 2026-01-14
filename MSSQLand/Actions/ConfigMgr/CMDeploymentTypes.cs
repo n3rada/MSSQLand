@@ -78,7 +78,7 @@ namespace MSSQLand.Actions.ConfigMgr
         private string _enabled = "";
 
         [ArgumentMetadata(LongName = "limit", Description = "Limit number of results (default: 25)")]
-        private int _limit = 50;
+        private int _limit = 25;
 
         public override object Execute(DatabaseContext databaseContext)
         {

@@ -23,7 +23,7 @@ namespace MSSQLand.Actions
     ///    private string _tableName;
     /// 
     ///    [ArgumentMetadata(Position = 1, ShortName = "l", LongName = "limit", Description = "Row limit")]
-    ///    private int _limit = 50;  // Use typed fields, not string + parsing
+    ///    private int _limit = 25;  // Use typed fields, not string + parsing
     /// 
     /// If no custom validation is needed, you don't need to override ValidateArguments().
     /// The base class will call BindArguments() automatically.

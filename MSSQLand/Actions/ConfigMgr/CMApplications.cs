@@ -25,8 +25,8 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 1, ShortName = "m", LongName = "modelname", Description = "Filter by ModelName")]
         private string _modelName = "";
 
-        [ArgumentMetadata(Position = 2, LongName = "limit", Description = "Limit number of results (default: 50)")]
-        private int _limit = 50;
+        [ArgumentMetadata(Position = 2, LongName = "limit", Description = "Limit number of results (default: 25)")]
+        private int _limit = 25;
 
         public override object Execute(DatabaseContext databaseContext)
         {

@@ -19,8 +19,8 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 0, ShortName = "f", LongName = "filter", Description = "Filter by device name")]
         private string _filter = "";
 
-        [ArgumentMetadata(Position = 1,  LongName = "limit", Description = "Limit number of results (default: 50)")]
-        private int _limit = 50;
+        [ArgumentMetadata(Position = 1,  LongName = "limit", Description = "Limit number of results (default: 25)")]
+        private int _limit = 25;
 
         public override object Execute(DatabaseContext databaseContext)
         {

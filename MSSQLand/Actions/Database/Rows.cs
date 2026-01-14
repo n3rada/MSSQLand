@@ -13,8 +13,8 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(Position = 0, Required = true, Description = "Table name in format: [table], [schema.table], or [database.schema.table]")]
         private string _fqtn; // Store the full qualified table name argument
 
-        [ArgumentMetadata(Position = 1, ShortName = "l", LongName = "limit", Description = "Maximum number of rows to retrieve (default: 50)")]
-        private int _limit = 50;
+        [ArgumentMetadata(Position = 1, ShortName = "l", LongName = "limit", Description = "Maximum number of rows to retrieve (default: 25)")]
+        private int _limit = 25;
 
         [ArgumentMetadata(Position = 2, LongName = "all", Description = "Retrieve all rows without limit")]
         private bool _all = false;

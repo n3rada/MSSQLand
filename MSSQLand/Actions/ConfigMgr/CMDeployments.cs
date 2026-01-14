@@ -38,8 +38,8 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 6, LongName = "with-deployment-types", Description = "Show only deployments with deployment types (Applications)")]
         private bool _withDeploymentTypes = false;
 
-        [ArgumentMetadata(Position = 7, LongName = "limit", Description = "Limit number of results (default: 50)")]
-        private int _limit = 50;
+        [ArgumentMetadata(Position = 7, LongName = "limit", Description = "Limit number of results (default: 25)")]
+        private int _limit = 25;
 
         public override object Execute(DatabaseContext databaseContext)
         {

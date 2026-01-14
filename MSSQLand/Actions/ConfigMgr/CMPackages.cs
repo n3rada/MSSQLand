@@ -40,8 +40,8 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 7, LongName = "no-source", Description = "Show only packages without source path (virtual packages) (default: false)")]
         private bool _noSource = false;
 
-        [ArgumentMetadata(Position = 8, LongName = "limit", Description = "Limit number of results (default: 50)")]
-        private int _limit = 50;
+        [ArgumentMetadata(Position = 8, LongName = "limit", Description = "Limit number of results (default: 25)")]
+        private int _limit = 25;
 
         public override object Execute(DatabaseContext databaseContext)
         {
