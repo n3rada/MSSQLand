@@ -231,7 +231,7 @@ namespace MSSQLand.Utilities.Discovery
             // Build output table
             DataTable resultTable = new();
             resultTable.Columns.Add("dnsHostName", typeof(string));
-            resultTable.Columns.Add("IP (DNS)", typeof(string));
+            resultTable.Columns.Add("IP (DNS Resolution)", typeof(string));
             resultTable.Columns.Add("Instances", typeof(string));
             resultTable.Columns.Add("Source", typeof(string));
             resultTable.Columns.Add("sAMAccountName", typeof(string));
