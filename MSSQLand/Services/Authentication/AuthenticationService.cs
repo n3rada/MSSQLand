@@ -108,8 +108,14 @@ namespace MSSQLand.Services
             // Use the credentials service to authenticate and establish the connection
             Connection = _credentials.Authenticate(sqlServer, database, username, password, domain);
 
+            // Probe mode returns null after logging results - this is expected, not a failure
             if (Connection == null)
             {
+                if (credentialsType.Equals("probe", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Probe completed successfully (results already logged)
+                    return;
+                }
                 throw new AuthenticationFailedException(sqlServer, credentialsType);
             }
 
