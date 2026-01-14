@@ -38,12 +38,17 @@ namespace MSSQLand.Services.Credentials
                     Logger.Success("SQL Server is alive and responding");
                     Logger.SuccessNested("Server rejected empty credentials (expected)");
                 }
+                // Error 64 = Pre-login handshake failed - server IS alive, network/protocol issue
+                else if (ex.Number == 64)
+                {
+                    Logger.Success("Server is alive (responded during pre-login handshake)");
+                    Logger.Warning("Connection failed during TDS handshake.");
+                }
                 // Error 1225 = Connection refused - server alive but not listening
                 else if (ex.Number == 1225)
                 {
                     Logger.Warning("Connection refused on this port");
                     Logger.WarningNested("Server is reachable but not listening on the specified port");
-                    Logger.WarningNested("Use -browse to query SQL Browser for available instances");
                 }
                 // Error -2, -1, 258 = Timeout / connection failed
                 else if (ex.Number == -2 || ex.Number == -1 || ex.Number == 258)
