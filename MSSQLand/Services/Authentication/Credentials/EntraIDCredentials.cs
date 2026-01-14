@@ -16,7 +16,7 @@ namespace MSSQLand.Services.Credentials
             if (string.IsNullOrEmpty(database))
                 database = "master";
 
-            var connectionString = $"Server={sqlServer}; Database={database}; Authentication=Active Directory Password; User ID={username}; Password={password};";";
+            var connectionString = $"Server={sqlServer}; Database={database}; Authentication=Active Directory Password; User ID={username}; Password={password};";
             return CreateSqlConnection(connectionString);
         }
     }
