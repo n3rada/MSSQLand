@@ -139,7 +139,8 @@ namespace MSSQLand.Utilities.Discovery
             var cts = new CancellationTokenSource();
 
             // Phase 1: Known ports
-            Logger.Info($"Testing {KnownPorts.Length} known ports ({string.Join(", ", KnownPorts)})");
+            Logger.Info($"Testing {KnownPorts.Length} known ports");
+            Logger.InfoNested($"{string.Join(", ", KnownPorts)}");
             var knownStopwatch = Stopwatch.StartNew();
             var knownResults = ScanPortsParallel(ip, KnownPorts, timeoutMs, maxParallelism, stopOnFirst ? cts : null);
             knownStopwatch.Stop();
