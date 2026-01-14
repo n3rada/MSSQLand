@@ -17,7 +17,7 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(Position = 1, ShortName = "n", LongName = "name", Description = "Filter tables by name pattern (supports wildcards %)")]
         private string _name = "";
 
-        [ArgumentMetadata(Position = 2, ShortName = "sc", LongName = "show-columns", Description = "Show column names for each table")]
+        [ArgumentMetadata(Position = 2, ShortName = "C", LongName = "columns", Description = "Show column names for each table")]
         private bool _showColumns = false;
 
         [ArgumentMetadata(ShortName = "c", LongName = "column", Description = "Filter tables containing a column name pattern (supports wildcards %)")]
