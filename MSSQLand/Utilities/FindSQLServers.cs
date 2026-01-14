@@ -46,7 +46,8 @@ namespace MSSQLand.Utilities
             // LDAP filter and properties for MS SQL SPNs
             // SQL Server SPNs use the service class "MSSQLSvc"
             const string ldapFilter = "(servicePrincipalName=MSSQL*)";
-            string[] ldapAttributes = { "cn", "samaccountname", "objectsid", "serviceprincipalname", "lastlogon" };
+            // Use lastLogonTimestamp instead of lastLogon - it's replicated across DCs
+            string[] ldapAttributes = { "cn", "samaccountname", "objectsid", "serviceprincipalname", "lastLogonTimestamp" };
 
             // Execute the LDAP query
             Dictionary<string, Dictionary<string, object[]>> ldapResults = ldapService.ExecuteQuery(ldapFilter, ldapAttributes);
@@ -81,7 +82,7 @@ namespace MSSQLand.Utilities
                 }
 
                 string lastLogonDate = "(never)";
-                if (ldapEntry.TryGetValue("lastlogon", out object[] logonValues) && logonValues?.Length > 0)
+                if (ldapEntry.TryGetValue("lastlogontimestamp", out object[] logonValues) && logonValues?.Length > 0)
                 {
                     try
                     {
