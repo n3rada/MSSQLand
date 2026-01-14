@@ -18,9 +18,7 @@ namespace MSSQLand.Services.Credentials
             
             // For local accounts, use the machine name or "."
             string effectiveDomain = isLocalAccount ? "." : domain;
-            
-            Logger.Trace($"Impersonating as {effectiveDomain}\\{username} with password: {password}");
-            
+                        
             // Use impersonation to authenticate
             using (new WindowsIdentityImpersonation(effectiveDomain, username, password))
             {

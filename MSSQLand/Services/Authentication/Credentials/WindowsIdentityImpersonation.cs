@@ -20,7 +20,8 @@ namespace MSSQLand.Services.Credentials
 
         internal WindowsIdentityImpersonation(string domain, string username, string password)
         {
-            Logger.Trace($"LogonUser: {domain}\\{username} (LOGON32_LOGON_NEW_CREDENTIALS)");
+            Logger.Info($"Impersonating as {domain}\\{username}");
+            Logger.TraceNested($"with password: {password}");
             
             bool ok = LogonUser(username, domain, password, Logon32LogonNewCredentials, 0, out this._handle);
             if (!ok)
