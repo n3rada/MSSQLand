@@ -48,6 +48,12 @@ namespace MSSQLand.Models
 
         public int Port { get; set; } = 1433; // Default SQL Server port
 
+        /// <summary>
+        /// The named pipe path for connection (alternative to TCP/IP).
+        /// Example: \\hostname\pipe\MSSQL$instancename\sql\query
+        /// </summary>
+        public string NamedPipe { get; set; } = null;
+
         public string Database { get; set; } = null;
 
         /// <summary>
@@ -66,6 +72,23 @@ namespace MSSQLand.Models
         public string SystemUser { get; set; }
 
         /// <summary>
+        /// Returns true if this server uses named pipe connection instead of TCP/IP.
+        /// </summary>
+        public bool UsesNamedPipe => !string.IsNullOrEmpty(NamedPipe);
+
+        /// <summary>
+        /// Gets the connection target for SQL Server connection string.
+        /// Returns named pipe path if configured, otherwise hostname:port.
+        /// </summary>
+        public string GetConnectionTarget()
+        {
+            if (UsesNamedPipe)
+                return NamedPipe;
+            
+            return Port == 1433 ? Hostname : $"{Hostname},{Port}";
+        }
+
+        /// <summary>
         /// Creates a copy of this Server instance.
         /// </summary>
         public Server Copy()
@@ -78,6 +101,7 @@ namespace MSSQLand.Models
                 IsLegacy = this.IsLegacy,
                 IsAzureSQL = this.IsAzureSQL,
                 Port = this.Port,
+                NamedPipe = this.NamedPipe,
                 Database = this.Database,
                 ImpersonationUser = this.ImpersonationUser,
                 MappedUser = this.MappedUser,
@@ -128,6 +152,48 @@ namespace MSSQLand.Models
             Server server = new();
             string remaining = serverInput;
             char firstDelimiter = '\0';
+
+            // Check for named pipe format: \\hostname\pipe\... or np:\\hostname\pipe\...
+            if (remaining.StartsWith(@"\\") || remaining.StartsWith("np:", StringComparison.OrdinalIgnoreCase))
+            {
+                // Extract named pipe path
+                string pipePath = remaining;
+                string database = null;
+                
+                // Check for @database suffix
+                int atIndex = remaining.LastIndexOf('@');
+                if (atIndex > 0 && !remaining.Substring(0, atIndex).EndsWith(@"\"))
+                {
+                    // @ found and not part of the pipe path
+                    database = remaining.Substring(atIndex + 1);
+                    pipePath = remaining.Substring(0, atIndex);
+                }
+                
+                server.NamedPipe = pipePath;
+                server.Database = database;
+                
+                // Extract hostname from pipe path for display purposes
+                // Format: \\hostname\pipe\... or np:\\hostname\pipe\...
+                string pathPart = pipePath.StartsWith("np:", StringComparison.OrdinalIgnoreCase) 
+                    ? pipePath.Substring(3) 
+                    : pipePath;
+                if (pathPart.StartsWith(@"\\"))
+                {
+                    int pipeIndex = pathPart.IndexOf(@"\pipe\", StringComparison.OrdinalIgnoreCase);
+                    if (pipeIndex > 2)
+                    {
+                        server.Hostname = pathPart.Substring(2, pipeIndex - 2);
+                    }
+                    else
+                    {
+                        // Fallback: extract between \\ and next \
+                        int nextSlash = pathPart.IndexOf('\\', 2);
+                        server.Hostname = nextSlash > 2 ? pathPart.Substring(2, nextSlash - 2) : pathPart.Substring(2);
+                    }
+                }
+                
+                return server;
+            }
 
             // Check if hostname is bracketed (for hostnames containing delimiters)
             if (remaining.StartsWith("["))

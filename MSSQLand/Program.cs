@@ -51,7 +51,7 @@ namespace MSSQLand
                 authService = new AuthenticationService(arguments.Host);
                 authService.Authenticate(
                     credentialsType: arguments.CredentialType,
-                    sqlServer: $"{arguments.Host.Hostname},{arguments.Host.Port}",
+                    sqlServer: arguments.Host.GetConnectionTarget(),
                     database: arguments.Host.Database,
                     username: arguments.Username,
                     password: arguments.Password,
@@ -76,7 +76,7 @@ namespace MSSQLand
             }
             catch (SqlException sqlEx) when (sqlEx.Number == -2 || sqlEx.Number == -1)
             {
-                Logger.Error($"Connection timeout to {arguments.Host.Hostname}:{arguments.Host.Port}");
+                Logger.Error($"Connection timeout to {arguments.Host.GetConnectionTarget()}");
                 Logger.ErrorNested($"Server did not respond within {arguments.ConnectionTimeout} seconds.");
                 return 1;
             }
