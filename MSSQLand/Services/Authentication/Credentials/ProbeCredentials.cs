@@ -13,8 +13,8 @@ namespace MSSQLand.Services.Credentials
     {
         public ProbeCredentials()
         {
-            // Reasonable timeout for probing - allows for network latency
-            SetConnectionTimeout(10);
+            // Reasonable timeout for probing
+            SetConnectionTimeout(5);
         }
 
         public override SqlConnection Authenticate(string sqlServer, string database, string username = null, string password = null, string domain = null)
