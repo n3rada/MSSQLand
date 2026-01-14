@@ -18,8 +18,8 @@ namespace MSSQLand.Services.Credentials
 
         public override SqlConnection Authenticate(string sqlServer, string database, string username = null, string password = null, string domain = null)
         {
-            Logger.Task($"Probing SQL Server: {sqlServer}");
-            Logger.TaskNested("Using empty credentials to test if server is alive");
+            Logger.Info($"Probing SQL Server: {sqlServer}");
+            Logger.InfoNested("Using empty credentials to test if server is alive");
 
             // Use SQL auth with empty credentials
             // Server will reject with error 18456 (login failed) = server is alive
