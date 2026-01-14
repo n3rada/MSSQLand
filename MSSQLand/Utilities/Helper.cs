@@ -97,7 +97,9 @@ namespace MSSQLand.Utilities
 
             Console.WriteLine("Usage: <host> [options] <action> [action-options]\n");
             Console.WriteLine("Examples");
-            Console.WriteLine("\tlocalhost@Clients -c token tables --name 'invoice' --columns");
+            Console.WriteLine("\tlocalhost -c token whoami");
+            Console.WriteLine("\tlocalhost@clients -c token tables --name 'invoice' --columns");
+            Console.WriteLine("\tSQL02,61433 -c local -u sa -p 'admin' search 'password' --all");
             Console.WriteLine();
 
             Console.WriteLine("Help options");
