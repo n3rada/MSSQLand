@@ -262,8 +262,7 @@ namespace MSSQLand.Utilities
                         }
                         Logger.NewLine();
                         
-                        var results = PortScanner.Scan(hostArg, stopOnFirst: !scanAll);
-                        PortScanner.LogResults(hostArg, results);
+                        PortScanner.Scan(hostArg, stopOnFirst: !scanAll);
                         
                         return (ParseResultType.UtilityMode, null);
                     }

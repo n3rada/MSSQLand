@@ -131,7 +131,7 @@ namespace MSSQLand.Utilities.Discovery
                     if (stopCts?.IsCancellationRequested == true)
                         return;
 
-                    var result = ProbePort(ip, port, timeoutMs);
+                    var result = await ProbePortAsync(ip, port, timeoutMs).ConfigureAwait(false);
                     if (result != null)
                     {
                         results.Add(result);
@@ -150,21 +150,34 @@ namespace MSSQLand.Utilities.Discovery
         }
 
         /// <summary>
-        /// Probes a single port: TCP connect + TDS validation.
+        /// Probes a single port asynchronously: TCP connect + TDS validation.
         /// </summary>
-        private static ScanResult ProbePort(IPAddress ip, int port, int timeoutMs)
+        private static async Task<ScanResult> ProbePortAsync(IPAddress ip, int port, int timeoutMs)
         {
             try
             {
                 using (var client = new TcpClient())
                 {
-                    // Connect with timeout
-                    var connectTask = client.ConnectAsync(ip, port);
-                    if (!connectTask.Wait(timeoutMs))
-                        return null;
-
-                    if (!client.Connected)
-                        return null;
+                    // Connect with timeout using async + CancellationToken
+                    using (var cts = new CancellationTokenSource(timeoutMs))
+                    {
+                        try
+                        {
+                            await client.ConnectAsync(ip, port).ConfigureAwait(false);
+                            
+                            // Check if we connected before timeout
+                            if (cts.IsCancellationRequested || !client.Connected)
+                                return null;
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            return null;
+                        }
+                        catch (SocketException)
+                        {
+                            return null;
+                        }
+                    }
 
                     // Port is open - validate TDS
                     var stream = client.GetStream();
@@ -173,14 +186,17 @@ namespace MSSQLand.Utilities.Discovery
 
                     // Send TDS prelogin packet
                     byte[] prelogin = { TdsPreloginPacketType, 0x01, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00 };
-                    stream.Write(prelogin, 0, prelogin.Length);
+                    await stream.WriteAsync(prelogin, 0, prelogin.Length).ConfigureAwait(false);
 
                     // Read response
                     byte[] response = new byte[8];
                     int bytesRead;
                     try
                     {
-                        bytesRead = stream.Read(response, 0, response.Length);
+                        using (var readCts = new CancellationTokenSource(timeoutMs))
+                        {
+                            bytesRead = await stream.ReadAsync(response, 0, response.Length).ConfigureAwait(false);
+                        }
                     }
                     catch
                     {
@@ -270,19 +286,6 @@ namespace MSSQLand.Utilities.Discovery
             }
         }
 
-        public static void LogResults(string hostname, List<ScanResult> results)
-        {
-            Logger.NewLine();
-            if (results.Count == 0)
-            {
-                Logger.Warning("No SQL Server ports found");
-                return;
-            }
-            Logger.Success($"Found {results.Count} SQL Server port(s):");
-            foreach (var r in results.OrderBy(r => r.Port))
-            {
-                Logger.SuccessNested($"{hostname}:{r.Port}");
-            }
-        }
+
     }
 }
