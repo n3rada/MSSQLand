@@ -228,9 +228,10 @@ namespace MSSQLand.Utilities.Discovery
                 })
                 .ThenBy(s => s.ServerName))
             {
+                string desc = server.Description ?? "";
                 resultTable.Rows.Add(
                     server.ServerName,
-                    server.Description.Length > 50 ? server.Description.Substring(0, 47) + "..." : server.Description,
+                    desc.Length > 50 ? desc.Substring(0, 47) + "..." : desc,
                     string.Join(", ", server.Instances.OrderBy(i => i)),
                     server.DiscoveryMethod,
                     server.AccountName,
@@ -253,7 +254,7 @@ namespace MSSQLand.Utilities.Discovery
             public string AccountName { get; set; }
             public string ObjectSid { get; set; }
             public string LastLogon { get; set; }
-            public string Description { get; set; }
+            public string Description { get; set; } = "";
             public HashSet<string> Instances { get; set; }
             public string DiscoveryMethod { get; set; }
         }
