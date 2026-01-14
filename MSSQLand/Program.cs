@@ -63,6 +63,11 @@ namespace MSSQLand
                     enableEncryption: arguments.EnableEncryption,
                     trustServerCertificate: arguments.TrustServerCertificate
                 );
+
+                if (authService.Connection == null)
+                {
+                    return 1;
+                }
             }
             catch (AuthenticationFailedException ex)
             {
