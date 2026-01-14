@@ -1,4 +1,6 @@
-﻿using MSSQLand.Utilities;
+﻿// MSSQLand/Models/LinkedServers.cs
+
+using MSSQLand.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
