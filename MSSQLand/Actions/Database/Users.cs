@@ -51,7 +51,7 @@ namespace MSSQLand.Actions.Database
                             ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS groups
                         FROM master.sys.server_principals sp
                         WHERE sp.type IN ('G','U','E','S','X') AND sp.name NOT LIKE '##%'
-                        ORDER BY sp.modify_date DESC;";
+                        ORDER BY sp.is_disabled ASC, sp.modify_date DESC;";
                 }
                 else
                 {
@@ -69,7 +69,7 @@ namespace MSSQLand.Actions.Database
                         LEFT JOIN master.sys.server_principals sr ON srm.role_principal_id = sr.principal_id AND sr.type = 'R'
                         WHERE sp.type IN ('G','U','E','S','X') AND sp.name NOT LIKE '##%'
                         GROUP BY sp.name, sp.type_desc, sp.is_disabled, sp.create_date, sp.modify_date
-                        ORDER BY sp.modify_date DESC;";
+                        ORDER BY sp.is_disabled ASC, sp.modify_date DESC;";
                 }
 
                 DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
