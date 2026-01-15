@@ -28,6 +28,9 @@ namespace MSSQLand.Actions.FileSystem
         [ArgumentMetadata(Position = 1, Description = "Remote destination path (defaults to C:\\Windows\\Tasks\\)")]
         private string _remotePath = "";
 
+        [ArgumentMetadata(Named = "xpcmd", Description = "Force xp_cmdshell method (use if xp_cmdshell is already enabled)")]
+        private bool _forceXpCmdshell = false;
+
         private FileInfo _localFileInfo;
 
         /// <summary>
@@ -37,6 +40,9 @@ namespace MSSQLand.Actions.FileSystem
         public override void ValidateArguments(string[] args)
         {
             var (namedArgs, positionalArgs) = ParseActionArguments(args);
+
+            // Check for --xpcmd flag
+            _forceXpCmdshell = namedArgs.ContainsKey("xpcmd") || namedArgs.ContainsKey("x");
 
             // Get local path from positional argument
             _localPath = GetPositionalArgument(positionalArgs, 0, null);
@@ -108,19 +114,37 @@ namespace MSSQLand.Actions.FileSystem
                 return false;
             }
 
-            // Check if OLE Automation is available
-            bool oleAvailable = databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1);
-
             bool success;
-            if (oleAvailable)
+
+            // If user explicitly requested xp_cmdshell method
+            if (_forceXpCmdshell)
             {
-                Logger.Info("OLE Automation is available, using OLE method");
-                success = UploadViaOle(databaseContext, fileContent);
+                Logger.Info("Using xp_cmdshell method (--xpcmd flag)");
+                success = UploadViaXpCmdshell(databaseContext, fileContent, skipEnableAttempt: true);
             }
             else
             {
-                Logger.Info("OLE Automation not available, using PowerShell method");
-                success = UploadViaXpCmdshell(databaseContext, fileContent);
+                // Try OLE Automation first
+                bool oleAvailable = databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1);
+
+                if (oleAvailable)
+                {
+                    Logger.Info("OLE Automation is available, using OLE method");
+                    success = UploadViaOle(databaseContext, fileContent);
+                    
+                    // If OLE upload failed, suggest xp_cmdshell as alternative
+                    if (!success)
+                    {
+                        Logger.Warning("OLE method failed.");
+                    }
+                }
+                else
+                {
+                    // OLE config couldn't be enabled - don't auto-fallback to xp_cmdshell
+                    // as it will likely fail too. Let user explicitly request it.
+                    Logger.Error("Cannot enable OLE Automation (no ALTER SETTINGS permission)");
+                    return false;
+                }
             }
 
             if (!success)
@@ -275,11 +299,12 @@ EXEC sp_OADestroy @ObjectToken;
         /// </summary>
         /// <param name="databaseContext">The database context.</param>
         /// <param name="fileContent">The file content as bytes.</param>
+        /// <param name="skipEnableAttempt">Skip trying to enable xp_cmdshell (assume it's already enabled).</param>
         /// <returns>True if upload succeeded; otherwise false.</returns>
-        private bool UploadViaXpCmdshell(DatabaseContext databaseContext, byte[] fileContent)
+        private bool UploadViaXpCmdshell(DatabaseContext databaseContext, byte[] fileContent, bool skipEnableAttempt = false)
         {
-            // Enable xp_cmdshell if needed
-            if (!databaseContext.ConfigService.SetConfigurationOption("xp_cmdshell", 1))
+            // Enable xp_cmdshell if needed (unless caller says skip)
+            if (!skipEnableAttempt && !databaseContext.ConfigService.SetConfigurationOption("xp_cmdshell", 1))
             {
                 Logger.Error("Failed to enable xp_cmdshell");
                 return false;
