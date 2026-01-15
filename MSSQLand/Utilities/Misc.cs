@@ -160,7 +160,7 @@ namespace MSSQLand.Utilities
                 IPAddress[] addresses = Dns.GetHostAddresses(hostname);
                 if (addresses.Length > 0)
                 {
-                    Logger.Debug($"Resolved to: {string.Join(", ", addresses.Select(a => a.ToString()))}");
+                    Logger.DebugNested($"Resolved to: {string.Join(", ", addresses.Select(a => a.ToString()))}");
                     return addresses;
                 }
                 else
