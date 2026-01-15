@@ -55,9 +55,10 @@ namespace MSSQLand.Utilities
             string[] lines = message.Split('\n');
             int padding = 2; // Minimum padding on each side of the message
 
-            if (totalWidth == 0)
+            int maxLineLength = lines.Max(line => line.Length);
+            
+            if (totalWidth == 0 || totalWidth < maxLineLength + (padding * 2))
             {
-                int maxLineLength = lines.Max(line => line.Length);
                 totalWidth = maxLineLength + (padding * 2);
             }
 
