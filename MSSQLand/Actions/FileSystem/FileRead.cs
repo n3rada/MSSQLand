@@ -31,16 +31,8 @@ namespace MSSQLand.Actions.FileSystem
                 _filePath = DefaultFilePath;
             }
 
-            bool isDefaultFile = _filePath.Equals(DefaultFilePath, StringComparison.OrdinalIgnoreCase);
             
-            if (isDefaultFile)
-            {
-                Logger.TaskNested($"Testing OPENROWSET BULK access with default file: {_filePath}");
-            }
-            else
-            {
-                Logger.TaskNested($"Reading file: {_filePath}");
-            }
+            Logger.TaskNested($"Reading file: {_filePath}");
 
             try
             {
