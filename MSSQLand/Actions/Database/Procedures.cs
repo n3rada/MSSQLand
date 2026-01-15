@@ -158,7 +158,7 @@ namespace MSSQLand.Actions.Database
             
             foreach (DataRow permRow in allPermissions.Rows)
             {
-                string key = $"{permRow["Schema"]}.{permRow["Name"]}";
+                string key = $"{permRow["schema_name"]}.{permRow["object_name"]}";
                 string permission = permRow["permission_name"].ToString();
 
                 if (!permissionsDict.ContainsKey(key))
