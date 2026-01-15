@@ -64,8 +64,8 @@ namespace MSSQLand.Utilities.Discovery
 
         // Adaptive timeout tracking
         private static int _adaptiveTimeoutMs = DefaultTimeoutMs;
-        private static readonly object _timingLock = new object();
-        private static List<long> _responseTimes = new List<long>();
+        private static readonly object _timingLock = new();
+        private static List<long> _responseTimes = new();
 
         /// <summary>
         /// Minimal valid TDS prelogin packet for SQL Server detection.
