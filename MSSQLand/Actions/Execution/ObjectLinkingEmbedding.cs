@@ -36,7 +36,7 @@ namespace MSSQLand.Actions.Execution
             // Ensure 'Ole Automation Procedures' are enabled
             if (!databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1))
             {
-                Logger.Error("[!] Unable to enable Ole Automation Procedures. Ensure you have the necessary permissions.");
+                Logger.Error("Unable to enable Ole Automation Procedures. Ensure you have the necessary permissions.");
                 return null;
             }
 
