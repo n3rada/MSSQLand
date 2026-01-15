@@ -304,10 +304,10 @@ namespace MSSQLand.Utilities
                 {
                     string nextArg = args[currentIndex];
                     
-                    if (nextArg == "-browse" || nextArg == "--browse")
+                    if (nextArg == "-browse" || nextArg == "--browse" || nextArg == "-browser" || nextArg == "--browser")
                     {
                         Logger.Info($"Querying SQL Browser service on {hostArg} (UDP 1434)");                        
-                        var instances = SqlBrowser.Query(hostArg);
+                        var instances = SqlBrowser.Query(resolvedIp, hostArg);
                         SqlBrowser.LogInstances(hostArg, instances);
                         
                         return (ParseResultType.UtilityMode, null);

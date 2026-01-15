@@ -52,9 +52,10 @@ namespace MSSQLand.Utilities.Discovery
         /// <summary>
         /// Queries the SQL Browser service on the specified host.
         /// </summary>
-        /// <param name="hostname">The hostname or IP address to query</param>
+        /// <param name="ip">The resolved IP address to query</param>
+        /// <param name="hostname">The original hostname for display purposes</param>
         /// <returns>List of discovered SQL instances, or empty list if browser unavailable</returns>
-        public static List<SqlInstance> Query(string hostname)
+        public static List<SqlInstance> Query(IPAddress ip, string hostname)
         {
             var instances = new List<SqlInstance>();
 
@@ -63,7 +64,7 @@ namespace MSSQLand.Utilities.Discovery
                 using (var udpClient = new UdpClient())
                 {
                     udpClient.Client.ReceiveTimeout = TimeoutMs;
-                    udpClient.Connect(hostname, BrowserPort);
+                    udpClient.Connect(ip, BrowserPort);
 
                     // Send instance list request (0x02)
                     udpClient.Send(new byte[] { InstanceListRequest }, 1);
