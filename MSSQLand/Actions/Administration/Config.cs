@@ -84,7 +84,6 @@ namespace MSSQLand.Actions.Administration
 
             if (results.Count > 0)
             {
-                Logger.NewLine();
                 DisplayResults(results);
                 return results;
             }
