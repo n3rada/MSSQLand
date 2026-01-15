@@ -208,8 +208,9 @@ namespace MSSQLand.Actions.Database
                         .CopyToDataTable();
 
                     int executableCount = sortedXp.AsEnumerable().Count(r => r.Field<string>("Execute").StartsWith("Yes", StringComparison.OrdinalIgnoreCase));
-                    Logger.Success($"Found {sortedXp.Rows.Count} extended procedures ({executableCount} executable)");
+                    
                     Console.WriteLine(OutputFormatter.ConvertDataTable(sortedXp));
+                    Logger.Success($"Found {sortedXp.Rows.Count} extended procedures ({executableCount} executable)");
                 }
                 else
                 {
@@ -268,9 +269,10 @@ namespace MSSQLand.Actions.Database
                         .OrderByDescending(row => row.Field<string>("Execute").StartsWith("Yes", StringComparison.OrdinalIgnoreCase))
                         .ThenBy(row => row.Field<string>("Procedure"))
                         .CopyToDataTable();
-
-                    Logger.Success($"Found {sortedOle.Rows.Count} OLE Automation procedures");
+                    
                     Console.WriteLine(OutputFormatter.ConvertDataTable(sortedOle));
+                    Logger.Success($"Found {sortedOle.Rows.Count} OLE Automation procedures");
+
                 }
 
                 // ═══════════════════════════════════════════════════════════════════════════════
@@ -332,8 +334,9 @@ namespace MSSQLand.Actions.Database
                         .ThenBy(row => row.Field<string>("Procedure"))
                         .CopyToDataTable();
 
-                    Logger.Success($"Found {sortedSystem.Rows.Count} system procedures");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(sortedSystem));
+                    Logger.Success($"Found {sortedSystem.Rows.Count} system procedures");
+
                 }
 
                 return xpTable;
