@@ -102,6 +102,25 @@ namespace MSSQLand.Actions.Administration
 
             try
             {
+                // Check if user can modify configurations (requires ALTER SETTINGS or sysadmin)
+                bool canModify = databaseContext.UserService.IsAdmin();
+                if (!canModify)
+                {
+                    try
+                    {
+                        string permQuery = "SELECT HAS_PERMS_BY_NAME(NULL, NULL, 'ALTER SETTINGS') AS HasPerm;";
+                        var permResult = databaseContext.QueryService.ExecuteTable(permQuery);
+                        if (permResult.Rows.Count > 0)
+                        {
+                            canModify = Convert.ToInt32(permResult.Rows[0]["HasPerm"]) == 1;
+                        }
+                    }
+                    catch
+                    {
+                        // Silently ignore permission check errors
+                    }
+                }
+
                 // Fetch all configurations at once
                 string query = "SELECT name, value_in_use FROM sys.configurations ORDER BY name;";
                 DataTable configsTable = databaseContext.QueryService.ExecuteTable(query);
@@ -115,8 +134,19 @@ namespace MSSQLand.Actions.Administration
                     {
                         { "Feature", name },
                         { "Activated", status == 1 ? "True" : "False" },
-                        { "Value", status }
+                        { "Value", status },
+                        { "CanModify", canModify }
                     });
+                }
+
+                // Log permission status
+                if (canModify)
+                {
+                    Logger.SuccessNested("You have ALTER SETTINGS permission (can modify configurations)");
+                }
+                else
+                {
+                    Logger.WarningNested("You cannot modify configurations (requires sysadmin or ALTER SETTINGS)");
                 }
             }
             catch (Exception ex)
