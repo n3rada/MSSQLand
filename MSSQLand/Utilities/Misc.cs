@@ -17,6 +17,37 @@ namespace MSSQLand.Utilities
         private static readonly Random _random = new Random();
 
         /// <summary>
+        /// Parses username for embedded domain (DOMAIN\user or user@domain format).
+        /// Returns (username, domain) tuple. Domain is null if not embedded.
+        /// </summary>
+        public static (string username, string domain) ParseUsernameWithDomain(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return (input, null);
+
+            // Check for DOMAIN\username format (NetBIOS style)
+            int backslashIndex = input.IndexOf('\\');
+            if (backslashIndex > 0 && backslashIndex < input.Length - 1)
+            {
+                string domain = input.Substring(0, backslashIndex);
+                string username = input.Substring(backslashIndex + 1);
+                return (username, domain);
+            }
+
+            // Check for username@domain format (UPN style)
+            // Only treat as UPN if @ is not at the start and there's content after @
+            int atIndex = input.IndexOf('@');
+            if (atIndex > 0 && atIndex < input.Length - 1)
+            {
+                string username = input.Substring(0, atIndex);
+                string domain = input.Substring(atIndex + 1);
+                return (username, domain);
+            }
+
+            return (input, null);
+        }
+
+        /// <summary>
         /// Sanitizes a string to ensure it contains only valid UTF-8 characters.
         /// Replaces Windows-1252 control characters and other invalid bytes with safe alternatives.
         /// </summary>

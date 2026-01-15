@@ -549,6 +549,26 @@ namespace MSSQLand.Utilities
                 parsedArgs.EnableEncryption = enableEncryption;
                 parsedArgs.TrustServerCertificate = trustServerCertificate;
 
+                // Parse embedded domain from username (DOMAIN\user or user@domain)
+                if (!string.IsNullOrEmpty(username))
+                {
+                    var (parsedUsername, embeddedDomain) = Misc.ParseUsernameWithDomain(username);
+                    if (embeddedDomain != null)
+                    {
+                        if (!string.IsNullOrEmpty(domain))
+                        {
+                            // Explicit -d takes precedence, warn about ignored embedded domain
+                            Logger.Warning($"Domain '{embeddedDomain}' in username ignored. Using explicit -d value: {domain}");
+                        }
+                        else
+                        {
+                            domain = embeddedDomain;
+                            Logger.Debug($"Parsed domain '{domain}' from username");
+                        }
+                        username = parsedUsername;
+                    }
+                }
+
                 // Validate the provided arguments against the selected credential type
                 ValidateCredentialArguments(parsedArgs.CredentialType, username, password, domain);
 
