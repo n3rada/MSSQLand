@@ -47,12 +47,6 @@ namespace MSSQLand.Actions.FileSystem
                 string query = $@"SELECT A FROM OPENROWSET(BULK '{_filePath.Replace("'", "''")}', SINGLE_CLOB) AS R(A);";
                 string fileContent = databaseContext.QueryService.ExecuteScalar(query)?.ToString();
 
-                if (isDefaultFile)
-                {
-                    Logger.Success("OPENROWSET BULK access confirmed - you can read files!");
-                    Logger.InfoNested("Try reading sensitive files like web.config, unattend.xml, etc.");
-                }
-
                 Console.WriteLine(fileContent);
 
                 return fileContent;
