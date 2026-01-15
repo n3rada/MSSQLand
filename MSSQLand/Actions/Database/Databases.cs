@@ -52,46 +52,20 @@ namespace MSSQLand.Actions.Database
                     LEFT JOIN master.sys.databases d ON db.name = d.name;"
                 );
 
-                // Categorize in C# for separate display
-                // Order by creation date descending (newest first), then by name
-                var accessibleRows = allDatabases.AsEnumerable()
-                    .Where(r => Convert.ToBoolean(r["Accessible"]))
-                    .OrderByDescending(r => r["crdate"])
+                // Order: accessible first, then by creation date descending, then by name
+                var orderedRows = allDatabases.AsEnumerable()
+                    .OrderByDescending(r => Convert.ToBoolean(r["Accessible"]))
+                    .ThenByDescending(r => r["crdate"])
                     .ThenBy(r => r["name"].ToString());
 
-                var visibleNotAccessibleRows = allDatabases.AsEnumerable()
-                    .Where(r => Convert.ToBoolean(r["Visible"]) && !Convert.ToBoolean(r["Accessible"]))
-                    .OrderByDescending(r => r["crdate"])
-                    .ThenBy(r => r["name"].ToString());
+                int accessibleCount = allDatabases.AsEnumerable().Count(r => Convert.ToBoolean(r["Accessible"]));
+                int visibleOnlyCount = allDatabases.AsEnumerable().Count(r => Convert.ToBoolean(r["Visible"]) && !Convert.ToBoolean(r["Accessible"]));
+                int hiddenCount = allDatabases.AsEnumerable().Count(r => !Convert.ToBoolean(r["Visible"]));
 
-                var hiddenRows = allDatabases.AsEnumerable()
-                    .Where(r => !Convert.ToBoolean(r["Visible"]))
-                    .OrderByDescending(r => r["crdate"])
-                    .ThenBy(r => r["name"].ToString());
+                DataTable orderedTable = orderedRows.CopyToDataTable();
+                Console.WriteLine(OutputFormatter.ConvertDataTable(orderedTable));
 
-                // Output each category separately for clarity
-                if (accessibleRows.Any())
-                {
-                    DataTable accessibleTable = accessibleRows.CopyToDataTable();
-                    Logger.Info($"Accessible Databases ({accessibleTable.Rows.Count}):");
-                    Console.WriteLine(OutputFormatter.ConvertDataTable(accessibleTable));
-                }
-
-                if (visibleNotAccessibleRows.Any())
-                {
-                    DataTable visibleTable = visibleNotAccessibleRows.CopyToDataTable();
-                    Logger.Info($"Visible but Not Accessible Databases ({visibleTable.Rows.Count}):");
-                    Console.WriteLine(OutputFormatter.ConvertDataTable(visibleTable));
-                }
-
-                if (hiddenRows.Any())
-                {
-                    DataTable hiddenTable = hiddenRows.CopyToDataTable();
-                    Logger.Info($"Hidden Databases ({hiddenTable.Rows.Count}):");
-                    Console.WriteLine(OutputFormatter.ConvertDataTable(hiddenTable));
-                }
-
-                Logger.Success($"Retrieved {allDatabases.Rows.Count} database(s) total: {accessibleRows.Count()} accessible, {visibleNotAccessibleRows.Count()} visible-only, {hiddenRows.Count()} hidden");
+                Logger.Success($"Retrieved {allDatabases.Rows.Count} database(s): {accessibleCount} accessible, {visibleOnlyCount} visible-only, {hiddenCount} hidden");
                 return allDatabases;
             }
 
