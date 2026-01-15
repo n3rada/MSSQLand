@@ -273,8 +273,6 @@ namespace MSSQLand.Services
                 return true;
             }
 
-            Logger.Info("Enabling advanced options...");
-
             string query = "EXEC master..sp_configure 'show advanced options', 1; RECONFIGURE;";
 
             try
