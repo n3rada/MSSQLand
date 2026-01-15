@@ -28,7 +28,7 @@ namespace MSSQLand.Actions.FileSystem
         [ArgumentMetadata(Position = 1, Description = "Remote destination path (defaults to C:\\Windows\\Tasks\\)")]
         private string _remotePath = "";
 
-        [ArgumentMetadata(Named = "xpcmd", Description = "Force xp_cmdshell method (use if xp_cmdshell is already enabled)")]
+        [ArgumentMetadata(ShortName = "x", LongName = "xpcmd", Description = "Force xp_cmdshell method (use if xp_cmdshell is already enabled)")]
         private bool _forceXpCmdshell = false;
 
         private FileInfo _localFileInfo;

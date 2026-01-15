@@ -20,7 +20,7 @@ namespace MSSQLand.Actions.FileSystem
         [ArgumentMetadata(Position = 0, Required = false, Description = "Full path to the file to read (default: C:\\Windows\\win.ini)")]
         private string _filePath = DefaultFilePath;
 
-        [ArgumentMetadata(Named = "b64", Description = "Output file content as base64 encoded (useful for binary files)")]
+        [ArgumentMetadata(ShortName = "b64", LongName = "base64", Description = "Output file content as base64 encoded (useful for binary files)")]
         private bool _base64 = false;
 
         public override void ValidateArguments(string[] args)
