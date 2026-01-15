@@ -73,7 +73,7 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             // EXECUTION ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "exec", (typeof(XpCmd), "Execute operating system commands.", null) },
+            { "exec", (typeof(XpCmd), "Execute operating system commands via xp_cmdshell.", new[] { "xpcmd", "xpcmdshell", "xp_cmdshell" }) },
             { "pwsh", (typeof(PowerShell), "Execute PowerShell scripts.", null) },
             { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a remote PowerShell script from a URL.", null) },
             { "ole", (typeof(ObjectLinkingEmbedding), "Execute operating system commands via procedures.", null) },
