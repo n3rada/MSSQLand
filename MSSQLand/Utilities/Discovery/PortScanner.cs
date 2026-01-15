@@ -61,14 +61,11 @@ namespace MSSQLand.Utilities.Discovery
         private const int DefaultTimeoutMs = 400;
         private const int MinTimeoutMs = 50;
         private const int DefaultParallelism = 500;
-        private const int TdsPreloginPacketType = 0x12;
 
         // Adaptive timeout tracking
         private static int _adaptiveTimeoutMs = DefaultTimeoutMs;
         private static readonly object _timingLock = new object();
         private static List<long> _responseTimes = new List<long>();
-        private static int _timeoutCount = 0;
-        private static int _responseCount = 0;
 
         /// <summary>
         /// Minimal valid TDS prelogin packet for SQL Server detection.
@@ -141,8 +138,6 @@ namespace MSSQLand.Utilities.Discovery
             {
                 _adaptiveTimeoutMs = timeoutMs;
                 _responseTimes.Clear();
-                _timeoutCount = 0;
-                _responseCount = 0;
             }
 
             var cts = new CancellationTokenSource();
@@ -301,7 +296,6 @@ namespace MSSQLand.Utilities.Discovery
 
                     if (completedTask == timeoutTask)
                     {
-                        lock (_timingLock) { _timeoutCount++; }
                         Logger.Trace($"Port {port}: Connect timeout ({effectiveTimeout}ms)");
                         return null;
                     }
@@ -316,7 +310,6 @@ namespace MSSQLand.Utilities.Discovery
                     catch (SocketException ex)
                     {
                         // Port closed/refused - still useful for timing (RST received)
-                        lock (_timingLock) { _responseCount++; }
                         UpdateAdaptiveTimeout(responseMs, initialTimeoutMs);
                         Logger.Trace($"Port {port}: SocketException {ex.SocketErrorCode} ({responseMs}ms)");
                         return null;
@@ -428,22 +421,6 @@ namespace MSSQLand.Utilities.Discovery
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Generates ports from edges toward middle: 49152, 65535, 49153, 65534...
-        /// </summary>
-        private static int[] GenerateEdgesToMiddle(int start, int end)
-        {
-            var ports = new int[end - start + 1];
-            int low = start, high = end, i = 0;
-            while (low <= high)
-            {
-                ports[i++] = low++;
-                if (low <= high)
-                    ports[i++] = high--;
-            }
-            return ports;
         }
 
         /// <summary>
