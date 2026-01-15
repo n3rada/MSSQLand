@@ -33,12 +33,14 @@ namespace MSSQLand.Actions.FileSystem
 
             
             Logger.TaskNested($"Reading file: {_filePath}");
+            
 
             try
             {
                 string query = $@"SELECT A FROM OPENROWSET(BULK '{_filePath.Replace("'", "''")}', SINGLE_CLOB) AS R(A);";
                 string fileContent = databaseContext.QueryService.ExecuteScalar(query)?.ToString();
 
+                Logger.NewLine();
                 Console.WriteLine(fileContent);
 
                 return fileContent;
@@ -51,9 +53,18 @@ namespace MSSQLand.Actions.FileSystem
                     Logger.Error("No BULK access - requires bulk_admin role or ADMINISTER BULK OPERATIONS permission");
                 }
                 else if (ex.Message.IndexOf("Could not find", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         ex.Message.IndexOf("cannot find the path", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         ex.Message.IndexOf("error code 3", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         ex.Message.IndexOf("error code 2", StringComparison.OrdinalIgnoreCase) >= 0 ||
                          ex.Message.IndexOf("Cannot open", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    Logger.Error($"File not found or access denied: {_filePath}");
+                    Logger.Error($"File or path not found: {_filePath}");
+                }
+                else if (ex.Message.IndexOf("error code 5", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         ex.Message.IndexOf("Access is denied", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    Logger.Error($"Access denied: {_filePath}");
+                    Logger.WarningNested("SQL Server service account does not have read access to this file");
                 }
                 else
                 {
