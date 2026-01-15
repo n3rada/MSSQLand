@@ -178,7 +178,7 @@ namespace MSSQLand.Actions.Database
                     catch (Exception ex)
                     {
                         // Skip permission-denied errors silently (common for VIEW SERVER STATE, etc.)
-                        if (ex.Message.Contains("permission", StringComparison.OrdinalIgnoreCase))
+                        if (ex.Message.IndexOf("permission", StringComparison.OrdinalIgnoreCase) >= 0)
                         {
                             Logger.Debug($"Skipping '{key}': {ex.Message}");
                         }
