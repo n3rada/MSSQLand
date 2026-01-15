@@ -112,11 +112,26 @@ namespace MSSQLand
                         targetInfo = $"{arguments.Host.Hostname} ({arguments.ResolvedIpAddress})";
                     }
 
+                    // Pre-calculate all banner content to determine max width
+                    string headerContent = $"From: {Environment.MachineName}\n{DateTime.Now:HH:mm:ss} UTC{formattedOffset} ({localTimeZone.Id})\nTo: {targetInfo}";
+                    string startContent = $"Start at {startTime:yyyy-MM-dd HH:mm:ss:fffff} UTC";
+                    
+                    // Find the longest line across all banners
+                    int maxLineLength = 0;
+                    foreach (string line in headerContent.Split('\n'))
+                    {
+                        if (line.Length > maxLineLength) maxLineLength = line.Length;
+                    }
+                    if (startContent.Length > maxLineLength) maxLineLength = startContent.Length;
+                    
+                    // Add padding (4 spaces on each side) + 2 for border chars
+                    bannerWidth = maxLineLength + 8;
+
                     Logger.NewLine();
-                    bannerWidth = Logger.Banner($"From: {Environment.MachineName}\n{DateTime.Now:HH:mm:ss} UTC{formattedOffset} ({localTimeZone.Id})\nTo: {targetInfo}");
+                    Logger.Banner(headerContent, totalWidth: bannerWidth);
                     Logger.NewLine();
 
-                    Logger.Banner($"Start at {startTime:yyyy-MM-dd HH:mm:ss:fffff} UTC", totalWidth: bannerWidth);
+                    Logger.Banner(startContent, totalWidth: bannerWidth);
                     Logger.NewLine();
                     
                     executionStarted = true;
