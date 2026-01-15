@@ -20,6 +20,22 @@ namespace MSSQLand.Actions.FileSystem
         [ArgumentMetadata(Position = 0, Required = false, Description = "Full path to the file to read (default: C:\\Windows\\win.ini)")]
         private string _filePath = DefaultFilePath;
 
+        [ArgumentMetadata(Named = "b64", Description = "Output file content as base64 encoded (useful for binary files)")]
+        private bool _base64 = false;
+
+        public override void ValidateArguments(string[] args)
+        {
+            var (namedArgs, positionalArgs) = ParseActionArguments(args);
+
+            _filePath = GetPositionalArgument(positionalArgs, 0, DefaultFilePath);
+            if (string.IsNullOrWhiteSpace(_filePath))
+            {
+                _filePath = DefaultFilePath;
+            }
+
+            _base64 = namedArgs.ContainsKey("b64") || namedArgs.ContainsKey("base64");
+        }
+
         /// <summary>
         /// Executes the Read action to fetch the content of a file using OPENROWSET BULK.
         /// </summary>
@@ -31,19 +47,36 @@ namespace MSSQLand.Actions.FileSystem
                 _filePath = DefaultFilePath;
             }
 
-            
             Logger.TaskNested($"Reading file: {_filePath}");
-            
+            if (_base64)
+            {
+                Logger.Info("Output: base64 encoded");
+            }
 
             try
             {
-                string query = $@"SELECT A FROM OPENROWSET(BULK '{_filePath.Replace("'", "''")}', SINGLE_CLOB) AS R(A);";
-                string fileContent = databaseContext.QueryService.ExecuteScalar(query)?.ToString();
+                string escapedPath = _filePath.Replace("'", "''");
+                string output;
+
+                if (_base64)
+                {
+                    // Read as binary and convert to base64 in SQL
+                    string query = $@"
+SELECT CAST('' AS XML).value('xs:base64Binary(sql:column(""B""))', 'VARCHAR(MAX)')
+FROM (SELECT A AS B FROM OPENROWSET(BULK '{escapedPath}', SINGLE_BLOB) AS R(A)) AS T;";
+                    output = databaseContext.QueryService.ExecuteScalar(query)?.ToString();
+                }
+                else
+                {
+                    // Read as text (original behavior)
+                    string query = $@"SELECT A FROM OPENROWSET(BULK '{escapedPath}', SINGLE_CLOB) AS R(A);";
+                    output = databaseContext.QueryService.ExecuteScalar(query)?.ToString();
+                }
 
                 Logger.NewLine();
-                Console.WriteLine(fileContent);
+                Console.WriteLine(output);
 
-                return fileContent;
+                return output;
             }
             catch (Exception ex)
             {
