@@ -177,8 +177,16 @@ namespace MSSQLand.Actions.Database
                     }
                     catch (Exception ex)
                     {
-                        Logger.Warning($"Failed to execute '{key}': {ex.Message}");
-                        results[key] = $"ERROR: {ex.Message}";
+                        // Skip permission-denied errors silently (common for VIEW SERVER STATE, etc.)
+                        if (ex.Message.Contains("permission", StringComparison.OrdinalIgnoreCase))
+                        {
+                            Logger.Debug($"Skipping '{key}': {ex.Message}");
+                        }
+                        else
+                        {
+                            Logger.Warning($"Failed to execute '{key}': {ex.Message}");
+                            results[key] = $"ERROR: {ex.Message}";
+                        }
                     }
                 }
             }
