@@ -58,7 +58,7 @@ namespace MSSQLand.Utilities.Discovery
         private const int EphemeralStart = 49152;
         private const int EphemeralEnd = 65535;
 
-        private const int DefaultTimeoutMs = 400;
+        private const int DefaultTimeoutMs = 250;
         private const int MinTimeoutMs = 50;
         private const int DefaultParallelism = 500;
 
