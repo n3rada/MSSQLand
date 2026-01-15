@@ -81,9 +81,16 @@ namespace MSSQLand.Utilities
             foreach (var group in groupedActions)
             {
                 Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.Write($"[{group.Key}] ");
+                Console.WriteLine($"[{group.Key}]");
                 Console.ResetColor();
-                Console.WriteLine(string.Join(", ", group.Value));
+                
+                // Display max 10 actions per line
+                var actionsList = group.Value;
+                for (int i = 0; i < actionsList.Count; i += 10)
+                {
+                    var chunk = actionsList.Skip(i).Take(10);
+                    Console.WriteLine(string.Join(", ", chunk));
+                }
             }
             Console.WriteLine();
         }
