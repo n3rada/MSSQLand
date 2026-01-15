@@ -181,8 +181,9 @@ namespace MSSQLand.Actions.Remote
 
                 if (!string.IsNullOrEmpty(impersonateTarget))
                 {
-                    Logger.Warning("You cannot retrieve impersonated user credential since it is not mapped to your fake ADSI server");
-                    exploitQuery = $"REVERT; {exploitQuery}";
+                    Logger.Warning("You cannot retrieve impersonated user credentials since they are not mapped to your fake ADSI server");
+                    Logger.WarningNested("The impersonated context uses the original user's authentication method");
+                    return null;
                 }
 
                 try
