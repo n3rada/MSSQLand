@@ -60,6 +60,9 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 13, LongName = "limit", Description = "Limit number of results (default: 25)")]
         private int _limit = 25;
 
+        [ArgumentMetadata(Position = 14, LongName = "count", Description = "Count matching devices only (bypasses limit, no details)")]
+        private bool _countOnly = false;
+
         public override void ValidateArguments(string[] args)
         {
             BindArguments(args);
@@ -86,9 +89,10 @@ namespace MSSQLand.Actions.ConfigMgr
             string activeOnlyMsg = _activeOnly ? " (active only)" : "";
             string lastSeenMsg = _lastSeenDays > 0 ? $" (seen in last {_lastSeenDays} days)" : "";
             string userSeenMsg = _userSeenDays > 0 ? $" (user seen in last {_userSeenDays} days)" : "";
+            string countMsg = _countOnly ? " (count only)" : "";
 
-            Logger.TaskNested($"Enumerating ConfigMgr devices{deviceMsg}{domainMsg}{usernameMsg}{ipMsg}{collectionMsg}{dnMsg}{onlineMsg}{withUsersMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeenMsg}{userSeenMsg}");
-            Logger.TaskNested($"Limit: {_limit}");
+            Logger.TaskNested($"Enumerating ConfigMgr devices{deviceMsg}{domainMsg}{usernameMsg}{ipMsg}{collectionMsg}{dnMsg}{onlineMsg}{withUsersMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeenMsg}{userSeenMsg}{countMsg}");
+            if (!_countOnly) Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -230,6 +234,22 @@ namespace MSSQLand.Actions.ConfigMgr
                             WHERE cu_recent.ResourceID = sys.ResourceID
                             AND cu_recent.LastConsoleUse0 >= DATEADD(DAY, -{_userSeenDays}, GETDATE())
                         )";
+                    }
+
+                    // Count-only mode: just return the count
+                    if (_countOnly)
+                    {
+                        string countQuery = $@"
+SELECT COUNT(DISTINCT sys.ResourceID) AS DeviceCount
+FROM [{db}].dbo.v_R_System sys
+LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
+LEFT JOIN [{db}].dbo.v_CH_ClientSummary chs ON sys.ResourceID = chs.ResourceID
+{whereClause}";
+
+                        DataTable countTable = databaseContext.QueryService.ExecuteTable(countQuery);
+                        int count = Convert.ToInt32(countTable.Rows[0]["DeviceCount"]);
+                        Logger.Success($"Matching devices: {count}");
+                        continue;
                     }
 
                     string topClause = _limit > 0 ? $"TOP {_limit}" : "";
