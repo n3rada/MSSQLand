@@ -48,6 +48,7 @@ namespace MSSQLand.Services
 
         private LinkedServers _linkedServers = new();
         private const int MAX_RETRIES = 3;
+        private static bool _rpcWarningShown = false;
 
         /// <summary>
         /// Per-server Azure SQL detection cache.
@@ -198,7 +199,11 @@ SELECT @result AS Result, @error AS Error;";
 
                 if (ex.Message.Contains("not configured for RPC"))
                 {
-                    Logger.Warning("RPC unavailable. Switching to OPENQUERY.");
+                    if (!_rpcWarningShown)
+                    {
+                        Logger.Warning("RPC unavailable. Switching to OPENQUERY.");
+                        _rpcWarningShown = true;
+                    }
                     _linkedServers.UseRemoteProcedureCall = false;
                     return ExecuteWithHandling(query, executeReader, timeout, retryCount + 1);
                 }
