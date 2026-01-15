@@ -127,7 +127,7 @@ namespace MSSQLand.Actions.Administration
         }
 
         /// <summary>
-        /// Displays the results in a formatted table.
+        /// Displays the results in a formatted table, ordered by enabled status first.
         /// </summary>
         private void DisplayResults(List<Dictionary<string, object>> results)
         {
@@ -137,7 +137,12 @@ namespace MSSQLand.Actions.Administration
             dt.Columns.Add("Value", typeof(string));
             dt.Columns.Add("Enabled", typeof(string));
 
-            foreach (var result in results)
+            // Sort: enabled first, then alphabetically by option name
+            var sortedResults = results
+                .OrderByDescending(r => r["Activated"].ToString() == "True")
+                .ThenBy(r => r["Feature"].ToString());
+
+            foreach (var result in sortedResults)
             {
                 dt.Rows.Add(
                     result["Feature"],
