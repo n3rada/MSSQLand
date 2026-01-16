@@ -74,7 +74,8 @@ namespace MSSQLand.Actions.Remote
 
             Logger.TaskNested("Exploring all possible linked server chains");
 
-            // Suppress Info/Task/Success logs during exploration to reduce noise
+            // Suppress Info/Task/Success/Trace logs during exploration to reduce noise
+            // Only show warnings (real errors) and above
             LogLevel originalLogLevel = Logger.MinimumLogLevel;
             Logger.MinimumLogLevel = LogLevel.Warning;
 
@@ -104,12 +105,12 @@ namespace MSSQLand.Actions.Remote
 
             string initialServerEntry = $"{databaseContext.Server.Hostname} ({databaseContext.Server.SystemUser} [{databaseContext.Server.MappedUser}])";
 
-            Logger.Debug($"Initial server entry: {initialServerEntry}");
+            Logger.Trace($"Initial server entry: {initialServerEntry}");
 
             if (!databaseContext.QueryService.LinkedServers.IsEmpty)
             {
                 initialServerEntry += " -> " + string.Join(" -> ", databaseContext.QueryService.LinkedServers.GetChainParts()) + $" ({databaseContext.UserService.SystemUser} [{databaseContext.UserService.MappedUser}])";
-                Logger.DebugNested($"Chain added: {initialServerEntry}");
+                Logger.TraceNested($"Chain added: {initialServerEntry}");
             }
 
             Logger.Success("Accessible linked servers chain");
@@ -168,12 +169,11 @@ namespace MSSQLand.Actions.Remote
             // Check maximum depth limit
             if (currentDepth >= _maxDepth)
             {
-                Logger.Warning($"Maximum recursion depth ({_maxDepth}) reached at {targetServer}");
-                Logger.WarningNested("Stopping exploration to prevent excessive recursion. Use argument to increase depth.");
+                Logger.TraceNested($"Maximum recursion depth ({_maxDepth}) reached at {targetServer}");
                 return;
             }
 
-            Logger.Debug($"Accessing linked server: {targetServer} (depth: {currentDepth})");
+            Logger.Trace($"Accessing linked server: {targetServer} (depth: {currentDepth})");
 
             // Save current state for restoration
             LinkedServers previousLinkedServers = new LinkedServers(databaseContext.QueryService.LinkedServers);
@@ -183,15 +183,15 @@ namespace MSSQLand.Actions.Remote
             {
                 // Check if we are already logged in with the correct user
                 var (currentUser, systemUser) = databaseContext.UserService.GetInfo();
-                Logger.DebugNested($"[{databaseContext.QueryService.ExecutionServer.Hostname}] LoggedIn: {systemUser}, Mapped: {currentUser}");
+                Logger.TraceNested($"[{databaseContext.QueryService.ExecutionServer.Hostname}] LoggedIn: {systemUser}, Mapped: {currentUser}");
 
                 string impersonatedUser = null;
 
                 // Only attempt impersonation if expected login is not current context and doesn't match current user
                 if (expectedLocalLogin != "<Current Context>" && systemUser != expectedLocalLogin)
                 {
-                    Logger.DebugNested($"Current user '{systemUser}' does not match expected local login '{expectedLocalLogin}'");
-                    Logger.DebugNested("Attempting impersonation");
+                    Logger.TraceNested($"Current user '{systemUser}' does not match expected local login '{expectedLocalLogin}'");
+                    Logger.TraceNested("Attempting impersonation");
 
                     if (databaseContext.UserService.CanImpersonate(expectedLocalLogin))
                     {
@@ -201,17 +201,18 @@ namespace MSSQLand.Actions.Remote
                         // Track impersonation in stack for proper LIFO reversion
                         _impersonationStack[chainId].Push(expectedLocalLogin);
                         
-                        Logger.DebugNested($"[{databaseContext.QueryService.ExecutionServer.Hostname}] Impersonated '{expectedLocalLogin}' to access {targetServer}.");
+                        Logger.TraceNested($"[{databaseContext.QueryService.ExecutionServer.Hostname}] Impersonated '{expectedLocalLogin}' to access {targetServer}.");
                     }
                     else
                     {
-                        Logger.Warning($"[{databaseContext.QueryService.ExecutionServer.Hostname}] Cannot impersonate {expectedLocalLogin} on {targetServer}. Skipping.");
+                        // Silently skip if impersonation not possible - this is expected for most servers
+                        Logger.TraceNested($"Cannot impersonate '{expectedLocalLogin}' - skipping {targetServer}");
                         return;
                     }
                 }
                 else if (expectedLocalLogin == "<Current Context>")
                 {
-                    Logger.DebugNested("Linked server uses current security context (no explicit login mapping)");
+                    Logger.TraceNested("Linked server uses current security context (no explicit login mapping)");
                 }
 
                 // Update the linked server chain
@@ -232,20 +233,19 @@ namespace MSSQLand.Actions.Remote
                 // Check for loops
                 if (_visitedStates[chainId].Contains(stateHash))
                 {
-                    Logger.Warning($"Detected loop at {targetServer} with same execution state: {currentState}");
-                    Logger.WarningNested("Skipping to prevent infinite recursion.");
+                    Logger.TraceNested($"Detected loop at {targetServer} - skipping");
                     return;
                 }
 
                 // Mark this state as visited
                 _visitedStates[chainId].Add(stateHash);
 
-                Logger.Debug($"Adding mapping for {targetServer}");
-                Logger.DebugNested($"LoggedIn User: {currentState.SystemUser}");
-                Logger.DebugNested($"Mapped User: {currentState.MappedUser}");
-                Logger.DebugNested($"Is Sysadmin: {currentState.IsSysadmin}");
-                Logger.DebugNested($"Impersonated User: {impersonatedUser}");
-                Logger.DebugNested($"State Hash: {stateHash}");
+                Logger.Trace($"Adding mapping for {targetServer}");
+                Logger.TraceNested($"LoggedIn User: {currentState.SystemUser}");
+                Logger.TraceNested($"Mapped User: {currentState.MappedUser}");
+                Logger.TraceNested($"Is Sysadmin: {currentState.IsSysadmin}");
+                Logger.TraceNested($"Impersonated User: {impersonatedUser}");
+                Logger.TraceNested($"State Hash: {stateHash}");
 
                 _serverMapping[chainId].Add(new Dictionary<string, string>
                 {
@@ -255,14 +255,14 @@ namespace MSSQLand.Actions.Remote
                     { "ImpersonatedUser", !string.IsNullOrEmpty(impersonatedUser) ? $" {impersonatedUser} " : "-" }
                 });
 
-                Logger.DebugNested($"[{databaseContext.QueryService.ExecutionServer.Hostname}] LoggedIn: {remoteLoggedInUser}, Mapped: {mappedUser}");
+                Logger.TraceNested($"[{databaseContext.QueryService.ExecutionServer.Hostname}] LoggedIn: {remoteLoggedInUser}, Mapped: {mappedUser}");
 
                 // Retrieve linked servers from remote server
                 DataTable remoteLinkedServers = GetLinkedServersWithTimeout(databaseContext, targetServer);
 
                 if (remoteLinkedServers == null || remoteLinkedServers.Rows.Count == 0)
                 {
-                    Logger.Debug($"No further linked servers found on {targetServer}");
+                    Logger.Trace($"No further linked servers found on {targetServer}");
                     return;
                 }
 
@@ -333,7 +333,7 @@ namespace MSSQLand.Actions.Remote
             }
 
             int count = _impersonationStack[chainId].Count;
-            Logger.Debug($"Reverting {count} impersonation(s) in LIFO order");
+            Logger.Trace($"Reverting {count} impersonation(s) in LIFO order");
 
             while (_impersonationStack[chainId].Count > 0)
             {
@@ -341,7 +341,7 @@ namespace MSSQLand.Actions.Remote
                 try
                 {
                     userService.RevertImpersonation();
-                    Logger.DebugNested($"Reverted impersonation of '{impersonatedUser}'");
+                    Logger.TraceNested($"Reverted impersonation of '{impersonatedUser}'");
                 }
                 catch (Exception ex)
                 {
@@ -366,7 +366,7 @@ namespace MSSQLand.Actions.Remote
         ORDER BY srv.name;";
 
             DataTable results = databaseContext.QueryService.ExecuteTable(query);
-            Logger.Debug(OutputFormatter.ConvertDataTable(results));
+            Logger.Trace(OutputFormatter.ConvertDataTable(results));
             return results;
         }
 
