@@ -68,8 +68,8 @@ FROM (SELECT A AS B FROM OPENROWSET(BULK '{escapedPath}', SINGLE_BLOB) AS R(A)) 
                 }
                 else
                 {
-                    // Read as text (original behavior)
-                    string query = $@"SELECT A FROM OPENROWSET(BULK '{escapedPath}', SINGLE_CLOB) AS R(A);";
+                    // SINGLE_NCLOB handles both ANSI and Unicode text files
+                    string query = $@"SELECT A FROM OPENROWSET(BULK '{escapedPath}', SINGLE_NCLOB) AS R(A);";
                     output = databaseContext.QueryService.ExecuteScalar(query)?.ToString();
                 }
 
