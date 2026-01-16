@@ -29,9 +29,6 @@ namespace MSSQLand.Actions.Remote
         private readonly List<List<Dictionary<string, string>>> _discoveredChains = new();
 
         [ExcludeFromArguments]
-        private readonly HashSet<string> _visitedStates = new();
-
-        [ExcludeFromArguments]
         private const int DEFAULT_MAX_DEPTH = 10;
 
         [ArgumentMetadata(Position = 0, Description = "Maximum recursion depth (default: 10, max: 50)")]
@@ -60,7 +57,7 @@ namespace MSSQLand.Actions.Remote
                 return null;
             }
 
-            Logger.TaskNested($"Found {linkedServersTable.Rows.Count} linked server(s), exploring chains...");
+            Logger.TaskNested($"Found {linkedServersTable.Rows.Count} linked server(s), exploring chains");
 
             // Suppress logs during exploration
             LogLevel originalLogLevel = Logger.MinimumLogLevel;
@@ -74,13 +71,14 @@ namespace MSSQLand.Actions.Remote
                     ? null 
                     : row["Local Login"].ToString();
 
-                // Start a new chain
+                // Start a new chain with its own visited states for loop detection
                 List<Dictionary<string, string>> currentChain = new();
+                HashSet<string> visitedInChain = new();
                 
                 // Create a temp context to not pollute the original
                 DatabaseContext tempContext = databaseContext.Copy();
                 
-                ExploreServer(tempContext, remoteServer, localLogin, currentChain, currentDepth: 0);
+                ExploreServer(tempContext, remoteServer, localLogin, currentChain, visitedInChain, currentDepth: 0);
             }
 
             // Restore original log level
@@ -145,9 +143,10 @@ namespace MSSQLand.Actions.Remote
         /// Recursively explores linked servers.
         /// If a link requires a specific local login different from current user, attempts impersonation.
         /// Impersonation works at any depth because it uses the /user syntax in the chain path.
+        /// Loop detection is per-chain: same server+user in the current path = loop, skip.
         /// </summary>
         private void ExploreServer(DatabaseContext databaseContext, string targetServer, string requiredLocalLogin, 
-            List<Dictionary<string, string>> currentChain, int currentDepth)
+            List<Dictionary<string, string>> currentChain, HashSet<string> visitedInChain, int currentDepth)
         {
             if (currentDepth >= _maxDepth)
             {
@@ -189,16 +188,17 @@ namespace MSSQLand.Actions.Remote
                 // Query user info through the chain
                 var (mappedUser, remoteLoggedInUser) = databaseContext.UserService.GetInfo();
 
-                // Create state hash for loop detection
+                // Create state hash for loop detection (server + user context)
                 ServerExecutionState currentState = ServerExecutionState.FromContext(targetServer, databaseContext.UserService);
                 string stateHash = currentState.GetStateHash();
 
-                if (_visitedStates.Contains(stateHash))
+                // Check for loop in THIS chain path only
+                if (visitedInChain.Contains(stateHash))
                 {
-                    // Loop detected - skip
+                    // Loop detected in current path - skip
                     return;
                 }
-                _visitedStates.Add(stateHash);
+                visitedInChain.Add(stateHash);
 
                 // Add this server to current chain
                 var chainEntry = new Dictionary<string, string>
@@ -227,6 +227,9 @@ namespace MSSQLand.Actions.Remote
 
                         // Create a copy of current chain for this branch
                         List<Dictionary<string, string>> branchChain = new List<Dictionary<string, string>>(currentChain);
+                        
+                        // Copy the visited states for this branch (each branch has its own path history)
+                        HashSet<string> branchVisited = new HashSet<string>(visitedInChain);
 
                         // Create a fresh context copy for this branch
                         DatabaseContext branchContext = databaseContext.Copy();
@@ -234,7 +237,7 @@ namespace MSSQLand.Actions.Remote
                         branchContext.QueryService.ExecutionServer = databaseContext.QueryService.ExecutionServer;
 
                         // Explore recursively - pass the required local login so impersonation can happen at any depth
-                        ExploreServer(branchContext, nextServer, nextLocalLogin, branchChain, currentDepth + 1);
+                        ExploreServer(branchContext, nextServer, nextLocalLogin, branchChain, branchVisited, currentDepth + 1);
                     }
                 }
 
@@ -259,8 +262,9 @@ namespace MSSQLand.Actions.Remote
             {
                 return GetLinkedServers(databaseContext);
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Warning($"Failed to enumerate links on {serverName}: {ex.Message}");
                 return null;
             }
         }
