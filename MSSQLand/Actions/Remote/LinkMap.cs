@@ -56,9 +56,13 @@ namespace MSSQLand.Actions.Remote
 
             Logger.TaskNested($"Found {linkedServersTable.Rows.Count} linked server(s), exploring chains");
 
-            // Suppress logs during exploration
+            // Only suppress logs if user didn't explicitly request verbose/trace output
             LogLevel originalLogLevel = Logger.MinimumLogLevel;
-            Logger.MinimumLogLevel = LogLevel.Warning;
+            bool suppressLogs = originalLogLevel > LogLevel.Trace;
+            if (suppressLogs)
+            {
+                Logger.MinimumLogLevel = LogLevel.Warning;
+            }
 
             // Start exploration from each linked server
             foreach (DataRow row in linkedServersTable.Rows)
@@ -78,8 +82,11 @@ namespace MSSQLand.Actions.Remote
                 ExploreServer(tempContext, remoteServer, localLogin, currentChain, visitedInChain, currentDepth: 0);
             }
 
-            // Restore original log level
-            Logger.MinimumLogLevel = originalLogLevel;
+            // Restore original log level if we suppressed
+            if (suppressLogs)
+            {
+                Logger.MinimumLogLevel = originalLogLevel;
+            }
 
             // Display results
             string initialServerEntry = $"{databaseContext.Server.Hostname} ({databaseContext.Server.SystemUser} [{databaseContext.Server.MappedUser}])";
@@ -245,9 +252,10 @@ namespace MSSQLand.Actions.Remote
                 // Remove this server from chain for backtracking
                 currentChain.RemoveAt(currentChain.Count - 1);
             }
-            catch
+            catch (Exception ex)
             {
-                // Server unreachable or error - skip silently
+                // Log the error so we can see why exploration failed
+                Logger.TraceNested($"Failed to explore {targetServer}: {ex.Message}");
             }
             finally
             {
