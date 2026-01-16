@@ -17,31 +17,19 @@ namespace MSSQLand.Actions.Remote
     /// This action:
     /// - Enumerates all directly linked servers
     /// - Recursively explores each linked server's own linked servers
-    /// - Handles user impersonation with proper stack management
+    /// - Attempts impersonation when a link requires a specific local login (works at any depth via /user syntax)
     /// - Detects and prevents infinite loops using hash-based state tracking
     /// - Maps complete chains showing: Server -> User -> LinkedServer -> User -> ...
     /// - Respects maximum recursion depth to prevent runaway exploration
     /// - Handles slow/unresponsive servers with timeout mechanism
-    /// - Properly restores execution context after recursion
-    /// 
-    /// Key Features:
-    /// - Loop detection: Uses ServerExecutionState hashing (hostname + users + sysadmin) to prevent infinite recursion
-    /// - Impersonation stack: Tracks and properly reverts all impersonations in LIFO order
-    /// - Depth limiting: Configurable maximum depth (default: 10 levels)
-    /// - Timeout handling: Leverages QueryService's built-in timeout with exponential backoff
-    /// - State restoration: Restores LinkedServers chain and ExecutionServer after each recursion
-    /// - Graceful degradation: Continues mapping accessible paths when servers are unreachable
     /// </summary>
     internal class LinkMap : BaseAction
     {
         [ExcludeFromArguments]
-        private readonly Dictionary<Guid, List<Dictionary<string, string>>> _serverMapping = new();
+        private readonly List<List<Dictionary<string, string>>> _discoveredChains = new();
 
         [ExcludeFromArguments]
-        private readonly Dictionary<Guid, HashSet<string>> _visitedStates = new();
-
-        [ExcludeFromArguments]
-        private readonly Dictionary<Guid, Stack<string>> _impersonationStack = new();
+        private readonly HashSet<string> _visitedStates = new();
 
         [ExcludeFromArguments]
         private const int DEFAULT_MAX_DEPTH = 10;
@@ -55,7 +43,7 @@ namespace MSSQLand.Actions.Remote
 
             if (_maxDepth < 1 || _maxDepth > 50)
             {
-                throw new ArgumentException("Maximum depth must be between 1 and 50. Example: /a:links explore 15");
+                throw new ArgumentException("Maximum depth must be between 1 and 50.");
             }
         }
 
@@ -72,79 +60,76 @@ namespace MSSQLand.Actions.Remote
                 return null;
             }
 
-            Logger.TaskNested("Exploring all possible linked server chains");
+            Logger.TaskNested($"Found {linkedServersTable.Rows.Count} linked server(s), exploring chains...");
 
-            // Suppress Info/Task/Success/Trace logs during exploration to reduce noise
-            // Only show warnings (real errors) and above
+            // Suppress logs during exploration
             LogLevel originalLogLevel = Logger.MinimumLogLevel;
             Logger.MinimumLogLevel = LogLevel.Warning;
 
+            // Start exploration from each linked server
             foreach (DataRow row in linkedServersTable.Rows)
             {
                 string remoteServer = row["Link"].ToString();
                 string localLogin = row["Local Login"] == DBNull.Value || string.IsNullOrEmpty(row["Local Login"].ToString()) 
-                    ? "<Current Context>" 
+                    ? null 
                     : row["Local Login"].ToString();
 
-                Guid chainId = Guid.NewGuid();
-                _serverMapping[chainId] = new List<Dictionary<string, string>>();
-                _visitedStates[chainId] = new HashSet<string>();
-                _impersonationStack[chainId] = new Stack<string>();
-
-                DatabaseContext tempDatabaseContext = databaseContext.Copy();
-
-                // Start exploration with depth 0
-                ExploreServer(tempDatabaseContext, remoteServer, localLogin, chainId, currentDepth: 0);
-
-                // Revert all impersonations in LIFO order
-                RevertAllImpersonations(tempDatabaseContext.UserService, chainId);
+                // Start a new chain
+                List<Dictionary<string, string>> currentChain = new();
+                
+                // Create a temp context to not pollute the original
+                DatabaseContext tempContext = databaseContext.Copy();
+                
+                ExploreServer(tempContext, remoteServer, localLogin, currentChain, currentDepth: 0);
             }
 
             // Restore original log level
             Logger.MinimumLogLevel = originalLogLevel;
 
+            // Display results
             string initialServerEntry = $"{databaseContext.Server.Hostname} ({databaseContext.Server.SystemUser} [{databaseContext.Server.MappedUser}])";
-
-            Logger.Trace($"Initial server entry: {initialServerEntry}");
 
             if (!databaseContext.QueryService.LinkedServers.IsEmpty)
             {
-                initialServerEntry += " -> " + string.Join(" -> ", databaseContext.QueryService.LinkedServers.GetChainParts()) + $" ({databaseContext.UserService.SystemUser} [{databaseContext.UserService.MappedUser}])";
-                Logger.TraceNested($"Chain added: {initialServerEntry}");
+                initialServerEntry += " -> " + string.Join(" -> ", databaseContext.QueryService.LinkedServers.GetChainParts()) 
+                    + $" ({databaseContext.UserService.SystemUser} [{databaseContext.UserService.MappedUser}])";
             }
 
-            Logger.Success("Accessible linked servers chain");
-
-            foreach (var chainEntry in _serverMapping)
+            if (_discoveredChains.Count == 0)
             {
-                List<Dictionary<string, string>> chainMapping = chainEntry.Value;
+                Logger.Warning("No accessible linked server chains found.");
+                return null;
+            }
+
+            Logger.Success($"Found {_discoveredChains.Count} accessible chain(s)");
+
+            foreach (var chain in _discoveredChains)
+            {
+                if (chain.Count == 0) continue;
+
                 List<string> formattedLines = new() { initialServerEntry };
-                
-                // Build a proper LinkedServers chain to use its formatting logic
                 List<Server> serverChainList = new();
 
-                foreach (var entry in chainMapping)
+                foreach (var entry in chain)
                 {
                     string serverName = entry["ServerName"];
                     string loggedIn = entry["LoggedIn"];
                     string mapped = entry["Mapped"];
-                    string impersonatedUser = entry["ImpersonatedUser"].Trim();
+                    string impersonatedUser = entry.ContainsKey("ImpersonatedUser") ? entry["ImpersonatedUser"].Trim() : "-";
 
-                    formattedLines.Add($"-{impersonatedUser}-> {serverName} ({loggedIn} [{mapped}])");
+                    formattedLines.Add($"-{(impersonatedUser != "-" ? $" {impersonatedUser} " : "-")}-> {serverName} ({loggedIn} [{mapped}])");
                     
-                    // Add to the server chain for proper formatting (brackets applied in GetChainArguments())
                     serverChainList.Add(new Server
                     {
                         Hostname = serverName,
                         ImpersonationUser = impersonatedUser != "-" ? impersonatedUser : null,
-                        Database = null // LinkMap doesn't track database context yet
+                        Database = null
                     });
                 }
 
                 Console.WriteLine();
                 Console.WriteLine(string.Join(" ", formattedLines));
                 
-                // Show command to reproduce this chain using proper formatting
                 if (serverChainList.Count > 0)
                 {
                     LinkedServers chainForDisplay = new LinkedServers(serverChainList.ToArray());
@@ -153,27 +138,21 @@ namespace MSSQLand.Actions.Remote
                 }
             }
 
-            return _serverMapping;
+            return _discoveredChains;
         }
 
         /// <summary>
-        /// Recursively explores linked servers with proper state management.
+        /// Recursively explores linked servers.
+        /// If a link requires a specific local login different from current user, attempts impersonation.
+        /// Impersonation works at any depth because it uses the /user syntax in the chain path.
         /// </summary>
-        /// <param name="databaseContext">Current database context.</param>
-        /// <param name="targetServer">Target linked server to explore.</param>
-        /// <param name="expectedLocalLogin">Expected login for accessing the linked server.</param>
-        /// <param name="chainId">Unique identifier for the current exploration chain.</param>
-        /// <param name="currentDepth">Current recursion depth (0-based).</param>
-        private void ExploreServer(DatabaseContext databaseContext, string targetServer, string expectedLocalLogin, Guid chainId, int currentDepth)
+        private void ExploreServer(DatabaseContext databaseContext, string targetServer, string requiredLocalLogin, 
+            List<Dictionary<string, string>> currentChain, int currentDepth)
         {
-            // Check maximum depth limit
             if (currentDepth >= _maxDepth)
             {
-                Logger.TraceNested($"Maximum recursion depth ({_maxDepth}) reached at {targetServer}");
                 return;
             }
-
-            Logger.Trace($"Accessing linked server: {targetServer} (depth: {currentDepth})");
 
             // Save current state for restoration
             LinkedServers previousLinkedServers = new LinkedServers(databaseContext.QueryService.LinkedServers);
@@ -181,111 +160,90 @@ namespace MSSQLand.Actions.Remote
 
             try
             {
-                // Check if we are already logged in with the correct user
-                var (currentUser, systemUser) = databaseContext.UserService.GetInfo();
-                Logger.TraceNested($"[{databaseContext.QueryService.ExecutionServer.Hostname}] LoggedIn: {systemUser}, Mapped: {currentUser}");
-
                 string impersonatedUser = null;
 
-                // Only attempt impersonation if expected login is not current context and doesn't match current user
-                if (expectedLocalLogin != "<Current Context>" && systemUser != expectedLocalLogin)
+                // Check if we need to impersonate to take this link
+                if (!string.IsNullOrEmpty(requiredLocalLogin))
                 {
-                    Logger.TraceNested($"Current user '{systemUser}' does not match expected local login '{expectedLocalLogin}'");
-                    Logger.TraceNested("Attempting impersonation");
-
-                    if (databaseContext.UserService.CanImpersonate(expectedLocalLogin))
+                    var (_, currentSystemUser) = databaseContext.UserService.GetInfo();
+                    
+                    if (!currentSystemUser.Equals(requiredLocalLogin, StringComparison.OrdinalIgnoreCase))
                     {
-                        databaseContext.UserService.ImpersonateUser(expectedLocalLogin);
-                        impersonatedUser = expectedLocalLogin;
-                        
-                        // Track impersonation in stack for proper LIFO reversion
-                        _impersonationStack[chainId].Push(expectedLocalLogin);
-                        
-                        Logger.TraceNested($"[{databaseContext.QueryService.ExecutionServer.Hostname}] Impersonated '{expectedLocalLogin}' to access {targetServer}.");
-                    }
-                    else
-                    {
-                        // Silently skip if impersonation not possible - this is expected for most servers
-                        Logger.TraceNested($"Cannot impersonate '{expectedLocalLogin}' - skipping {targetServer}");
-                        return;
+                        // Try to impersonate - this works at any depth via EXECUTE AS through the chain
+                        try
+                        {
+                            databaseContext.UserService.ImpersonateUser(requiredLocalLogin);
+                            impersonatedUser = requiredLocalLogin;
+                        }
+                        catch
+                        {
+                            // Can't impersonate - skip this path silently
+                            return;
+                        }
                     }
                 }
-                else if (expectedLocalLogin == "<Current Context>")
-                {
-                    Logger.TraceNested("Linked server uses current security context (no explicit login mapping)");
-                }
 
-                // Update the linked server chain
+                // Add server to chain
                 databaseContext.QueryService.LinkedServers.AddToChain(targetServer);
-                // LinkedServers setter automatically creates new ExecutionServer object
 
-                // Query user info THROUGH the linked server chain
+                // Query user info through the chain
                 var (mappedUser, remoteLoggedInUser) = databaseContext.UserService.GetInfo();
 
-                // Create ServerExecutionState for loop detection - this now queries through the chain
-                ServerExecutionState currentState = ServerExecutionState.FromContext(
-                    targetServer, 
-                    databaseContext.UserService
-                );
-
+                // Create state hash for loop detection
+                ServerExecutionState currentState = ServerExecutionState.FromContext(targetServer, databaseContext.UserService);
                 string stateHash = currentState.GetStateHash();
 
-                // Check for loops
-                if (_visitedStates[chainId].Contains(stateHash))
+                if (_visitedStates.Contains(stateHash))
                 {
-                    Logger.TraceNested($"Detected loop at {targetServer} - skipping");
+                    // Loop detected - skip
                     return;
                 }
+                _visitedStates.Add(stateHash);
 
-                // Mark this state as visited
-                _visitedStates[chainId].Add(stateHash);
-
-                Logger.Trace($"Adding mapping for {targetServer}");
-                Logger.TraceNested($"LoggedIn User: {currentState.SystemUser}");
-                Logger.TraceNested($"Mapped User: {currentState.MappedUser}");
-                Logger.TraceNested($"Is Sysadmin: {currentState.IsSysadmin}");
-                Logger.TraceNested($"Impersonated User: {impersonatedUser}");
-                Logger.TraceNested($"State Hash: {stateHash}");
-
-                _serverMapping[chainId].Add(new Dictionary<string, string>
+                // Add this server to current chain
+                var chainEntry = new Dictionary<string, string>
                 {
                     { "ServerName", targetServer },
                     { "LoggedIn", currentState.SystemUser },
                     { "Mapped", currentState.MappedUser },
-                    { "ImpersonatedUser", !string.IsNullOrEmpty(impersonatedUser) ? $" {impersonatedUser} " : "-" }
-                });
+                    { "ImpersonatedUser", impersonatedUser ?? "-" }
+                };
+                currentChain.Add(chainEntry);
 
-                Logger.TraceNested($"[{databaseContext.QueryService.ExecutionServer.Hostname}] LoggedIn: {remoteLoggedInUser}, Mapped: {mappedUser}");
+                // Save this chain (make a copy)
+                _discoveredChains.Add(new List<Dictionary<string, string>>(currentChain));
 
-                // Retrieve linked servers from remote server
+                // Get linked servers from this remote server
                 DataTable remoteLinkedServers = GetLinkedServersWithTimeout(databaseContext, targetServer);
 
-                if (remoteLinkedServers == null || remoteLinkedServers.Rows.Count == 0)
+                if (remoteLinkedServers != null && remoteLinkedServers.Rows.Count > 0)
                 {
-                    Logger.Trace($"No further linked servers found on {targetServer}");
-                    return;
+                    foreach (DataRow row in remoteLinkedServers.Rows)
+                    {
+                        string nextServer = row["Link"].ToString();
+                        string nextLocalLogin = row["Local Login"] == DBNull.Value || string.IsNullOrEmpty(row["Local Login"].ToString())
+                            ? null
+                            : row["Local Login"].ToString();
+
+                        // Create a copy of current chain for this branch
+                        List<Dictionary<string, string>> branchChain = new List<Dictionary<string, string>>(currentChain);
+
+                        // Create a fresh context copy for this branch
+                        DatabaseContext branchContext = databaseContext.Copy();
+                        branchContext.QueryService.LinkedServers = new LinkedServers(databaseContext.QueryService.LinkedServers);
+                        branchContext.QueryService.ExecutionServer = databaseContext.QueryService.ExecutionServer;
+
+                        // Explore recursively - pass the required local login so impersonation can happen at any depth
+                        ExploreServer(branchContext, nextServer, nextLocalLogin, branchChain, currentDepth + 1);
+                    }
                 }
 
-                // Explore each linked server recursively
-                foreach (DataRow row in remoteLinkedServers.Rows)
-                {
-                    string nextServer = row["Link"].ToString();
-                    string nextLocalLogin = row["Local Login"].ToString();
-
-                    // Create a new context copy for each branch to avoid state pollution
-                    DatabaseContext branchContext = databaseContext.Copy();
-                    
-                    // Copy current linked servers state
-                    branchContext.QueryService.LinkedServers = new LinkedServers(databaseContext.QueryService.LinkedServers);
-                    branchContext.QueryService.ExecutionServer = databaseContext.QueryService.ExecutionServer;
-
-                    ExploreServer(branchContext, nextServer, nextLocalLogin, chainId, currentDepth + 1);
-                }
+                // Remove this server from chain for backtracking
+                currentChain.RemoveAt(currentChain.Count - 1);
             }
-            catch (Exception ex)
+            catch
             {
-                Logger.Error($"Error exploring {targetServer}: {ex.Message}");
-                Logger.ErrorNested("Continuing with next server...");
+                // Server unreachable or error - skip silently
             }
             finally
             {
@@ -295,80 +253,34 @@ namespace MSSQLand.Actions.Remote
             }
         }
 
-        /// <summary>
-        /// Retrieves linked servers with timeout handling.
-        /// </summary>
-        /// <param name="databaseContext">Current database context.</param>
-        /// <param name="serverName">Name of the server being queried.</param>
-        /// <returns>DataTable with linked servers or null on timeout/error.</returns>
         private static DataTable GetLinkedServersWithTimeout(DatabaseContext databaseContext, string serverName)
         {
             try
             {
                 return GetLinkedServers(databaseContext);
             }
-            catch (System.Data.SqlClient.SqlException ex) when (ex.Message.Contains("Timeout"))
+            catch
             {
-                Logger.Warning($"Timeout querying linked servers on {serverName}");
-                Logger.WarningNested("Server may be slow or unresponsive. Skipping further exploration.");
                 return null;
-            }
-            catch (Exception ex)
-            {
-                Logger.Warning($"Error querying linked servers on {serverName}: {ex.Message}");
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Reverts all impersonations in LIFO (Last In, First Out) order.
-        /// </summary>
-        /// <param name="userService">UserService instance.</param>
-        /// <param name="chainId">Chain identifier.</param>
-        private void RevertAllImpersonations(UserService userService, Guid chainId)
-        {
-            if (!_impersonationStack.ContainsKey(chainId) || _impersonationStack[chainId].Count == 0)
-            {
-                return;
-            }
-
-            int count = _impersonationStack[chainId].Count;
-            Logger.Trace($"Reverting {count} impersonation(s) in LIFO order");
-
-            while (_impersonationStack[chainId].Count > 0)
-            {
-                string impersonatedUser = _impersonationStack[chainId].Pop();
-                try
-                {
-                    userService.RevertImpersonation();
-                    Logger.TraceNested($"Reverted impersonation of '{impersonatedUser}'");
-                }
-                catch (Exception ex)
-                {
-                    Logger.Warning($"Failed to revert impersonation of '{impersonatedUser}': {ex.Message}");
-                }
             }
         }
 
         private static DataTable GetLinkedServers(DatabaseContext databaseContext)
         {
             string query = @"
-        SELECT 
-            srv.name AS [Link], 
-            prin.name AS [Local Login],
-            ll.remote_name AS [Remote Login]
-        FROM master.sys.servers srv
-        LEFT JOIN master.sys.linked_logins ll 
-            ON srv.server_id = ll.server_id
-        LEFT JOIN master.sys.server_principals prin 
-            ON ll.local_principal_id = prin.principal_id
-        WHERE srv.is_linked = 1
-        ORDER BY srv.name;";
+SELECT 
+    srv.name AS [Link], 
+    prin.name AS [Local Login],
+    ll.remote_name AS [Remote Login]
+FROM master.sys.servers srv
+LEFT JOIN master.sys.linked_logins ll 
+    ON srv.server_id = ll.server_id
+LEFT JOIN master.sys.server_principals prin 
+    ON ll.local_principal_id = prin.principal_id
+WHERE srv.is_linked = 1
+ORDER BY srv.name;";
 
-            DataTable results = databaseContext.QueryService.ExecuteTable(query);
-            Logger.Trace(OutputFormatter.ConvertDataTable(results));
-            return results;
+            return databaseContext.QueryService.ExecuteTable(query);
         }
-
     }
 }
