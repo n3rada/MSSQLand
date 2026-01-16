@@ -75,10 +75,7 @@ namespace MSSQLand.Actions.Database
             if (_limit > 0)
             {
                 Logger.TaskNested($"Limiting to {_limit} row(s)");
-            }
-            else
-            {
-                Logger.TaskNested("Retrieving all rows (no limit)");
+                Logger.TaskNested("Use --all to retrieve all rows");
             }
 
             // Build query with optional TOP
