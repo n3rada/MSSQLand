@@ -97,7 +97,7 @@ FROM (SELECT A AS B FROM OPENROWSET(BULK '{escapedPath}', SINGLE_BLOB) AS R(A)) 
                          ex.Message.IndexOf("Access is denied", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     Logger.Error($"Access denied: {_filePath}");
-                    Logger.WarningNested("SQL Server service account does not have read access to this file");
+                    Logger.ErrorNested("SQL Server service account does not have read access to this file");
                 }
                 else
                 {
