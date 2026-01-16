@@ -44,7 +44,6 @@ namespace MSSQLand.Actions.Remote
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Enumerating linked servers");
             Logger.TaskNested($"Maximum recursion depth: {_maxDepth}");
 
             DataTable linkedServersTable = GetLinkedServers(databaseContext);
@@ -166,7 +165,7 @@ namespace MSSQLand.Actions.Remote
                     
                     if (!currentSystemUser.Equals(requiredLocalLogin, StringComparison.OrdinalIgnoreCase))
                     {
-                        // Try to impersonate - this works at any depth via EXECUTE AS through the chain
+                        // Try to impersonate
                         try
                         {
                             databaseContext.UserService.ImpersonateUser(requiredLocalLogin);
@@ -174,7 +173,7 @@ namespace MSSQLand.Actions.Remote
                         }
                         catch
                         {
-                            // Can't impersonate - skip this path silently
+                            // Can't impersonate - skip this link
                             return;
                         }
                     }
@@ -193,9 +192,11 @@ namespace MSSQLand.Actions.Remote
                 // Check for loop in THIS chain path only
                 if (visitedInChain.Contains(stateHash))
                 {
-                    // Loop detected in current path - skip
+                    // Loop detected in current path
+                    Logger.TraceNested($"Loop detected at server '{targetServer}' with user '{currentState.SystemUser}'. Skipping to prevent infinite recursion.");
                     return;
                 }
+
                 visitedInChain.Add(stateHash);
 
                 // Add this server to current chain
@@ -213,6 +214,8 @@ namespace MSSQLand.Actions.Remote
 
                 // Get linked servers from this remote server
                 DataTable remoteLinkedServers = GetLinkedServersWithTimeout(databaseContext, targetServer);
+
+                Logger.TraceNested($"Exploring linked servers on '{targetServer}' (found {remoteLinkedServers?.Rows.Count ?? 0})");
 
                 if (remoteLinkedServers != null && remoteLinkedServers.Rows.Count > 0)
                 {
