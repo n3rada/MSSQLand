@@ -101,9 +101,7 @@ namespace MSSQLand.Actions.Execution
         /// <param name="databaseContext">The DatabaseContext instance to execute the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Executing remote file");
-
-            Logger.Info($"Executing file: {_filePath}");
+            Logger.TaskNested($"Executing remote file: {_filePath}");
 
             // If output capture is requested, force xp_cmdshell
             if (_captureOutput)
