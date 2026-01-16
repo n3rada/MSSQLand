@@ -201,7 +201,7 @@ SELECT @result AS Result, @error AS Error;";
                 {
                     if (!_rpcWarningShown)
                     {
-                        Logger.Warning("RPC unavailable. Switching to OPENQUERY.");
+                        Logger.Debug("RPC unavailable. Switching to OPENQUERY.");
                         _rpcWarningShown = true;
                     }
                     _linkedServers.UseRemoteProcedureCall = false;
