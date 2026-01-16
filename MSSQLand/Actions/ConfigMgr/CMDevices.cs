@@ -236,19 +236,36 @@ namespace MSSQLand.Actions.ConfigMgr
                         )";
                     }
 
-                    // Count-only mode: just return the count
+                    // Count-only mode: get breakdown by domain and sum for total
                     if (_countOnly)
                     {
-                        string countQuery = $@"
-SELECT COUNT(DISTINCT sys.ResourceID) AS DeviceCount
+                        string domainQuery = $@"
+SELECT 
+    ISNULL(sys.Resource_Domain_OR_Workgr0, '(No Domain)') AS Domain,
+    COUNT(DISTINCT sys.ResourceID) AS DeviceCount
 FROM [{db}].dbo.v_R_System sys
 LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
 LEFT JOIN [{db}].dbo.v_CH_ClientSummary chs ON sys.ResourceID = chs.ResourceID
-{whereClause}";
+{whereClause}
+GROUP BY sys.Resource_Domain_OR_Workgr0
+ORDER BY COUNT(DISTINCT sys.ResourceID) DESC";
 
-                        DataTable countTable = databaseContext.QueryService.ExecuteTable(countQuery);
-                        int count = Convert.ToInt32(countTable.Rows[0]["DeviceCount"]);
-                        Logger.Success($"Matching devices: {count}");
+                        DataTable domainTable = databaseContext.QueryService.ExecuteTable(domainQuery);
+                        
+                        int totalCount = 0;
+                        foreach (DataRow row in domainTable.Rows)
+                        {
+                            totalCount += Convert.ToInt32(row["DeviceCount"]);
+                        }
+                        
+                        Logger.Success($"Matching devices: {totalCount}");
+                        
+                        foreach (DataRow row in domainTable.Rows)
+                        {
+                            string domain = row["Domain"].ToString();
+                            int domainCount = Convert.ToInt32(row["DeviceCount"]);
+                            Logger.SuccessNested($"{domain}: {domainCount}");
+                        }
                         continue;
                     }
 
