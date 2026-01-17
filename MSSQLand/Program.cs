@@ -17,6 +17,7 @@ namespace MSSQLand
             // Force UTF-8 output encoding for consistent cross-platform handling
             Console.OutputEncoding = Encoding.UTF8;
             Console.InputEncoding = Encoding.UTF8;
+            
             // Parse command-line arguments
             CommandArgs arguments;
             try
