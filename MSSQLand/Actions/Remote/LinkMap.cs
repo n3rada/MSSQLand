@@ -17,8 +17,6 @@ namespace MSSQLand.Actions.Remote
         [ExcludeFromArguments]
         private readonly List<List<Dictionary<string, string>>> _discoveredChains = new();
 
-
-
         [ArgumentMetadata(Position = 0, Description = "Maximum recursion depth (default: 10, max: 50)")]
         private int _maxDepth = 10;
 
@@ -36,7 +34,7 @@ namespace MSSQLand.Actions.Remote
         {
             Logger.TaskNested($"Maximum recursion depth: {_maxDepth}");
 
-            DataTable linkedServersTable = GetLinkedServers(databaseContext);
+            DataTable linkedServersTable = QueryLinkedServers(databaseContext);
 
             if (linkedServersTable.Rows.Count == 0)
             {
@@ -61,7 +59,7 @@ namespace MSSQLand.Actions.Remote
                 // Create a temp context to not pollute the original
                 DatabaseContext tempContext = databaseContext.Copy();
                 
-                ExploreServer(tempContext, remoteServer, localLogin, currentChain, visitedInChain, currentDepth: 0);
+                ExploreLinkedServer(tempContext, remoteServer, localLogin, currentChain, visitedInChain, currentDepth: 0);
             }
 
             // Display results
@@ -125,7 +123,7 @@ namespace MSSQLand.Actions.Remote
         /// Impersonation works at any depth because it uses the /user syntax in the chain path.
         /// Loop detection is per-chain: same server+user in the current path = loop, skip.
         /// </summary>
-        private void ExploreServer(DatabaseContext databaseContext, string targetServer, string requiredLocalLogin, 
+        private void ExploreLinkedServer(DatabaseContext databaseContext, string targetServer, string requiredLocalLogin, 
             List<Dictionary<string, string>> currentChain, HashSet<string> visitedInChain, int currentDepth)
         {
             if (currentDepth >= _maxDepth)
@@ -200,7 +198,7 @@ namespace MSSQLand.Actions.Remote
                 DataTable remoteLinkedServers;
                 try
                 {
-                    remoteLinkedServers = GetLinkedServers(databaseContext);
+                    remoteLinkedServers = QueryLinkedServers(databaseContext);
                 }
                 catch (Exception ex)
                 {
@@ -223,7 +221,7 @@ namespace MSSQLand.Actions.Remote
                     DatabaseContext branchContext = databaseContext.Copy();
 
                     // Explore recursively
-                    ExploreServer(branchContext, nextServer, nextLocalLogin, branchChain, branchVisited, currentDepth + 1);
+                    ExploreLinkedServer(branchContext, nextServer, nextLocalLogin, branchChain, branchVisited, currentDepth + 1);
                 }
             }
             catch (Exception ex)
@@ -233,7 +231,7 @@ namespace MSSQLand.Actions.Remote
             }
         }
 
-        private static DataTable GetLinkedServers(DatabaseContext databaseContext)
+        private static DataTable QueryLinkedServers(DatabaseContext databaseContext)
         {
             string query = @"
 SELECT 
