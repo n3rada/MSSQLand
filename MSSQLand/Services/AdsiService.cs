@@ -14,8 +14,7 @@ namespace MSSQLand.Services
         private readonly DatabaseContext _databaseContext;
 
         public int Port = 12235;
-
-        
+     
         public string AssemblyName = "ldapServer";
         public string FunctionName = $"f_{Misc.GetRandomIdentifier()}";
         public string LibraryPath = $"l_{Misc.GetRandomIdentifier()}";
