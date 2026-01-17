@@ -17,7 +17,7 @@ namespace MSSQLand
             // Force UTF-8 output encoding for consistent cross-platform handling
             Console.OutputEncoding = Encoding.UTF8;
             Console.InputEncoding = Encoding.UTF8;
-            
+
             // Parse command-line arguments
             CommandArgs arguments;
             try
@@ -51,12 +51,13 @@ namespace MSSQLand
 
             // Authenticate
             AuthenticationService authService;
+            string connectionTarget = arguments.Host.GetConnectionTarget();
             try
             {
                 authService = new AuthenticationService(arguments.Host);
                 authService.Authenticate(
                     credentialsType: arguments.CredentialType,
-                    sqlServer: arguments.Host.GetConnectionTarget(),
+                    sqlServer: connectionTarget,
                     database: arguments.Host.Database,
                     username: arguments.Username,
                     password: arguments.Password,
@@ -81,7 +82,7 @@ namespace MSSQLand
             }
             catch (SqlException sqlEx) when (sqlEx.Number == -2 || sqlEx.Number == -1)
             {
-                Logger.Error($"Connection timeout to {arguments.Host.GetConnectionTarget()}");
+                Logger.Error($"Connection timeout to {connectionTarget}");
                 Logger.ErrorNested($"Server did not respond within {arguments.ConnectionTimeout} seconds.");
                 return 1;
             }
