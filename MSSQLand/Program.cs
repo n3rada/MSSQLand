@@ -153,7 +153,7 @@ namespace MSSQLand
                         Logger.NewLine();
                     }
 
-                    DatabaseContext databaseContext = new DatabaseContext(authService);
+                    DatabaseContext databaseContext = new(authService);
 
                     string userName, systemUser;
                     (userName, systemUser) = databaseContext.UserService.GetInfo();
@@ -163,8 +163,8 @@ namespace MSSQLand
                     Logger.Info($"Logged in on {databaseContext.Server.Hostname} as {systemUser}");
                     Logger.InfoNested($"Mapped to the user {userName}");
 
-                    // Compute effective user (Windows auth only)
-                    if (arguments.CredentialType == "windows" && databaseContext.UserService.IsDomainUser)
+                    // Compute effective user (domain users only)
+                    if (databaseContext.UserService.IsDomainUser)
                     {
                         databaseContext.UserService.ComputeEffectiveUserAndSource();
 
