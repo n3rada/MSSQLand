@@ -17,8 +17,8 @@ namespace MSSQLand.Services
 
         
         public string AssemblyName = "ldapServer";
-        public string FunctionName = $"f_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
-        public string LibraryPath = $"l_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+        public string FunctionName = $"f_{Misc.GetRandomIdentifier()}";
+        public string LibraryPath = $"l_{Misc.GetRandomIdentifier()}";
 
         public AdsiService(DatabaseContext databaseContext)
         {
@@ -31,7 +31,8 @@ namespace MSSQLand.Services
         /// <returns>A list of ADSI server names, or null if none found.</returns>
         public List<string> ListAdsiServers()
         {
-            string query = "SELECT srvname FROM master..sysservers WHERE srvproduct = 'ADSI'";
+            // Filter by ADsDSOObject provider (product name varies, provider is consistent)
+            string query = "SELECT srvname FROM master.dbo.sysservers WHERE providername = 'ADsDSOObject'";
             DataTable result = _databaseContext.QueryService.ExecuteTable(query);
 
             if (result.Rows.Count == 0)

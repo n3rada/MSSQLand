@@ -87,6 +87,21 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
+        /// Generates a random identifier string using hexadecimal characters.
+        /// Useful for creating unique names for temporary SQL objects (functions, assemblies, etc.).
+        /// </summary>
+        /// <param name="length">The length of the random string (default: 8).</param>
+        /// <returns>A random hexadecimal string of the specified length.</returns>
+        /// <example>
+        /// GetRandomIdentifier() => "a3f7c2b1"
+        /// GetRandomIdentifier(4) => "e9d2"
+        /// </example>
+        public static string GetRandomIdentifier(int length = 8)
+        {
+            return Guid.NewGuid().ToString("N").Substring(0, length);
+        }
+
+        /// <summary>
         /// Converts a nibble (4-bit value from 0 to 15) into its corresponding hexadecimal character.
         /// This method avoids allocations and conditionally returns either uppercase or lowercase letters.
         ///
