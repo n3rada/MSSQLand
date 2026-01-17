@@ -11,26 +11,16 @@ namespace MSSQLand.Actions.Remote
 {
     /// <summary>
     /// Recursively explores all accessible linked server chains, mapping execution paths.
-    /// 
-    /// This action:
-    /// - Enumerates all directly linked servers
-    /// - Recursively explores each linked server's own linked servers
-    /// - Attempts impersonation when a link requires a specific local login (works at any depth via /user syntax)
-    /// - Detects and prevents infinite loops using hash-based state tracking
-    /// - Maps complete chains showing: Server -> User -> LinkedServer -> User -> ...
-    /// - Respects maximum recursion depth to prevent runaway exploration
-    /// - Handles slow/unresponsive servers with timeout mechanism
     /// </summary>
     internal class LinkMap : BaseAction
     {
         [ExcludeFromArguments]
         private readonly List<List<Dictionary<string, string>>> _discoveredChains = new();
 
-        [ExcludeFromArguments]
-        private const int DEFAULT_MAX_DEPTH = 10;
+
 
         [ArgumentMetadata(Position = 0, Description = "Maximum recursion depth (default: 10, max: 50)")]
-        private int _maxDepth = DEFAULT_MAX_DEPTH;
+        private int _maxDepth = 10;
 
         public override void ValidateArguments(string[] args)
         {
@@ -54,15 +44,7 @@ namespace MSSQLand.Actions.Remote
                 return null;
             }
 
-            Logger.TaskNested($"Found {linkedServersTable.Rows.Count} linked server(s), exploring chains");
-
-            // Only suppress logs if user didn't explicitly request verbose/trace output
-            LogLevel originalLogLevel = Logger.MinimumLogLevel;
-            bool suppressLogs = originalLogLevel > LogLevel.Trace;
-            if (suppressLogs)
-            {
-                Logger.MinimumLogLevel = LogLevel.Warning;
-            }
+            Logger.TaskNested($"Linked servers on initial server: {linkedServersTable.Rows.Count}");
 
             // Start exploration from each linked server
             foreach (DataRow row in linkedServersTable.Rows)
@@ -80,12 +62,6 @@ namespace MSSQLand.Actions.Remote
                 DatabaseContext tempContext = databaseContext.Copy();
                 
                 ExploreServer(tempContext, remoteServer, localLogin, currentChain, visitedInChain, currentDepth: 0);
-            }
-
-            // Restore original log level if we suppressed
-            if (suppressLogs)
-            {
-                Logger.MinimumLogLevel = originalLogLevel;
             }
 
             // Display results
@@ -154,12 +130,10 @@ namespace MSSQLand.Actions.Remote
         {
             if (currentDepth >= _maxDepth)
             {
+                Logger.TraceNested($"Maximum depth {_maxDepth} reached at server '{targetServer}'. Backtracking."); 
                 return;
             }
 
-            // Save current state for restoration
-            LinkedServers previousLinkedServers = new LinkedServers(databaseContext.QueryService.LinkedServers);
-            Server previousExecutionServer = databaseContext.QueryService.ExecutionServer;
 
             try
             {
@@ -168,10 +142,12 @@ namespace MSSQLand.Actions.Remote
                 // Check if we need to impersonate to take this link
                 if (!string.IsNullOrEmpty(requiredLocalLogin))
                 {
+                    Logger.TraceNested($"Link to '{targetServer}' requires local login '{requiredLocalLogin}'");    
                     var (_, currentSystemUser) = databaseContext.UserService.GetInfo();
                     
                     if (!currentSystemUser.Equals(requiredLocalLogin, StringComparison.OrdinalIgnoreCase))
                     {
+                        Logger.TraceNested($"Impersonating user '{requiredLocalLogin}' on server '{targetServer}'");
                         // Try to impersonate
                         try
                         {
@@ -180,7 +156,7 @@ namespace MSSQLand.Actions.Remote
                         }
                         catch
                         {
-                            // Can't impersonate - skip this link
+                            Logger.TraceNested($"Failed to impersonate user '{requiredLocalLogin}' on server '{targetServer}'. Skipping this link.");
                             return;
                         }
                     }
@@ -191,6 +167,7 @@ namespace MSSQLand.Actions.Remote
 
                 // Query user info through the chain
                 var (mappedUser, remoteLoggedInUser) = databaseContext.UserService.GetInfo();
+                Logger.TraceNested($"Logged in to server '{targetServer}' as: '{remoteLoggedInUser}' [{mappedUser}]");
 
                 // Create state hash for loop detection (server + user context)
                 ServerExecutionState currentState = ServerExecutionState.FromContext(targetServer, databaseContext.UserService);
@@ -220,61 +197,39 @@ namespace MSSQLand.Actions.Remote
                 _discoveredChains.Add(new List<Dictionary<string, string>>(currentChain));
 
                 // Get linked servers from this remote server
-                DataTable remoteLinkedServers = GetLinkedServersWithTimeout(databaseContext, targetServer);
-
-                Logger.TraceNested($"Exploring linked servers on '{targetServer}' (found {remoteLinkedServers?.Rows.Count ?? 0})");
-
-                if (remoteLinkedServers != null && remoteLinkedServers.Rows.Count > 0)
+                DataTable remoteLinkedServers;
+                try
                 {
-                    foreach (DataRow row in remoteLinkedServers.Rows)
-                    {
-                        string nextServer = row["Link"].ToString();
-                        string nextLocalLogin = row["Local Login"] == DBNull.Value || string.IsNullOrEmpty(row["Local Login"].ToString())
-                            ? null
-                            : row["Local Login"].ToString();
-
-                        // Create a copy of current chain for this branch
-                        List<Dictionary<string, string>> branchChain = new List<Dictionary<string, string>>(currentChain);
-                        
-                        // Copy the visited states for this branch (each branch has its own path history)
-                        HashSet<string> branchVisited = new HashSet<string>(visitedInChain);
-
-                        // Create a fresh context copy for this branch
-                        DatabaseContext branchContext = databaseContext.Copy();
-                        branchContext.QueryService.LinkedServers = new LinkedServers(databaseContext.QueryService.LinkedServers);
-                        branchContext.QueryService.ExecutionServer = databaseContext.QueryService.ExecutionServer;
-
-                        // Explore recursively - pass the required local login so impersonation can happen at any depth
-                        ExploreServer(branchContext, nextServer, nextLocalLogin, branchChain, branchVisited, currentDepth + 1);
-                    }
+                    remoteLinkedServers = GetLinkedServers(databaseContext);
+                }
+                catch (Exception ex)
+                {
+                    Logger.TraceNested($"Failed to enumerate links on {targetServer}: {ex.Message}");
+                    return;
                 }
 
-                // Remove this server from chain for backtracking
-                currentChain.RemoveAt(currentChain.Count - 1);
+                Logger.TraceNested($"Exploring linked servers on '{targetServer}' (found {remoteLinkedServers.Rows.Count})");
+
+                foreach (DataRow row in remoteLinkedServers.Rows)
+                {
+                    string nextServer = row["Link"].ToString();
+                    string nextLocalLogin = row["Local Login"] == DBNull.Value || string.IsNullOrEmpty(row["Local Login"].ToString())
+                        ? null
+                        : row["Local Login"].ToString();
+
+                    // Create copies for this branch (each branch has its own isolated state)
+                    List<Dictionary<string, string>> branchChain = new(currentChain);
+                    HashSet<string> branchVisited = new(visitedInChain);
+                    DatabaseContext branchContext = databaseContext.Copy();
+
+                    // Explore recursively
+                    ExploreServer(branchContext, nextServer, nextLocalLogin, branchChain, branchVisited, currentDepth + 1);
+                }
             }
             catch (Exception ex)
             {
                 // Log the error so we can see why exploration failed
                 Logger.TraceNested($"Failed to explore {targetServer}: {ex.Message}");
-            }
-            finally
-            {
-                // Restore execution context
-                databaseContext.QueryService.LinkedServers = previousLinkedServers;
-                databaseContext.QueryService.ExecutionServer = previousExecutionServer;
-            }
-        }
-
-        private static DataTable GetLinkedServersWithTimeout(DatabaseContext databaseContext, string serverName)
-        {
-            try
-            {
-                return GetLinkedServers(databaseContext);
-            }
-            catch (Exception ex)
-            {
-                Logger.Warning($"Failed to enumerate links on {serverName}: {ex.Message}");
-                return null;
             }
         }
 

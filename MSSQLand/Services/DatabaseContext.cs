@@ -89,8 +89,9 @@ namespace MSSQLand.Services
             // Create a new DatabaseContext instance but keep the same connection
             DatabaseContext copiedContext = new(this.AuthService);
 
-            // Deep Copy LinkedServers to avoid shared state
+            // Deep Copy LinkedServers and preserve ExecutionServer
             copiedContext.QueryService.LinkedServers = new LinkedServers(this.QueryService.LinkedServers);
+            copiedContext.QueryService.ExecutionServer = this.QueryService.ExecutionServer;
 
             return copiedContext;
         }
