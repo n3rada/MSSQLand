@@ -124,32 +124,30 @@ namespace MSSQLand.Services
 
         public Task<DataTable> ListenForRequest()
         {
-
             // Create a TaskCompletionSource to manage the result
             TaskCompletionSource<DataTable> taskCompletionSource = new();
 
-            // Start the listener on a new thread using a new SQL connection
+            // Start the listener on a new thread using a duplicated context (fresh connection, same linked servers)
             Task.Run(() =>
             {
                 try
                 {
-                    using SqlConnection listenerConnection = _databaseContext.AuthService.GetNewSqlConnection();
-                    QueryService tempQueryService = new(listenerConnection);
+                    using DatabaseContext listenerContext = _databaseContext.Duplicate();
 
                     Logger.Info($"Starting a local LDAP server on port {Port} using function '{FunctionName}'");
 
                     try
                     {
-                        // Execute the LDAP listener query in the new connection
-                        DataTable result = tempQueryService.ExecuteTable($"SELECT [dbo].[{FunctionName}]({Port},8);");
+                        // Execute the LDAP listener query through the duplicated context
+                        DataTable result = listenerContext.QueryService.ExecuteTable($"SELECT [dbo].[{FunctionName}]({Port},8);");
 
                         // Set the result once the query completes
                         taskCompletionSource.TrySetResult(result);
-                    } catch
+                    } 
+                    catch
                     {
                         // Could happen if the query times out
                     }
-
                 }
                 catch (Exception ex)
                 {

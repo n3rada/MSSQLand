@@ -6,7 +6,7 @@ using MSSQLand.Models;
 
 namespace MSSQLand.Services
 {
-    public class DatabaseContext
+    public class DatabaseContext : IDisposable
     {
         public readonly AuthenticationService AuthService;
 
@@ -15,6 +15,7 @@ namespace MSSQLand.Services
         public readonly ConfigurationService ConfigService;
         public readonly UserService UserService;
 
+        private bool _disposed = false;
 
         public DatabaseContext(AuthenticationService authService)
         {
@@ -92,6 +93,28 @@ namespace MSSQLand.Services
             copiedContext.QueryService.LinkedServers = new LinkedServers(this.QueryService.LinkedServers);
 
             return copiedContext;
+        }
+
+        /// <summary>
+        /// Releases resources used by this DatabaseContext.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                AuthService?.Dispose();
+            }
+
+            _disposed = true;
         }
     }
 }
