@@ -17,8 +17,13 @@ namespace MSSQLand.Actions.ConfigMgr
     /// </summary>
     internal class CMAccounts : BaseAction
     {
-        [ArgumentMetadata(Description = "Attempt to decrypt passwords using site encryption keys")]
+        [ArgumentMetadata(Position = 0, ShortName = "d", LongName = "decrypt", Description = "Attempt to decrypt passwords using site encryption keys")]
         private bool _decrypt = false;
+
+        public override void ValidateArguments(string[] args)
+        {
+            BindArguments(args);
+        }
 
         public override object Execute(DatabaseContext databaseContext)
         {
