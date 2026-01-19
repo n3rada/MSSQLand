@@ -92,7 +92,7 @@ namespace MSSQLand.Utilities
             // REMOTE DATA ACCESS ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
             { "links", (typeof(Links), "Enumerate linked servers and their configuration.", null) },
-            { "linkmap", (typeof(LinkMap), "Map all possible linked server chains and execution paths.", null) },
+            { "linkmap", (typeof(LinkMap), "Recursively explore SQL Server linked chains (SQLNCLI providers only) for lateral movement paths.", null) },
             { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.", null) },
             { "data", (typeof(DataAccess), "Enable or disable data access (OPENQUERY) on linked servers.", null) },
             { "ext-sources", (typeof(ExternalSources), "Enumerate External Data Sources (Azure SQL Database, Synapse, PolyBase).", null) },
