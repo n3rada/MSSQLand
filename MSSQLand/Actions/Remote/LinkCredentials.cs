@@ -2,6 +2,7 @@
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
+using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 
@@ -44,7 +45,7 @@ namespace MSSQLand.Actions.Remote
             }
 
             Logger.Success($"Found {mappings.Rows.Count} linked server login mapping(s)");
-            Formatter.FormatAndDisplayTable(mappings);
+            Console.WriteLine(OutputFormatter.ConvertDataTable(mappings));
 
             // Attempt credential extraction using various methods
             Logger.NewLine();
@@ -127,7 +128,7 @@ WHERE ll.pwdhash IS NOT NULL;";
                     if (foundPassword)
                     {
                         Logger.Success("Credentials decrypted successfully!");
-                        Formatter.FormatAndDisplayTable(result);
+                        Console.WriteLine(OutputFormatter.ConvertDataTable(result));
                         return;
                     }
                 }
@@ -166,7 +167,7 @@ AND ll.remote_name IS NOT NULL;";
                 if (result.Rows.Count > 0)
                 {
                     Logger.InfoNested($"Found {result.Rows.Count} stored credential(s) with encrypted passwords:");
-                    Formatter.FormatAndDisplayTable(result);
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(result));
                     
                     Logger.NewLine();
                     Logger.InfoNested("Decryption options:");
