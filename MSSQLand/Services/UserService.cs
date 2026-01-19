@@ -62,7 +62,14 @@ namespace MSSQLand.Services
                 return isAdmin;
             }
 
-            // If not cached, compute and store the result
+            // Quick check: sa login is always sysadmin
+            if (SystemUser.Equals("sa", StringComparison.OrdinalIgnoreCase))
+            {
+                _adminStatusCache[_queryService.ExecutionServer.Hostname] = true;
+                return true;
+            }
+
+            // Otherwise check sysadmin role membership
             bool adminStatus = IsMemberOfRole("sysadmin");
 
             // Cache the result for the current ExecutionServer
