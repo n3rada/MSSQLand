@@ -61,11 +61,11 @@ ORDER BY ua.UserName;
                     continue;
                 }
 
-                Logger.Success($"Found {result.Rows.Count} stored credential(s)");
                 Console.WriteLine(OutputFormatter.ConvertDataTable(result));
+                Logger.Success($"Found {result.Rows.Count} stored credential(s)");
+
             }
 
-            Logger.Success("Credential enumeration completed");
             return null;
         }
     }
