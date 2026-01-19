@@ -17,16 +17,16 @@ namespace MSSQLand.Actions.Remote
         [ExcludeFromArguments]
         private readonly List<List<Dictionary<string, string>>> _discoveredChains = new();
 
-        [ArgumentMetadata(Position = 0, Description = "Maximum recursion depth (default: 10, max: 50)")]
-        private int _maxDepth = 10;
+        [ArgumentMetadata(Position = 0, Description = "Maximum recursion depth (default: 5, max: 15)")]
+        private int _maxDepth = 5;
 
         public override void ValidateArguments(string[] args)
         {
             BindArguments(args);
 
-            if (_maxDepth < 1 || _maxDepth > 50)
+            if (_maxDepth < 1 || _maxDepth > 15)
             {
-                throw new ArgumentException("Maximum depth must be between 1 and 50.");
+                throw new ArgumentException("Maximum depth must be between 1 and 15.");
             }
         }
 
@@ -42,7 +42,8 @@ namespace MSSQLand.Actions.Remote
                 return null;
             }
 
-            Logger.TaskNested($"Linked servers on initial server: {linkedServersTable.Rows.Count}");
+            int initialCount = linkedServersTable.Rows.Count;
+            Logger.TaskNested($"Linked servers on initial server: {initialCount}");
 
             // Compute starting server's state hash for loop detection
             // This prevents chains that loop back to the starting point
