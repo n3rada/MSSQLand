@@ -120,7 +120,49 @@ namespace MSSQLand.Actions.Remote
 
             Logger.Success($"Found {_discoveredChains.Count} accessible chain(s)");
 
+            // Separate chains by privilege level at final server
+            var privilegedChains = new List<List<Dictionary<string, string>>>();
+            var standardChains = new List<List<Dictionary<string, string>>>();
+
             foreach (var chain in _discoveredChains)
+            {
+                if (chain.Count == 0) continue;
+                
+                // Check if privileged at the last hop (sysadmin OR mapped to dbo)
+                var lastEntry = chain[chain.Count - 1];
+                bool isSysadminAtEnd = lastEntry.ContainsKey("IsSysadmin") && 
+                                       lastEntry["IsSysadmin"].Equals("True", StringComparison.OrdinalIgnoreCase);
+                bool isDboAtEnd = lastEntry.ContainsKey("Mapped") &&
+                                  lastEntry["Mapped"].Equals("dbo", StringComparison.OrdinalIgnoreCase);
+                
+                if (isSysadminAtEnd || isDboAtEnd)
+                    privilegedChains.Add(chain);
+                else
+                    standardChains.Add(chain);
+            }
+
+            // Display privileged chains first
+            if (privilegedChains.Count > 0)
+            {
+                Logger.NewLine();
+                Logger.Success($"Privileged paths ({privilegedChains.Count}) - sysadmin or dbo at final server:");
+                DisplayChains(privilegedChains, initialServerEntry, isPrivileged: true);
+            }
+
+            // Display standard chains
+            if (standardChains.Count > 0)
+            {
+                Logger.NewLine();
+                Logger.Info($"Standard paths ({standardChains.Count}):");
+                DisplayChains(standardChains, initialServerEntry, isPrivileged: false);
+            }
+
+            return _discoveredChains;
+        }
+
+        private void DisplayChains(List<List<Dictionary<string, string>>> chains, string initialServerEntry, bool isPrivileged)
+        {
+            foreach (var chain in chains)
             {
                 if (chain.Count == 0) continue;
 
@@ -142,7 +184,13 @@ namespace MSSQLand.Actions.Remote
                         displayName = $"{serverName} [{actualName}]";
                     }
 
-                    formattedLines.Add($"-{(impersonatedUser != "-" ? $" {impersonatedUser} " : "-")}-> {displayName} ({loggedIn} [{mapped}])");
+                    // Add privileged indicator (sysadmin or dbo)
+                    bool isSysadmin = entry.ContainsKey("IsSysadmin") && 
+                                      entry["IsSysadmin"].Equals("True", StringComparison.OrdinalIgnoreCase);
+                    bool isDbo = mapped.Equals("dbo", StringComparison.OrdinalIgnoreCase);
+                    string privilegeMarker = (isSysadmin || isDbo) ? " ★" : "";
+
+                    formattedLines.Add($"-{(impersonatedUser != "-" ? $" {impersonatedUser} " : "-")}-> {displayName} ({loggedIn} [{mapped}]){privilegeMarker}");
                     
                     // Show non-SQL linked servers available at this node
                     if (entry.ContainsKey("NonSqlLinks") && !string.IsNullOrEmpty(entry["NonSqlLinks"]))
@@ -168,8 +216,6 @@ namespace MSSQLand.Actions.Remote
                     Logger.InfoNested($"To use this chain: {chainCommand}");
                 }
             }
-
-            return _discoveredChains;
         }
 
         /// <summary>
@@ -259,7 +305,8 @@ namespace MSSQLand.Actions.Remote
                     { "ActualServerName", actualServerName },
                     { "LoggedIn", currentState.SystemUser },
                     { "Mapped", currentState.MappedUser },
-                    { "ImpersonatedUser", impersonatedUser ?? "-" }
+                    { "ImpersonatedUser", impersonatedUser ?? "-" },
+                    { "IsSysadmin", currentState.IsSysadmin.ToString() }
                 };
                 currentChain.Add(chainEntry);
 
