@@ -39,25 +39,42 @@ namespace MSSQLand.Actions.ConfigMgr
 
         private void EnumerateCredentials(DatabaseContext databaseContext, string db, string siteCode)
         {
-            // Try to identify account types from site control configuration
+            // Query accounts with their usage context from SC_UserAccount_Property
+            // and type identification from SC_SiteControlItem
             string query = $@"
-;WITH AccountUsage AS (
+WITH AccountTypes AS (
     SELECT DISTINCT 
         pl.Value AS UserName,
         CASE 
+            WHEN sci.ItemName = 'SMS_NETWORK_ACCESS_ACCOUNT' THEN 'NAA'
+            WHEN sci.ItemName LIKE '%CLIENT_CONFIG_MANAGER%' OR sci.ItemName LIKE '%Push%' THEN 'Client Push'
+            WHEN sci.ItemName LIKE '%SITE_COMPONENT_MANAGER%' THEN 'Site Component'
             WHEN pl.Name LIKE '%NAL%' OR pl.Name LIKE '%Network%Access%' THEN 'NAA'
-            WHEN pl.Name LIKE '%Push%' OR sci.ItemName LIKE '%Push%' THEN 'Client Push'
-            ELSE 'Other'
+            ELSE sci.ItemName
         END AS AccountType
     FROM [{db}].dbo.SC_SiteControlItem sci
     INNER JOIN [{db}].dbo.SC_SiteControlItem_Property pl 
         ON sci.ID = pl.ID AND sci.SiteNumber = pl.SiteNumber
-    WHERE pl.Name LIKE '%Account%' 
-        AND pl.Value LIKE '%\%' ESCAPE '\'
+    WHERE pl.Value LIKE '%\%' ESCAPE '\'
+),
+AccountUsage AS (
+    SELECT 
+        uap.UserAccountID,
+        STRING_AGG(uap.Name + ': ' + ISNULL(uap.Value1, ''), ' | ') AS UsedFor
+    FROM [{db}].dbo.SC_UserAccount_Property uap
+    GROUP BY uap.UserAccountID
 )
 SELECT
     ua.UserName,
-    ISNULL(au.AccountType, 'Unknown') AS Type,
+    COALESCE(at.AccountType, 
+        CASE 
+            WHEN ua.UserName LIKE '.\%' THEN 'Local Account'
+            WHEN au.UsedFor LIKE '%SqlServer%' THEN 'SQL Connection'
+            WHEN au.UsedFor LIKE '%FileShare%' THEN 'File Share'
+            ELSE 'Service Account'
+        END
+    ) AS Type,
+    ISNULL(au.UsedFor, '') AS UsedFor,
     CASE ua.Availability
         WHEN 0 THEN 'Available'
         WHEN 1 THEN 'Unavailable'
@@ -67,8 +84,9 @@ SELECT
     sd.SiteServerName
 FROM [{db}].dbo.SC_UserAccount ua
 LEFT JOIN [{db}].dbo.SC_SiteDefinition sd ON ua.SiteNumber = sd.SiteNumber
-LEFT JOIN AccountUsage au ON ua.UserName = au.UserName
-ORDER BY au.AccountType, ua.UserName;
+LEFT JOIN AccountTypes at ON ua.UserName = at.UserName
+LEFT JOIN AccountUsage au ON ua.ID = au.UserAccountID
+ORDER BY at.AccountType, ua.UserName;
 ";
 
             DataTable result;
@@ -79,10 +97,17 @@ ORDER BY au.AccountType, ua.UserName;
             }
             catch
             {
-                // Fallback to simple query if property table doesn't exist
+                // Fallback for older SQL versions without STRING_AGG
                 string fallbackQuery = $@"
 SELECT
     ua.UserName,
+    CASE 
+        WHEN ua.UserName LIKE '.\%' THEN 'Local Account'
+        WHEN ua.UserName LIKE '%naa%' OR ua.UserName LIKE '%network%' THEN 'NAA'
+        WHEN ua.UserName LIKE '%push%' THEN 'Client Push'
+        ELSE 'Service Account'
+    END AS Type,
+    ISNULL(uap.Name + ': ' + uap.Value1, '') AS UsedFor,
     CASE ua.Availability
         WHEN 0 THEN 'Available'
         WHEN 1 THEN 'Unavailable'
@@ -92,6 +117,7 @@ SELECT
     sd.SiteServerName
 FROM [{db}].dbo.SC_UserAccount ua
 LEFT JOIN [{db}].dbo.SC_SiteDefinition sd ON ua.SiteNumber = sd.SiteNumber
+LEFT JOIN [{db}].dbo.SC_UserAccount_Property uap ON ua.ID = uap.UserAccountID
 ORDER BY ua.UserName;
 ";
                 result = databaseContext.QueryService.ExecuteTable(fallbackQuery);
