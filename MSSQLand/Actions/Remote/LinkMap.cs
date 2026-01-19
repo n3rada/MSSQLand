@@ -44,6 +44,14 @@ namespace MSSQLand.Actions.Remote
 
             Logger.TaskNested($"Linked servers on initial server: {linkedServersTable.Rows.Count}");
 
+            // Compute starting server's state hash for loop detection
+            // This prevents chains that loop back to the starting point
+            ServerExecutionState startingState = ServerExecutionState.FromContext(
+                databaseContext.Server.Hostname, 
+                databaseContext.UserService
+            );
+            string startingHash = startingState.GetStateHash();
+
             // Start exploration from each linked server
             foreach (DataRow row in linkedServersTable.Rows)
             {
@@ -53,8 +61,9 @@ namespace MSSQLand.Actions.Remote
                     : row["Local Login"].ToString();
 
                 // Start a new chain with its own visited states for loop detection
+                // Include the starting server to detect loops back to origin
                 List<Dictionary<string, string>> currentChain = new();
-                HashSet<string> visitedInChain = new();
+                HashSet<string> visitedInChain = new() { startingHash };
                 
                 // Create a temp context to not pollute the original
                 DatabaseContext tempContext = databaseContext.Copy();
