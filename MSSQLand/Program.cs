@@ -192,7 +192,9 @@ namespace MSSQLand
                     {
                         databaseContext.QueryService.LinkedServers = arguments.LinkedServers;
 
+                        Logger.NewLine();
                         Logger.Info($"Server chain: {arguments.Host.Hostname} -> " + string.Join(" -> ", arguments.LinkedServers.ServerNames));
+                        Logger.NewLine();
 
                         (userName, systemUser) = databaseContext.UserService.GetInfo();
 
