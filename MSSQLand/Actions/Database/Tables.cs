@@ -26,6 +26,9 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(ShortName = "r", LongName = "rows", Description = "Filter out tables with 0 rows")]
         private bool _withRows = false;
 
+        [ArgumentMetadata(ShortName = "p", LongName = "permissions", Description = "Show permissions (slower)")]
+        private bool _showPermissions = false;
+
         public override void ValidateArguments(string[] args)
         {
             BindArguments(args);
@@ -54,7 +57,8 @@ namespace MSSQLand.Actions.Database
             string columnsMsg = _showColumns ? " with columns" : "";
             string columnMsg = !string.IsNullOrEmpty(_columnFilter) ? $" with column containing '{_columnFilter}'" : "";
             string rowsMsg = _withRows ? " (rows > 0)" : "";
-            Logger.TaskNested($"Retrieving tables from [{targetDatabase}]{filterMsg}{columnsMsg}{columnMsg}{rowsMsg}");
+            string permsMsg = _showPermissions ? " with permissions" : "";
+            Logger.TaskNested($"Retrieving tables from [{targetDatabase}]{filterMsg}{columnsMsg}{columnMsg}{rowsMsg}{permsMsg}");
 
             // Build USE statement if specific database is provided
             string useStatement = string.IsNullOrEmpty(_database) ? "" : $"USE [{_database}];";
@@ -79,7 +83,8 @@ namespace MSSQLand.Actions.Database
 
             string query = $@"
                 {useStatement}
-                SELECT 
+                SELECT
+                    t.object_id AS ObjectId,
                     s.name AS SchemaName,
                     t.name AS TableName,
                     t.type_desc AS TableType,
@@ -108,43 +113,40 @@ namespace MSSQLand.Actions.Database
                 return tables;
             }
 
-            // Build filter for matched tables only (for permissions and columns queries)
-            var tableFilter = new System.Text.StringBuilder();
-            bool first = true;
+            // Build object_id list for efficient filtering (avoids string concat in SQL)
+            var objectIds = new System.Collections.Generic.List<string>();
             foreach (DataRow row in tables.Rows)
             {
-                if (!first) tableFilter.Append(",");
-                first = false;
-                tableFilter.Append($"N'{row["SchemaName"]}.{row["TableName"]}'");
+                objectIds.Add(row["ObjectId"].ToString());
             }
+            string objectIdFilter = string.Join(",", objectIds);
 
-            // Get permissions only for matched tables (fn_my_permissions is expensive)
-            string permissionsQuery = $@"{useStatement}
+            // Get permissions only if requested (fn_my_permissions is expensive)
+            var permissionsDict = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.HashSet<string>>();
+            
+            if (_showPermissions)
+            {
+                string permissionsQuery = $@"{useStatement}
 SELECT 
-    SCHEMA_NAME(o.schema_id) AS schema_name, 
-    o.name AS object_name, 
+    o.object_id,
     p.permission_name 
 FROM sys.objects o 
 CROSS APPLY fn_my_permissions(QUOTENAME(SCHEMA_NAME(o.schema_id)) + '.' + QUOTENAME(o.name), 'OBJECT') p 
-WHERE o.type IN ('U', 'V') 
-    AND SCHEMA_NAME(o.schema_id) + '.' + o.name IN ({tableFilter})
-ORDER BY o.name, p.permission_name;";
+WHERE o.object_id IN ({objectIdFilter});";
 
-            DataTable allPermissions = databaseContext.QueryService.ExecuteTable(permissionsQuery);
+                DataTable allPermissions = databaseContext.QueryService.ExecuteTable(permissionsQuery);
 
-            // Build a dictionary for fast lookup: key = "schema.table", value = set of unique permissions
-            var permissionsDict = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.HashSet<string>>();
-            
-            foreach (DataRow permRow in allPermissions.Rows)
-            {
-                string key = $"{permRow["schema_name"]}.{permRow["object_name"]}";
-                string permission = permRow["permission_name"].ToString();
-
-                if (!permissionsDict.ContainsKey(key))
+                foreach (DataRow permRow in allPermissions.Rows)
                 {
-                    permissionsDict[key] = new System.Collections.Generic.HashSet<string>();
+                    string key = permRow["object_id"].ToString();
+                    string permission = permRow["permission_name"].ToString();
+
+                    if (!permissionsDict.ContainsKey(key))
+                    {
+                        permissionsDict[key] = new System.Collections.Generic.HashSet<string>();
+                    }
+                    permissionsDict[key].Add(permission);
                 }
-                permissionsDict[key].Add(permission);
             }
 
             // Optionally get columns if --columns flag is set
@@ -152,28 +154,24 @@ ORDER BY o.name, p.permission_name;";
             
             if (_showColumns)
             {
-                // Reuse tableFilter from permissions query
                 string columnsQuery = $@"{useStatement}
 SELECT 
-    SCHEMA_NAME(o.schema_id) AS schema_name,
-    o.name AS table_name,
+    o.object_id,
     c.name AS column_name,
-    TYPE_NAME(c.user_type_id) AS data_type,
-    c.column_id
+    TYPE_NAME(c.user_type_id) AS data_type
 FROM sys.columns c
 INNER JOIN sys.objects o ON c.object_id = o.object_id
-WHERE o.type IN ('U', 'V')
-    AND SCHEMA_NAME(o.schema_id) + '.' + o.name IN ({tableFilter})
-ORDER BY o.name, c.column_id;";
+WHERE o.object_id IN ({objectIdFilter})
+ORDER BY o.object_id, c.column_id;";
 
                 DataTable columnsResult = databaseContext.QueryService.ExecuteTable(columnsQuery);
 
-                // Build dictionary: key = "schema.table", value = list of "column_name (data_type)"
+                // Build dictionary: key = object_id, value = list of "column_name (data_type)"
                 columnsDict = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>>();
 
                 foreach (DataRow colRow in columnsResult.Rows)
                 {
-                    string key = $"{colRow["schema_name"]}.{colRow["table_name"]}";
+                    string key = colRow["object_id"].ToString();
                     string columnInfo = $"{colRow["column_name"]} ({colRow["data_type"]})";
 
                     if (!columnsDict.ContainsKey(key))
@@ -187,20 +185,21 @@ ORDER BY o.name, c.column_id;";
                 tables.Columns.Add("Columns", typeof(string));
             }
 
-            // Add a column for permissions
-            tables.Columns.Add("Permissions", typeof(string));
+            // Add a column for permissions if requested
+            if (_showPermissions)
+            {
+                tables.Columns.Add("Permissions", typeof(string));
+            }
 
             // Map both columns and permissions to tables
             foreach (DataRow row in tables.Rows)
             {
-                string schemaName = row["SchemaName"].ToString();
-                string tableName = row["TableName"].ToString();
-                string key = $"{schemaName}.{tableName}";
+                string objectId = row["ObjectId"].ToString();
 
                 // Map columns if requested
                 if (_showColumns && columnsDict != null)
                 {
-                    if (columnsDict.TryGetValue(key, out var columns))
+                    if (columnsDict.TryGetValue(objectId, out var columns))
                     {
                         row["Columns"] = string.Join(", ", columns);
                     }
@@ -210,21 +209,32 @@ ORDER BY o.name, c.column_id;";
                     }
                 }
 
-                // Map permissions
-                if (permissionsDict.TryGetValue(key, out var permissions))
+                // Map permissions if requested
+                if (_showPermissions)
                 {
-                    row["Permissions"] = string.Join(", ", permissions);
-                }
-                else
-                {
-                    row["Permissions"] = "";
+                    if (permissionsDict.TryGetValue(objectId, out var permissions))
+                    {
+                        row["Permissions"] = string.Join(", ", permissions);
+                    }
+                    else
+                    {
+                        row["Permissions"] = "";
+                    }
                 }
             }
+
+            // Remove ObjectId column before display (internal use only)
+            tables.Columns.Remove("ObjectId");
 
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(tables));
             
             Logger.Success($"Retrieved {tables.Rows.Count} table(s) from [{targetDatabase}]");
+            
+            if (!_showPermissions)
+            {
+                Logger.InfoNested("Use -p to show permissions");
+            }
 
             return tables;
         }
