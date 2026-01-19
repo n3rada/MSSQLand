@@ -18,21 +18,21 @@ namespace MSSQLand.Actions.Remote
         private readonly List<List<Dictionary<string, string>>> _discoveredChains = new();
 
         [ArgumentMetadata(Position = 0, Description = "Maximum recursion depth (default: 5, max: 15)")]
-        private int _maxDepth = 5;
+        private int _limit = 5;
 
         public override void ValidateArguments(string[] args)
         {
             BindArguments(args);
 
-            if (_maxDepth < 1 || _maxDepth > 15)
+            if (_limit < 1 || _limit > 15)
             {
-                throw new ArgumentException("Maximum depth must be between 1 and 15.");
+                throw new ArgumentException("Limit must be between 1 and 15.");
             }
         }
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Maximum recursion depth: {_maxDepth}");
+            Logger.TaskNested($"Maximum recursion depth: {_limit}");
 
             DataTable allLinkedServers = QueryAllLinkedServers(databaseContext);
 
@@ -181,9 +181,9 @@ namespace MSSQLand.Actions.Remote
         private void ExploreLinkedServer(DatabaseContext databaseContext, string targetServer, string requiredLocalLogin, 
             List<Dictionary<string, string>> currentChain, HashSet<string> visitedInChain, int currentDepth)
         {
-            if (currentDepth >= _maxDepth)
+            if (currentDepth >= _limit)
             {
-                Logger.TraceNested($"Maximum depth {_maxDepth} reached at server '{targetServer}'. Backtracking."); 
+                Logger.TraceNested($"Limit {_limit} reached at server '{targetServer}'. Backtracking."); 
                 return;
             }
 
