@@ -53,12 +53,16 @@ namespace MSSQLand.Actions.Database
                 throw new InvalidOperationException("Unable to determine target database. Please specify a database name explicitly.");
             }
 
+            // Detect ConfigMgr database (CM_*) for auto-filtering collection views
+            bool isConfigMgrDb = targetDatabase.StartsWith("CM_", StringComparison.OrdinalIgnoreCase);
+
             string filterMsg = !string.IsNullOrEmpty(_name) ? $" (name: {_name})" : "";
             string columnsMsg = _showColumns ? " with columns" : "";
             string columnMsg = !string.IsNullOrEmpty(_columnFilter) ? $" with column containing '{_columnFilter}'" : "";
             string rowsMsg = _withRows ? " (rows > 0)" : "";
             string permsMsg = _showPermissions ? " with permissions" : "";
-            Logger.TaskNested($"Retrieving tables from [{targetDatabase}]{filterMsg}{columnsMsg}{columnMsg}{rowsMsg}{permsMsg}");
+            string collViewsMsg = isConfigMgrDb ? " (excluding collection views)" : "";
+            Logger.TaskNested($"Retrieving tables from [{targetDatabase}]{filterMsg}{columnsMsg}{columnMsg}{rowsMsg}{permsMsg}{collViewsMsg}");
 
             // Build USE statement if specific database is provided
             string useStatement = string.IsNullOrEmpty(_database) ? "" : $"USE [{_database}];";
@@ -68,6 +72,12 @@ namespace MSSQLand.Actions.Database
             if (!string.IsNullOrEmpty(_name))
             {
                 whereClause += $" AND t.name LIKE '%{_name.Replace("'", "''")}%'";
+            }
+
+            // Exclude ConfigMgr collection views when in CM_* database (they add thousands of entries)
+            if (isConfigMgrDb)
+            {
+                whereClause += " AND t.name NOT LIKE '_RES_COLL_%' AND t.name NOT LIKE 'v_CM_RES_COLL_%'";
             }
 
             if (!string.IsNullOrEmpty(_columnFilter))
