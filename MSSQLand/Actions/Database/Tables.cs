@@ -108,10 +108,29 @@ namespace MSSQLand.Actions.Database
                 return tables;
             }
 
-            // Get all permissions in a single query
-            string allPermissionsQuery = $@"{useStatement}SELECT SCHEMA_NAME(o.schema_id) AS schema_name, o.name AS object_name, p.permission_name FROM sys.objects o CROSS APPLY fn_my_permissions(QUOTENAME(SCHEMA_NAME(o.schema_id)) + '.' + QUOTENAME(o.name), 'OBJECT') p WHERE o.type IN ('U', 'V') ORDER BY o.name, p.permission_name;";
+            // Build filter for matched tables only (for permissions and columns queries)
+            var tableFilter = new System.Text.StringBuilder();
+            bool first = true;
+            foreach (DataRow row in tables.Rows)
+            {
+                if (!first) tableFilter.Append(",");
+                first = false;
+                tableFilter.Append($"N'{row["SchemaName"]}.{row["TableName"]}'");
+            }
 
-            DataTable allPermissions = databaseContext.QueryService.ExecuteTable(allPermissionsQuery);
+            // Get permissions only for matched tables (fn_my_permissions is expensive)
+            string permissionsQuery = $@"{useStatement}
+SELECT 
+    SCHEMA_NAME(o.schema_id) AS schema_name, 
+    o.name AS object_name, 
+    p.permission_name 
+FROM sys.objects o 
+CROSS APPLY fn_my_permissions(QUOTENAME(SCHEMA_NAME(o.schema_id)) + '.' + QUOTENAME(o.name), 'OBJECT') p 
+WHERE o.type IN ('U', 'V') 
+    AND SCHEMA_NAME(o.schema_id) + '.' + o.name IN ({tableFilter})
+ORDER BY o.name, p.permission_name;";
+
+            DataTable allPermissions = databaseContext.QueryService.ExecuteTable(permissionsQuery);
 
             // Build a dictionary for fast lookup: key = "schema.table", value = set of unique permissions
             var permissionsDict = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.HashSet<string>>();
@@ -133,18 +152,7 @@ namespace MSSQLand.Actions.Database
             
             if (_showColumns)
             {
-                // Build dynamic filter based on retrieved tables for better performance
-                var tableFilter = new System.Text.StringBuilder();
-                bool first = true;
-                
-                foreach (DataRow row in tables.Rows)
-                {
-                    if (!first) tableFilter.Append(",");
-                    first = false;
-                    tableFilter.Append($"N'{row["SchemaName"]}.{row["TableName"]}'");
-                }
-
-                // Optimized query: only fetch columns for tables we actually retrieved
+                // Reuse tableFilter from permissions query
                 string columnsQuery = $@"{useStatement}
 SELECT 
     SCHEMA_NAME(o.schema_id) AS schema_name,
