@@ -98,11 +98,19 @@ namespace MSSQLand.Actions.Remote
                 foreach (var entry in chain)
                 {
                     string serverName = entry["ServerName"];
+                    string actualName = entry.ContainsKey("ActualServerName") ? entry["ActualServerName"] : serverName;
                     string loggedIn = entry["LoggedIn"];
                     string mapped = entry["Mapped"];
                     string impersonatedUser = entry.ContainsKey("ImpersonatedUser") ? entry["ImpersonatedUser"].Trim() : "-";
 
-                    formattedLines.Add($"-{(impersonatedUser != "-" ? $" {impersonatedUser} " : "-")}-> {serverName} ({loggedIn} [{mapped}])");
+                    // Display format: show actual name in brackets if different from alias
+                    string displayName = serverName;
+                    if (!serverName.Equals(actualName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        displayName = $"{serverName} [{actualName}]";
+                    }
+
+                    formattedLines.Add($"-{(impersonatedUser != "-" ? $" {impersonatedUser} " : "-")}-> {displayName} ({loggedIn} [{mapped}])");
                     
                     serverChainList.Add(new Server
                     {
@@ -172,11 +180,27 @@ namespace MSSQLand.Actions.Remote
                 // Add server to chain
                 databaseContext.QueryService.LinkedServers.AddToChain(targetServer);
 
+                // Query actual server name (@@SERVERNAME) - may differ from alias
+                string actualServerName = targetServer;
+                try
+                {
+                    string serverNameResult = databaseContext.QueryService.ExecuteScalar("SELECT @@SERVERNAME")?.ToString();
+                    if (!string.IsNullOrEmpty(serverNameResult))
+                    {
+                        actualServerName = serverNameResult;
+                    }
+                }
+                catch
+                {
+                    // Keep alias as fallback
+                }
+
                 // Query user info through the chain
                 var (mappedUser, remoteLoggedInUser) = databaseContext.UserService.GetInfo();
-                Logger.TraceNested($"Logged in to server '{targetServer}' as: '{remoteLoggedInUser}' [{mappedUser}]");
+                Logger.TraceNested($"Logged in to server '{targetServer}' (actual: {actualServerName}) as: '{remoteLoggedInUser}' [{mappedUser}]");
 
                 // Create state hash for loop detection (server + user context)
+                // Use the ALIAS for loop detection since that's how we route queries
                 ServerExecutionState currentState = ServerExecutionState.FromContext(targetServer, databaseContext.UserService);
                 string stateHash = currentState.GetStateHash();
 
@@ -194,6 +218,7 @@ namespace MSSQLand.Actions.Remote
                 var chainEntry = new Dictionary<string, string>
                 {
                     { "ServerName", targetServer },
+                    { "ActualServerName", actualServerName },
                     { "LoggedIn", currentState.SystemUser },
                     { "Mapped", currentState.MappedUser },
                     { "ImpersonatedUser", impersonatedUser ?? "-" }
