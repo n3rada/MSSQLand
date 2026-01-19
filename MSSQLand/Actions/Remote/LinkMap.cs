@@ -244,6 +244,7 @@ LEFT JOIN master.sys.linked_logins ll
 LEFT JOIN master.sys.server_principals prin 
     ON ll.local_principal_id = prin.principal_id
 WHERE srv.is_linked = 1
+AND srv.provider = 'SQLNCLI'
 ORDER BY srv.name;";
 
             return databaseContext.QueryService.ExecuteTable(query);

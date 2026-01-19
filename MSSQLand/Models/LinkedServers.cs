@@ -102,8 +102,9 @@ namespace MSSQLand.Models
 
             for (int i = 0; i < ServerChain.Length; i++)
             {
-                ComputableServerNames[i + 1] = ServerChain[i].Hostname;
-                ServerNames[i] = ServerChain[i].Hostname;
+                // Use QueryRoutingName for query building (prefers LinkedServerAlias if set)
+                ComputableServerNames[i + 1] = ServerChain[i].QueryRoutingName;
+                ServerNames[i] = ServerChain[i].QueryRoutingName;
                 ComputableImpersonationNames[i] = ServerChain[i].ImpersonationUser ?? "";
                 ComputableDatabaseNames[i] = ServerChain[i].Database ?? "";
             }
@@ -128,6 +129,7 @@ namespace MSSQLand.Models
                 ServerChain = original.ServerChain.Select(server => new Server
                 {
                     Hostname = server.Hostname,
+                    LinkedServerAlias = server.LinkedServerAlias,
                     ImpersonationUser = server.ImpersonationUser,
                     Database = server.Database
                 }).ToArray();
@@ -161,7 +163,8 @@ namespace MSSQLand.Models
 
             for (int i = 0; i < ServerChain.Length; i++)
             {
-                string serverName = ServerChain[i].Hostname;
+                // Use QueryRoutingName (alias) for display - this is what user needs to type
+                string serverName = ServerChain[i].QueryRoutingName;
                 string impersonationUser = ServerChain[i].ImpersonationUser;
                 string database = ServerChain[i].Database;
 
@@ -532,8 +535,9 @@ namespace MSSQLand.Models
 
             for (int i = 0; i < ServerChain.Length; i++)
             {
-                ComputableServerNames[i + 1] = ServerChain[i].Hostname;
-                ServerNames[i] = ServerChain[i].Hostname;
+                // Use QueryRoutingName for query building (prefers LinkedServerAlias if set)
+                ComputableServerNames[i + 1] = ServerChain[i].QueryRoutingName;
+                ServerNames[i] = ServerChain[i].QueryRoutingName;
                 ComputableImpersonationNames[i] = ServerChain[i].ImpersonationUser ?? "";
                 ComputableDatabaseNames[i] = ServerChain[i].Database ?? "";
             }

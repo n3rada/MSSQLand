@@ -338,14 +338,27 @@ SELECT @result AS Result, @error AS Error;";
             Server last = _linkedServers.ServerChain.Last();
             ExecutionServer = last;
 
-            // Query the actual server name from the last linked server
+            // Store the linked server alias (from sys.servers) for query routing
+            // This is the name we use in EXEC AT / OPENQUERY
+            string linkedServerAlias = last.Hostname;
+            ExecutionServer.LinkedServerAlias = linkedServerAlias;
+
+            // Query the actual server name (@@SERVERNAME) for display/identification
             try
             {
-                ExecutionServer.Hostname = ExecuteScalar("SELECT @@SERVERNAME")?.ToString() ?? string.Empty;
+                string actualServerName = ExecuteScalar("SELECT @@SERVERNAME")?.ToString();
+                if (!string.IsNullOrEmpty(actualServerName))
+                {
+                    ExecutionServer.Hostname = actualServerName;
+                    if (!actualServerName.Equals(linkedServerAlias, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Logger.Trace($"Linked server alias '{linkedServerAlias}' resolves to '{actualServerName}'");
+                    }
+                }
             }
             catch
             {
-                // Keep the configured hostname if query fails
+                // Query failed - keep the alias as hostname
             }
 
             // Query and set the server version for linked server

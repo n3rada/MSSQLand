@@ -72,6 +72,19 @@ namespace MSSQLand.Models
         public string SystemUser { get; set; }
 
         /// <summary>
+        /// The linked server alias as registered in sys.servers.
+        /// Used for query routing in linked server chains.
+        /// May differ from Hostname (e.g., alias "REPORTING_DB" -> actual server "SQL-REPORT-01").
+        /// </summary>
+        public string LinkedServerAlias { get; set; }
+
+        /// <summary>
+        /// Gets the name to use for linked server query routing.
+        /// Returns LinkedServerAlias if set, otherwise Hostname.
+        /// </summary>
+        public string QueryRoutingName => !string.IsNullOrEmpty(LinkedServerAlias) ? LinkedServerAlias : Hostname;
+
+        /// <summary>
         /// Returns true if this server uses named pipe connection instead of TCP/IP.
         /// </summary>
         public bool UsesNamedPipe => !string.IsNullOrEmpty(NamedPipe);
@@ -105,7 +118,8 @@ namespace MSSQLand.Models
                 Database = this.Database,
                 ImpersonationUser = this.ImpersonationUser,
                 MappedUser = this.MappedUser,
-                SystemUser = this.SystemUser
+                SystemUser = this.SystemUser,
+                LinkedServerAlias = this.LinkedServerAlias
             };
         }
 
