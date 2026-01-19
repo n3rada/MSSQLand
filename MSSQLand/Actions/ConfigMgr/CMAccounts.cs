@@ -18,7 +18,7 @@ namespace MSSQLand.Actions.ConfigMgr
     internal class CMAccounts : BaseAction
     {
         [ArgumentMetadata(Description = "Attempt to decrypt passwords using site encryption keys")]
-        public bool Decrypt { get; set; } = false;
+        private bool _decrypt = false;
 
         public override object Execute(DatabaseContext databaseContext)
         {
@@ -41,7 +41,7 @@ namespace MSSQLand.Actions.ConfigMgr
                 Logger.NewLine();
                 Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
-                if (Decrypt)
+                if (_decrypt)
                 {
                     TryDecryptCredentials(databaseContext, db, siteCode);
                 }
