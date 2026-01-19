@@ -183,7 +183,7 @@ namespace MSSQLand
                         }
                         else
                         {
-                            Logger.InfoNested($"Domain user '{systemUser}' is directly mapped to '{userName}'");
+                            Logger.InfoNested($"Domain user '{systemUser}' is directly mapped");
                         }
                     }
 
