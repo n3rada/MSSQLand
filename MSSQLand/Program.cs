@@ -192,8 +192,11 @@ namespace MSSQLand
                     {
                         databaseContext.QueryService.LinkedServers = arguments.LinkedServers;
 
+                        // Get display chain (shows alias [actual] when they differ)
+                        var chainParts = databaseContext.QueryService.LinkedServers.GetDisplayChainParts();
+
                         Logger.NewLine();
-                        Logger.Info($"Server chain: {arguments.Host.Hostname} -> " + string.Join(" -> ", arguments.LinkedServers.ServerNames));
+                        Logger.Info($"Server chain: {arguments.Host.Hostname} -> " + string.Join(" -> ", chainParts));
                         Logger.NewLine();
 
                         (userName, systemUser) = databaseContext.UserService.GetInfo();

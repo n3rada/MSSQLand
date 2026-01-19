@@ -193,6 +193,35 @@ namespace MSSQLand.Models
             return chainParts;
         }
 
+        /// <summary>
+        /// Returns a list of server names for display purposes.
+        /// Shows "alias [actual]" format when the linked server alias differs from the actual server name.
+        /// 
+        /// Examples:
+        /// - When alias == actual: "SQL01"
+        /// - When alias != actual: "REPORTING_DB [SQL-REPORT-01]"
+        /// </summary>
+        public List<string> GetDisplayChainParts()
+        {
+            List<string> displayParts = new();
+
+            foreach (var server in ServerChain)
+            {
+                string displayName = server.QueryRoutingName;
+
+                // Show both alias and actual hostname when they differ
+                if (!string.IsNullOrEmpty(server.LinkedServerAlias) &&
+                    !server.LinkedServerAlias.Equals(server.Hostname, StringComparison.OrdinalIgnoreCase))
+                {
+                    displayName = $"{server.LinkedServerAlias} [{server.Hostname}]";
+                }
+
+                displayParts.Add(displayName);
+            }
+
+            return displayParts;
+        }
+
 
         /// <summary>
         /// Adds a new server to the linked server chain.
