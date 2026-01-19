@@ -51,6 +51,22 @@ ORDER BY CreatedDate DESC;
                     
                     if (rbacAdmins.Rows.Count > 0)
                     {
+                        // Convert binary SID to readable S-1-... format
+                        if (rbacAdmins.Columns.Contains("AdminSID"))
+                        {
+                            foreach (DataRow row in rbacAdmins.Rows)
+                            {
+                                if (row["AdminSID"] != DBNull.Value)
+                                {
+                                    string parsedSid = SidParser.ParseSid(row["AdminSID"]);
+                                    if (!string.IsNullOrEmpty(parsedSid))
+                                    {
+                                        row["AdminSID"] = parsedSid;
+                                    }
+                                }
+                            }
+                        }
+
                         Console.WriteLine(OutputFormatter.ConvertDataTable(rbacAdmins));
                         Logger.Success($"Found {rbacAdmins.Rows.Count} RBAC Administrators");
 
