@@ -181,6 +181,10 @@ namespace MSSQLand
                                 Logger.InfoNested($"Access granted via: {sourcePrincipal}");
                             }
                         }
+                        else
+                        {
+                            Logger.InfoNested($"Domain user '{systemUser}' is directly mapped to '{userName}'");
+                        }
                     }
 
                     // Handle linked servers
