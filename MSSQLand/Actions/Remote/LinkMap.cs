@@ -34,16 +34,47 @@ namespace MSSQLand.Actions.Remote
         {
             Logger.TaskNested($"Maximum recursion depth: {_maxDepth}");
 
-            DataTable linkedServersTable = QueryLinkedServers(databaseContext);
+            DataTable allLinkedServers = QueryAllLinkedServers(databaseContext);
 
-            if (linkedServersTable.Rows.Count == 0)
+            if (allLinkedServers.Rows.Count == 0)
             {
                 Logger.Warning("No linked servers found.");
                 return null;
             }
 
-            int initialCount = linkedServersTable.Rows.Count;
-            Logger.TaskNested($"Linked servers on initial server: {initialCount}");
+            // Separate SQL Server links (chainable) from others (queryable only)
+            var sqlServerLinks = new List<DataRow>();
+            var otherLinks = new List<DataRow>();
+            
+            foreach (DataRow row in allLinkedServers.Rows)
+            {
+                string provider = row["Provider"].ToString();
+                if (provider == "SQLNCLI")
+                    sqlServerLinks.Add(row);
+                else
+                    otherLinks.Add(row);
+            }
+
+            Logger.TaskNested($"SQL Server linked servers (chainable): {sqlServerLinks.Count}");
+
+            // Show non-SQL linked servers at initial server
+            if (otherLinks.Count > 0)
+            {
+                Logger.InfoNested($"Other linked servers (queryable via OPENQUERY):");
+                foreach (DataRow row in otherLinks)
+                {
+                    string name = row["Link"].ToString();
+                    string provider = row["Provider"].ToString();
+                    string product = row["Product"].ToString();
+                    Logger.InfoNested($"  • {name} ({provider}) - {product}");
+                }
+            }
+
+            if (sqlServerLinks.Count == 0)
+            {
+                Logger.Warning("No SQL Server linked servers to explore.");
+                return null;
+            }
 
             // Compute starting server's state hash for loop detection
             // This prevents chains that loop back to the starting point
@@ -54,7 +85,7 @@ namespace MSSQLand.Actions.Remote
             string startingHash = startingState.GetStateHash();
 
             // Start exploration from each linked server
-            foreach (DataRow row in linkedServersTable.Rows)
+            foreach (DataRow row in sqlServerLinks)
             {
                 string remoteServer = row["Link"].ToString();
                 string localLogin = row["Local Login"] == DBNull.Value || string.IsNullOrEmpty(row["Local Login"].ToString()) 
@@ -112,6 +143,12 @@ namespace MSSQLand.Actions.Remote
                     }
 
                     formattedLines.Add($"-{(impersonatedUser != "-" ? $" {impersonatedUser} " : "-")}-> {displayName} ({loggedIn} [{mapped}])");
+                    
+                    // Show non-SQL linked servers available at this node
+                    if (entry.ContainsKey("NonSqlLinks") && !string.IsNullOrEmpty(entry["NonSqlLinks"]))
+                    {
+                        formattedLines.Add($"[OPENQUERY: {entry["NonSqlLinks"]}]");
+                    }
                     
                     serverChainList.Add(new Server
                     {
@@ -233,7 +270,7 @@ namespace MSSQLand.Actions.Remote
                 DataTable remoteLinkedServers;
                 try
                 {
-                    remoteLinkedServers = QueryLinkedServers(databaseContext);
+                    remoteLinkedServers = QueryAllLinkedServers(databaseContext);
                 }
                 catch (Exception ex)
                 {
@@ -241,9 +278,44 @@ namespace MSSQLand.Actions.Remote
                     return;
                 }
 
-                Logger.TraceNested($"Exploring linked servers on '{targetServer}' (found {remoteLinkedServers.Rows.Count})");
-
+                // Separate SQL Server links from others
+                var remoteSqlLinks = new List<DataRow>();
+                var remoteOtherLinks = new List<DataRow>();
+                
                 foreach (DataRow row in remoteLinkedServers.Rows)
+                {
+                    string provider = row["Provider"].ToString();
+                    if (provider == "SQLNCLI")
+                        remoteSqlLinks.Add(row);
+                    else
+                        remoteOtherLinks.Add(row);
+                }
+
+                // Log non-SQL linked servers found at this node
+                if (remoteOtherLinks.Count > 0)
+                {
+                    Logger.TraceNested($"Non-SQL linked servers on '{targetServer}':");
+                    foreach (DataRow row in remoteOtherLinks)
+                    {
+                        string name = row["Link"].ToString();
+                        string provider = row["Provider"].ToString();
+                        Logger.TraceNested($"  • {name} ({provider})");
+                    }
+                    
+                    // Store non-SQL links in chain entry for display
+                    var nonSqlLinks = new List<string>();
+                    foreach (DataRow row in remoteOtherLinks)
+                    {
+                        nonSqlLinks.Add($"{row["Link"]} ({row["Provider"]})");
+                    }
+                    chainEntry["NonSqlLinks"] = string.Join(", ", nonSqlLinks);
+                    // Update the saved chain with non-SQL links info
+                    _discoveredChains[_discoveredChains.Count - 1] = new List<Dictionary<string, string>>(currentChain);
+                }
+
+                Logger.TraceNested($"Exploring SQL Server links on '{targetServer}' (found {remoteSqlLinks.Count})");
+
+                foreach (DataRow row in remoteSqlLinks)
                 {
                     string nextServer = row["Link"].ToString();
                     string nextLocalLogin = row["Local Login"] == DBNull.Value || string.IsNullOrEmpty(row["Local Login"].ToString())
@@ -266,11 +338,14 @@ namespace MSSQLand.Actions.Remote
             }
         }
 
-        private static DataTable QueryLinkedServers(DatabaseContext databaseContext)
+        private static DataTable QueryAllLinkedServers(DatabaseContext databaseContext)
         {
             string query = @"
 SELECT 
     srv.name AS [Link], 
+    srv.provider AS [Provider],
+    ISNULL(srv.product, 'Unknown') AS [Product],
+    srv.data_source AS [DataSource],
     prin.name AS [Local Login],
     ll.remote_name AS [Remote Login]
 FROM master.sys.servers srv
@@ -279,8 +354,7 @@ LEFT JOIN master.sys.linked_logins ll
 LEFT JOIN master.sys.server_principals prin 
     ON ll.local_principal_id = prin.principal_id
 WHERE srv.is_linked = 1
-AND srv.provider = 'SQLNCLI'
-ORDER BY srv.name;";
+ORDER BY srv.provider, srv.name;";
 
             return databaseContext.QueryService.ExecuteTable(query);
         }
