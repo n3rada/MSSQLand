@@ -83,7 +83,7 @@ ORDER BY ua.UserName;
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(result));
             Logger.Success($"Found {result.Rows.Count} stored credential(s)");
-            Logger.Info("Use --decrypt to attempt decryption (requires db_owner or key access)");
+            Logger.SuccessNested("Use --decrypt to attempt decryption (requires db_owner or key access)");
         }
 
         private void TryDecryptCredentials(DatabaseContext databaseContext, string db, string siteCode)
@@ -211,7 +211,7 @@ CLOSE SYMMETRIC KEY [{foundKey}];
                 else
                 {
                     Logger.Warning("Decryption failed - insufficient permissions on encryption keys");
-                    Logger.Info("Requires db_owner role or CONTROL permission on the symmetric key");
+                    Logger.WarningNested("Requires db_owner role or CONTROL permission on the symmetric key");
                     TryAlternativeDecryption(databaseContext, db, siteCode);
                 }
             }
@@ -253,10 +253,6 @@ ORDER BY c.name;
 
             // Show the raw encrypted data for offline analysis
             Logger.NewLine();
-            Logger.Info("For offline decryption, extract the encrypted blobs and:");
-            Logger.Info("1. Obtain db_owner on the ConfigMgr database, OR");
-            Logger.Info("2. Access the site server and use WMI: Get-WmiObject -Namespace 'root\\sms\\site_{siteCode}' -Class SMS_SCI_Reserved");
-            Logger.Info("3. Use SharpSCCM on the site server: SharpSCCM.exe local secrets -m wmi");
         }
     }
 }
