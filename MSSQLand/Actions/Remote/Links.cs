@@ -67,7 +67,7 @@ namespace MSSQLand.Actions.Remote
                 LEFT JOIN master.sys.linked_logins ll ON srv.server_id = ll.server_id
                 LEFT JOIN master.sys.server_principals prin ON ll.local_principal_id = prin.principal_id
                 WHERE srv.is_linked = 1
-                ORDER BY srv.modify_date DESC;";
+                ORDER BY srv.provider, srv.modify_date DESC;";
 
             return databaseContext.QueryService.ExecuteTable(query);
         }
