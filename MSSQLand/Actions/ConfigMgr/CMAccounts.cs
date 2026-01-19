@@ -17,10 +17,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// </summary>
     internal class CMAccounts : BaseAction
     {
-        [ArgumentMetadata(
-            description: "Attempt to decrypt passwords using site encryption keys",
-            example: "true"
-        )]
+        [ArgumentMetadata(Description = "Attempt to decrypt passwords using site encryption keys")]
         public bool Decrypt { get; set; } = false;
 
         public override object Execute(DatabaseContext databaseContext)
