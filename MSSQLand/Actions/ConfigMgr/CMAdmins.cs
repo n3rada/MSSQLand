@@ -51,8 +51,9 @@ ORDER BY CreatedDate DESC;
                     
                     if (rbacAdmins.Rows.Count > 0)
                     {
-                        Logger.Success($"ConfigMgr RBAC Administrators ({rbacAdmins.Rows.Count} total)");
                         Console.WriteLine(OutputFormatter.ConvertDataTable(rbacAdmins));
+                        Logger.Success($"Found {rbacAdmins.Rows.Count} RBAC Administrators");
+
                     }
                     else
                     {
@@ -60,7 +61,6 @@ ORDER BY CreatedDate DESC;
                     }
                 }
 
-                Logger.NewLine();
                 Logger.Success($"Successfully enumerated RBAC admins from {databases.Count} ConfigMgr database(s)");
 
                 return null;
