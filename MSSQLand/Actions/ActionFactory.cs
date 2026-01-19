@@ -93,6 +93,7 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             { "links", (typeof(Links), "Enumerate linked servers and their configuration.", null) },
             { "linkmap", (typeof(LinkMap), "Recursively explore SQL Server linked chains (SQLNCLI providers only) for lateral movement paths.", null) },
+            { "linkcreds", (typeof(LinkCredentials), "Extract linked server credentials (requires sysadmin).", new[] { "linkcredentials", "link-creds" }) },
             { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.", null) },
             { "data", (typeof(DataAccess), "Enable or disable data access (OPENQUERY) on linked servers.", null) },
             { "ext-sources", (typeof(ExternalSources), "Enumerate External Data Sources (Azure SQL Database, Synapse, PolyBase).", null) },
