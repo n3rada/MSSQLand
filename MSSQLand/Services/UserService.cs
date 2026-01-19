@@ -189,18 +189,25 @@ ORDER BY dp.principal_id;";
         {
             if (string.IsNullOrEmpty(SystemUser))
             {
+                Logger.Trace($"CheckIfDomainUser: SystemUser is null or empty");
                 return false;
             }
 
+            Logger.Trace($"CheckIfDomainUser: SystemUser = '{SystemUser}'");
+
             // Check if username has the DOMAIN\username format
             int backslashIndex = SystemUser.IndexOf('\\');
+            Logger.Trace($"CheckIfDomainUser: backslashIndex = {backslashIndex}, SystemUser.Length = {SystemUser.Length}");
+            
             if (backslashIndex <= 0 || backslashIndex >= SystemUser.Length - 1)
             {
                 // No backslash or invalid format - not a domain user
+                Logger.Trace($"CheckIfDomainUser: returning false (invalid backslash position)");
                 return false;
             }
 
             // Username has domain format - it's a Windows user
+            Logger.Trace($"CheckIfDomainUser: returning true (domain user detected)");
             return true;
         }
 
