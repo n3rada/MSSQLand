@@ -135,6 +135,37 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t<host> -browse                      Query SQL Browser for instances/ports");
             Console.WriteLine("\t<host> -portscan [--all]            Scan for SQL Server ports (TDS validation)");
             Console.WriteLine();
+
+            // Show all actions grouped by category
+            var actions = ActionFactory.GetAvailableActions();
+            
+            var groupedActions = new Dictionary<string, List<string>>();
+
+            foreach (var action in actions)
+            {
+                if (!groupedActions.ContainsKey(action.Category))
+                {
+                    groupedActions[action.Category] = new List<string>();
+                }
+                groupedActions[action.Category].Add(action.ActionName);
+            }
+
+            Console.WriteLine("Available actions:");
+            foreach (var group in groupedActions)
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine($"[{group.Key}]");
+                Console.ResetColor();
+                
+                // Display max 10 actions per line
+                var actionsList = group.Value;
+                for (int i = 0; i < actionsList.Count; i += 10)
+                {
+                    var chunk = actionsList.Skip(i).Take(10);
+                    Console.WriteLine(string.Join(", ", chunk));
+                }
+            }
+            Console.WriteLine();
         } 
 
         /// <summary>
