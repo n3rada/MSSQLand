@@ -17,16 +17,6 @@ namespace MSSQLand.Actions.Remote
         /// <param name="databaseContext">The ConnectionManager for executing the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            // Check if running on Azure SQL Database (PaaS)
-            if (databaseContext.QueryService.IsAzureSQL())
-            {
-                Logger.Warning("Linked servers aren't available in Azure SQL Database (PaaS).");
-                Logger.WarningNested("Linked servers are supported in Azure SQL Managed Instance.");
-                Logger.WarningNested("https://learn.microsoft.com/en-us/sql/relational-databases/linked-servers/linked-servers-database-engine");
-                Logger.WarningNested("For Azure SQL Database, use /a:extsources to check External Data Sources.");
-                return null;
-            }
-
             Logger.TaskNested($"Retrieving Linked SQL Servers");
 
             DataTable resultTable = GetLinkedServers(databaseContext);
