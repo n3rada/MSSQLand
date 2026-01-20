@@ -50,9 +50,13 @@ namespace MSSQLand.Actions.Remote
             {
                 string provider = row["Provider"].ToString();
                 if (provider.StartsWith("SQLNCLI"))
+                {
                     sqlServerLinks.Add(row);
+                }
                 else
+                {
                     otherLinks.Add(row);
+                }
             }
 
             Logger.TaskNested($"SQL Server linked servers (chainable): {sqlServerLinks.Count}");
@@ -332,7 +336,7 @@ namespace MSSQLand.Actions.Remote
                 foreach (DataRow row in remoteLinkedServers.Rows)
                 {
                     string provider = row["Provider"].ToString();
-                    if (provider == "SQLNCLI")
+                    if (provider.StartsWith("SQLNCLI"))
                         remoteSqlLinks.Add(row);
                     else
                         remoteOtherLinks.Add(row);
