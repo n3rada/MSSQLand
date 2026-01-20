@@ -350,7 +350,7 @@ namespace MSSQLand.Actions.Remote
                     {
                         string name = row["Link"].ToString();
                         string provider = row["Provider"].ToString();
-                        Logger.TraceNested($"  • {name} ({provider})");
+                        Logger.TraceNested($"{name} ({provider})");
                     }
                     
                     // Store non-SQL links in chain entry for display
