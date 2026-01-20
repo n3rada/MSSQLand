@@ -50,5 +50,6 @@ ORDER BY UserName;
             }
 
             return null;
+        }
     }
 }
