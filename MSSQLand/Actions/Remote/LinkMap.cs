@@ -49,7 +49,7 @@ namespace MSSQLand.Actions.Remote
             foreach (DataRow row in allLinkedServers.Rows)
             {
                 string provider = row["Provider"].ToString();
-                if (provider == "SQLNCLI")
+                if (provider.StartsWith("SQLNCLI"))
                     sqlServerLinks.Add(row);
                 else
                     otherLinks.Add(row);
@@ -60,13 +60,13 @@ namespace MSSQLand.Actions.Remote
             // Show non-SQL linked servers at initial server
             if (otherLinks.Count > 0)
             {
-                Logger.InfoNested($"Other linked servers (queryable via OPENQUERY):");
+                Logger.Info($"Other linked servers (queryable via OPENQUERY):");
                 foreach (DataRow row in otherLinks)
                 {
                     string name = row["Link"].ToString();
                     string provider = row["Provider"].ToString();
                     string product = row["Product"].ToString();
-                    Logger.InfoNested($"  • {name} ({provider}) - {product}");
+                    Logger.InfoNested($"{name} ({provider}) - {product}");
                 }
             }
 
