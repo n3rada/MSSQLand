@@ -49,7 +49,7 @@ namespace MSSQLand.Actions.Remote
             foreach (DataRow row in allLinkedServers.Rows)
             {
                 string provider = row["Provider"].ToString();
-                if (provider.StartsWith("SQLNCLI"))
+                if (provider.StartsWith("SQLNCLI") || provider.StartsWith("MSOLEDBSQL"))
                 {
                     sqlServerLinks.Add(row);
                 }
@@ -336,7 +336,7 @@ namespace MSSQLand.Actions.Remote
                 foreach (DataRow row in remoteLinkedServers.Rows)
                 {
                     string provider = row["Provider"].ToString();
-                    if (provider.StartsWith("SQLNCLI"))
+                    if (provider.StartsWith("SQLNCLI") || provider.StartsWith("MSOLEDBSQL"))
                         remoteSqlLinks.Add(row);
                     else
                         remoteOtherLinks.Add(row);
