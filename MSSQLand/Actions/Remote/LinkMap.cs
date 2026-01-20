@@ -17,6 +17,15 @@ namespace MSSQLand.Actions.Remote
         [ExcludeFromArguments]
         private readonly List<List<Dictionary<string, string>>> _discoveredChains = new();
 
+        /// <summary>
+        /// Global set of server aliases that have been fully explored.
+        /// Once a server is explored via any path, we don't need to explore it again
+        /// since it will have the same linked servers regardless of how we reached it.
+        /// This prevents combinatorial explosion in mesh topologies.
+        /// </summary>
+        [ExcludeFromArguments]
+        private readonly HashSet<string> _globallyExploredServers = new(StringComparer.OrdinalIgnoreCase);
+
         [ArgumentMetadata(Position = 0, Description = "Maximum recursion depth (default: 5, max: 15)")]
         private int _limit = 5;
 
@@ -366,12 +375,24 @@ namespace MSSQLand.Actions.Remote
 
                 Logger.TraceNested($"Exploring SQL Server links on '{targetServer}' (found {remoteSqlLinks.Count})");
 
+                // Mark this server as globally explored AFTER we've enumerated its links
+                // This means we've recorded this chain and know what links exist here
+                _globallyExploredServers.Add(targetServer);
+
                 foreach (DataRow row in remoteSqlLinks)
                 {
                     string nextServer = row["Link"].ToString();
                     string nextLocalLogin = row["Local Login"] == DBNull.Value || string.IsNullOrEmpty(row["Local Login"].ToString())
                         ? null
                         : row["Local Login"].ToString();
+
+                    // Skip if we've already fully explored this server via another path
+                    // This prevents combinatorial explosion in mesh topologies (e.g., A->B->C->A, A->C->B->A)
+                    if (_globallyExploredServers.Contains(nextServer))
+                    {
+                        Logger.TraceNested($"Server '{nextServer}' already explored via another path. Skipping.");
+                        continue;
+                    }
 
                     // Create copies for this branch (each branch has its own isolated state)
                     List<Dictionary<string, string>> branchChain = new(currentChain);
