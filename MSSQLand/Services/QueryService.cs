@@ -94,6 +94,51 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
+        /// Detects if a query has already been wrapped by WrapForOpenQuery.
+        /// </summary>
+        static bool IsAlreadyWrapped(string sql)
+        {
+            return sql.Contains("DECLARE @result NVARCHAR(MAX)") ||
+                   sql.Contains("SELECT @result AS Result, @error AS Error");
+        }
+
+        /// <summary>
+        /// Detects if a query is primarily a data-returning SELECT that shouldn't be wrapped.
+        /// These queries return actual result sets and wrapping them causes metadata conflicts.
+        /// </summary>
+        static bool IsDataReturningSelect(string sql)
+        {
+            string normalized = sql.Trim().ToUpperInvariant();
+            
+            // Skip USE statements to find the actual query
+            int useEnd = 0;
+            while (true)
+            {
+                int useIdx = normalized.IndexOf("USE [", useEnd);
+                if (useIdx == -1 || useIdx > useEnd + 50) break; // No USE or too far
+                int bracket = normalized.IndexOf("]", useIdx);
+                if (bracket == -1) break;
+                int semi = normalized.IndexOf(";", bracket);
+                useEnd = semi > bracket ? semi + 1 : bracket + 1;
+            }
+            
+            string afterUse = normalized.Substring(useEnd).TrimStart();
+            
+            // If it starts with SELECT and has FROM, it's likely returning data
+            // Exclude simple scalar selects like SELECT @@VERSION, SELECT DB_NAME()
+            if (afterUse.StartsWith("SELECT") && 
+                afterUse.Contains(" FROM ") &&
+                !afterUse.Contains("INSERT") &&
+                !afterUse.Contains("UPDATE") &&
+                !afterUse.Contains("DELETE"))
+            {
+                return true;
+            }
+            
+            return false;
+        }
+
+        /// <summary>
         /// Wraps a non-rowset SQL statement into an OPENQUERY-compatible query by forcing
         /// a resultset output.
         /// </summary>
@@ -233,6 +278,22 @@ SELECT @result AS Result, @error AS Error;";
 
                 if (!_linkedServers.UseRemoteProcedureCall && IsOpenQueryRowsetFailure(ex))
                 {
+                    // Don't wrap if already wrapped (prevents infinite loop)
+                    if (IsAlreadyWrapped(query))
+                    {
+                        Logger.Debug("Query already wrapped, cannot recover from OPENQUERY failure.");
+                        throw;
+                    }
+                    
+                    // Don't wrap data-returning SELECTs - they have a different issue
+                    // (usually USE statement incompatibility with OPENQUERY)
+                    if (IsDataReturningSelect(query))
+                    {
+                        Logger.Debug("Data-returning SELECT failed via OPENQUERY. USE statements may be incompatible.");
+                        Logger.Warning("Query contains USE statement which is incompatible with OPENQUERY. Consider using 3-part names (database.schema.table) instead.");
+                        throw;
+                    }
+                    
                     Logger.Debug("OPENQUERY returned no rowset. Wrapping query.");
                     return ExecuteWithHandling(WrapForOpenQuery(query), executeReader, timeout, retryCount + 1);
                 }
