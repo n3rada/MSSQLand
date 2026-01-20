@@ -336,7 +336,10 @@ SELECT @result AS Result, @error AS Error;";
             }
             
             Server last = _linkedServers.ServerChain.Last();
-            ExecutionServer = last;
+            
+            // IMPORTANT: Create a COPY to avoid mutating the actual chain entry
+            // The chain must preserve the original alias for query routing
+            ExecutionServer = last.Copy();
 
             // Store the linked server alias (from sys.servers) for query routing
             // This is the name we use in EXEC AT / OPENQUERY
