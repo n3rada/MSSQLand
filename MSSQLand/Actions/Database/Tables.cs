@@ -64,8 +64,9 @@ namespace MSSQLand.Actions.Database
             string collViewsMsg = isConfigMgrDb ? " (excluding collection views)" : "";
             Logger.TaskNested($"Retrieving tables from [{targetDatabase}]{filterMsg}{columnsMsg}{columnMsg}{rowsMsg}{permsMsg}{collViewsMsg}");
 
-            // Build USE statement if specific database is provided
-            string useStatement = string.IsNullOrEmpty(_database) ? "" : $"USE [{_database}];";
+            // Use 3-part naming (database.schema.table) instead of USE statements
+            // USE statements don't work with OPENQUERY linked server chains
+            string dbPrefix = $"[{targetDatabase}].";
 
             // Build WHERE clause with filter (partition filter is inside OUTER APPLY)
             string whereClause = "WHERE t.type IN ('U', 'V')";
@@ -82,18 +83,16 @@ namespace MSSQLand.Actions.Database
 
             if (!string.IsNullOrEmpty(_columnFilter))
             {
-                whereClause += $" AND EXISTS (SELECT 1 FROM sys.columns c WHERE c.object_id = t.object_id AND c.name LIKE '%{_columnFilter.Replace("'", "''")}%')";
+                whereClause += $" AND EXISTS (SELECT 1 FROM {dbPrefix}sys.columns c WHERE c.object_id = t.object_id AND c.name LIKE '%{_columnFilter.Replace("'", "''")}%')";
             }
 
             if (_withRows)
             {
                 // Only filter tables (type='U') with 0 rows; always show views (type='V') since we can't count their rows
-                whereClause += " AND (t.type = 'V' OR EXISTS (SELECT 1 FROM sys.partitions p WHERE p.object_id = t.object_id AND p.index_id IN (0, 1) AND p.rows > 0))";
+                whereClause += $" AND (t.type = 'V' OR EXISTS (SELECT 1 FROM {dbPrefix}sys.partitions p WHERE p.object_id = t.object_id AND p.index_id IN (0, 1) AND p.rows > 0))";
             }
 
-            string query = $@"
-                {useStatement}
-                SELECT
+            string query = $@"SELECT
                     t.object_id AS ObjectId,
                     s.name AS SchemaName,
                     t.name AS TableName,
@@ -103,12 +102,12 @@ namespace MSSQLand.Actions.Database
                         ELSE 'N/A'
                     END AS Rows
                 FROM 
-                    sys.objects t
+                    {dbPrefix}sys.objects t
                 JOIN 
-                    sys.schemas s ON t.schema_id = s.schema_id
+                    {dbPrefix}sys.schemas s ON t.schema_id = s.schema_id
                 OUTER APPLY (
                     SELECT SUM(p.rows) AS Rows
-                    FROM sys.partitions p
+                    FROM {dbPrefix}sys.partitions p
                     WHERE p.object_id = t.object_id AND p.index_id IN (0, 1)
                 ) pr
                 {whereClause}
@@ -136,11 +135,10 @@ namespace MSSQLand.Actions.Database
             
             if (_showPermissions)
             {
-                string permissionsQuery = $@"{useStatement}
-SELECT 
+                string permissionsQuery = $@"SELECT 
     o.object_id,
     p.permission_name 
-FROM sys.objects o 
+FROM {dbPrefix}sys.objects o 
 CROSS APPLY fn_my_permissions(QUOTENAME(SCHEMA_NAME(o.schema_id)) + '.' + QUOTENAME(o.name), 'OBJECT') p 
 WHERE o.object_id IN ({objectIdFilter});";
 
@@ -164,13 +162,12 @@ WHERE o.object_id IN ({objectIdFilter});";
             
             if (_showColumns)
             {
-                string columnsQuery = $@"{useStatement}
-SELECT 
+                string columnsQuery = $@"SELECT 
     o.object_id,
     c.name AS column_name,
     TYPE_NAME(c.user_type_id) AS data_type
-FROM sys.columns c
-INNER JOIN sys.objects o ON c.object_id = o.object_id
+FROM {dbPrefix}sys.columns c
+INNER JOIN {dbPrefix}sys.objects o ON c.object_id = o.object_id
 WHERE o.object_id IN ({objectIdFilter})
 ORDER BY o.object_id, c.column_id;";
 
