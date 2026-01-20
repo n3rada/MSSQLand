@@ -395,7 +395,7 @@ namespace MSSQLand.Actions.Remote
 SELECT 
     srv.name AS [Link], 
     srv.provider AS [Provider],
-    ISNULL(srv.product, 'Unknown') AS [Product],
+    srv.product AS [Product],
     srv.data_source AS [DataSource],
     prin.name AS [Local Login],
     ll.remote_name AS [Remote Login]
