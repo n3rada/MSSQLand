@@ -72,6 +72,14 @@ namespace MSSQLand.Actions.Execution
                 Logger.TraceNested($"Line Number: {sqlEx.LineNumber}");
                 Logger.TraceNested($"Procedure: {sqlEx.Procedure}");
                 Logger.TraceNested($"Server: {sqlEx.Server}");
+
+                // Provide guidance for common distributed query errors
+                if (sqlEx.Number == 9514) // XML data type not supported
+                {
+                    Logger.Warning("XML columns are not supported in distributed queries (EXEC AT / OPENQUERY).");
+                    Logger.WarningNested("Use explicit column list and CAST XML columns: CAST([XmlCol] AS NVARCHAR(MAX))");
+                }
+
                 return null;
             }
             catch (Exception ex)
