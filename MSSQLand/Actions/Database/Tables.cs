@@ -66,7 +66,7 @@ namespace MSSQLand.Actions.Database
 
             // Use 3-part naming (database.schema.table) instead of USE statements
             // USE statements don't work with OPENQUERY linked server chains
-            string dbPrefix = $"[{targetDatabase}].";
+            string dbPrefix = $"{Misc.QuoteIdentifier(targetDatabase)}.";
 
             // Build WHERE clause with filter (partition filter is inside OUTER APPLY)
             string whereClause = "WHERE t.type IN ('U', 'V')";

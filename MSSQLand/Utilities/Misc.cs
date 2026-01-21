@@ -394,6 +394,28 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
+        /// Quotes a SQL Server identifier by wrapping it in square brackets.
+        /// Safely handles identifiers that may already be bracketed.
+        /// Use this for database, schema, or table names in dynamic SQL.
+        /// </summary>
+        /// <param name="identifier">The identifier to quote.</param>
+        /// <returns>The identifier wrapped in brackets, e.g., [master].</returns>
+        /// <example>
+        /// QuoteIdentifier("master") => "[master]"
+        /// QuoteIdentifier("[master]") => "[master]"
+        /// QuoteIdentifier("my database") => "[my database]"
+        /// QuoteIdentifier(null) => null
+        /// </example>
+        public static string QuoteIdentifier(string identifier)
+        {
+            if (string.IsNullOrEmpty(identifier))
+                return identifier;
+            
+            // Strip any existing brackets first, then add them
+            return $"[{StripBrackets(identifier)}]";
+        }
+
+        /// <summary>
         /// Strips square brackets from a SQL Server identifier.
         /// Used when parsing user input that may contain bracketed identifiers.
         /// </summary>
@@ -404,7 +426,7 @@ namespace MSSQLand.Utilities
         /// StripBrackets("database") => "database"
         /// StripBrackets(null) => null
         /// </example>
-        private static string StripBrackets(string identifier)
+        public static string StripBrackets(string identifier)
         {
             if (string.IsNullOrEmpty(identifier))
                 return identifier;
@@ -531,7 +553,7 @@ namespace MSSQLand.Utilities
         /// <summary>
         /// Builds a fully qualified table name in SQL Server format.
         /// Handles empty schema by using the double-dot notation (database..table).
-        /// Automatically strips brackets from inputs to prevent double-bracketing.
+        /// Automatically handles identifiers that may already be bracketed.
         /// </summary>
         /// <param name="database">Database name (required).</param>
         /// <param name="schema">Schema name (optional - if null/empty, uses double-dot notation).</param>
@@ -550,20 +572,15 @@ namespace MSSQLand.Utilities
             if (string.IsNullOrEmpty(table))
                 throw new ArgumentException("Table name cannot be null or empty.", nameof(table));
 
-            // Strip brackets from inputs to prevent double-bracketing
-            database = StripBrackets(database);
-            table = StripBrackets(table);
-
             if (string.IsNullOrEmpty(schema))
             {
                 // Format: [database]..[table] (no schema)
-                return $"[{database}]..[{table}]";
+                return $"{QuoteIdentifier(database)}..{QuoteIdentifier(table)}";
             }
             else
             {
                 // Format: [database].[schema].[table]
-                schema = StripBrackets(schema);
-                return $"[{database}].[{schema}].[{table}]";
+                return $"{QuoteIdentifier(database)}.{QuoteIdentifier(schema)}.{QuoteIdentifier(table)}";
             }
         }
     }
