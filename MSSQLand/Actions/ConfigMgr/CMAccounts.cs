@@ -32,7 +32,7 @@ namespace MSSQLand.Actions.ConfigMgr
                 Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 string query = $@"
-SELECT UserName, Password, Availability
+SELECT *
 FROM [{db}].dbo.SC_UserAccount
 ORDER BY UserName;
 ";
