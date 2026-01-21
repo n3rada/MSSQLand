@@ -29,8 +29,6 @@ namespace MSSQLand.Actions.Remote
             public bool IsSysadmin { get; set; }
             public List<string> NonSqlLinks { get; set; } = new();
             public List<ServerNode> Children { get; set; } = new();
-            
-            public bool IsPrivileged => IsSysadmin || MappedUser.Equals("dbo", StringComparison.OrdinalIgnoreCase);
         }
 
         [ExcludeFromArguments]
@@ -103,7 +101,7 @@ namespace MSSQLand.Actions.Remote
                 LoggedInUser = databaseContext.Server.SystemUser,
                 MappedUser = databaseContext.Server.MappedUser,
                 ImpersonatedUser = null,
-                IsSysadmin = false // We don't check this for the starting server
+                IsSysadmin = databaseContext.UserService.IsAdmin()
             };
 
             // Add non-SQL linked servers at initial server
@@ -404,7 +402,7 @@ namespace MSSQLand.Actions.Remote
             }
 
             // Privilege marker
-            string privilegeMarker = node.IsPrivileged ? " ★" : "";
+            string privilegeMarker = node.IsSysadmin ? " ★" : "";
 
             // Build the main line with chain command
             Console.WriteLine($"{indent}{connector}{displayName} ({node.LoggedInUser} [{node.MappedUser}]){privilegeMarker}");
@@ -437,7 +435,7 @@ namespace MSSQLand.Actions.Remote
                 if (chain.Count == 0) continue;
                 
                 var lastNode = chain[chain.Count - 1];
-                if (lastNode.IsPrivileged)
+                if (lastNode.IsSysadmin)
                     privilegedChains.Add(chain);
                 else
                     standardChains.Add(chain);
@@ -445,7 +443,7 @@ namespace MSSQLand.Actions.Remote
 
             if (privilegedChains.Count > 0)
             {
-                Logger.Success($"Privileged chains ({privilegedChains.Count}) - sysadmin or dbo at endpoint:");
+                Logger.Success($"Privileged chains ({privilegedChains.Count}) - sysadmin at endpoint:");
                 foreach (var chain in privilegedChains)
                 {
                     DisplayChainCommand(chain);
@@ -485,7 +483,7 @@ namespace MSSQLand.Actions.Remote
                 endpoint = $"{lastNode.Alias} [{lastNode.ActualName}]";
             }
 
-            string privilegeMarker = lastNode.IsPrivileged ? " ★" : "";
+            string privilegeMarker = lastNode.IsSysadmin ? " ★" : "";
             
             LinkedServers linkedServers = new LinkedServers(serverList.ToArray());
             string chainArg = linkedServers.GetChainArguments();
