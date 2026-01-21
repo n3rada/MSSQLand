@@ -6,16 +6,35 @@ using MSSQLand.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Text;
 
 namespace MSSQLand.Actions.Remote
 {
     /// <summary>
     /// Recursively explores all accessible linked server chains, mapping execution paths.
+    /// Uses a tree structure for efficient storage and cleaner output.
     /// </summary>
     internal class LinkMap : BaseAction
     {
+        /// <summary>
+        /// Represents a node in the linked server tree.
+        /// </summary>
+        private class ServerNode
+        {
+            public string Alias { get; set; }
+            public string ActualName { get; set; }
+            public string LoggedInUser { get; set; }
+            public string MappedUser { get; set; }
+            public string ImpersonatedUser { get; set; }
+            public bool IsSysadmin { get; set; }
+            public List<string> NonSqlLinks { get; set; } = new();
+            public List<ServerNode> Children { get; set; } = new();
+            
+            public bool IsPrivileged => IsSysadmin || MappedUser.Equals("dbo", StringComparison.OrdinalIgnoreCase);
+        }
+
         [ExcludeFromArguments]
-        private readonly List<List<Dictionary<string, string>>> _discoveredChains = new();
+        private ServerNode _rootNode;
 
         /// <summary>
         /// Global set of server aliases that have been fully explored.
@@ -25,6 +44,12 @@ namespace MSSQLand.Actions.Remote
         /// </summary>
         [ExcludeFromArguments]
         private readonly HashSet<string> _globallyExploredServers = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Tracks all discovered chains for programmatic access.
+        /// </summary>
+        [ExcludeFromArguments]
+        private readonly List<List<ServerNode>> _allChains = new();
 
         [ArgumentMetadata(Position = 0, Description = "Maximum recursion depth (default: 5, max: 15)")]
         private int _limit = 5;
@@ -70,7 +95,25 @@ namespace MSSQLand.Actions.Remote
 
             Logger.TaskNested($"SQL Server linked servers (chainable): {sqlServerLinks.Count}");
 
-            // Show non-SQL linked servers at initial server
+            // Create root node representing the starting server
+            _rootNode = new ServerNode
+            {
+                Alias = databaseContext.Server.Hostname,
+                ActualName = databaseContext.Server.Hostname,
+                LoggedInUser = databaseContext.Server.SystemUser,
+                MappedUser = databaseContext.Server.MappedUser,
+                ImpersonatedUser = null,
+                IsSysadmin = false // We don't check this for the starting server
+            };
+
+            // Add non-SQL linked servers at initial server
+            foreach (DataRow row in otherLinks)
+            {
+                string name = row["Link"].ToString();
+                string provider = row["Provider"].ToString();
+                _rootNode.NonSqlLinks.Add($"{name} ({provider})");
+            }
+
             if (otherLinks.Count > 0)
             {
                 Logger.Info($"Other linked servers (queryable via OPENQUERY):");
@@ -90,14 +133,16 @@ namespace MSSQLand.Actions.Remote
             }
 
             // Compute starting server's state hash for loop detection
-            // This prevents chains that loop back to the starting point
             ServerExecutionState startingState = ServerExecutionState.FromContext(
                 databaseContext.Server.Hostname, 
                 databaseContext.UserService
             );
             string startingHash = startingState.GetStateHash();
 
-            // Start exploration from each linked server
+            // Mark starting server as explored
+            _globallyExploredServers.Add(databaseContext.Server.Hostname);
+
+            // Explore each linked server from root
             foreach (DataRow row in sqlServerLinks)
             {
                 string remoteServer = row["Link"].ToString();
@@ -105,147 +150,53 @@ namespace MSSQLand.Actions.Remote
                     ? null 
                     : row["Local Login"].ToString();
 
-                // Start a new chain with its own visited states for loop detection
-                // Include the starting server to detect loops back to origin
-                List<Dictionary<string, string>> currentChain = new();
+                // Skip if already explored (shouldn't happen at root level, but be safe)
+                if (_globallyExploredServers.Contains(remoteServer))
+                {
+                    Logger.TraceNested($"Server '{remoteServer}' already explored. Skipping.");
+                    continue;
+                }
+
                 HashSet<string> visitedInChain = new() { startingHash };
-                
-                // Create a temp context to not pollute the original
                 DatabaseContext tempContext = databaseContext.Copy();
+                List<ServerNode> currentPath = new();
                 
-                ExploreLinkedServer(tempContext, remoteServer, localLogin, currentChain, visitedInChain, currentDepth: 0);
+                ExploreLinkedServer(tempContext, remoteServer, localLogin, _rootNode, currentPath, visitedInChain, currentDepth: 0);
             }
 
-            // Display results
-            string initialServerEntry = $"{databaseContext.Server.Hostname} ({databaseContext.Server.SystemUser} [{databaseContext.Server.MappedUser}])";
-
-            if (!databaseContext.QueryService.LinkedServers.IsEmpty)
-            {
-                initialServerEntry += " -> " + string.Join(" -> ", databaseContext.QueryService.LinkedServers.GetChainParts()) 
-                    + $" ({databaseContext.UserService.SystemUser} [{databaseContext.UserService.MappedUser}])";
-            }
-
-            if (_discoveredChains.Count == 0)
+            // Count total chains
+            int totalChains = CountLeafNodes(_rootNode);
+            
+            if (totalChains == 0)
             {
                 Logger.Warning("No accessible linked server chains found.");
                 return null;
             }
 
-            Logger.Success($"Found {_discoveredChains.Count} accessible chain(s)");
+            Logger.Success($"Found {totalChains} accessible chain(s)");
 
-            // Separate chains by privilege level at final server
-            var privilegedChains = new List<List<Dictionary<string, string>>>();
-            var standardChains = new List<List<Dictionary<string, string>>>();
+            // Display tree view
+            Logger.NewLine();
+            DisplayTree();
 
-            foreach (var chain in _discoveredChains)
-            {
-                if (chain.Count == 0) continue;
-                
-                // Check if privileged at the last hop (sysadmin OR mapped to dbo)
-                var lastEntry = chain[chain.Count - 1];
-                bool isSysadminAtEnd = lastEntry.ContainsKey("IsSysadmin") && 
-                                       lastEntry["IsSysadmin"].Equals("True", StringComparison.OrdinalIgnoreCase);
-                bool isDboAtEnd = lastEntry.ContainsKey("Mapped") &&
-                                  lastEntry["Mapped"].Equals("dbo", StringComparison.OrdinalIgnoreCase);
-                
-                if (isSysadminAtEnd || isDboAtEnd)
-                    privilegedChains.Add(chain);
-                else
-                    standardChains.Add(chain);
-            }
+            // Display chain commands summary
+            Logger.NewLine();
+            DisplayChainCommands();
 
-            // Display privileged chains first
-            if (privilegedChains.Count > 0)
-            {
-                Logger.NewLine();
-                Logger.Success($"Privileged paths ({privilegedChains.Count}) - sysadmin or dbo at final server:");
-                DisplayChains(privilegedChains, initialServerEntry, isPrivileged: true);
-            }
-
-            // Display standard chains
-            if (standardChains.Count > 0)
-            {
-                Logger.NewLine();
-                Logger.Info($"Standard paths ({standardChains.Count}):");
-                DisplayChains(standardChains, initialServerEntry, isPrivileged: false);
-            }
-
-            return _discoveredChains;
-        }
-
-        private void DisplayChains(List<List<Dictionary<string, string>>> chains, string initialServerEntry, bool isPrivileged)
-        {
-            foreach (var chain in chains)
-            {
-                if (chain.Count == 0) continue;
-
-                List<string> formattedLines = new() { initialServerEntry };
-                List<Server> serverChainList = new();
-
-                foreach (var entry in chain)
-                {
-                    string serverName = entry["ServerName"];
-                    string actualName = entry.ContainsKey("ActualServerName") ? entry["ActualServerName"] : serverName;
-                    string loggedIn = entry["LoggedIn"];
-                    string mapped = entry["Mapped"];
-                    string impersonatedUser = entry.ContainsKey("ImpersonatedUser") ? entry["ImpersonatedUser"].Trim() : "-";
-
-                    // Display format: show actual name in brackets if different from alias
-                    string displayName = serverName;
-                    if (!serverName.Equals(actualName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        displayName = $"{serverName} [{actualName}]";
-                    }
-
-                    // Add privileged indicator (sysadmin or dbo)
-                    bool isSysadmin = entry.ContainsKey("IsSysadmin") && 
-                                      entry["IsSysadmin"].Equals("True", StringComparison.OrdinalIgnoreCase);
-                    bool isDbo = mapped.Equals("dbo", StringComparison.OrdinalIgnoreCase);
-                    string privilegeMarker = (isSysadmin || isDbo) ? " ★" : "";
-
-                    formattedLines.Add($"-{(impersonatedUser != "-" ? $" {impersonatedUser} " : "-")}-> {displayName} ({loggedIn} [{mapped}]){privilegeMarker}");
-                    
-                    // Show non-SQL linked servers available at this node
-                    if (entry.ContainsKey("NonSqlLinks") && !string.IsNullOrEmpty(entry["NonSqlLinks"]))
-                    {
-                        formattedLines.Add($"[OPENQUERY: {entry["NonSqlLinks"]}]");
-                    }
-                    
-                    serverChainList.Add(new Server
-                    {
-                        Hostname = serverName,
-                        ImpersonationUser = impersonatedUser != "-" ? impersonatedUser : null,
-                        Database = null
-                    });
-                }
-
-                Console.WriteLine();
-                Console.WriteLine(string.Join(" ", formattedLines));
-                
-                if (serverChainList.Count > 0)
-                {
-                    LinkedServers chainForDisplay = new LinkedServers(serverChainList.ToArray());
-                    string chainCommand = $"-l {chainForDisplay.GetChainArguments()}";
-                    Logger.InfoNested($"To use this chain: {chainCommand}");
-                }
-            }
+            return _allChains;
         }
 
         /// <summary>
-        /// Recursively explores linked servers.
-        /// If a link requires a specific local login different from current user, attempts impersonation.
-        /// Impersonation works at any depth because it uses the /user syntax in the chain path.
-        /// Loop detection is per-chain: same server+user in the current path = loop, skip.
+        /// Recursively explores linked servers, building a tree structure.
         /// </summary>
-        private void ExploreLinkedServer(DatabaseContext databaseContext, string targetServer, string requiredLocalLogin, 
-            List<Dictionary<string, string>> currentChain, HashSet<string> visitedInChain, int currentDepth)
+        private void ExploreLinkedServer(DatabaseContext databaseContext, string targetServer, string requiredLocalLogin,
+            ServerNode parentNode, List<ServerNode> currentPath, HashSet<string> visitedInChain, int currentDepth)
         {
             if (currentDepth >= _limit)
             {
-                Logger.TraceNested($"Limit {_limit} reached at server '{targetServer}'. Backtracking."); 
+                Logger.TraceNested($"Limit {_limit} reached at server '{targetServer}'. Backtracking.");
                 return;
             }
-
 
             try
             {
@@ -254,13 +205,12 @@ namespace MSSQLand.Actions.Remote
                 // Check if we need to impersonate to take this link
                 if (!string.IsNullOrEmpty(requiredLocalLogin))
                 {
-                    Logger.TraceNested($"Link to '{targetServer}' requires local login '{requiredLocalLogin}'");    
+                    Logger.TraceNested($"Link to '{targetServer}' requires local login '{requiredLocalLogin}'");
                     var (_, currentSystemUser) = databaseContext.UserService.GetInfo();
-                    
+
                     if (!currentSystemUser.Equals(requiredLocalLogin, StringComparison.OrdinalIgnoreCase))
                     {
                         Logger.TraceNested($"Impersonating user '{requiredLocalLogin}' on server '{targetServer}'");
-                        // Try to impersonate
                         try
                         {
                             databaseContext.UserService.ImpersonateUser(requiredLocalLogin);
@@ -277,7 +227,7 @@ namespace MSSQLand.Actions.Remote
                 // Add server to chain
                 databaseContext.QueryService.LinkedServers.AddToChain(targetServer);
 
-                // Query actual server name (@@SERVERNAME) - may differ from alias
+                // Query actual server name
                 string actualServerName = targetServer;
                 try
                 {
@@ -296,35 +246,36 @@ namespace MSSQLand.Actions.Remote
                 var (mappedUser, remoteLoggedInUser) = databaseContext.UserService.GetInfo();
                 Logger.TraceNested($"Logged in to server '{targetServer}' (actual: {actualServerName}) as: '{remoteLoggedInUser}' [{mappedUser}]");
 
-                // Create state hash for loop detection (server + user context)
-                // Use the ALIAS for loop detection since that's how we route queries
+                // Create state hash for loop detection
                 ServerExecutionState currentState = ServerExecutionState.FromContext(targetServer, databaseContext.UserService);
                 string stateHash = currentState.GetStateHash();
 
                 // Check for loop in THIS chain path only
                 if (visitedInChain.Contains(stateHash))
                 {
-                    // Loop detected in current path
                     Logger.TraceNested($"Loop detected at server '{targetServer}' with user '{currentState.SystemUser}'. Skipping to prevent infinite recursion.");
                     return;
                 }
 
                 visitedInChain.Add(stateHash);
 
-                // Add this server to current chain
-                var chainEntry = new Dictionary<string, string>
+                // Create node for this server
+                var currentNode = new ServerNode
                 {
-                    { "ServerName", targetServer },
-                    { "ActualServerName", actualServerName },
-                    { "LoggedIn", currentState.SystemUser },
-                    { "Mapped", currentState.MappedUser },
-                    { "ImpersonatedUser", impersonatedUser ?? "-" },
-                    { "IsSysadmin", currentState.IsSysadmin.ToString() }
+                    Alias = targetServer,
+                    ActualName = actualServerName,
+                    LoggedInUser = currentState.SystemUser,
+                    MappedUser = currentState.MappedUser,
+                    ImpersonatedUser = impersonatedUser,
+                    IsSysadmin = currentState.IsSysadmin
                 };
-                currentChain.Add(chainEntry);
 
-                // Save this chain (make a copy)
-                _discoveredChains.Add(new List<Dictionary<string, string>>(currentChain));
+                // Add to parent's children
+                parentNode.Children.Add(currentNode);
+
+                // Track the path for chain commands
+                var newPath = new List<ServerNode>(currentPath) { currentNode };
+                _allChains.Add(newPath);
 
                 // Get linked servers from this remote server
                 DataTable remoteLinkedServers;
@@ -341,7 +292,7 @@ namespace MSSQLand.Actions.Remote
                 // Separate SQL Server links from others
                 var remoteSqlLinks = new List<DataRow>();
                 var remoteOtherLinks = new List<DataRow>();
-                
+
                 foreach (DataRow row in remoteLinkedServers.Rows)
                 {
                     string provider = row["Provider"].ToString();
@@ -351,7 +302,7 @@ namespace MSSQLand.Actions.Remote
                         remoteOtherLinks.Add(row);
                 }
 
-                // Log non-SQL linked servers found at this node
+                // Store non-SQL linked servers
                 if (remoteOtherLinks.Count > 0)
                 {
                     Logger.TraceNested($"Non-SQL linked servers on '{targetServer}':");
@@ -359,24 +310,14 @@ namespace MSSQLand.Actions.Remote
                     {
                         string name = row["Link"].ToString();
                         string provider = row["Provider"].ToString();
+                        currentNode.NonSqlLinks.Add($"{name} ({provider})");
                         Logger.TraceNested($"{name} ({provider})");
                     }
-                    
-                    // Store non-SQL links in chain entry for display
-                    var nonSqlLinks = new List<string>();
-                    foreach (DataRow row in remoteOtherLinks)
-                    {
-                        nonSqlLinks.Add($"{row["Link"]} ({row["Provider"]})");
-                    }
-                    chainEntry["NonSqlLinks"] = string.Join(", ", nonSqlLinks);
-                    // Update the saved chain with non-SQL links info
-                    _discoveredChains[_discoveredChains.Count - 1] = new List<Dictionary<string, string>>(currentChain);
                 }
 
                 Logger.TraceNested($"Exploring SQL Server links on '{targetServer}' (found {remoteSqlLinks.Count})");
 
-                // Mark this server as globally explored AFTER we've enumerated its links
-                // This means we've recorded this chain and know what links exist here
+                // Mark this server as globally explored
                 _globallyExploredServers.Add(targetServer);
 
                 foreach (DataRow row in remoteSqlLinks)
@@ -386,28 +327,170 @@ namespace MSSQLand.Actions.Remote
                         ? null
                         : row["Local Login"].ToString();
 
-                    // Skip if we've already fully explored this server via another path
-                    // This prevents combinatorial explosion in mesh topologies (e.g., A->B->C->A, A->C->B->A)
+                    // Skip if already explored globally
                     if (_globallyExploredServers.Contains(nextServer))
                     {
                         Logger.TraceNested($"Server '{nextServer}' already explored via another path. Skipping.");
                         continue;
                     }
 
-                    // Create copies for this branch (each branch has its own isolated state)
-                    List<Dictionary<string, string>> branchChain = new(currentChain);
+                    // Create copies for this branch
                     HashSet<string> branchVisited = new(visitedInChain);
                     DatabaseContext branchContext = databaseContext.Copy();
 
                     // Explore recursively
-                    ExploreLinkedServer(branchContext, nextServer, nextLocalLogin, branchChain, branchVisited, currentDepth + 1);
+                    ExploreLinkedServer(branchContext, nextServer, nextLocalLogin, currentNode, newPath, branchVisited, currentDepth + 1);
                 }
             }
             catch (Exception ex)
             {
-                // Log the error so we can see why exploration failed
                 Logger.TraceNested($"Failed to explore {targetServer}: {ex.Message}");
             }
+        }
+
+        private int CountLeafNodes(ServerNode node)
+        {
+            if (node.Children.Count == 0)
+                return 1;
+            
+            int count = 0;
+            foreach (var child in node.Children)
+            {
+                count += CountLeafNodes(child);
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Displays the linked server tree with ASCII art.
+        /// </summary>
+        private void DisplayTree()
+        {
+            Console.WriteLine($"{_rootNode.Alias} ({_rootNode.LoggedInUser} [{_rootNode.MappedUser}])");
+            
+            if (_rootNode.NonSqlLinks.Count > 0)
+            {
+                Console.WriteLine($"    [OPENQUERY: {string.Join(", ", _rootNode.NonSqlLinks)}]");
+            }
+
+            List<string> currentPath = new();
+            for (int i = 0; i < _rootNode.Children.Count; i++)
+            {
+                bool isLast = (i == _rootNode.Children.Count - 1);
+                DisplayTreeNode(_rootNode.Children[i], "", isLast, currentPath);
+            }
+        }
+
+        private void DisplayTreeNode(ServerNode node, string indent, bool isLast, List<string> parentPath)
+        {
+            string connector = isLast ? "└─► " : "├─► ";
+            string childIndent = indent + (isLast ? "    " : "│   ");
+
+            // Build chain path for this node
+            List<string> currentPath = new(parentPath);
+            string chainPart = node.Alias;
+            if (!string.IsNullOrEmpty(node.ImpersonatedUser))
+            {
+                chainPart = $"{node.Alias}/{node.ImpersonatedUser}";
+            }
+            currentPath.Add(chainPart);
+            string chainCommand = string.Join(";", currentPath);
+
+            // Format display name
+            string displayName = node.Alias;
+            if (!node.Alias.Equals(node.ActualName, StringComparison.OrdinalIgnoreCase))
+            {
+                displayName = $"{node.Alias} [{node.ActualName}]";
+            }
+
+            // Privilege marker
+            string privilegeMarker = node.IsPrivileged ? " ★" : "";
+
+            // Build the main line with chain command
+            Console.WriteLine($"{indent}{connector}{displayName} ({node.LoggedInUser} [{node.MappedUser}]){privilegeMarker}");
+            Console.WriteLine($"{childIndent}► -l {chainCommand}");
+
+            // Show non-SQL links if any
+            if (node.NonSqlLinks.Count > 0)
+            {
+                Console.WriteLine($"{childIndent}[OPENQUERY: {string.Join(", ", node.NonSqlLinks)}]");
+            }
+
+            // Display children
+            for (int i = 0; i < node.Children.Count; i++)
+            {
+                bool childIsLast = (i == node.Children.Count - 1);
+                DisplayTreeNode(node.Children[i], childIndent, childIsLast, currentPath);
+            }
+        }
+
+        /// <summary>
+        /// Displays chain commands for all discovered paths, grouped by privilege level.
+        /// </summary>
+        private void DisplayChainCommands()
+        {
+            var privilegedChains = new List<List<ServerNode>>();
+            var standardChains = new List<List<ServerNode>>();
+
+            foreach (var chain in _allChains)
+            {
+                if (chain.Count == 0) continue;
+                
+                var lastNode = chain[chain.Count - 1];
+                if (lastNode.IsPrivileged)
+                    privilegedChains.Add(chain);
+                else
+                    standardChains.Add(chain);
+            }
+
+            if (privilegedChains.Count > 0)
+            {
+                Logger.Success($"Privileged chains ({privilegedChains.Count}) - sysadmin or dbo at endpoint:");
+                foreach (var chain in privilegedChains)
+                {
+                    DisplayChainCommand(chain);
+                }
+            }
+
+            if (standardChains.Count > 0)
+            {
+                Logger.NewLine();
+                Logger.Info($"Standard chains ({standardChains.Count}):");
+                foreach (var chain in standardChains)
+                {
+                    DisplayChainCommand(chain);
+                }
+            }
+        }
+
+        private void DisplayChainCommand(List<ServerNode> chain)
+        {
+            if (chain.Count == 0) return;
+
+            var serverList = new List<Server>();
+            foreach (var node in chain)
+            {
+                serverList.Add(new Server
+                {
+                    Hostname = node.Alias,
+                    ImpersonationUser = node.ImpersonatedUser,
+                    Database = null
+                });
+            }
+
+            var lastNode = chain[chain.Count - 1];
+            string endpoint = lastNode.Alias;
+            if (!lastNode.Alias.Equals(lastNode.ActualName, StringComparison.OrdinalIgnoreCase))
+            {
+                endpoint = $"{lastNode.Alias} [{lastNode.ActualName}]";
+            }
+
+            string privilegeMarker = lastNode.IsPrivileged ? " ★" : "";
+            
+            LinkedServers linkedServers = new LinkedServers(serverList.ToArray());
+            string chainArg = linkedServers.GetChainArguments();
+            
+            Logger.InfoNested($"{endpoint}{privilegeMarker}: -l {chainArg}");
         }
 
         private static DataTable QueryAllLinkedServers(DatabaseContext databaseContext)
