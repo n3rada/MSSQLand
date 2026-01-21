@@ -364,11 +364,13 @@ namespace MSSQLand.Actions.Remote
         /// </summary>
         private void DisplayTree()
         {
-            Console.WriteLine($"{_rootNode.Alias} ({_rootNode.LoggedInUser} [{_rootNode.MappedUser}])");
+            // Root node - show privilege marker if sysadmin
+            string rootPrivilege = _rootNode.IsSysadmin ? " ★" : "";
+            Console.WriteLine($"{_rootNode.Alias} ({_rootNode.LoggedInUser} [{_rootNode.MappedUser}]){rootPrivilege}");
             
             if (_rootNode.NonSqlLinks.Count > 0)
             {
-                Console.WriteLine($"    [OPENQUERY: {string.Join(", ", _rootNode.NonSqlLinks)}]");
+                Console.WriteLine($"    └── [OPENQUERY] {string.Join(", ", _rootNode.NonSqlLinks)}");
             }
 
             List<string> currentPath = new();
@@ -381,7 +383,7 @@ namespace MSSQLand.Actions.Remote
 
         private void DisplayTreeNode(ServerNode node, string indent, bool isLast, List<string> parentPath)
         {
-            string connector = isLast ? "└─► " : "├─► ";
+            string connector = isLast ? "└── " : "├── ";
             string childIndent = indent + (isLast ? "    " : "│   ");
 
             // Build chain path for this node
@@ -404,14 +406,13 @@ namespace MSSQLand.Actions.Remote
             // Privilege marker
             string privilegeMarker = node.IsSysadmin ? " ★" : "";
 
-            // Build the main line with chain command
-            Console.WriteLine($"{indent}{connector}{displayName} ({node.LoggedInUser} [{node.MappedUser}]){privilegeMarker}");
-            Console.WriteLine($"{childIndent}► -l {chainCommand}");
+            // Build the main line: name (user [mapped]) -l chain
+            Console.WriteLine($"{indent}{connector}{displayName} ({node.LoggedInUser} [{node.MappedUser}]){privilegeMarker}  -l {chainCommand}");
 
             // Show non-SQL links if any
             if (node.NonSqlLinks.Count > 0)
             {
-                Console.WriteLine($"{childIndent}[OPENQUERY: {string.Join(", ", node.NonSqlLinks)}]");
+                Console.WriteLine($"{childIndent}└── [OPENQUERY] {string.Join(", ", node.NonSqlLinks)}");
             }
 
             // Display children
