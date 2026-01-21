@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.ConfigMgr
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Enumerating ConfigMgr stored credentials");
+            Logger.TaskNested("Enumerating ConfigMgr user accounts (NAA, Client Push, Task Sequence)");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -41,12 +41,12 @@ ORDER BY UserName;
 
                 if (result.Rows.Count == 0)
                 {
-                    Logger.Warning("No stored credentials found");
+                    Logger.Warning("No user accounts found");
                     continue;
                 }
 
                 Console.WriteLine(OutputFormatter.ConvertDataTable(result));
-                Logger.Success($"Found {result.Rows.Count} stored credential(s)");
+                Logger.Success($"Found {result.Rows.Count} user account(s) with encrypted credentials");
             }
 
             return null;
