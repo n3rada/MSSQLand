@@ -92,7 +92,7 @@ namespace MSSQLand.Utilities
             // REMOTE DATA ACCESS ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
             { "links", (typeof(Links), "Enumerate linked servers and their configuration.", null) },
-            { "linkmap", (typeof(LinkMap), "Recursively map linked server chains as a tree with loop detection. Highlights sysadmin endpoints.", null) },
+            { "linkmap", (typeof(LinkMap), "Recursively map linked server chains as a tree with loop detection. Highlights sysadmin endpoints.", new[] { "linksmap" }) },
             { "linkcreds", (typeof(LinkCredentials), "Extract linked server credentials (requires sysadmin).", new[] { "linkcredentials", "link-creds" }) },
             { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.", null) },
             { "data", (typeof(DataAccess), "Enable or disable data access (OPENQUERY) on linked servers.", null) },
@@ -102,7 +102,7 @@ namespace MSSQLand.Utilities
             { "adsi-manager", (typeof(AdsiManager), "Manage ADSI linked servers: list, create, or delete ADSI providers.", null) },
             { "adsi-query", (typeof(AdsiQuery), "Query Active Directory via ADSI using fully qualified domain name (auto-creates temp server if needed).", null) },
             { "adsi-creds", (typeof(AdsiCredentialExtractor), "Extract SQL login passwords via LDAP simple bind interception (useful through linked server chains or for ADSI servers with mapped credentials).", null) },
-            { "smbcoerce", (typeof(SmbCoerce), "Force SMB authentication to a specified UNC path to capture time-limited Net-NTLMv2 challenge/response.", null) },
+            { "coerceauth", (typeof(SmbCoerce), "Force SMB authentication to a specified UNC path to capture Net-NTLMv2 challenge/response.", new[] { "unc", "coerce", "smb", "ntlm" }) },
 
 #if ENABLE_CM
             // ═══════════════════════════════════════════════════════════════════════════════
