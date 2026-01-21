@@ -186,6 +186,10 @@ namespace MSSQLand.Utilities
             }
 
             Console.WriteLine($"\nAction: {action.ActionName}");
+            if (action.Aliases != null && action.Aliases.Length > 0)
+            {
+                Console.WriteLine($"Aliases: {string.Join(", ", action.Aliases)}");
+            }
             Console.WriteLine($"Description: {action.Description}");
             Console.WriteLine();
 

@@ -190,9 +190,9 @@ namespace MSSQLand.Utilities
             return action;
         }
 
-        public static List<(string ActionName, string Description, List<string> Arguments, string Category)> GetAvailableActions()
+        public static List<(string ActionName, string Description, List<string> Arguments, string Category, string[] Aliases)> GetAvailableActions()
         {
-            var result = new List<(string ActionName, string Description, List<string> Arguments, string Category)>();
+            var result = new List<(string ActionName, string Description, List<string> Arguments, string Category, string[] Aliases)>();
 
             foreach (var action in ActionMetadata)
             {
@@ -203,7 +203,7 @@ namespace MSSQLand.Utilities
                 string fullNamespace = action.Value.ActionClass.Namespace;
                 string category = fullNamespace.Substring(fullNamespace.LastIndexOf('.') + 1);
                 
-                result.Add((action.Key, action.Value.Description, arguments, category));
+                result.Add((action.Key, action.Value.Description, arguments, category, action.Value.Aliases));
             }
 
             return result;
