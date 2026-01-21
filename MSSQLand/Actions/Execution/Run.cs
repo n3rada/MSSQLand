@@ -5,32 +5,40 @@ using MSSQLand.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 
 namespace MSSQLand.Actions.Execution
 {
     /// <summary>
     /// Execute a remote file on the SQL Server filesystem.
     /// 
-    /// This action runs executables, scripts, or batch files on the SQL Server using
-    /// multiple methods in order of preference:
-    /// 1. OLE Automation with WScript.Shell
-    /// 2. xp_cmdshell (fallback)
+    /// Runs executables, scripts, or batch files using OLE Automation (WScript.Shell)
+    /// by default, or xp_cmdshell as fallback.
     /// 
-    /// If the file does not exist, an error will be reported during execution.
+    /// Modes:
+    /// - Default: async via OLE (fire and forget, non-blocking)
+    /// - -w/--wait: sync via OLE (wait for completion, return exit code)
+    /// - -o/--capture-output: sync via xp_cmdshell (capture stdout)
+    /// 
+    /// Examples:
+    ///   run C:\tool.exe                    (async via OLE)
+    ///   run C:\tool.exe arg1 arg2          (async with args)
+    ///   run C:\tool.exe -w                 (wait for exit code)
+    ///   run C:\tool.exe -o                 (capture output via xp_cmdshell)
     /// </summary>
     internal class Run : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "Remote file path to execute")]
         private string _filePath = "";
 
-        [ArgumentMetadata(Position = 1, ShortName = "w", LongName = "wait", Description = "Execute synchronously (wait for completion)")]
+        [ArgumentMetadata(ShortName = "w", LongName = "wait", Description = "Execute synchronously (wait for completion)")]
+        private bool _wait = false;
+
+        [ArgumentMetadata(ShortName = "o", LongName = "capture-output", Description = "Capture and display output (forces sync + xp_cmdshell)")]
         private bool _captureOutput = false;
 
         [ExcludeFromArguments]
         private string _arguments = "";
-
-        [ExcludeFromArguments]
-        private bool _asyncMode = true;
 
         /// <summary>
         /// Validates the arguments passed to the Run action.
@@ -38,36 +46,12 @@ namespace MSSQLand.Actions.Execution
         /// <param name="args">File path and optional flags/arguments.</param>
         public override void ValidateArguments(string[] args)
         {
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
+            // Get positional args before BindArguments consumes them
+            var (_, positionalArgs) = ParseActionArguments(args);
 
-            // Check for --capture-output or -o flag (forces sync + xp_cmdshell)
-            _captureOutput = GetNamedArgument(namedArgs, "capture-output", 
-                             GetNamedArgument(namedArgs, "o", "false")).ToLower() == "true" ||
-                             namedArgs.ContainsKey("capture-output") || namedArgs.ContainsKey("o");
+            // Bind known arguments
+            BindArguments(args);
 
-            // Check for --wait or -w flag
-            bool waitRequested = GetNamedArgument(namedArgs, "wait", 
-                                 GetNamedArgument(namedArgs, "w", "false")).ToLower() == "true" ||
-                                 namedArgs.ContainsKey("wait") || namedArgs.ContainsKey("w");
-
-            // If capture_output is requested, force synchronous mode
-            _asyncMode = !(waitRequested || _captureOutput);
-
-            if (_captureOutput)
-            {
-                Logger.Info("Output capture mode enabled (synchronous via xp_cmdshell)");
-            }
-            else if (_asyncMode)
-            {
-                Logger.Info("Asynchronous mode enabled (non-blocking)");
-            }
-            else
-            {
-                Logger.Info("Synchronous mode enabled (will wait for completion)");
-            }
-
-            // Extract file path (first positional argument)
-            _filePath = GetPositionalArgument(positionalArgs, 0, null);
             if (string.IsNullOrWhiteSpace(_filePath))
             {
                 throw new ArgumentException("Run action requires a file path as an argument.");
@@ -76,15 +60,24 @@ namespace MSSQLand.Actions.Execution
             // Normalize path
             _filePath = _filePath.Replace("/", "\\");
 
-            // Extract additional arguments (remaining positional args, joined with spaces)
+            // Extract additional arguments (remaining positional args after file path)
             if (positionalArgs.Count > 1)
             {
-                List<string> remainingArgs = new List<string>();
-                for (int i = 1; i < positionalArgs.Count; i++)
-                {
-                    remainingArgs.Add(positionalArgs[i]);
-                }
-                _arguments = string.Join(" ", remainingArgs);
+                _arguments = string.Join(" ", positionalArgs.Skip(1));
+            }
+
+            // Log mode
+            if (_captureOutput)
+            {
+                Logger.Info("Output capture mode (synchronous via xp_cmdshell)");
+            }
+            else if (_wait)
+            {
+                Logger.Info("Synchronous mode (will wait for completion)");
+            }
+            else
+            {
+                Logger.Info("Asynchronous mode (non-blocking)");
             }
 
             Logger.Info($"Target file: {_filePath}");
@@ -102,11 +95,14 @@ namespace MSSQLand.Actions.Execution
         {
             Logger.TaskNested($"Executing remote file: {_filePath}");
 
+            // Async mode = not waiting and not capturing output
+            bool asyncMode = !_wait && !_captureOutput;
+
             // If output capture is requested, force xp_cmdshell
             if (_captureOutput)
             {
                 Logger.Info("Output capture requested, using xp_cmdshell method");
-                return ExecuteViaXpCmdshell(databaseContext, _asyncMode);
+                return ExecuteViaXpCmdshell(databaseContext, asyncMode);
             }
 
             // Check if OLE Automation is available
@@ -116,12 +112,12 @@ namespace MSSQLand.Actions.Execution
             if (oleAvailable)
             {
                 Logger.Info("OLE Automation is available, using OLE method");
-                return ExecuteViaOle(databaseContext, _asyncMode);
+                return ExecuteViaOle(databaseContext, asyncMode);
             }
             else
             {
                 Logger.Info("OLE Automation not available, using xp_cmdshell method");
-                return ExecuteViaXpCmdshell(databaseContext, _asyncMode);
+                return ExecuteViaXpCmdshell(databaseContext, asyncMode);
             }
         }
 
