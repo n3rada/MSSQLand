@@ -394,46 +394,6 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
-        /// Quotes a SQL Server identifier by wrapping it in square brackets.
-        /// Safely handles identifiers that may already be bracketed.
-        /// Use this for database, schema, or table names in dynamic SQL.
-        /// </summary>
-        /// <param name="identifier">The identifier to quote.</param>
-        /// <returns>The identifier wrapped in brackets, e.g., [master].</returns>
-        /// <example>
-        /// QuoteIdentifier("master") => "[master]"
-        /// QuoteIdentifier("[master]") => "[master]"
-        /// QuoteIdentifier("my database") => "[my database]"
-        /// QuoteIdentifier(null) => null
-        /// </example>
-        public static string QuoteIdentifier(string identifier)
-        {
-            if (string.IsNullOrEmpty(identifier))
-                return identifier;
-            
-            // Strip any existing brackets first, then add them
-            return $"[{StripBrackets(identifier)}]";
-        }
-
-        /// <summary>
-        /// Strips square brackets from a SQL Server identifier.
-        /// Used when parsing user input that may contain bracketed identifiers.
-        /// </summary>
-        /// <param name="identifier">The identifier that may have brackets.</param>
-        /// <returns>The identifier without surrounding brackets.</returns>
-        /// <example>
-        /// StripBrackets("[database]") => "database"
-        /// StripBrackets("database") => "database"
-        /// StripBrackets(null) => null
-        /// </example>
-        public static string StripBrackets(string identifier)
-        {
-            if (string.IsNullOrEmpty(identifier))
-                return identifier;
-            return identifier.Trim('[', ']');
-        }
-
-        /// <summary>
         /// Converts byte count to human-readable format with appropriate unit (B, KB, MB, GB, TB).
         /// Uses binary units (1024 bytes = 1 KB) and formats with 2 decimal places.
         /// </summary>
@@ -575,12 +535,12 @@ namespace MSSQLand.Utilities
             if (string.IsNullOrEmpty(schema))
             {
                 // Format: [database]..[table] (no schema)
-                return $"{QuoteIdentifier(database)}..{QuoteIdentifier(table)}";
+                return $"[{database.Trim('[', ']')}]..[{table.Trim('[', ']')}]";
             }
             else
             {
                 // Format: [database].[schema].[table]
-                return $"{QuoteIdentifier(database)}.{QuoteIdentifier(schema)}.{QuoteIdentifier(table)}";
+                return $"[{database.Trim('[', ']')}].[{schema.Trim('[', ']')}].[{table.Trim('[', ']')}]";
             }
         }
     }

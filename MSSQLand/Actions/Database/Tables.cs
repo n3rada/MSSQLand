@@ -64,9 +64,8 @@ namespace MSSQLand.Actions.Database
             string collViewsMsg = isConfigMgrDb ? " (excluding collection views)" : "";
             Logger.TaskNested($"Retrieving tables from [{targetDatabase}]{filterMsg}{columnsMsg}{columnMsg}{rowsMsg}{permsMsg}{collViewsMsg}");
 
-            // Use 3-part naming (database.schema.table) instead of USE statements
-            // USE statements don't work with OPENQUERY linked server chains
-            string dbPrefix = $"{Misc.QuoteIdentifier(targetDatabase)}.";
+            // Use 3-part naming (database.schema.table)
+            string dbPrefix = $"[{targetDatabase.Trim('[', ']')}].";
 
             // Build WHERE clause with filter (partition filter is inside OUTER APPLY)
             string whereClause = "WHERE t.type IN ('U', 'V')";
