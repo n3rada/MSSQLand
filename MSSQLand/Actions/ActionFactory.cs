@@ -34,10 +34,10 @@ namespace MSSQLand.Utilities
             { "databases", (typeof(Databases), "List all available databases.", null) },
             { "tables", (typeof(Tables), "List all tables in a specified database.", null) },
             { "rows", (typeof(Rows), "Retrieve and display rows from a specified table.", null) },
-            { "procedures", (typeof(Procedures), "List, read, or execute stored procedures in the current database.", null) },
+            { "procedures", (typeof(Procedures), "List, read, or execute stored procedures in the current database.", new[] { "procs", "sprocs" }) },
             { "xprocs", (typeof(ExtendedProcs), "Enumerate built-in extended (xp_*), OLE Automation (sp_OA*), and system procedures with execution permissions.", new[] { "extendedprocs", "sysprocs" }) },
             { "users", (typeof(Users), "List all database users.", null) },
-            { "hashes", (typeof(Hashes), "Dump SQL Server login password hashes in hashcat format.", null) },
+            { "hashes", (typeof(Hashes), "Dump SQL Server login password hashes in hashcat format.", new[] { "dump" }) },
             { "roles", (typeof(Roles), "List all database roles and their members in the current database.", null) },
             { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).", null) },
             { "permissions", (typeof(Permissions), "Enumerate user and role permissions.", null) },
@@ -49,7 +49,7 @@ namespace MSSQLand.Utilities
             // DATABASE ACTIONS - OPERATIONS
             // ═══════════════════════════════════════════════════════════════════════════════
             { "search", (typeof(Search), "Search for keywords in column names and data across databases.", new[] { "find" }) },
-            { "query", (typeof(Query), "Execute a custom T-SQL query.", null) },
+            { "query", (typeof(Query), "Execute a custom T-SQL query.", new[] { "sql" }) },
             { "queryall", (typeof(QueryAll), "Execute a custom T-SQL query across all databases using sp_MSforeachdb.", null) },
             { "monitor", (typeof(Monitor), "Display currently running SQL commands and active sessions.", null) },
 
@@ -58,7 +58,7 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             { "config", (typeof(Config), "List security-sensitive configuration options or set their values using sp_configure.", new[] { "settings" }) },
             { "user-add", (typeof(UserAdd), "Create a SQL login with specified server role privileges (default: sysadmin).", null) },
-            { "sessions", (typeof(Sessions), "Display active SQL Server sessions with login and connection information.", null) },
+            { "sessions", (typeof(Sessions), "Display active SQL Server sessions with login and connection information.", new[] { "who" }) },
             { "kill", (typeof(Kill), "Terminate SQL Server sessions by session ID or kill all running sessions.", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
@@ -74,24 +74,24 @@ namespace MSSQLand.Utilities
             // EXECUTION ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
             { "exec", (typeof(XpCmd), "Execute operating system commands via xp_cmdshell.", new[] { "xpcmd", "xpcmdshell", "xp_cmdshell" }) },
-            { "pwsh", (typeof(PowerShell), "Execute PowerShell scripts.", null) },
+            { "pwsh", (typeof(PowerShell), "Execute PowerShell scripts.", new[] { "powershell" }) },
             { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a remote PowerShell script from a URL.", null) },
             { "ole", (typeof(ObjectLinkingEmbedding), "Execute operating system commands via procedures.", null) },
             { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.", null) },
-            { "agents", (typeof(Agents), "Manage and interact with SQL Server Agent jobs.", null) },
+            { "agents", (typeof(Agents), "Manage and interact with SQL Server Agent jobs.", new[] { "jobs" }) },
             { "run", (typeof(Run), "Execute a remote file on the SQL Server.", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // FILESYSTEM ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "read", (typeof(FileRead), "Read file contents from the server's file system.", null) },
+            { "read", (typeof(FileRead), "Read file contents from the server's file system.", new[] { "cat" }) },
             { "tree", (typeof(Tree), "Display directory tree structure in Linux tree-style format.", null) },
             { "upload", (typeof(Upload), "Upload a local file to the SQL Server filesystem.", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // REMOTE DATA ACCESS ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "links", (typeof(Links), "Enumerate linked servers and their configuration.", null) },
+            { "links", (typeof(Links), "Enumerate linked servers and their configuration.", new[] { "linkedservers" }) },
             { "linkmap", (typeof(LinkMap), "Recursively map linked server chains as a tree with loop detection. Highlights sysadmin endpoints.", new[] { "linksmap" }) },
             { "linkcreds", (typeof(LinkCredentials), "Extract linked server credentials (requires sysadmin).", new[] { "linkcredentials", "link-creds" }) },
             { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.", null) },
@@ -100,7 +100,7 @@ namespace MSSQLand.Utilities
             { "ext-creds", (typeof(ExternalCredentials), "Enumerate database-scoped credentials used by External Data Sources.", null) },
             { "ext-tables", (typeof(ExternalTables), "Enumerate external tables and their remote data locations.", null) },
             { "adsi-manager", (typeof(AdsiManager), "Manage ADSI linked servers: list, create, or delete ADSI providers.", null) },
-            { "adsi-query", (typeof(AdsiQuery), "Query Active Directory via ADSI using fully qualified domain name (auto-creates temp server if needed).", null) },
+            { "adsi-query", (typeof(AdsiQuery), "Query Active Directory via ADSI using fully qualified domain name (auto-creates temp server if needed).", new[] { "ldap" }) },
             { "adsi-creds", (typeof(AdsiCredentialExtractor), "Extract SQL login passwords via LDAP simple bind interception (useful through linked server chains or for ADSI servers with mapped credentials).", null) },
             { "coerceauth", (typeof(SmbCoerce), "Force SMB authentication to a specified UNC path to capture Net-NTLMv2 challenge/response.", new[] { "unc", "coerce", "smb", "ntlm" }) },
 
