@@ -1,6 +1,7 @@
 ﻿// MSSQLand/Utilities/Misc.cs
 
 using System;
+using System.Buffers;
 using System.Net.Sockets;
 using System.Net;
 using System.Text;
@@ -15,6 +16,7 @@ namespace MSSQLand.Utilities
     internal class Misc
     {
         private static readonly Random _random = new Random();
+        private static readonly SearchValues<char> _bracketDelimiters = SearchValues.Create("/:@;");
 
         /// <summary>
         /// Parses username for embedded domain (DOMAIN\user or user@domain format).
@@ -386,11 +388,7 @@ namespace MSSQLand.Utilities
                 return name;
 
             // Only bracket if name contains our special delimiter characters
-            if (name.IndexOfAny(new[] { ':', '/', '@', ';' }) >= 0)
-            {
-                return $"[{name}]";
-            }
-            return name;
+            return name.AsSpan().IndexOfAny(_bracketDelimiters) >= 0 ? $"[{name}]" : name;
         }
 
         /// <summary>
@@ -532,16 +530,10 @@ namespace MSSQLand.Utilities
             if (string.IsNullOrEmpty(table))
                 throw new ArgumentException("Table name cannot be null or empty.", nameof(table));
 
-            if (string.IsNullOrEmpty(schema))
-            {
-                // Format: [database]..[table] (no schema)
-                return $"[{database.Trim('[', ']')}]..[{table.Trim('[', ']')}]";
-            }
-            else
-            {
-                // Format: [database].[schema].[table]
-                return $"[{database.Trim('[', ']')}].[{schema.Trim('[', ']')}].[{table.Trim('[', ']')}]";
-            }
+            // Format: [database]..[table] (no schema) or [database].[schema].[table]
+            return string.IsNullOrEmpty(schema)
+                ? $"[{database.Trim('[', ']')}]..[{table.Trim('[', ']')}]"
+                : $"[{database.Trim('[', ']')}].[{schema.Trim('[', ']')}].[{table.Trim('[', ']')}]";
         }
     }
 }
