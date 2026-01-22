@@ -43,7 +43,6 @@ namespace MSSQLand.Utilities
             { "permissions", (typeof(Permissions), "Enumerate user and role permissions.", null) },
             { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.", new[] { "impersonation" }) },
             { "trustworthy", (typeof(Trustworthy), "Detect and exploit privilege escalation via TRUSTWORTHY database setting (db_owner → sysadmin).", null) },
-            { "oledb-providers", (typeof(OleDbProvidersInfo), "Retrieve information about installed OLE DB providers and their configurations.", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // DATABASE ACTIONS - OPERATIONS
