@@ -354,7 +354,7 @@ namespace MSSQLand.Utilities
                 // Decode HTML entities in the final formatted output for better readability
                 // XmlWriter encodes entities for valid XML, but we want human-readable output
                 string formatted = stringWriter.ToString();
-                return System.Net.WebUtility.HtmlDecode(formatted);
+                return WebUtility.HtmlDecode(formatted);
             }
             catch
             {
