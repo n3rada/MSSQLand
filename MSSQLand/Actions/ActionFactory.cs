@@ -73,13 +73,13 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             // EXECUTION ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "exec", (typeof(XpCmd), "Execute operating system commands via xp_cmdshell.", new[] { "xpcmd", "xpcmdshell", "xp_cmdshell" }) },
+            { "exec", (typeof(XpCmd), "Execute OS commands via xp_cmdshell with output capture.", new[] { "xpcmd", "xpcmdshell", "xp_cmdshell" }) },
+            { "ole", (typeof(ObjectLinkingEmbedding), "Execute OS commands via OLE Automation (fire-and-forget, no output, stealthier).", null) },
             { "pwsh", (typeof(PowerShell), "Execute PowerShell scripts.", new[] { "powershell" }) },
             { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a remote PowerShell script from a URL.", null) },
-            { "ole", (typeof(ObjectLinkingEmbedding), "Execute operating system commands via procedures.", null) },
             { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.", null) },
             { "agents", (typeof(Agents), "Manage and interact with SQL Server Agent jobs.", new[] { "jobs" }) },
-            { "run", (typeof(Run), "Execute a remote file on the SQL Server.", null) },
+            { "run", (typeof(Run), "Execute a file on the SQL Server filesystem (OLE by default, xp_cmdshell fallback).", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // FILESYSTEM ACTIONS

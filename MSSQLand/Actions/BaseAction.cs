@@ -218,12 +218,53 @@ namespace MSSQLand.Actions
             var (namedArgs, positionalArgs) = ParseActionArguments(args);
             var fields = GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
 
+            // First pass: collect which positional indices are consumed by Position fields
+            var consumedPositions = new HashSet<int>();
+            foreach (var field in fields)
+            {
+                var metadata = field.GetCustomAttribute<ArgumentMetadataAttribute>();
+                if (metadata != null && metadata.Position >= 0 && metadata.Position < positionalArgs.Count)
+                {
+                    consumedPositions.Add(metadata.Position);
+                }
+            }
+
+            // Second pass: bind arguments
             foreach (var field in fields)
             {
                 var metadata = field.GetCustomAttribute<ArgumentMetadataAttribute>();
                 if (metadata == null) continue;
 
                 string value = null;
+
+                // Check if this field should capture all remaining positional arguments
+                if (metadata.CaptureRemaining)
+                {
+                    if (field.FieldType != typeof(string))
+                    {
+                        throw new InvalidOperationException($"Field '{field.Name}' with CaptureRemaining must be of type string.");
+                    }
+                    // Skip positions already consumed by Position fields
+                    var remainingArgs = new List<string>();
+                    for (int i = 0; i < positionalArgs.Count; i++)
+                    {
+                        if (!consumedPositions.Contains(i))
+                        {
+                            remainingArgs.Add(positionalArgs[i]);
+                        }
+                    }
+                    value = string.Join(" ", remainingArgs);
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        field.SetValue(this, value);
+                    }
+                    else if (metadata.Required)
+                    {
+                        string argName = metadata.LongName ?? metadata.ShortName ?? field.Name.TrimStart('_');
+                        throw new ArgumentException($"Required argument '{argName}' is missing.");
+                    }
+                    continue;
+                }
 
                 // Try named arguments first (short name, then long name)
                 if (!string.IsNullOrEmpty(metadata.ShortName))
