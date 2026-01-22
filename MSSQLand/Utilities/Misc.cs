@@ -1,7 +1,6 @@
 ﻿// MSSQLand/Utilities/Misc.cs
 
 using System;
-using System.Buffers;
 using System.Net.Sockets;
 using System.Net;
 using System.Text;
@@ -15,8 +14,8 @@ namespace MSSQLand.Utilities
 {
     internal class Misc
     {
-        private static readonly Random _random = new Random();
-        private static readonly SearchValues<char> _bracketDelimiters = SearchValues.Create("/:@;");
+        private static readonly Random _random = new();
+        private static readonly char[] _bracketDelimiters = { ':', '/', '@', ';' };
 
         /// <summary>
         /// Parses username for embedded domain (DOMAIN\user or user@domain format).
@@ -388,7 +387,7 @@ namespace MSSQLand.Utilities
                 return name;
 
             // Only bracket if name contains our special delimiter characters
-            return name.AsSpan().IndexOfAny(_bracketDelimiters) >= 0 ? $"[{name}]" : name;
+            return name.IndexOfAny(_bracketDelimiters) >= 0 ? $"[{name}]" : name;
         }
 
         /// <summary>
@@ -450,8 +449,8 @@ namespace MSSQLand.Utilities
             if (string.IsNullOrWhiteSpace(fqtn))
                 throw new ArgumentException("Table name cannot be null or empty.", nameof(fqtn));
 
-            var parts = new System.Collections.Generic.List<string>();
-            var current = new StringBuilder();
+            List<string> parts = new();
+            StringBuilder current = new();
             bool inBrackets = false;
 
             for (int i = 0; i < fqtn.Length; i++)
