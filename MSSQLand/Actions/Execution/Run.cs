@@ -18,13 +18,13 @@ namespace MSSQLand.Actions.Execution
     /// Modes:
     /// - Default: async via OLE (fire and forget, non-blocking)
     /// - -w/--wait: sync via OLE (wait for completion, return exit code)
-    /// - -o/--capture-output: sync via xp_cmdshell (capture stdout)
+    /// - --xpcmd: sync via xp_cmdshell (capture stdout)
     /// 
     /// Examples:
     ///   run C:\tool.exe                    (async via OLE)
     ///   run C:\tool.exe arg1 arg2          (async with args)
     ///   run C:\tool.exe -w                 (wait for exit code)
-    ///   run C:\tool.exe -o                 (capture output via xp_cmdshell)
+    ///   run C:\tool.exe --xpcmd            (capture output via xp_cmdshell)
     /// </summary>
     internal class Run : BaseAction
     {
@@ -34,8 +34,8 @@ namespace MSSQLand.Actions.Execution
         [ArgumentMetadata(ShortName = "w", LongName = "wait", Description = "Execute synchronously (wait for completion)")]
         private bool _wait = false;
 
-        [ArgumentMetadata(ShortName = "o", LongName = "capture-output", Description = "Capture and display output (forces sync + xp_cmdshell)")]
-        private bool _captureOutput = false;
+        [ArgumentMetadata(LongName = "xpcmd", Description = "Use xp_cmdshell with output capture (forces sync)")]
+        private bool _useXpCmd = false;
 
         [ArgumentMetadata(CaptureRemaining = true, Description = "Arguments to pass to the executable")]
         private string _arguments = "";
@@ -62,9 +62,9 @@ namespace MSSQLand.Actions.Execution
             _filePath = _filePath.Replace("/", "\\");
 
             // Log mode
-            if (_captureOutput)
+            if (_useXpCmd)
             {
-                Logger.Info("Output capture mode (synchronous via xp_cmdshell)");
+                Logger.Info("xp_cmdshell mode (synchronous with output capture)");
             }
             else if (_wait)
             {
@@ -90,11 +90,11 @@ namespace MSSQLand.Actions.Execution
         {
             Logger.TaskNested($"Executing remote file: {_filePath}");
 
-            // Async mode = not waiting and not capturing output
-            bool asyncMode = !_wait && !_captureOutput;
+            // Async mode = not waiting and not using xp_cmdshell
+            bool asyncMode = !_wait && !_useXpCmd;
 
-            // If output capture is requested, force xp_cmdshell
-            if (_captureOutput)
+            // If xp_cmdshell is requested, force xp_cmdshell
+            if (_useXpCmd)
             {
                 Logger.Info("Output capture requested, using xp_cmdshell method");
                 return ExecuteViaXpCmdshell(databaseContext, asyncMode);
