@@ -73,8 +73,7 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             // EXECUTION ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "exec", (typeof(XpCmd), "Execute OS commands via xp_cmdshell with output capture.", new[] { "xpcmd", "xpcmdshell", "xp_cmdshell" }) },
-            { "ole", (typeof(ObjectLinkingEmbedding), "Execute OS commands via OLE Automation (fire-and-forget, no output, stealthier).", null) },
+            { "exec", (typeof(XpCmd), "Execute OS commands via xp_cmdshell (default) or OLE Automation (--ole for stealth).", new[] { "xpcmd", "xpcmdshell", "xp_cmdshell" }) },
             { "pwsh", (typeof(PowerShell), "Execute PowerShell scripts.", new[] { "powershell" }) },
             { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a remote PowerShell script from a URL.", null) },
             { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.", null) },
