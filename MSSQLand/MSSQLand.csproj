@@ -108,7 +108,6 @@
 
     <Compile Include="Actions\Execution\Agents.cs" />
     <Compile Include="Actions\Execution\ClrExecution.cs" />
-    <Compile Include="Actions\Execution\ObjectLinkingEmbedding.cs" />
     <Compile Include="Actions\Execution\PowerShell.cs" />
     <Compile Include="Actions\Execution\Query.cs" />
     <Compile Include="Actions\Execution\QueryAll.cs" />
