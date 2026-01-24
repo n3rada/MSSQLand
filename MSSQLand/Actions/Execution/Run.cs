@@ -267,12 +267,12 @@ SELECT @ExitCode AS ExitCode;
                     // Escape single quotes for SQL
                     string escapedCommand = command.Replace("'", "''");
 
-                    string query = $"EXEC master..{procName} '{escapedCommand}'";
-xp_cmdshell '{escapedCommand}'";
+                    string query = $"EXEC master..xp_cmdshell '{escapedCommand}'";
 
                     Logger.Info("Executing via xp_cmdshell (async)");
                     databaseContext.QueryService.ExecuteNonProcessing(query);
-                    Logger.Success("File launched successfully via xp_cmd
+                    Logger.Success("File launched successfully via xp_cmdshell (running in background)");
+                    return "Process launched in background";
                 }
                 else
                 {
