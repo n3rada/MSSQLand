@@ -29,7 +29,7 @@ namespace MSSQLand.Utilities
             if (matchedActions.Count == 0)
             {
                 Logger.Warning($"No actions found matching '{searchTerm}'");
-                Console.WarningNested("Use -h or --help to see all available actions.");
+                Logger.WarningNested("Use -h or --help to see all available actions.");
                 return;
             }
 
