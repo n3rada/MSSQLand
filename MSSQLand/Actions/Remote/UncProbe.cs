@@ -1,4 +1,4 @@
-﻿// MSSQLand/Actions/Remote/SmbCoerce.cs
+﻿// MSSQLand/Actions/Remote/UncProbe.cs
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
@@ -7,13 +7,13 @@ using System.Text.RegularExpressions;
 
 namespace MSSQLand.Actions.Remote
 {
-    internal class SmbCoerce : BaseAction
+    internal class UncProbe : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "UNC path")]
         private string _uncPath = "";
 
         /// <summary>
-        /// Validates the arguments passed to the SmbCoerce action.
+        /// Validates the arguments passed to the UncProbe action.
         /// </summary>
         /// <param name="args">The UNC path.</param>
         public override void ValidateArguments(string[] args)

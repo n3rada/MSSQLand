@@ -130,7 +130,7 @@
     <Compile Include="Actions\Remote\LinkMap.cs" />
     <Compile Include="Actions\Remote\Links.cs" />
     <Compile Include="Actions\Remote\RemoteProcedureCall.cs" />
-    <Compile Include="Actions\Remote\SmbCoerce.cs" />
+    <Compile Include="Actions\Remote\UncProbe.cs" />
 
     <Compile Include="Actions\ConfigMgr\CMInfo.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\ConfigMgr\CMLogTrace.cs" Condition="'$(EnableCM)' == 'true'" />

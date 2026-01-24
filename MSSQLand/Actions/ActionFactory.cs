@@ -100,7 +100,7 @@ namespace MSSQLand.Utilities
             { "adsi-manager", (typeof(AdsiManager), "Manage ADSI linked servers: list, create, or delete ADSI providers.", null) },
             { "adsi-query", (typeof(AdsiQuery), "Query Active Directory via ADSI using fully qualified domain name (auto-creates temp server if needed).", new[] { "ldap" }) },
             { "adsi-creds", (typeof(AdsiCredentialExtractor), "Extract SQL login passwords via LDAP simple bind interception (useful through linked server chains or for ADSI servers with mapped credentials).", null) },
-            { "coerceauth", (typeof(SmbCoerce), "Force SMB authentication to a specified UNC path to capture Net-NTLMv2 challenge/response.", new[] { "unc", "coerce", "smb", "ntlm" }) },
+            { "unc", (typeof(UncProbe), "Force SMB authentication to a specified UNC path to capture Net-NTLMv2 challenge/response.", new[] { "coerce", "smb", "ntlm" }) },
 
 #if ENABLE_CM
             // ═══════════════════════════════════════════════════════════════════════════════
