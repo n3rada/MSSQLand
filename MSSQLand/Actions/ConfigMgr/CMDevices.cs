@@ -305,7 +305,7 @@ SELECT DISTINCT {topClause}
     bgb.IPAddress,
     bgb.AccessMP,
     sys.Is_Virtual_Machine0 AS IsVirtualMachine,
-    sys.Virtual_Machine_Type0 AS VMTypeRaw,
+    sys.Virtual_Machine_Type0 AS VMType,
     sys.Virtual_Machine_Host_Name0 AS VMHostName,
     sys.ManagementAuthority AS ManagementAuthority,
     sys.AADDeviceID,
@@ -371,31 +371,6 @@ ORDER BY
                             }
                         }
                         devicesTable.Columns.Remove("UserAccountControl");
-                    }
-
-                    // Decode Virtual_Machine_Type
-                    if (devicesTable.Columns.Contains("VMTypeRaw"))
-                    {
-                        DataColumn decodedVmTypeColumn = devicesTable.Columns.Add("VMType", typeof(string));
-                        int vmTypeIndex = devicesTable.Columns["VMTypeRaw"].Ordinal;
-                        decodedVmTypeColumn.SetOrdinal(vmTypeIndex);
-
-                        foreach (DataRow row in devicesTable.Rows)
-                        {
-                            if (row["VMTypeRaw"] != DBNull.Value && int.TryParse(row["VMTypeRaw"].ToString(), out int vmType))
-                            {
-                                row["VMType"] = vmType switch
-                                {
-                                    0 => "Physical",
-                                    1 => "Hyper-V",
-                                    2 => "VMware",
-                                    3 => "Xen",
-                                    4 => "VirtualBox",
-                                    _ => $"Unknown ({vmType})"
-                                };
-                            }
-                        }
-                        devicesTable.Columns.Remove("VMTypeRaw");
                     }
 
                     // Decode ManagementAuthority
