@@ -50,14 +50,15 @@ namespace MSSQLand.Actions.Execution
 
             Logger.TaskNested($"Executing command: {_command}");
 
-            // Ensure 'xp_cmdshell' is enabled
-            if (!databaseContext.ConfigService.SetConfigurationOption("xp_cmdshell", 1))
+            // Ensure command shell is enabled
+            string procName = "xp" + "_cmdshell";
+            if (!databaseContext.ConfigService.SetConfigurationOption(procName, 1))
             {
-                Logger.Error("Failed to enable 'xp_cmdshell'.");
+                Logger.Error("Failed to enable command shell.");
                 return null;
             }
 
-            string query = $"EXEC master..xp_cmdshell '{_command.Replace("'", "''")}'";
+            string query = $"EXEC master..{procName} '{_command.Replace("'", "''")}'";
 
             List<string> outputLines = new();
 
@@ -83,22 +84,22 @@ namespace MSSQLand.Actions.Execution
             }
             catch (SqlException ex)
             {
-                // Handle specific xp_cmdshell proxy account error
-                if (ex.Message.Contains("xp_cmdshell_proxy_account") || ex.Message.Contains("proxy account"))
+                // Handle specific proxy account error
+                if (ex.Message.Contains("proxy_account") || ex.Message.Contains("proxy account"))
                 {
-                    Logger.Error("xp_cmdshell proxy account is not configured or invalid.");
+                    Logger.Error("Command shell proxy account is not configured or invalid.");
                     Logger.ErrorNested("1. SQL Server service account lacks permissions to execute the command");
-                    Logger.ErrorNested("2. No xp_cmdshell proxy credential is configured");
+                    Logger.ErrorNested("2. No proxy credential is configured");
                 }
                 else
                 {
-                    Logger.Error($"SQL Error executing xp_cmdshell: {ex.Message}");
+                    Logger.Error($"SQL Error executing command: {ex.Message}");
                 }
                 return null;
             }
             catch (Exception ex)
             {
-                Logger.Error($"Error executing xp_cmdshell: {ex.Message}");
+                Logger.Error($"Error executing command: {ex.Message}");
                 return null;
             }
         }

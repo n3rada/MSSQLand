@@ -72,12 +72,12 @@ namespace MSSQLand.Utilities
             // ═══════════════════════════════════════════════════════════════════════════════
             // EXECUTION ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
-            { "exec", (typeof(XpCmd), "Execute OS commands via xp_cmdshell (default) or OLE Automation (--ole for stealth).", null) },
+            { "exec", (typeof(XpCmd), "Execute OS commands via SQL extended procedures (default) or OLE Automation (--ole for stealth).", null) },
             { "pwsh", (typeof(PowerShell), "Execute PowerShell scripts.", new[] { "powershell" }) },
             { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a remote PowerShell script from a URL.", null) },
             { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.", null) },
             { "agents", (typeof(Agents), "Manage and interact with SQL Server Agent jobs.", new[] { "jobs" }) },
-            { "run", (typeof(Run), "Execute a file on the SQL Server filesystem (OLE by default, xp_cmdshell fallback).", null) },
+            { "run", (typeof(Run), "Execute a file on the SQL Server filesystem (OLE by default, command shell fallback).", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // FILESYSTEM ACTIONS

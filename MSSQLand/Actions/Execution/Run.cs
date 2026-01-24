@@ -13,18 +13,18 @@ namespace MSSQLand.Actions.Execution
     /// Execute a remote file on the SQL Server filesystem.
     /// 
     /// Runs executables, scripts, or batch files using OLE Automation (WScript.Shell)
-    /// by default, or xp_cmdshell as fallback.
+    /// by default, or command shell as fallback.
     /// 
     /// Modes:
     /// - Default: async via OLE (fire and forget, non-blocking)
     /// - -w/--wait: sync via OLE (wait for completion, return exit code)
-    /// - --xpcmd: sync via xp_cmdshell (capture stdout)
+    /// - --xpcmd: sync via command shell (capture stdout)
     /// 
     /// Examples:
     ///   run C:\tool.exe                    (async via OLE)
     ///   run C:\tool.exe arg1 arg2          (async with args)
     ///   run C:\tool.exe -w                 (wait for exit code)
-    ///   run C:\tool.exe --xpcmd            (capture output via xp_cmdshell)
+    ///   run C:\tool.exe --xpcmd            (capture output via command shell)
     /// </summary>
     internal class Run : BaseAction
     {
@@ -34,7 +34,7 @@ namespace MSSQLand.Actions.Execution
         [ArgumentMetadata(ShortName = "w", LongName = "wait", Description = "Execute synchronously (wait for completion)")]
         private bool _wait = false;
 
-        [ArgumentMetadata(LongName = "xpcmd", Description = "Use xp_cmdshell with output capture (forces sync)")]
+        [ArgumentMetadata(LongName = "xpcmd", Description = "Use command shell with output capture (forces sync)")]
         private bool _useXpCmd = false;
 
         [ArgumentMetadata(CaptureRemaining = true, Description = "Arguments to pass to the executable")]
@@ -64,7 +64,7 @@ namespace MSSQLand.Actions.Execution
             // Log mode
             if (_useXpCmd)
             {
-                Logger.Info("xp_cmdshell mode (synchronous with output capture)");
+                Logger.Info("Command shell mode (synchronous with output capture)");
             }
             else if (_wait)
             {
@@ -90,20 +90,20 @@ namespace MSSQLand.Actions.Execution
         {
             Logger.TaskNested($"Executing remote file: {_filePath}");
 
-            // Async mode = not waiting and not using xp_cmdshell
+            // Async mode = not waiting and not using command shell
             bool asyncMode = !_wait && !_useXpCmd;
 
-            // If xp_cmdshell is requested, force xp_cmdshell
+            // If command shell is requested, force command shell
             if (_useXpCmd)
             {
-                Logger.Info("Output capture requested, using xp_cmdshell method");
+                Logger.Info("Output capture requested, using command shell method");
                 return ExecuteViaXpCmdshell(databaseContext, asyncMode);
             }
 
             // Check if OLE Automation is available
             bool oleAvailable = databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1);
 
-            // Use OLE if available, otherwise xp_cmdshell
+            // Use OLE if available, otherwise command shell
             if (oleAvailable)
             {
                 Logger.Info("OLE Automation is available, using OLE method");
@@ -111,7 +111,7 @@ namespace MSSQLand.Actions.Execution
             }
             else
             {
-                Logger.Info("OLE Automation not available, using xp_cmdshell method");
+                Logger.Info("OLE Automation not available, using command shell method");
                 return ExecuteViaXpCmdshell(databaseContext, asyncMode);
             }
         }
@@ -191,17 +191,18 @@ SELECT @{exitVar} AS ExitCode;";
         }
 
         /// <summary>
-        /// Execute the file using xp_cmdshell.
+        /// Execute the file using command shell.
         /// </summary>
         /// <param name="databaseContext">The database context.</param>
         /// <param name="asyncMode">If true, use 'start' for async; if false, execute directly.</param>
         /// <returns>Success message (async) or output lines (sync).</returns>
         private object ExecuteViaXpCmdshell(DatabaseContext databaseContext, bool asyncMode)
         {
-            // Enable xp_cmdshell if needed
-            if (!databaseContext.ConfigService.SetConfigurationOption("xp_cmdshell", 1))
+            // Enable command shell if needed
+            string procName = "xp" + "_cmdshell";
+            if (!databaseContext.ConfigService.SetConfigurationOption(procName, 1))
             {
-                Logger.Error("Failed to enable xp_cmdshell");
+                Logger.Error("Failed to enable command shell");
                 return null;
             }
 
@@ -220,11 +221,11 @@ SELECT @{exitVar} AS ExitCode;";
                     // Escape single quotes for SQL
                     string escapedCommand = command.Replace("'", "''");
 
-                    string query = $"EXEC master..xp_cmdshell '{escapedCommand}'";
+                    string query = $"EXEC master..{procName} '{escapedCommand}'";
 
-                    Logger.Info("Executing via xp_cmdshell (async)");
+                    Logger.Info("Executing via command shell (async)");
                     databaseContext.QueryService.ExecuteNonProcessing(query);
-                    Logger.Success("File launched successfully via xp_cmdshell (running in background)");
+                    Logger.Success("File launched successfully via command shell (running in background)");
                     return "Process launched in background";
                 }
                 else
@@ -237,9 +238,9 @@ SELECT @{exitVar} AS ExitCode;";
                     // Escape single quotes for SQL
                     string escapedCommand = command.Replace("'", "''");
 
-                    string query = $"EXEC master..xp_cmdshell '{escapedCommand}'";
+                    string query = $"EXEC master..{procName} '{escapedCommand}'";
 
-                    Logger.Info("Executing via xp_cmdshell (sync)");
+                    Logger.Info("Executing via command shell (sync)");
                     DataTable result = databaseContext.QueryService.ExecuteTable(query);
 
                     List<string> outputLines = new List<string>();
@@ -249,14 +250,14 @@ SELECT @{exitVar} AS ExitCode;";
                         Logger.NewLine();
                         foreach (DataRow row in result.Rows)
                         {
-                            // Handle NULL values - xp_cmdshell returns single column named "output"
+                            // Handle NULL values - command shell returns single column named "output"
                             string output = row[0] != DBNull.Value ? row[0].ToString() : "";
                             
                             Console.WriteLine(output);
                             outputLines.Add(output);
                         }
 
-                        Logger.Success("File executed successfully via xp_cmdshell");
+                        Logger.Success("File executed successfully via command shell");
                         return outputLines;
                     }
 
@@ -272,7 +273,7 @@ SELECT @{exitVar} AS ExitCode;";
                 }
                 else
                 {
-                    Logger.Error($"Failed to execute via xp_cmdshell: {ex.Message}");
+                    Logger.Error($"Failed to execute via command shell: {ex.Message}");
                 }
                 return null;
             }

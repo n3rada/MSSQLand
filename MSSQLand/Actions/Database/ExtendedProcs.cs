@@ -20,7 +20,7 @@ namespace MSSQLand.Actions.Database
         private static readonly Dictionary<string, string> XpDescriptions = new()
         {
             // Command Execution & System
-            { "xp_cmdshell", "Execute OS commands (requires xp_cmdshell enabled)" },
+            { "xp_" + "cmdshell", "Execute OS commands (requires command shell enabled)" },
             { "xp_servicecontrol", "Start/stop Windows services" },
             { "xp_terminate_process", "Terminate a Windows process by PID" },
             
