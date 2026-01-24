@@ -131,50 +131,97 @@ namespace MSSQLand.Actions.Execution
                 string escapedArgs = _arguments.Replace("'", "''");
 
                 // Build the command string
-                string command = string.IsNullOrWhiteSpace(_arguments) ? escapedPath : $"{escapedPath} {escapedArgs}";
-
-                // Randomized variable names to avoid signature detection
-                string objVar = Misc.GetRandomIdentifier(6);
-                string retVar = Misc.GetRandomIdentifier(6);
+                string command = string.IsNullOrWhiteSpace(_arguments) 
+                    ? escapedPath 
+                    : $"{escapedPath} {escapedArgs}";
 
                 // waitOnReturn: 0 = async (don't wait), 1 = sync (wait for completion)
                 string waitParam = asyncMode ? "0" : "1";
 
                 if (asyncMode)
                 {
-                    // Fire and forget
+                    // Async mode - no exit code returned
+                    // Creates WScript.Shell object and calls Run method with waitOnReturn=0 (don't wait)
                     string query = $@"
-DECLARE @{objVar} INT;
-EXEC sp_oacreate 'wscript.shell', @{objVar} out;
-EXEC sp_oamethod @{objVar}, 'Run', NULL, '{command}', 0, {waitParam};
-EXEC sp_oadestroy @{objVar};";
+DECLARE @ObjectToken INT;
+DECLARE @Result INT;
+DECLARE @ErrorSource NVARCHAR(255);
+DECLARE @ErrorDesc NVARCHAR(255);
+
+EXEC @Result = sp_OACreate 'WScript.Shell', @ObjectToken OUTPUT;
+IF @Result <> 0
+BEGIN
+    EXEC sp_OAGetErrorInfo @ObjectToken, @ErrorSource OUT, @ErrorDesc OUT;
+    RAISERROR('Failed to create WScript.Shell: %s', 16, 1, @ErrorDesc);
+    RETURN;
+END
+
+EXEC @Result = sp_OAMethod @ObjectToken, 'Run', NULL, '{command}', 0, {waitParam};
+IF @Result <> 0
+BEGIN
+    EXEC sp_OAGetErrorInfo @ObjectToken, @ErrorSource OUT, @ErrorDesc OUT;
+    EXEC sp_OADestroy @ObjectToken;
+    RAISERROR('Failed to execute file: %s', 16, 1, @ErrorDesc);
+    RETURN;
+END
+
+EXEC sp_OADestroy @ObjectToken;
+";
 
                     databaseContext.QueryService.ExecuteNonProcessing(query);
                     Logger.Success("File launched successfully via OLE (running in background)");
                     return "Process launched in background";
                 }
-
-                // Sync mode - wait and return exit code
-                string exitVar = Misc.GetRandomIdentifier(6);
-                string syncQuery = $@"
-DECLARE @{objVar} INT;
-DECLARE @{exitVar} INT;
-EXEC sp_oacreate 'wscript.shell', @{objVar} out;
-EXEC sp_oamethod @{objVar}, 'Run', @{exitVar} out, '{command}', 0, {waitParam};
-EXEC sp_oadestroy @{objVar};
-SELECT @{exitVar} AS ExitCode;";
-
-                DataTable result = databaseContext.QueryService.ExecuteTable(syncQuery);
-
-                if (result == null || result.Rows.Count == 0)
+                else
                 {
-                    Logger.Error("OLE execution failed");
-                    return null;
-                }
+                    // Sync mode - wait and return exit code
+                    // Creates WScript.Shell object and calls Run method with waitOnReturn=1 (wait for completion)
+                    // Returns the exit code from the executed process
+                    string query = $@"
+DECLARE @ObjectToken INT;
+DECLARE @Result INT;
+DECLARE @ErrorSource NVARCHAR(255);
+DECLARE @ErrorDesc NVARCHAR(255);
+DECLARE @ExitCode INT;
 
-                int exitCode = result.Rows[0]["ExitCode"] != DBNull.Value ? Convert.ToInt32(result.Rows[0]["ExitCode"]) : -1;
-                Logger.Success($"File executed successfully via OLE (Exit Code: {exitCode})");
-                return $"Exit code: {exitCode}";
+EXEC @Result = sp_OACreate 'WScript.Shell', @ObjectToken OUTPUT;
+IF @Result <> 0
+BEGIN
+    EXEC sp_OAGetErrorInfo @ObjectToken, @ErrorSource OUT, @ErrorDesc OUT;
+    RAISERROR('Failed to create WScript.Shell: %s', 16, 1, @ErrorDesc);
+    RETURN;
+END
+
+EXEC @Result = sp_OAMethod @ObjectToken, 'Run', @ExitCode OUTPUT, '{command}', 0, {waitParam};
+IF @Result <> 0
+BEGIN
+    EXEC sp_OAGetErrorInfo @ObjectToken, @ErrorSource OUT, @ErrorDesc OUT;
+    EXEC sp_OADestroy @ObjectToken;
+    RAISERROR('Failed to execute file: %s', 16, 1, @ErrorDesc);
+    RETURN;
+END
+
+EXEC sp_OADestroy @ObjectToken;
+
+SELECT @ExitCode AS ExitCode;
+";
+
+                    DataTable result = databaseContext.QueryService.ExecuteTable(query);
+
+                    if (result != null && result.Rows.Count > 0)
+                    {
+                        int exitCode = result.Rows[0]["ExitCode"] != DBNull.Value 
+                            ? Convert.ToInt32(result.Rows[0]["ExitCode"]) 
+                            : -1;
+                        Logger.Success($"File executed successfully via OLE (Exit Code: {exitCode})");
+                        return $"Exit code: {exitCode}";
+                    }
+                    else
+                    {
+                        Logger.Error("OLE execution failed");
+                        return null;
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -191,18 +238,17 @@ SELECT @{exitVar} AS ExitCode;";
         }
 
         /// <summary>
-        /// Execute the file using command shell.
+        /// Execute the file using xp_cmdshell.
         /// </summary>
         /// <param name="databaseContext">The database context.</param>
         /// <param name="asyncMode">If true, use 'start' for async; if false, execute directly.</param>
         /// <returns>Success message (async) or output lines (sync).</returns>
         private object ExecuteViaXpCmdshell(DatabaseContext databaseContext, bool asyncMode)
         {
-            // Enable command shell if needed
-            string procName = "xp" + "_cmdshell";
-            if (!databaseContext.ConfigService.SetConfigurationOption(procName, 1))
+            // Enable xp_cmdshell if needed
+            if (!databaseContext.ConfigService.SetConfigurationOption("xp_cmdshell", 1))
             {
-                Logger.Error("Failed to enable command shell");
+                Logger.Error("Failed to enable xp_cmdshell");
                 return null;
             }
 
@@ -222,11 +268,11 @@ SELECT @{exitVar} AS ExitCode;";
                     string escapedCommand = command.Replace("'", "''");
 
                     string query = $"EXEC master..{procName} '{escapedCommand}'";
+xp_cmdshell '{escapedCommand}'";
 
-                    Logger.Info("Executing via command shell (async)");
+                    Logger.Info("Executing via xp_cmdshell (async)");
                     databaseContext.QueryService.ExecuteNonProcessing(query);
-                    Logger.Success("File launched successfully via command shell (running in background)");
-                    return "Process launched in background";
+                    Logger.Success("File launched successfully via xp_cmd
                 }
                 else
                 {
@@ -238,9 +284,9 @@ SELECT @{exitVar} AS ExitCode;";
                     // Escape single quotes for SQL
                     string escapedCommand = command.Replace("'", "''");
 
-                    string query = $"EXEC master..{procName} '{escapedCommand}'";
+                    string query = $"EXEC master..xp_cmdshell '{escapedCommand}'";
 
-                    Logger.Info("Executing via command shell (sync)");
+                    Logger.Info("Executing via xp_cmdshell (sync)");
                     DataTable result = databaseContext.QueryService.ExecuteTable(query);
 
                     List<string> outputLines = new List<string>();
@@ -250,14 +296,14 @@ SELECT @{exitVar} AS ExitCode;";
                         Logger.NewLine();
                         foreach (DataRow row in result.Rows)
                         {
-                            // Handle NULL values - command shell returns single column named "output"
+                            // Handle NULL values - xp_cmdshell returns single column named "output"
                             string output = row[0] != DBNull.Value ? row[0].ToString() : "";
                             
                             Console.WriteLine(output);
                             outputLines.Add(output);
                         }
 
-                        Logger.Success("File executed successfully via command shell");
+                        Logger.Success("File executed successfully via xp_cmdshell");
                         return outputLines;
                     }
 
@@ -273,7 +319,7 @@ SELECT @{exitVar} AS ExitCode;";
                 }
                 else
                 {
-                    Logger.Error($"Failed to execute via command shell: {ex.Message}");
+                    Logger.Error($"Failed to execute via xp_cmdshell: {ex.Message}");
                 }
                 return null;
             }
