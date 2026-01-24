@@ -180,7 +180,7 @@ namespace MSSQLand.Actions.FileSystem
             // For large files, this might fail due to VARBINARY(MAX) limits
             if (fileContent.Length > 2000000000) // ~2GB limit
             {
-                Logger.Warning("File too large for OLE method (>2GB), will try xp_cmdshell");
+                Logger.Warning("File too large for OLE method (>2GB)");
                 return false;
             }
 
