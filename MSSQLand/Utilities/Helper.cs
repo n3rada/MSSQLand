@@ -29,7 +29,7 @@ namespace MSSQLand.Utilities
             if (matchedActions.Count == 0)
             {
                 Logger.Warning($"No actions found matching '{searchTerm}'");
-                Console.WriteLine("\nUse -h or --help to see all available actions.");
+                Console.WarningNested("Use -h or --help to see all available actions.");
                 return;
             }
 
@@ -80,16 +80,17 @@ namespace MSSQLand.Utilities
             Console.WriteLine("Available actions:");
             foreach (var group in groupedActions)
             {
+                Console.WriteLine();
                 Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine($"[{group.Key}]");
+                Console.WriteLine($"  [{group.Key}]");
                 Console.ResetColor();
                 
-                // Display max 10 actions per line
+                // Display max 8 actions per line with indentation
                 var actionsList = group.Value;
-                for (int i = 0; i < actionsList.Count; i += 10)
+                for (int i = 0; i < actionsList.Count; i += 8)
                 {
-                    var chunk = actionsList.Skip(i).Take(10);
-                    Console.WriteLine(string.Join(", ", chunk));
+                    var chunk = actionsList.Skip(i).Take(8);
+                    Console.WriteLine("    " + string.Join(", ", chunk));
                 }
             }
             Console.WriteLine();
@@ -153,16 +154,17 @@ namespace MSSQLand.Utilities
             Console.WriteLine("Available actions:");
             foreach (var group in groupedActions)
             {
+                Console.WriteLine();
                 Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine($"[{group.Key}]");
+                Console.WriteLine($"  [{group.Key}]");
                 Console.ResetColor();
                 
-                // Display max 10 actions per line
+                // Display max 8 actions per line with indentation
                 var actionsList = group.Value;
-                for (int i = 0; i < actionsList.Count; i += 10)
+                for (int i = 0; i < actionsList.Count; i += 8)
                 {
-                    var chunk = actionsList.Skip(i).Take(10);
-                    Console.WriteLine(string.Join(", ", chunk));
+                    var chunk = actionsList.Skip(i).Take(8);
+                    Console.WriteLine("    " + string.Join(", ", chunk));
                 }
             }
             Console.WriteLine();
