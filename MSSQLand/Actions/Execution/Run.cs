@@ -78,7 +78,7 @@ namespace MSSQLand.Actions.Execution
             Logger.Info($"Target file: {_filePath}");
             if (!string.IsNullOrWhiteSpace(_arguments))
             {
-                Logger.Info($"Arguments: {_arguments}");
+                Logger.InfoNested($"Arguments: {_arguments}");
             }
         }
 
