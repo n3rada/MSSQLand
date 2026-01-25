@@ -621,10 +621,9 @@ namespace MSSQLand.Utilities
 
                 return (ParseResultType.Success, parsedArgs);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Error details already logged where they occurred
-                // Just return InvalidInput to signal parsing failure
+                Logger.Error($"Error parsing command line arguments: {ex.Message}");
                 return (ParseResultType.InvalidInput, null);
             }
         }
@@ -638,10 +637,7 @@ namespace MSSQLand.Utilities
 
             // Check if credential type exists using CredentialsFactory
             if (!CredentialsFactory.IsValidCredentialType(credentialType))
-            {
-                Logger.Error($"Unknown credential type: {credentialType}");
-                Logger.NewLine();
-                
+            {   
                 DataTable credentialsTable = new();
                 credentialsTable.Columns.Add("Type", typeof(string));
                 credentialsTable.Columns.Add("Description", typeof(string));
