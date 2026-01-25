@@ -249,6 +249,8 @@ SELECT @ExitCode AS ExitCode;
             try
             {
                 string command;
+                string escapedCommand;
+                string query;
                 
                 if (asyncMode)
                 {
@@ -259,9 +261,9 @@ SELECT @ExitCode AS ExitCode;
                         : $"start /B \"\" \"{_filePath}\" {_arguments}";
 
                     // Escape single quotes for SQL
-                    string escapedCommand = command.Replace("'", "''");
+                    escapedCommand = command.Replace("'", "''");
 
-                    string query = $"EXEC master..xp_cmdshell '{escapedCommand}'";
+                    query = $"EXEC master..xp_cmdshell '{escapedCommand}'";
 
                     Logger.Info("Executing via xp_cmdshell (async)");
                     databaseContext.QueryService.ExecuteNonProcessing(query);
@@ -275,9 +277,9 @@ SELECT @ExitCode AS ExitCode;
                     : $"\"{_filePath}\" {_arguments}";
 
                 // Escape single quotes for SQL
-                string escapedCommand = command.Replace("'", "''");
+                escapedCommand = command.Replace("'", "''");
 
-                string query = $"EXEC master..xp_cmdshell '{escapedCommand}'";
+                query = $"EXEC master..xp_cmdshell '{escapedCommand}'";
 
                 Logger.Info("Executing via xp_cmdshell (sync)");
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
