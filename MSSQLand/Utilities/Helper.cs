@@ -61,14 +61,9 @@ namespace MSSQLand.Utilities
                 
                 Console.WriteLine();
                 Console.WriteLine($"\t{action.Description}");
-
-                if (action.Arguments != null && action.Arguments.Any())
-                {
-                    Console.WriteLine($"\tArguments: {action.Arguments.Count}  (use '{action.ActionName} -h' for details)");
-                }
-
-                Console.WriteLine();
             }
+            Console.WriteLine();
+            Console.WriteLine("For action details:  <action> -h ");
         }
 
         /// <summary>
