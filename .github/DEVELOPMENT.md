@@ -30,7 +30,6 @@ Systems should be as simple as possible but no simpler. Complex linked server qu
 
 The system should be easy to extend with new features. New actions can be added without altering core functionality by extending [BaseAction](../MSSQLand/Actions/BaseAction.cs) and adding the created action to the [factory](../MSSQLand/Actions/ActionFactory.cs).
 
----
 
 ## 🏗️ Architecture
 
@@ -191,107 +190,6 @@ namespace MSSQLand.Actions.Database
     }
 }
 ```
-
-### Argument Binding Reference
-
-The `[ArgumentMetadata]` attribute supports:
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `Position` | int | Positional index (0-based) for unnamed arguments |
-| `ShortName` | string | Single-letter flag (e.g., `-a`) |
-| `LongName` | string | Full name flag (e.g., `--argument`) |
-| `Required` | bool | If true, throws exception when missing |
-| `Description` | string | Help text for the argument |
-
-**Supported field types:** `string`, `int`, `bool`, `enum`
-
-**Usage examples:**
-```shell
-# Positional
-MSSQLand localhost -c token newaction myvalue
-
-# Named (short)
-MSSQLand localhost -c token newaction -a myvalue -c 20
-
-# Named (long)
-MSSQLand localhost -c token newaction --argument myvalue --count 20
-```
-
-### Step 3: Register in ActionFactory
-
-Add the newly created action to [ActionFactory.cs](../MSSQLand/Actions/ActionFactory.cs):
-
-```csharp
-{ "new", (typeof(NewAction), "Lorem ipsum dolor sit amet consectetur adipiscing elit quisque faucibus ex sapien vitae pellentesque sem.") },
-```
-
-### Step 4: Test
-
-Now you can use it directly:
-
-```shell
-MSSQLand localhost -c token new
-```
-
----
-
-## 💻 Development Setup
-
-### Requirements
-
-- **Visual Studio 2019+** or **VS Code** with C# extension
-- **.NET Framework 4.8** SDK
-- **MSBuild** (included with Visual Studio)
-- **NuGet** package manager
-
-### Building
-
-```bash
-# Restore dependencies
-nuget restore MSSQLand/MSSQLand.sln
-
-# Build (Release)
-msbuild MSSQLand/MSSQLand.sln /p:Configuration=Release
-
-# Build (Debug)
-msbuild MSSQLand/MSSQLand.sln /p:Configuration=Debug
-
-# Build without ConfigMgr support
-msbuild MSSQLand/MSSQLand.sln /p:Configuration=Release /p:EnableCM=false
-```
-
-### Testing
-
-Before submitting changes:
-
-1. **Build the project** without warnings
-2. **Test against a real SQL Server** instance
-3. **Verify both editions** (standard and ConfigMgr if applicable)
-4. **Test no regressions** in existing features
-
----
-
-## 📝 Code Guidelines
-
-- **C# Version:** 11.0 targeting .NET Framework 4.8
-- **Code Style:** Follow existing patterns (see `.editorconfig`)
-- **Naming:** Use descriptive names, follow C# conventions
-- **Comments:** Add XML documentation for public APIs, file path comments at the top of each file
-- **Actions:** New actions should inherit from `BaseAction`
-- **SQL Queries:** No comments in SQL strings (stealth requirement)
-
-### File Header
-
-Always include the file path comment at the top:
-
-```csharp
-// MSSQLand/Actions/Database/YourAction.cs
-
-using MSSQLand.Services;
-// ... rest of file
-```
-
 ---
 
 ## 🌉 Port Forwarding with Linux
