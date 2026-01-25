@@ -153,13 +153,7 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t-h actions             List all available actions by category");
             Console.WriteLine("\t-h credentials         Show credential types and requirements");
             Console.WriteLine("\t<host> <action> -h     Show help for specific action");
-            Console.WriteLine("\t--version              Show version information\n");
-
-            Console.WriteLine("Examples:");
-            Console.WriteLine("\tMSSQLand.exe localhost -c token whoami");
-            Console.WriteLine("\tMSSQLand.exe sql.corp.local -c local -u sa -p Pass123 databases");
-            Console.WriteLine("\tMSSQLand.exe 10.0.0.5,1433 -c domain -u admin -p Pass -d CORP info");
-            Console.WriteLine("\tMSSQLand.exe sqlprod -c token -l sqldev:sa exec \"whoami\"");
+            Console.WriteLine("\t--version              Show version information");
             Console.WriteLine();
         } 
 
@@ -234,88 +228,17 @@ namespace MSSQLand.Utilities
 
                 Console.WriteLine();
             }
-
-            Console.WriteLine("Examples:");
-            Console.WriteLine("\tMSSQLand.exe localhost -c token whoami");
-            Console.WriteLine("\tMSSQLand.exe sqlserver -c local -u sa -p Pass123 info");
-            Console.WriteLine("\tMSSQLand.exe sqlserver -c domain -u admin -p Pass -d CORP whoami");
-            Console.WriteLine("\tMSSQLand.exe database.windows.net -c entraid -u user -p Pass -d tenant.com databases");
-            Console.WriteLine();
         }
 
-        private static DataTable getCredentialTypes()
+        /// <summary>
+        /// Displays a quick start banner with minimal usage info.
+        /// </summary>
+        public static void ShowQuickStart()
         {
-            // Build a DataTable for credentials
-            DataTable credentialsTable = new();
-            credentialsTable.Columns.Add("Type", typeof(string));
-            credentialsTable.Columns.Add("Description", typeof(string));
-            credentialsTable.Columns.Add("Required Arguments", typeof(string));
-            credentialsTable.Columns.Add("Optional Arguments", typeof(string));
-
-            // Use CredentialsFactory to get all available credentials
-            var credentials = Services.Credentials.CredentialsFactory.GetAvailableCredentials();
-            foreach (var credential in credentials.Values)
-            {
-                string requiredArgs = credential.RequiredArguments.Any()
-                    ? string.Join(", ", credential.RequiredArguments)
-                    : "None";
-                
-                string optionalArgs = credential.OptionalArguments.Any()
-                    ? string.Join(", ", credential.OptionalArguments)
-                    : "-";
-                
-                credentialsTable.Rows.Add(credential.Name, credential.Description, requiredArgs, optionalArgs);
-            }
-
-            return credentialsTable;
-        }
-
-
-        private static DataTable getArguments()
-        {
-            // Build a DataTable for arguments
-            DataTable argumentsTable = new();
-            argumentsTable.Columns.Add("Argument", typeof(string));
-            argumentsTable.Columns.Add("Description", typeof(string));
-
-            // Positional Arguments
-            argumentsTable.Rows.Add("<host>", "[Positional] Target SQL Server. Format: server,port (port defaults to 1433).");
-            argumentsTable.Rows.Add("<action>", "[Positional] Action to execute.");
-            
-            // Authentication
-            argumentsTable.Rows.Add("-c, --credentials", "[Auth] Credential type (mandatory).");
-            argumentsTable.Rows.Add("-u, --username", "[Auth] Username (if required by credential type).");
-            argumentsTable.Rows.Add("-p, --password", "[Auth] Password (if required by credential type).");
-            argumentsTable.Rows.Add("-d, --domain", "[Auth] Domain (if required by credential type).");
-            
-            // Connection Settings
-            argumentsTable.Rows.Add("--timeout", "[Connection] Connection timeout in seconds (default: 5).");
-            argumentsTable.Rows.Add("--app-name", "[Connection] SQL application name (default: DataFactory).");
-            argumentsTable.Rows.Add("--workstation-id", "[Connection] SQL workstation ID (default: datafactory-runX).");
-            argumentsTable.Rows.Add("--packet-size", "[Connection] Network packet size in bytes (default: 8192).");
-            argumentsTable.Rows.Add("--no-encrypt", "[Connection] Disable connection encryption (default: enabled).");
-            argumentsTable.Rows.Add("--no-trust-cert", "[Connection] Disable server certificate trust (default: trusted).");
-            
-            // Server Options
-            argumentsTable.Rows.Add("-l, --links", "[Server] Linked server chain. Format: server1:user1,server2:user2,...");
-            
-            // Output & Logging
-            argumentsTable.Rows.Add("--output-format, --format", "[Output] Output format: table (default), csv, json, markdown.");
-            argumentsTable.Rows.Add("--silent", "[Output] Enable silent mode. No logging, only results.");
-            argumentsTable.Rows.Add("--debug", "[Output] Enable debug mode for detailed logs.");
-            argumentsTable.Rows.Add("--trace", "[Output] Enable trace mode for verbose debugging logs.");
-
-            // Help
-            argumentsTable.Rows.Add("-h, --help", "[Help] Display help. Use with action for action-specific help.");
-            argumentsTable.Rows.Add("--version", "[Help] Display version information.");
-
-            // Discovery
-            argumentsTable.Rows.Add("[Discovery]", "");
-            argumentsTable.Rows.Add("-findsql [domain] [--global-catalog|--gc]", "[Discovery] Find SQL Servers via AD SPNs. Use --global-catalog or -gc for forest-wide search (Global Catalog). --forest/-forest also supported for compatibility.");
-            argumentsTable.Rows.Add("<host> -browse", "[Discovery] Query SQL Browser service (UDP 1434) for instances and ports.");
-            argumentsTable.Rows.Add("<host> -portscan [--all]", "[Discovery] Scan for SQL ports via TDS. Stops on first hit unless --all.");
-
-            return argumentsTable;
+            Console.WriteLine("Usage: <host> -c <cred> <action>");
+            Console.WriteLine("\nFor detailed help: -h or --help");
+            Console.WriteLine("For actions list: -h actions");
+            Console.WriteLine("For credential types: -h credentials");
         }
     }
 }
