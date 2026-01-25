@@ -508,7 +508,7 @@ namespace MSSQLand.Utilities
                         Logger.InfoNested("--no-encrypt: Disable connection encryption");
                         Logger.InfoNested("--no-trust-cert: Disable server certificate trust");
                         Logger.Info("Available discovery arguments (no database connection)");
-                        Logger.InfoNested("-findsql [domain] [--global-catalog|--gc]: Find SQL Servers via AD SPNs");
+                        Logger.InfoNested("-findsql [domain] [--global-catalog | --gc]: Find SQL Servers via AD SPNs");
                         Logger.InfoNested("-browse: Query SQL Browser service for instances/ports");
                         Logger.InfoNested("-portscan [--all]: Scan for SQL Server ports with TDS validation");
                         throw new ArgumentException($"Unknown global argument: {arg}");
