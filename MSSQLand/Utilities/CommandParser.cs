@@ -621,7 +621,7 @@ namespace MSSQLand.Utilities
 
                 return (ParseResultType.Success, parsedArgs);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Error details already logged where they occurred
                 // Just return InvalidInput to signal parsing failure
