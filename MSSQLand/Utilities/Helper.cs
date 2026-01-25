@@ -92,10 +92,10 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t-d, --domain           Domain (if required by credential type)\n");
 
             Console.WriteLine("Connection options:");
-            Console.WriteLine("\t-l, --links            Linked server chain (server1:user1,server2:user2,...)");
-            Console.WriteLine("\t--timeout              Connection timeout in seconds (default: 5)");
-            Console.WriteLine("\t--workstation-id       Workstation ID (default: target server name)");
-            Console.WriteLine("\t--app-name             Application name (default: SQLAgent - TSQL JobStep)");
+            Console.WriteLine("\t-l, --links            Linked server chain");
+            Console.WriteLine("\t--timeout              Connection timeout in seconds");
+            Console.WriteLine("\t--workstation-id       Workstation ID");
+            Console.WriteLine("\t--app-name             Application name");
             Console.WriteLine("\t--packet-size          Network packet size in bytes (default: 8192)");
             Console.WriteLine("\t--no-encrypt           Disable connection encryption");
             Console.WriteLine("\t--no-trust-cert        Disable server certificate trust\n");

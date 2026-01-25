@@ -20,7 +20,7 @@ namespace MSSQLand.Services
         private string _username;
         private string _password;
         private string _domain;
-        private int _connectionTimeout = 5;
+        private int? _connectionTimeout;
         private string _appName;
         private string _workstationId;
         private int? _packetSize;
@@ -49,11 +49,11 @@ namespace MSSQLand.Services
         /// </summary>
         /// <param name="credentialsType">The type of credentials to use (e.g., "token", "domain").</param>
         /// <param name="sqlServer">The SQL server address.</param>
-        /// <param name="database">The target database.</param>
+        /// <param name="database">The target database (default: master).</param>
         /// <param name="username">The username (optional).</param>
         /// <param name="password">The password (optional).</param>
         /// <param name="domain">The domain for Windows authentication (optional).</param>
-        /// <param name="connectionTimeout">The connection timeout in seconds (default: 5).</param>
+        /// <param name="connectionTimeout">The connection timeout in seconds (default: BaseCredentials default).</param>
         /// <param name="appName">Custom application name (optional).</param>
         /// <param name="workstationId">Custom workstation ID (optional).</param>
         /// <param name="packetSize">Network packet size in bytes (optional).</param>
@@ -62,11 +62,11 @@ namespace MSSQLand.Services
         public void Authenticate(
             string credentialsType,
             string sqlServer,
-            string database = "master",
+            string database = null,
             string username = null,
             string password = null,
             string domain = null,
-            int connectionTimeout = 5,
+            int? connectionTimeout = null,
             string appName = null,
             string workstationId = null,
             int? packetSize = null,
@@ -89,7 +89,8 @@ namespace MSSQLand.Services
 
             // Get the appropriate credentials service
             _credentials = CredentialsFactory.GetCredentials(credentialsType);
-            _credentials.SetConnectionTimeout(connectionTimeout);
+            if (connectionTimeout.HasValue)
+                _credentials.SetConnectionTimeout(connectionTimeout.Value);
             
             // Apply connection string customization if provided
             if (!string.IsNullOrEmpty(appName))
@@ -157,7 +158,8 @@ namespace MSSQLand.Services
             }
 
             var credentials = CredentialsFactory.GetCredentials(_credentialsType);
-            credentials.SetConnectionTimeout(_connectionTimeout);
+            if (_connectionTimeout.HasValue)
+                credentials.SetConnectionTimeout(_connectionTimeout.Value);
             
             // Apply connection string customization if provided
             if (!string.IsNullOrEmpty(_appName))

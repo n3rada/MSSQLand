@@ -12,11 +12,6 @@ namespace MSSQLand.Services.Credentials
     /// </summary>
     public class ProbeCredentials : BaseCredentials
     {
-        public ProbeCredentials()
-        {
-            // Reasonable timeout for probing
-            SetConnectionTimeout(5);
-        }
 
         public override SqlConnection Authenticate(string sqlServer, string database, string username = null, string password = null, string domain = null)
         {
