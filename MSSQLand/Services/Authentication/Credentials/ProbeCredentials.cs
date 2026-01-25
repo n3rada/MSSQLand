@@ -49,6 +49,12 @@ namespace MSSQLand.Services.Credentials
                     Logger.Warning("Connection refused on this port");
                     Logger.WarningNested("Server is reachable but not listening on the specified port");
                 }
+                // Error 2 = Named Pipes error / server not found
+                else if (ex.Number == 2)
+                {
+                    Logger.Error("Server not found");
+                    Logger.ErrorNested("Could not connect. Server may be offline or not a SQL Server");
+                }
                 // Error -2, -1, 258 = Timeout / connection failed
                 else if (ex.Number == -2 || ex.Number == -1 || ex.Number == 258)
                 {
