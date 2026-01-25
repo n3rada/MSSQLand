@@ -111,7 +111,7 @@ namespace MSSQLand.Utilities
 
             Console.WriteLine("--version                Show version information");
 
-            Console.WriteLine("Positional arguments:");
+            Console.WriteLine("\nPositional arguments:");
             Console.WriteLine("\t<host>                 Target SQL Server (format: server,port or server\\instance)");
             Console.WriteLine("\t<action>               Action to execute (use -h actions for full list)\n");
 
