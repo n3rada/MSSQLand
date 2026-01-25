@@ -374,6 +374,12 @@ namespace MSSQLand.Utilities
                     // Check for help flag
                     if (arg == "-h" || arg == "--help")
                     {
+                        // Check if next argument is a search term (not a flag)
+                        if (currentIndex + 1 < args.Length && !IsFlag(args[currentIndex + 1]))
+                        {
+                            Helper.ShowFilteredHelp(args[currentIndex + 1]);
+                            return (ParseResultType.ShowHelp, null);
+                        }
                         Helper.Show();
                         return (ParseResultType.ShowHelp, null);
                     }

@@ -12,58 +12,28 @@ namespace MSSQLand.Utilities
     {
 
         /// <summary>
-        /// Displays help message filtered by a search term.
+        /// Displays help message for a specific help topic.
         /// </summary>
-        /// <param name="searchTerm">The term to search for in actions, descriptions, and arguments.</param>
-        public static void ShowFilteredHelp(string searchTerm)
+        /// <param name="topic">The help topic (actions, credentials).</param>
+        public static void ShowFilteredHelp(string topic)
         {
-            // Special keywords for detailed help sections
-            if (searchTerm.Equals("actions", StringComparison.OrdinalIgnoreCase))
+            // Help topics
+            if (topic.Equals("actions", StringComparison.OrdinalIgnoreCase))
             {
                 ShowAllActions();
                 return;
             }
 
-            if (searchTerm.Equals("credentials", StringComparison.OrdinalIgnoreCase) || 
-                searchTerm.Equals("creds", StringComparison.OrdinalIgnoreCase))
+            if (topic.Equals("credentials", StringComparison.OrdinalIgnoreCase) || 
+                topic.Equals("creds", StringComparison.OrdinalIgnoreCase))
             {
                 ShowCredentialTypes();
                 return;
             }
 
-            // Search actions by keyword
-            Console.WriteLine($"Searching actions for: '{searchTerm}'\n");
-
-            var actions = ActionFactory.GetAvailableActions();
-            var matchedActions = actions.Where(a =>
-                a.ActionName.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                a.Description.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                (a.Arguments != null && a.Arguments.Any(arg => arg.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0))
-            ).ToList();
-
-            if (matchedActions.Count == 0)
-            {
-                Logger.Warning($"No actions found matching '{searchTerm}'");
-                Logger.WarningNested("Use -h actions to see all available actions.");
-                return;
-            }
-
-            Console.WriteLine($"Found {matchedActions.Count} matching action(s):\n");
-
-            foreach (var action in matchedActions)
-            {
-                Console.Write($"  {action.ActionName}");
-                
-                if (action.Aliases != null && action.Aliases.Length > 0)
-                {
-                    Console.Write($"  (aliases: {string.Join(", ", action.Aliases)})");
-                }
-                
-                Console.WriteLine();
-                Console.WriteLine($"\t{action.Description}");
-            }
-            Console.WriteLine();
-            Console.WriteLine("For action details:  <action> -h ");
+            // Unknown topic
+            Logger.Error($"Unknown help topic: '{topic}'");
+            Logger.ErrorNested("Available topics: actions, credentials");
         }
 
         /// <summary>
@@ -109,11 +79,11 @@ namespace MSSQLand.Utilities
         {
             Console.WriteLine("Usage: <host> -c <cred> [options] <action> [action-args]\n");
 
-            Console.WriteLine("--version                Show version information");
+            Console.WriteLine("--version                Show version information\n");
 
-            Console.WriteLine("\nPositional arguments:");
+            Console.WriteLine("Positional arguments:");
             Console.WriteLine("\t<host>                 Target SQL Server (format: server,port or server\\instance)");
-            Console.WriteLine("\t<action>               Action to execute (use -h actions for full list)\n");
+            Console.WriteLine("\t<action>               Action to execute\n");
 
             Console.WriteLine("Authentication (required):");
             Console.WriteLine("\t-c, --credentials      Credential type: probe, token, local, windows, domain, entraid");
@@ -141,11 +111,9 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t<host> -browse         Query SQL Browser service (UDP 1434)");
             Console.WriteLine("\t<host> -portscan       Scan for SQL Server ports with TDS validation\n");
 
-            Console.WriteLine("Help:");
-            Console.WriteLine("\t-h, --help             Show this help");
-            Console.WriteLine("\t-h <keyword>           Search actions matching keyword");
-            Console.WriteLine("\t-h actions             List all available actions by category");
-            Console.WriteLine("\t-h credentials         Show credential types and requirements");
+            Console.WriteLine("Getting help:");
+            Console.WriteLine("\t-h actions             List all available actions");
+            Console.WriteLine("\t-h credentials         Show authentication types");
             Console.WriteLine("\t<action> -h            Show help for specific action");
             Console.WriteLine();
         } 
@@ -231,10 +199,12 @@ namespace MSSQLand.Utilities
         public static void ShowQuickStart()
         {
             Console.WriteLine("Usage: <host> -c <cred> [options] <action> [action-options]\n");
-            Console.WriteLine("For detailed help:   -h or --help");
-            Console.WriteLine("For actions list:    -h actions");
-            Console.WriteLine("For credentials:     -h credentials");
-            Console.WriteLine("Search actions:      -h <keyword>");
+            Console.WriteLine("Examples:");
+            Console.WriteLine("  MSSQLand -h actions                    List all actions");
+            Console.WriteLine("  MSSQLand -h credentials                Show authentication types");
+            Console.WriteLine("  MSSQLand localhost -c probe query -h   Get help for specific action");
+            Console.WriteLine();
+            Console.WriteLine("For full help: -h or --help");
         }
     }
 }
