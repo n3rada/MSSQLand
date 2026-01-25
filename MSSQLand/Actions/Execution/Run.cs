@@ -109,11 +109,9 @@ namespace MSSQLand.Actions.Execution
                 Logger.Info("OLE Automation is available, using OLE method");
                 return ExecuteViaOle(databaseContext, asyncMode);
             }
-            else
-            {
-                Logger.Info("OLE Automation not available, using command shell method");
-                return ExecuteViaXpCmdshell(databaseContext, asyncMode);
-            }
+
+            Logger.Info("OLE Automation not available, using command shell method");
+            return ExecuteViaXpCmdshell(databaseContext, asyncMode);
         }
 
         /// <summary>
@@ -172,12 +170,11 @@ EXEC sp_OADestroy @ObjectToken;
                     Logger.Success("File launched successfully via OLE (running in background)");
                     return "Process launched in background";
                 }
-                else
-                {
-                    // Sync mode - wait and return exit code
-                    // Creates WScript.Shell object and calls Run method with waitOnReturn=1 (wait for completion)
-                    // Returns the exit code from the executed process
-                    string query = $@"
+
+                // Sync mode - wait and return exit code
+                // Creates WScript.Shell object and calls Run method with waitOnReturn=1 (wait for completion)
+                // Returns the exit code from the executed process
+                string syncQuery = $@"
 DECLARE @ObjectToken INT;
 DECLARE @Result INT;
 DECLARE @ErrorSource NVARCHAR(255);
@@ -206,22 +203,19 @@ EXEC sp_OADestroy @ObjectToken;
 SELECT @ExitCode AS ExitCode;
 ";
 
-                    DataTable result = databaseContext.QueryService.ExecuteTable(query);
+                DataTable result = databaseContext.QueryService.ExecuteTable(syncQuery);
 
-                    if (result != null && result.Rows.Count > 0)
-                    {
-                        int exitCode = result.Rows[0]["ExitCode"] != DBNull.Value 
-                            ? Convert.ToInt32(result.Rows[0]["ExitCode"]) 
-                            : -1;
-                        Logger.Success($"File executed successfully via OLE (Exit Code: {exitCode})");
-                        return $"Exit code: {exitCode}";
-                    }
-                    else
-                    {
-                        Logger.Error("OLE execution failed");
-                        return null;
-                    }
+                if (result != null && result.Rows.Count > 0)
+                {
+                    int exitCode = result.Rows[0]["ExitCode"] != DBNull.Value 
+                        ? Convert.ToInt32(result.Rows[0]["ExitCode"]) 
+                        : -1;
+                    Logger.Success($"File executed successfully via OLE (Exit Code: {exitCode})");
+                    return $"Exit code: {exitCode}";
                 }
+
+                Logger.Error("OLE execution failed");
+                return null;
             }
             catch (Exception ex)
             {
@@ -274,42 +268,40 @@ SELECT @ExitCode AS ExitCode;
                     Logger.Success("File launched successfully via xp_cmdshell (running in background)");
                     return "Process launched in background";
                 }
-                else
+
+                // Sync execution - run directly and capture output
+                command = string.IsNullOrWhiteSpace(_arguments)
+                    ? $"\"{_filePath}\""
+                    : $"\"{_filePath}\" {_arguments}";
+
+                // Escape single quotes for SQL
+                string escapedCommand = command.Replace("'", "''");
+
+                string query = $"EXEC master..xp_cmdshell '{escapedCommand}'";
+
+                Logger.Info("Executing via xp_cmdshell (sync)");
+                DataTable result = databaseContext.QueryService.ExecuteTable(query);
+
+                List<string> outputLines = new List<string>();
+
+                if (result != null && result.Rows.Count > 0)
                 {
-                    // Sync execution - run directly and capture output
-                    command = string.IsNullOrWhiteSpace(_arguments)
-                        ? $"\"{_filePath}\""
-                        : $"\"{_filePath}\" {_arguments}";
-
-                    // Escape single quotes for SQL
-                    string escapedCommand = command.Replace("'", "''");
-
-                    string query = $"EXEC master..xp_cmdshell '{escapedCommand}'";
-
-                    Logger.Info("Executing via xp_cmdshell (sync)");
-                    DataTable result = databaseContext.QueryService.ExecuteTable(query);
-
-                    List<string> outputLines = new List<string>();
-
-                    if (result != null && result.Rows.Count > 0)
+                    Logger.NewLine();
+                    foreach (DataRow row in result.Rows)
                     {
-                        Logger.NewLine();
-                        foreach (DataRow row in result.Rows)
-                        {
-                            // Handle NULL values - xp_cmdshell returns single column named "output"
-                            string output = row[0] != DBNull.Value ? row[0].ToString() : "";
-                            
-                            Console.WriteLine(output);
-                            outputLines.Add(output);
-                        }
-
-                        Logger.Success("File executed successfully via xp_cmdshell");
-                        return outputLines;
+                        // Handle NULL values - xp_cmdshell returns single column named "output"
+                        string output = row[0] != DBNull.Value ? row[0].ToString() : "";
+                        
+                        Console.WriteLine(output);
+                        outputLines.Add(output);
                     }
 
-                    Logger.Warning("The command executed but returned no results.");
+                    Logger.Success("File executed successfully via xp_cmdshell");
                     return outputLines;
                 }
+
+                Logger.Warning("The command executed but returned no results.");
+                return outputLines;
             }
             catch (Exception ex)
             {
