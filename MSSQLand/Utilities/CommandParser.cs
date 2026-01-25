@@ -623,7 +623,8 @@ namespace MSSQLand.Utilities
             }
             catch (Exception ex)
             {
-                Logger.Error($"Parsing exception occurred: {ex.Message}");
+                // Error details already logged where they occurred
+                // Just return InvalidInput to signal parsing failure
                 return (ParseResultType.InvalidInput, null);
             }
         }

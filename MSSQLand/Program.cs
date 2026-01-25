@@ -45,7 +45,9 @@ namespace MSSQLand
             }
             catch (Exception ex)
             {
-                Logger.Error($"Parsing error: {ex.Message}");
+                // Unexpected parsing errors (not normal validation failures)
+                Logger.Error($"Unexpected parsing error: {ex.Message}");
+                Logger.Trace($"Stack trace: {ex.StackTrace}");
                 return 1;
             }
 
