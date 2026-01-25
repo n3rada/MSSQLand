@@ -109,6 +109,8 @@ namespace MSSQLand.Utilities
         {
             Console.WriteLine("Usage: <host> -c <cred> [options] <action> [action-args]\n");
 
+            Console.WriteLine("--version                Show version information");
+
             Console.WriteLine("Positional arguments:");
             Console.WriteLine("\t<host>                 Target SQL Server (format: server,port or server\\instance)");
             Console.WriteLine("\t<action>               Action to execute (use -h actions for full list)\n");
@@ -144,8 +146,7 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t-h <keyword>           Search actions matching keyword");
             Console.WriteLine("\t-h actions             List all available actions by category");
             Console.WriteLine("\t-h credentials         Show credential types and requirements");
-            Console.WriteLine("\t<host> <action> -h     Show help for specific action");
-            Console.WriteLine("\t--version              Show version information");
+            Console.WriteLine("\t<action> -h            Show help for specific action");
             Console.WriteLine();
         } 
 
