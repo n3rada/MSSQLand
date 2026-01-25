@@ -131,8 +131,7 @@ namespace MSSQLand.Utilities
         {
             if (args.Length == 0)
             {
-                Logger.Error("Missing Host positional argument.");
-                Logger.ErrorNested("Usage: <host> [options] <action> [action-options]");
+                Helper.ShowQuickStart();
                 return (ParseResultType.ShowHelp, null);
             }
 

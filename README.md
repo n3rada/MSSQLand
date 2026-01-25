@@ -19,7 +19,7 @@ Designed **for constrained environments** where operations must be executed dire
 ## 🧸 Usage
 
 ```shell
-MSSQLand.exe <host> [options] <action> [action-options]
+MSSQLand.exe <host> -c <cred> [options] <action> [action-options]
 ```
 
 > [!NOTE]
