@@ -52,21 +52,19 @@ namespace MSSQLand.Utilities
 
             foreach (var action in matchedActions)
             {
-                Console.WriteLine($"\t{action.ActionName}");
-                Console.WriteLine($"\t  {action.Description}");
-
+                Console.Write($"  {action.ActionName}");
+                
                 if (action.Aliases != null && action.Aliases.Length > 0)
                 {
-                    Console.WriteLine($"\t  Aliases: {string.Join(", ", action.Aliases)}");
+                    Console.Write($"  (aliases: {string.Join(", ", action.Aliases)})");
                 }
+                
+                Console.WriteLine();
+                Console.WriteLine($"\t{action.Description}");
 
                 if (action.Arguments != null && action.Arguments.Any())
                 {
-                    Console.WriteLine("\t  Arguments:");
-                    foreach (var arg in action.Arguments)
-                    {
-                        Console.WriteLine($"\t    {arg}");
-                    }
+                    Console.WriteLine($"\tArguments: {action.Arguments.Length}  (use '{action.ActionName} -h' for details)");
                 }
 
                 Console.WriteLine();
