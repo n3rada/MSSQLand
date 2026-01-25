@@ -493,26 +493,9 @@ namespace MSSQLand.Utilities
                     }
                     else
                     {
-                        Logger.Info("Available global arguments");
-                        Logger.InfoNested("-c, --credentials: Credential type for authentication");
-                        Logger.InfoNested("-l, --links: Linked server chain");
-                        Logger.InfoNested("--timeout: Connection timeout in seconds");
-                        Logger.InfoNested("-u, --username: Username for authentication");
-                        Logger.InfoNested("-p, --password: Password for authentication");
-                        Logger.InfoNested("-d, --domain: Domain for authentication");
-                        Logger.InfoNested("--app-name: SQL connection application name");
-                        Logger.InfoNested("--workstation-id: SQL connection workstation ID");
-                        Logger.InfoNested("--packet-size: Network packet size in bytes (default: 8192)");
-                        Logger.InfoNested("--no-encrypt: Disable connection encryption");
-                        Logger.InfoNested("--no-trust-cert: Disable server certificate trust");
-
-                        Logger.NewLine();
-
-                        Logger.Info("Available discovery arguments (no database connection)");
-                        Logger.InfoNested("-findsql [domain] [--global-catalog | --gc]: Find SQL Servers via AD SPNs");
-                        Logger.InfoNested("-browse: Query SQL Browser service for instances/ports");
-                        Logger.InfoNested("-portscan [--all]: Scan for SQL Server ports with TDS validation");
-                        throw new ArgumentException($"Unknown global argument: {arg}");
+                        Logger.Error($"Unknown global argument: {arg}");
+                        Logger.ErrorNested("Use -h or --help to see available options");
+                        return (ParseResultType.InvalidInput, null);
                     }
 
                     currentIndex++;
