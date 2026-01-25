@@ -90,11 +90,11 @@ namespace MSSQLand.Utilities
                 groupedActions[action.Category].Add(action.ActionName);
             }
 
-            Console.WriteLine("Available actions by category:\n");
+            Console.WriteLine("Available Actions\n");
             
             foreach (var group in groupedActions.OrderBy(g => g.Key))
             {
-                Console.WriteLine($"[{group.Key}]");
+                Console.WriteLine($"  [{group.Key}]");
                 
                 // Display max 6 actions per line
                 var actionsList = group.Value.OrderBy(a => a).ToList();
@@ -106,8 +106,7 @@ namespace MSSQLand.Utilities
                 Console.WriteLine();
             }
 
-            Console.WriteLine("Use '<action> -h' or '-h <action>' for detailed help on a specific action.");
-            Console.WriteLine();
+            Console.WriteLine("For action details:  <action> -h  or  -h <action>");
         }
 
         /// <summary>
@@ -203,31 +202,33 @@ namespace MSSQLand.Utilities
         /// </summary>
         public static void ShowCredentialTypes()
         {
-            Console.WriteLine("Available credential types:\n");
+            Console.WriteLine("Available Credential Types\n");
 
             var credentials = Services.Credentials.CredentialsFactory.GetAvailableCredentials();
             
             foreach (var credential in credentials.Values.OrderBy(c => c.Name))
             {
-                Console.WriteLine($"\t{credential.Name}");
-                Console.WriteLine($"\t  {credential.Description}");
+                Console.WriteLine($"  [{credential.Name}]");
+                Console.WriteLine($"\t{credential.Description}");
                 
                 if (credential.RequiredArguments.Any())
                 {
-                    Console.WriteLine($"\t  Required: {string.Join(", ", credential.RequiredArguments)}");
+                    Console.WriteLine($"\tRequired: {string.Join(", ", credential.RequiredArguments)}");
                 }
                 else
                 {
-                    Console.WriteLine("\t  Required: None");
+                    Console.WriteLine("\tRequired: None");
                 }
 
                 if (credential.OptionalArguments.Any())
                 {
-                    Console.WriteLine($"\t  Optional: {string.Join(", ", credential.OptionalArguments)}");
+                    Console.WriteLine($"\tOptional: {string.Join(", ", credential.OptionalArguments)}");
                 }
 
                 Console.WriteLine();
             }
+
+            Console.WriteLine("For credential usage:  <host> -c <type> -h");
         }
 
         /// <summary>
