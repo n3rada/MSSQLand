@@ -1,4 +1,6 @@
-﻿using MSSQLand.Utilities;
+﻿// MSSQLand/Services/Authentication/Credentials/BaseCredentials.cs
+
+using MSSQLand.Utilities;
 using System;
 using System.Data.SqlClient;
 
@@ -16,13 +18,11 @@ namespace MSSQLand.Services.Credentials
 
         /// <summary>
         /// The application name used for the SQL connection.
-        /// Default: "SQLAgent - TSQL JobStep" (mimics SQL Server Agent executing T-SQL jobs)
         /// </summary>
-        public string AppName { get; set; } = null;
+        public string AppName { get; set; } = "SQLAgent - TSQL JobStep";
 
         /// <summary>
         /// The workstation ID used for the SQL connection.
-        /// Default: null (will generate "SQLNODE-0X" where X is random 0-99, mimics clustered SQL nodes)
         /// </summary>
         public string WorkstationId { get; set; } = null;
 
@@ -33,8 +33,7 @@ namespace MSSQLand.Services.Credentials
         public bool? EnableEncryption { get; set; } = true;
 
         /// <summary>
-        /// Optional: Override server certificate validation.
-        /// Default: true (accepts self-signed certificates, common in pentesting)
+        /// Default: true (accepts self-signed certificates)
         /// </summary>
         public bool? TrustServerCertificate { get; set; } = true;
 
@@ -62,19 +61,17 @@ namespace MSSQLand.Services.Credentials
         /// Creates and opens a SQL connection with a specified connection string.
         /// </summary>
         /// <param name="connectionString">The SQL connection string.</param>
+        /// <param name="sqlServer">The target SQL Server (used to derive WorkstationId if not explicitly set).</param>
         /// <returns>An open <see cref="SqlConnection"/> object.</returns>
         /// <exception cref="InvalidOperationException">Thrown when the connection could not be opened.</exception>
         /// <exception cref="SqlException">Thrown for SQL-related issues (e.g., network errors, authentication issues).</exception>
-        protected SqlConnection CreateSqlConnection(string connectionString)
+        protected SqlConnection CreateSqlConnection(string connectionString, string sqlServer)
         {
-            // Set defaults if not configured via command line
-            if (string.IsNullOrEmpty(AppName))
-                AppName = "SQLAgent - TSQL JobStep";
-            
-            if (string.IsNullOrEmpty(WorkstationId))
-                WorkstationId = "SQLNODE-" + Misc.GetRandomNumber(0, 99).ToString("D2");
 
-            connectionString = $"{connectionString.TrimEnd(';')}; Connect Timeout={_connectTimeout}; Application Name={AppName}; Workstation Id={WorkstationId}";
+            // If WorkstationId not explicitly set, use target server name
+            string workstationId = WorkstationId ?? ExtractServerName(sqlServer);
+
+            connectionString = $"{connectionString.TrimEnd(';')}; Connect Timeout={_connectTimeout}; Application Name={AppName}; Workstation Id={workstationId}";
 
             // Apply optional connection string overrides (only when different from ADO.NET defaults)
             // Add Encrypt if explicitly set (default varies by .NET version)
@@ -122,6 +119,29 @@ namespace MSSQLand.Services.Credentials
         public string GetName()
         {
             return GetType().Name;
+        }
+
+
+        /// <summary>
+        /// Extracts the server name from connection string format.
+        /// Handles: SQLSERVER01, SQLSERVER01\INSTANCE, SQLSERVER01,1433, etc.
+        /// </summary>
+        private string ExtractServerName(string sqlServer)
+        {
+            if (string.IsNullOrWhiteSpace(sqlServer))
+                return "SQLNODE01"; // Fallback
+            
+            // Remove port if present: "SERVER,1433" -> "SERVER"
+            string serverName = sqlServer.Split(',')[0];
+            
+            // Remove instance name if present: "SERVER\INSTANCE" -> "SERVER"
+            serverName = serverName.Split('\\')[0];
+            
+            // Remove protocol prefix if present: "tcp:SERVER" -> "SERVER"
+            if (serverName.Contains(":"))
+                serverName = serverName.Split(':')[1];
+            
+            return serverName.Trim();
         }
 
     }

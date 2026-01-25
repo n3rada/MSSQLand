@@ -17,7 +17,7 @@ namespace MSSQLand.Services.Credentials
                 database = "master";
 
             var connectionString = $"Server={sqlServer}; Database={database}; Authentication=Active Directory Password; User ID={username}; Password={password};";
-            return CreateSqlConnection(connectionString);
+            return CreateSqlConnection(connectionString, sqlServer);
         }
     }
 }

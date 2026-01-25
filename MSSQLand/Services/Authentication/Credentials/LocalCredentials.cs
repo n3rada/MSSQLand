@@ -14,7 +14,7 @@ namespace MSSQLand.Services.Credentials
             // TrustServerCertificate=True allows self-signed certs (common in on-premises)
             // Database is optional - if not specified, uses login's default database
             var connectionString = $"Server={sqlServer};{(string.IsNullOrEmpty(database) ? "" : $" Database={database};")} Integrated Security=False; User Id={username}; Password={password};";
-            return CreateSqlConnection(connectionString);
+            return CreateSqlConnection(connectionString, sqlServer);
         }
     }
 }

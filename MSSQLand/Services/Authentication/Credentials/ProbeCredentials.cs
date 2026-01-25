@@ -30,7 +30,7 @@ namespace MSSQLand.Services.Credentials
 
             try
             {
-                CreateSqlConnection(connectionString);
+                CreateSqlConnection(connectionString, sqlServer);
                 return null;
             }
             catch (SqlException ex)
