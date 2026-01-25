@@ -208,7 +208,7 @@ namespace MSSQLand.Utilities
                         }
                         catch
                         {
-                            throw new ArgumentException("FindSqlServers requires a domain argument (not domain-joined). Example: -findsql corp.com [--forest]");
+                            throw new ArgumentException("FindSqlServers requires a domain argument.");
                         }
                     }
                     
@@ -266,16 +266,15 @@ namespace MSSQLand.Utilities
                     }
                 }
 
-                // Continue parsing with filtered arguments (without --trace, --debug and --silent)
+                // Continue parsing with filtered arguments
                 args = filteredArgs.ToArray();
                 currentIndex = 0;
 
                 // First positional argument: HOST (mandatory)
                 if (currentIndex >= args.Length || IsFlag(args[currentIndex]))
                 {
-                    Logger.Error("Missing required positional argument: HOST");
-                    Logger.Info("Usage: <host> [options] <action> [action-options]");
-                    Logger.Info("Example: localhost -c token info");
+                    Logger.Error("Missing Host positional argument.");
+                    Logger.ErrorNested("Usage: <host> [options] <action> [action-options]");
                     return (ParseResultType.InvalidInput, null);
                 }
 
@@ -289,9 +288,15 @@ namespace MSSQLand.Utilities
                     try
                     {
                         var addresses = Misc.ValidateDnsResolution(parsedArgs.Host.Hostname, throwOnFailure: true);
+
                         // Prefer IPv4
                         resolvedIp = addresses?.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) 
-                                   ?? addresses?.First();                        parsedArgs.ResolvedIpAddress = resolvedIp;                    }
+                                   ?? addresses?.First();
+
+                        Logger.Trace($"Resolved {parsedArgs.Host.Hostname} to {resolvedIp}");
+                        
+                        parsedArgs.ResolvedIpAddress = resolvedIp;
+                    }
                     catch (Exception ex)
                     {
                         Logger.Error($"DNS resolution failed: {ex.Message}");
@@ -618,7 +623,7 @@ namespace MSSQLand.Utilities
             }
             catch (Exception ex)
             {
-                Logger.Error($"Parsing error: {ex.Message}");
+                Logger.Error($"Parsing exception occurred: {ex.Message}");
                 return (ParseResultType.InvalidInput, null);
             }
         }

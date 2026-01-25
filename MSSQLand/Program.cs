@@ -45,7 +45,6 @@ namespace MSSQLand
             }
             catch (Exception ex)
             {
-                Logger.Error($"Parsing error: {ex.Message}");
                 return 1;
             }
 
