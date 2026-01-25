@@ -1,4 +1,4 @@
-﻿// MSSQLand/Actions/Administration/Monitor.cs
+// MSSQLand/Actions/Administration/Requests.cs
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
@@ -7,11 +7,11 @@ using System;
 
 namespace MSSQLand.Actions.Administration
 {
-    internal class Monitor : BaseAction
+    internal class Requests : BaseAction
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Monitoring currently running SQL commands");
+            Logger.TaskNested("Retrieving currently executing SQL requests");
 
             string currentCommandsQuery = @"
             SELECT 

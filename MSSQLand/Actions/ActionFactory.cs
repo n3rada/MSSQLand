@@ -50,7 +50,7 @@ namespace MSSQLand.Utilities
             { "search", (typeof(Search), "Search for keywords in column names and data across databases.", new[] { "find" }) },
             { "query", (typeof(Query), "Execute a custom T-SQL query.", new[] { "sql" }) },
             { "queryall", (typeof(QueryAll), "Execute a custom T-SQL query across all databases using sp_MSforeachdb.", null) },
-            { "monitor", (typeof(Monitor), "Display currently running SQL commands and active sessions.", null) },
+            { "requests", (typeof(Requests), "Display currently executing SQL requests with query text and wait information.", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // ADMINISTRATION ACTIONS
