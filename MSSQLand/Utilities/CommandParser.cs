@@ -280,27 +280,40 @@ namespace MSSQLand.Utilities
                 hostArg = args[currentIndex++];
                 parsedArgs.Host = Server.ParseServer(hostArg);
                 
-                // Validate DNS resolution for the target server (skip for named pipes)
+                // Validate DNS resolution for the target server (skip for named pipes and localhost)
                 IPAddress resolvedIp = null;
                 if (!parsedArgs.Host.UsesNamedPipe)
                 {
-                    try
+                    // Skip DNS resolution for localhost/loopback addresses
+                    if (parsedArgs.Host.Hostname.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+                        parsedArgs.Host.Hostname.Equals("127.0.0.1") ||
+                        parsedArgs.Host.Hostname.Equals("::1"))
                     {
-                        var addresses = Misc.ValidateDnsResolution(parsedArgs.Host.Hostname, throwOnFailure: true);
-
-                        // Prefer IPv4
-                        resolvedIp = addresses?.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) 
-                                   ?? addresses?.First();
-
-                        Logger.Trace($"Resolved {parsedArgs.Host.Hostname} to {resolvedIp}");
-                        
-                        parsedArgs.ResolvedIpAddress = resolvedIp;
+                        Logger.Trace($"Using loopback address: {parsedArgs.Host.Hostname}");
+                        resolvedIp = parsedArgs.Host.Hostname.Equals("::1") 
+                            ? IPAddress.IPv6Loopback 
+                            : IPAddress.Loopback;
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        Logger.Error($"DNS resolution failed: {ex.Message}");
-                        return (ParseResultType.InvalidInput, null);
+                        try
+                        {
+                            var addresses = Misc.ValidateDnsResolution(parsedArgs.Host.Hostname, throwOnFailure: true);
+
+                            // Prefer IPv4
+                            resolvedIp = addresses?.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) 
+                                       ?? addresses?.First();
+
+                            Logger.Trace($"Resolved {parsedArgs.Host.Hostname} to {resolvedIp}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error($"DNS resolution failed: {ex.Message}");
+                            return (ParseResultType.InvalidInput, null);
+                        }
                     }
+                    
+                    parsedArgs.ResolvedIpAddress = resolvedIp;
                 }
 
                 // Check for utility modes that work on a specific host
