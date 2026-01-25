@@ -104,7 +104,7 @@
     <Compile Include="Actions\Domain\AdGroups.cs" />
     <Compile Include="Actions\Domain\AdMembers.cs" />
     <Compile Include="Actions\Domain\AdSid.cs" />
-    <Compile Include="Actions\Domain\RidCycle.cs" />
+    <Compile Include="Actions\Domain\AdUsers.cs" />
 
     <Compile Include="Actions\Execution\Agents.cs" />
     <Compile Include="Actions\Execution\ClrExecution.cs" />

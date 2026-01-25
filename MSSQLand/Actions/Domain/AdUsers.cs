@@ -1,4 +1,4 @@
-// MSSQLand/Actions/Domain/RidCycle.cs
+// MSSQLand/Actions/Domain/AdUsers.cs
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
@@ -10,9 +10,9 @@ using System.Data;
 namespace MSSQLand.Actions.Domain
 {
     /// <summary>
-    /// RID enumeration via cycling through RIDs using SUSER_SNAME(SID_BINARY('S-...-RID')).
+    /// Enumerate domain users via RID cycling using SUSER_SNAME(SID_BINARY('S-...-RID')).
     /// </summary>
-    internal class RidCycle : BaseAction
+    internal class AdUsers : BaseAction
     {
         private const int DefaultMaxRid = 10000;
         private const int BatchSize = 1000;
@@ -37,7 +37,7 @@ namespace MSSQLand.Actions.Domain
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Starting RID cycling (max RID: {_maxRid})");
+            Logger.TaskNested($"Enumerating domain users via RID cycling (max RID: {_maxRid})");
             
             var results = new List<Dictionary<string, object>>();
 
@@ -128,7 +128,7 @@ namespace MSSQLand.Actions.Domain
                     }
                 }
 
-                Logger.Success($"RID cycling completed. Found {foundCount} domain accounts.");
+                Logger.Success($"Domain user enumeration completed. Found {foundCount} accounts.");
 
                 // Print results if any found
                 if (results.Count > 0)
@@ -205,7 +205,7 @@ namespace MSSQLand.Actions.Domain
             }
             catch (Exception e)
             {
-                Logger.Error($"RID enumeration failed: {e.Message}");
+                Logger.Error($"Domain user enumeration failed: {e.Message}");
                 Logger.TraceNested($"Stack trace: {e.StackTrace}");
             }
 

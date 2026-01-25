@@ -67,7 +67,7 @@ namespace MSSQLand.Utilities
             { "ad-sid", (typeof(AdSid), "Retrieve the current user's SID using SUSER_SID().", null) },
             { "ad-groups", (typeof(AdGroups), "Retrieve Active Directory domain groups with SQL Server principals that the user is a member of.", null) },
             { "ad-members", (typeof(AdMembers), "Retrieve members of an Active Directory group.", null) },
-            { "ridcycle", (typeof(RidCycle), "Enumerate domain users by RID cycling using SUSER_SNAME().", null) },
+            { "ad-users", (typeof(AdUsers), "Enumerate domain users by RID cycling using SUSER_SNAME().", new[] { "rid-brute" }) },
             
             // ═══════════════════════════════════════════════════════════════════════════════
             // EXECUTION ACTIONS
