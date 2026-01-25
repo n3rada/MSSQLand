@@ -17,7 +17,22 @@ namespace MSSQLand.Utilities
         /// <param name="searchTerm">The term to search for in actions, descriptions, and arguments.</param>
         public static void ShowFilteredHelp(string searchTerm)
         {
-            Console.WriteLine($"Searching for: '{searchTerm}'\n");
+            // Special keywords for detailed help sections
+            if (searchTerm.Equals("actions", StringComparison.OrdinalIgnoreCase))
+            {
+                ShowAllActions();
+                return;
+            }
+
+            if (searchTerm.Equals("credentials", StringComparison.OrdinalIgnoreCase) || 
+                searchTerm.Equals("creds", StringComparison.OrdinalIgnoreCase))
+            {
+                ShowCredentialTypes();
+                return;
+            }
+
+            // Search actions by keyword
+            Console.WriteLine($"Searching actions for: '{searchTerm}'\n");
 
             var actions = ActionFactory.GetAvailableActions();
             var matchedActions = actions.Where(a =>
@@ -29,7 +44,7 @@ namespace MSSQLand.Utilities
             if (matchedActions.Count == 0)
             {
                 Logger.Warning($"No actions found matching '{searchTerm}'");
-                Logger.WarningNested("Use -h or --help to see all available actions.");
+                Logger.WarningNested("Use -h actions to see all available actions.");
                 return;
             }
 
@@ -37,13 +52,20 @@ namespace MSSQLand.Utilities
 
             foreach (var action in matchedActions)
             {
-                Console.WriteLine($"{action.ActionName} - {action.Description}");
+                Console.WriteLine($"\t{action.ActionName}");
+                Console.WriteLine($"\t  {action.Description}");
+
+                if (action.Aliases != null && action.Aliases.Length > 0)
+                {
+                    Console.WriteLine($"\t  Aliases: {string.Join(", ", action.Aliases)}");
+                }
 
                 if (action.Arguments != null && action.Arguments.Any())
                 {
+                    Console.WriteLine("\t  Arguments:");
                     foreach (var arg in action.Arguments)
                     {
-                        Console.WriteLine($"\t> {arg}");
+                        Console.WriteLine($"\t    {arg}");
                     }
                 }
 
@@ -52,38 +74,11 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
-        /// Displays full help message with CLI arguments and credential types (-h).
+        /// Displays all available actions grouped by category.
         /// </summary>
-        public static void Show()
+        public static void ShowAllActions()
         {
-            MarkdownFormatter formatter = new MarkdownFormatter();
-
-            Console.WriteLine("Usage: <host> [options] <action> [action-options]\n");
-            
-            Console.WriteLine("Help options");
-            Console.WriteLine("\t-h, --help           Show this full help");
-            Console.WriteLine("\t-h <keyword>         Search actions by keyword");
-            Console.WriteLine("\t<host> <action> -h   Show help for specific action");
-
-            Console.WriteLine();
-            Console.WriteLine("CLI arguments");
-            Console.WriteLine(formatter.ConvertDataTable(getArguments()));
-
-            Console.WriteLine();
-            Console.WriteLine("Credential types");
-            Console.WriteLine(formatter.ConvertDataTable(getCredentialTypes()));
-
-            Console.WriteLine();
-            Console.WriteLine("Discovery utilities (no database connection)");
-            Console.WriteLine("\t-findsql [domain]                   Find SQL Servers via SPNs in a domain");
-            Console.WriteLine("\t-findsql [domain] --global-catalog  Query entire forest (Global Catalog, preferred)");
-            Console.WriteLine("\t<host> -browse                      Query SQL Browser for instances/ports");
-            Console.WriteLine("\t<host> -portscan [--all]            Scan for SQL Server ports (TDS validation)");
-            Console.WriteLine();
-
-            // Show all actions grouped by category
             var actions = ActionFactory.GetAvailableActions();
-            
             var groupedActions = new Dictionary<string, List<string>>();
 
             foreach (var action in actions)
@@ -95,20 +90,76 @@ namespace MSSQLand.Utilities
                 groupedActions[action.Category].Add(action.ActionName);
             }
 
-            Console.WriteLine("Available actions:");
-            foreach (var group in groupedActions)
+            Console.WriteLine("Available actions by category:\n");
+            
+            foreach (var group in groupedActions.OrderBy(g => g.Key))
             {
-                Console.WriteLine();
-                Console.WriteLine($"\t[{group.Key}]");
-
-                // Display max 8 actions per line with indentation
-                var actionsList = group.Value;
-                for (int i = 0; i < actionsList.Count; i += 8)
+                Console.WriteLine($"[{group.Key}]");
+                
+                // Display max 6 actions per line
+                var actionsList = group.Value.OrderBy(a => a).ToList();
+                for (int i = 0; i < actionsList.Count; i += 6)
                 {
-                    var chunk = actionsList.Skip(i).Take(8);
-                    Console.WriteLine("\t\t" + string.Join(", ", chunk));
+                    var chunk = actionsList.Skip(i).Take(6);
+                    Console.WriteLine("\t" + string.Join(", ", chunk));
                 }
+                Console.WriteLine();
             }
+
+            Console.WriteLine("Use '<action> -h' or '-h <action>' for detailed help on a specific action.");
+            Console.WriteLine();
+        }
+
+        /// <summary>
+        /// Displays concise help message (argparse-style).
+        /// </summary>
+        public static void Show()
+        {
+            Console.WriteLine("Usage: <host> -c <cred> [options] <action> [action-args]\n");
+
+            Console.WriteLine("Positional arguments:");
+            Console.WriteLine("\t<host>                 Target SQL Server (format: server,port or server\\instance)");
+            Console.WriteLine("\t<action>               Action to execute (use -h actions for full list)\n");
+
+            Console.WriteLine("Authentication (required):");
+            Console.WriteLine("\t-c, --credentials      Credential type: probe, token, local, windows, domain, entraid");
+            Console.WriteLine("\t-u, --username         Username (if required by credential type)");
+            Console.WriteLine("\t-p, --password         Password (if required by credential type)");
+            Console.WriteLine("\t-d, --domain           Domain (if required by credential type)\n");
+
+            Console.WriteLine("Connection options:");
+            Console.WriteLine("\t-l, --links            Linked server chain (server1:user1,server2:user2,...)");
+            Console.WriteLine("\t--timeout              Connection timeout in seconds (default: 5)");
+            Console.WriteLine("\t-w, --workstation-id   Workstation ID (default: target server name)");
+            Console.WriteLine("\t--app-name             Application name (default: SQLAgent - TSQL JobStep)");
+            Console.WriteLine("\t--packet-size          Network packet size in bytes (default: 8192)");
+            Console.WriteLine("\t--no-encrypt           Disable connection encryption");
+            Console.WriteLine("\t--no-trust-cert        Disable server certificate trust\n");
+
+            Console.WriteLine("Output options:");
+            Console.WriteLine("\t--format               Output format: table (default), csv, json, markdown");
+            Console.WriteLine("\t--silent               Silent mode (results only, no logging)");
+            Console.WriteLine("\t--debug                Enable debug logging");
+            Console.WriteLine("\t--trace                Enable trace logging\n");
+
+            Console.WriteLine("Discovery (no authentication required):");
+            Console.WriteLine("\t-findsql [domain]      Find SQL Servers via AD SPNs (add --gc for Global Catalog)");
+            Console.WriteLine("\t<host> -browse         Query SQL Browser service (UDP 1434)");
+            Console.WriteLine("\t<host> -portscan       Scan for SQL Server ports with TDS validation\n");
+
+            Console.WriteLine("Help:");
+            Console.WriteLine("\t-h, --help             Show this help");
+            Console.WriteLine("\t-h <keyword>           Search actions matching keyword");
+            Console.WriteLine("\t-h actions             List all available actions by category");
+            Console.WriteLine("\t-h credentials         Show credential types and requirements");
+            Console.WriteLine("\t<host> <action> -h     Show help for specific action");
+            Console.WriteLine("\t--version              Show version information\n");
+
+            Console.WriteLine("Examples:");
+            Console.WriteLine("\tMSSQLand.exe localhost -c token whoami");
+            Console.WriteLine("\tMSSQLand.exe sql.corp.local -c local -u sa -p Pass123 databases");
+            Console.WriteLine("\tMSSQLand.exe 10.0.0.5,1433 -c domain -u admin -p Pass -d CORP info");
+            Console.WriteLine("\tMSSQLand.exe sqlprod -c token -l sqldev:sa exec \"whoami\"");
             Console.WriteLine();
         } 
 
@@ -158,11 +209,37 @@ namespace MSSQLand.Utilities
         /// </summary>
         public static void ShowCredentialTypes()
         {
-            MarkdownFormatter formatter = new MarkdownFormatter();
             Console.WriteLine("Available credential types:\n");
-            Console.WriteLine(formatter.ConvertDataTable(getCredentialTypes()));
-            Console.WriteLine("Usage: <host> -c <type> [auth-options] <action>");
-            Console.WriteLine("Example: localhost -c local -u sa -p 'password' whoami");
+
+            var credentials = Services.Credentials.CredentialsFactory.GetAvailableCredentials();
+            
+            foreach (var credential in credentials.Values.OrderBy(c => c.Name))
+            {
+                Console.WriteLine($"\t{credential.Name}");
+                Console.WriteLine($"\t  {credential.Description}");
+                
+                if (credential.RequiredArguments.Any())
+                {
+                    Console.WriteLine($"\t  Required: {string.Join(", ", credential.RequiredArguments)}");
+                }
+                else
+                {
+                    Console.WriteLine("\t  Required: None");
+                }
+
+                if (credential.OptionalArguments.Any())
+                {
+                    Console.WriteLine($"\t  Optional: {string.Join(", ", credential.OptionalArguments)}");
+                }
+
+                Console.WriteLine();
+            }
+
+            Console.WriteLine("Examples:");
+            Console.WriteLine("\tMSSQLand.exe localhost -c token whoami");
+            Console.WriteLine("\tMSSQLand.exe sqlserver -c local -u sa -p Pass123 info");
+            Console.WriteLine("\tMSSQLand.exe sqlserver -c domain -u admin -p Pass -d CORP whoami");
+            Console.WriteLine("\tMSSQLand.exe database.windows.net -c entraid -u user -p Pass -d tenant.com databases");
             Console.WriteLine();
         }
 
