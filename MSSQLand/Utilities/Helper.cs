@@ -52,51 +52,6 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
-        /// Displays concise usage + action list (no args).
-        /// </summary>
-        public static void ShowQuickStart()
-        {
-            Console.WriteLine("Usage: <host> -c <credential> <action> [options]");
-            Console.WriteLine();
-            Console.WriteLine("\tExample: localhost -c token whoami");
-            Console.WriteLine("\tUse -h for full help");
-            Console.WriteLine();
-
-            // Show all actions grouped by category
-            var actions = ActionFactory.GetAvailableActions();
-            
-            // Group by category using dictionary to consolidate
-            var groupedActions = new Dictionary<string, List<string>>();
-
-            foreach (var action in actions)
-            {
-                if (!groupedActions.ContainsKey(action.Category))
-                {
-                    groupedActions[action.Category] = new List<string>();
-                }
-                groupedActions[action.Category].Add(action.ActionName);
-            }
-
-            Console.WriteLine("Available actions:");
-            foreach (var group in groupedActions)
-            {
-                Console.WriteLine();
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine($"  [{group.Key}]");
-                Console.ResetColor();
-                
-                // Display max 8 actions per line with indentation
-                var actionsList = group.Value;
-                for (int i = 0; i < actionsList.Count; i += 8)
-                {
-                    var chunk = actionsList.Skip(i).Take(8);
-                    Console.WriteLine("    " + string.Join(", ", chunk));
-                }
-            }
-            Console.WriteLine();
-        }
-
-        /// <summary>
         /// Displays full help message with CLI arguments and credential types (-h).
         /// </summary>
         public static void Show()
@@ -104,17 +59,11 @@ namespace MSSQLand.Utilities
             MarkdownFormatter formatter = new MarkdownFormatter();
 
             Console.WriteLine("Usage: <host> [options] <action> [action-options]\n");
-            Console.WriteLine("Examples");
-            Console.WriteLine("\tlocalhost -c token whoami");
-            Console.WriteLine("\tlocalhost@clients -c token tables --name 'invoice' --columns");
-            Console.WriteLine("\tSQL02,61433 -c local -u sa -p 'admin' search 'password' --all");
-            Console.WriteLine();
-
+            
             Console.WriteLine("Help options");
             Console.WriteLine("\t-h, --help           Show this full help");
             Console.WriteLine("\t-h <keyword>         Search actions by keyword");
             Console.WriteLine("\t<host> <action> -h   Show help for specific action");
-            Console.WriteLine("\t(no args)            Quick start with action list");
 
             Console.WriteLine();
             Console.WriteLine("CLI arguments");
@@ -126,13 +75,8 @@ namespace MSSQLand.Utilities
 
             Console.WriteLine();
             Console.WriteLine("Discovery utilities (no database connection)");
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("[Discovery]");
-            Console.ResetColor();
-            Console.WriteLine("\t-findsql [domain]                 Find SQL Servers via SPNs in a domain");
-            Console.WriteLine("\t-findsql [domain] --global-catalog Query entire forest (Global Catalog, preferred)");
-            Console.WriteLine("\t-findsql [domain] -gc              (short form for --global-catalog)");
-            Console.WriteLine("\t-findsql [domain] --forest/-forest  (legacy, supported for compatibility)");
+            Console.WriteLine("\t-findsql [domain]                   Find SQL Servers via SPNs in a domain");
+            Console.WriteLine("\t-findsql [domain] --global-catalog  Query entire forest (Global Catalog, preferred)");
             Console.WriteLine("\t<host> -browse                      Query SQL Browser for instances/ports");
             Console.WriteLine("\t<host> -portscan [--all]            Scan for SQL Server ports (TDS validation)");
             Console.WriteLine();
@@ -155,16 +99,14 @@ namespace MSSQLand.Utilities
             foreach (var group in groupedActions)
             {
                 Console.WriteLine();
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine($"  [{group.Key}]");
-                Console.ResetColor();
-                
+                Console.WriteLine($"\t[{group.Key}]");
+
                 // Display max 8 actions per line with indentation
                 var actionsList = group.Value;
                 for (int i = 0; i < actionsList.Count; i += 8)
                 {
                     var chunk = actionsList.Skip(i).Take(8);
-                    Console.WriteLine("    " + string.Join(", ", chunk));
+                    Console.WriteLine("\t\t" + string.Join(", ", chunk));
                 }
             }
             Console.WriteLine();
