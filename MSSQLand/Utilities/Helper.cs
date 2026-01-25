@@ -235,9 +235,10 @@ namespace MSSQLand.Utilities
         public static void ShowQuickStart()
         {
             Console.WriteLine("Usage: <host> -c <cred> [options] <action> [action-options]\n");
-            Console.WriteLine("For detailed help: -h or --help");
-            Console.WriteLine("For actions list: -h actions");
-            Console.WriteLine("For credential types: -h credentials");
+            Console.WriteLine("For detailed help:   -h or --help");
+            Console.WriteLine("For actions list:    -h actions");
+            Console.WriteLine("For credentials:     -h credentials");
+            Console.WriteLine("Search actions:      -h <keyword>");
         }
     }
 }
