@@ -84,7 +84,6 @@ namespace MSSQLand.Utilities
 
         /// <summary>
         /// Parses port specification: single port, range (start-end), or comma-separated list.
-        /// Examples: "65184", "65180-65190", "1433,5000,65184"
         /// </summary>
         private static int[] ParsePortSpec(string spec)
         {
@@ -132,7 +131,8 @@ namespace MSSQLand.Utilities
         {
             if (args.Length == 0)
             {
-                Helper.ShowQuickStart();
+                Logger.Error("Missing Host positional argument.");
+                Logger.ErrorNested("Usage: <host> [options] <action> [action-options]");
                 return (ParseResultType.ShowHelp, null);
             }
 
