@@ -93,8 +93,8 @@ namespace MSSQLand.Actions.Database
             
             var userDetails = new Dictionary<string, string>
             {
-                { "User Name", userName },
-                { "System User", systemUser },
+                { "Login", systemUser },
+                { "Mapped to user", userName },
                 { "Server Fixed Roles", string.Join(", ", userFixedRoles) },
                 { "Server Custom Roles", string.Join(", ", userCustomRoles) },
                 { "Database Roles", string.Join(", ", userDbRoles) },
