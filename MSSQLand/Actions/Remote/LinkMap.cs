@@ -27,6 +27,7 @@ namespace MSSQLand.Actions.Remote
             public string MappedUser { get; set; }
             public string ImpersonatedUser { get; set; }
             public bool IsSysadmin { get; set; }
+            public List<string> ServerRoles { get; set; } = new();
             public List<string> NonSqlLinks { get; set; } = new();
             public List<ServerNode> Children { get; set; } = new();
         }
@@ -101,7 +102,8 @@ namespace MSSQLand.Actions.Remote
                 LoggedInUser = databaseContext.Server.SystemUser,
                 MappedUser = databaseContext.Server.MappedUser,
                 ImpersonatedUser = null,
-                IsSysadmin = databaseContext.UserService.IsAdmin()
+                IsSysadmin = databaseContext.UserService.IsAdmin(),
+                ServerRoles = GetUserServerRoles(databaseContext)
             };
 
             // Add non-SQL linked servers at initial server
@@ -265,7 +267,8 @@ namespace MSSQLand.Actions.Remote
                     LoggedInUser = currentState.SystemUser,
                     MappedUser = currentState.MappedUser,
                     ImpersonatedUser = impersonatedUser,
-                    IsSysadmin = currentState.IsSysadmin
+                    IsSysadmin = currentState.IsSysadmin,
+                    ServerRoles = GetUserServerRoles(databaseContext)
                 };
 
                 // Add to parent's children
@@ -403,11 +406,19 @@ namespace MSSQLand.Actions.Remote
                 displayName = $"{node.Alias} [{node.ActualName}]";
             }
 
-            // Privilege marker
-            string privilegeMarker = node.IsSysadmin ? " ★" : "";
+            // Build role indicators
+            string roleMarkers = "";
+            if (node.IsSysadmin)
+            {
+                roleMarkers = " ★";
+            }
+            else if (node.ServerRoles.Count > 0)
+            {
+                roleMarkers = $" [{string.Join(", ", node.ServerRoles)}]";
+            }
 
             // Build the main line: name (user [mapped]) -l chain
-            Console.WriteLine($"{indent}{connector}{displayName} ({node.LoggedInUser} [{node.MappedUser}]){privilegeMarker}  -l {chainCommand}");
+            Console.WriteLine($"{indent}{connector}{displayName} ({node.LoggedInUser} [{node.MappedUser}]){roleMarkers}  -l {chainCommand}");
 
             // Show non-SQL links if any
             if (node.NonSqlLinks.Count > 0)
@@ -484,13 +495,53 @@ namespace MSSQLand.Actions.Remote
                 endpoint = $"{lastNode.Alias} [{lastNode.ActualName}]";
             }
 
-            string privilegeMarker = lastNode.IsSysadmin ? " ★" : "";
             string userContext = $"({lastNode.LoggedInUser} [{lastNode.MappedUser}])";
+            string roleInfo = "";
+            if (lastNode.IsSysadmin)
+            {
+                roleInfo = " ★";
+            }
+            else if (lastNode.ServerRoles.Count > 0)
+            {
+                roleInfo = $" [{string.Join(", ", lastNode.ServerRoles)}]";
+            }
             
             LinkedServers linkedServers = new LinkedServers(serverList.ToArray());
             string chainArg = linkedServers.GetChainArguments();
             
-            Logger.InfoNested($"{endpoint} {userContext}{privilegeMarker}: -l {chainArg}");
+            Logger.InfoNested($"{endpoint} {userContext}{roleInfo}: -l {chainArg}");
+        }
+
+        /// <summary>
+        /// Gets the server roles for the current user.
+        /// </summary>
+        private static List<string> GetUserServerRoles(DatabaseContext databaseContext)
+        {
+            string query = @"
+SELECT name
+FROM sys.server_principals
+WHERE type = 'R' AND is_fixed_role = 1 AND name != 'public'
+  AND IS_SRVROLEMEMBER(name) = 1;";
+
+            var roles = new List<string>();
+            try
+            {
+                DataTable rolesTable = databaseContext.QueryService.ExecuteTable(query);
+                foreach (DataRow row in rolesTable.Rows)
+                {
+                    string roleName = row["name"].ToString();
+                    // Skip sysadmin since it's shown with ★
+                    if (!roleName.Equals("sysadmin", StringComparison.OrdinalIgnoreCase))
+                    {
+                        roles.Add(roleName);
+                    }
+                }
+            }
+            catch
+            {
+                // Role query failed, return empty list
+            }
+            return roles;
         }
 
         private static DataTable QueryAllLinkedServers(DatabaseContext databaseContext)
