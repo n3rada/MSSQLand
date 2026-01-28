@@ -418,7 +418,7 @@ namespace MSSQLand.Actions.Remote
             }
 
             // Build the main line: name (user [mapped]) -l chain
-            Console.WriteLine($"{indent}{connector}{displayName} ({node.LoggedInUser} [{node.MappedUser}]){roleMarkers}  -l {chainCommand}");
+            Console.WriteLine($"{indent}{connector}{displayName} ({node.LoggedInUser} [{node.MappedUser}]){roleMarkers}  -l \"{chainCommand}\"");
 
             // Show non-SQL links if any
             if (node.NonSqlLinks.Count > 0)
@@ -509,7 +509,7 @@ namespace MSSQLand.Actions.Remote
             LinkedServers linkedServers = new LinkedServers(serverList.ToArray());
             string chainArg = linkedServers.GetChainArguments();
             
-            Logger.InfoNested($"{endpoint} {userContext}{roleInfo}: -l {chainArg}");
+            Logger.InfoNested($"{endpoint} {userContext}{roleInfo}: -l \"{chainArg}\"");
         }
 
         /// <summary>
