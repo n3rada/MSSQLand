@@ -164,8 +164,9 @@ namespace MSSQLand
                     databaseContext.Server.MappedUser = userName;
                     databaseContext.Server.SystemUser = systemUser;
 
-                    Logger.Info($"Logged in on {databaseContext.Server.Hostname} as {systemUser}");
-                    Logger.InfoNested($"Mapped to the user {userName}");
+                    Logger.Info($"Logged in on {databaseContext.Server.Hostname}");
+                    Logger.InfoNested($"Login: {systemUser}");
+                    Logger.InfoNested($"Mapped to user: {userName}");
 
                     // Compute effective user (domain users only)
                     if (databaseContext.UserService.IsDomainUser)
@@ -203,8 +204,9 @@ namespace MSSQLand
 
                         (userName, systemUser) = databaseContext.UserService.GetInfo();
 
-                        Logger.Info($"Logged in on {databaseContext.QueryService.ExecutionServer.Hostname} as {systemUser}");
-                        Logger.InfoNested($"Mapped to the user {userName}");
+                        Logger.Info($"Logged in on {databaseContext.QueryService.ExecutionServer.Hostname}");
+                        Logger.InfoNested($"Login: {systemUser}");
+                        Logger.InfoNested($"Mapped to user: {userName}");
                         Logger.InfoNested($"Execution database: {databaseContext.QueryService.ExecutionServer.Database}");
 
                         if (databaseContext.QueryService.ExecutionServer.IsLegacy)
