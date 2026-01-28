@@ -14,10 +14,15 @@ namespace MSSQLand.Actions.Database
         {
             Logger.TaskNested("Starting impersonation check");
 
-            // Query to obtain all SQL logins and Windows principals
-            string query = @"SELECT name, type_desc, create_date, modify_date
+            // Get current login from UserService (already populated in Program.cs)
+            string currentLogin = databaseContext.UserService.SystemUser;
+
+            // Query to obtain all SQL logins and Windows principals except current user
+            string query = $@"SELECT name, type_desc, create_date, modify_date
 FROM master.sys.server_principals
-WHERE type_desc IN ('SQL_LOGIN', 'WINDOWS_LOGIN') AND name NOT LIKE '##%'
+WHERE type_desc IN ('SQL_LOGIN', 'WINDOWS_LOGIN') 
+  AND name NOT LIKE '##%'
+  AND name != '{currentLogin.Replace("'", "''")}'
 ORDER BY create_date DESC;";
             
             DataTable queryResult = databaseContext.QueryService.ExecuteTable(query);
