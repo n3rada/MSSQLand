@@ -40,32 +40,23 @@ namespace MSSQLand.Actions.Database
                 // On-premises SQL Server: Full database enumeration
                 allDatabases = databaseContext.QueryService.ExecuteTable(
                     @"SELECT
-                        db.dbid,
-                        db.name,
-                        CASE WHEN d.database_id IS NOT NULL THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS Visible,
-                        CAST(HAS_DBACCESS(db.name) AS BIT) AS Accessible,
-                        ISNULL(d.is_trustworthy_on, 0) AS Trustworthy,
-                        ISNULL(SUSER_SNAME(d.owner_sid), 'N/A') AS Owner,
-                        db.crdate,
-                        db.filename
-                    FROM master.dbo.sysdatabases db
-                    LEFT JOIN master.sys.databases d ON db.name = d.name;"
+                        d.database_id AS dbid,
+                        d.name,
+                        CAST(HAS_DBACCESS(d.name) AS BIT) AS Accessible,
+                        d.is_trustworthy_on AS Trustworthy,
+                        SUSER_SNAME(d.owner_sid) AS Owner,
+                        d.create_date AS crdate
+                    FROM sys.databases d
+                    WHERE d.state = 0
+                    ORDER BY HAS_DBACCESS(d.name) DESC, d.create_date DESC;"
                 );
 
-                // Order: accessible first, then by creation date descending, then by name
-                var orderedRows = allDatabases.AsEnumerable()
-                    .OrderByDescending(r => Convert.ToBoolean(r["Accessible"]))
-                    .ThenByDescending(r => r["crdate"])
-                    .ThenBy(r => r["name"].ToString());
-
                 int accessibleCount = allDatabases.AsEnumerable().Count(r => Convert.ToBoolean(r["Accessible"]));
-                int visibleOnlyCount = allDatabases.AsEnumerable().Count(r => Convert.ToBoolean(r["Visible"]) && !Convert.ToBoolean(r["Accessible"]));
-                int hiddenCount = allDatabases.AsEnumerable().Count(r => !Convert.ToBoolean(r["Visible"]));
+                int inaccessibleCount = allDatabases.Rows.Count - accessibleCount;
 
-                DataTable orderedTable = orderedRows.CopyToDataTable();
-                Console.WriteLine(OutputFormatter.ConvertDataTable(orderedTable));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(allDatabases));
 
-                Logger.Success($"Retrieved {allDatabases.Rows.Count} database(s): {accessibleCount} accessible, {visibleOnlyCount} visible-only, {hiddenCount} hidden");
+                Logger.Success($"Retrieved {allDatabases.Rows.Count} database(s): {accessibleCount} accessible, {inaccessibleCount} inaccessible");
                 return allDatabases;
             }
 
