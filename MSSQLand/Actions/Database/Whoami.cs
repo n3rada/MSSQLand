@@ -103,7 +103,7 @@ namespace MSSQLand.Actions.Database
 
             Console.WriteLine(OutputFormatter.ConvertDictionary(userDetails, "Property", "Value"));
 
-            return null;
+            return userDetails;
         }
     }
 }
