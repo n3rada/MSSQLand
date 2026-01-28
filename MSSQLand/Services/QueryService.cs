@@ -103,6 +103,59 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
+        /// Detects if an exception represents a connection or timeout failure to a linked server.
+        /// </summary>
+        static bool IsLinkedServerConnectionFailure(Exception ex)
+        {
+            string m = ex.Message;
+            
+            // Check for OLE DB provider errors (linked server specific)
+            if (m.Contains("OLE DB provider") && m.Contains("for linked server"))
+                return true;
+            
+            // Check for specific SQL error numbers
+            if (ex is SqlException sqlEx)
+            {
+                foreach (SqlError error in sqlEx.Errors)
+                {
+                    // Connection-related error numbers
+                    if (error.Number == 53 ||    // SQL Server not found
+                        error.Number == 40 ||    // Cannot open connection
+                        error.Number == 17 ||    // SQL Server does not exist
+                        error.Number == 2 ||     // Network error
+                        error.Number == 64 ||    // Connection error
+                        error.Number == 233 ||   // Connection initialization error
+                        error.Number == 10054 || // Connection forcibly closed
+                        error.Number == 10060 || // Connection timeout
+                        error.Number == 10061)   // Connection refused
+                    {
+                        return true;
+                    }
+                }
+            }
+            
+            // Fallback to message patterns for non-SqlException cases
+            return m.Contains("Login timeout expired") ||
+                   m.Contains("Could not open a connection") ||
+                   m.Contains("Named Pipes Provider") ||
+                   m.Contains("TCP Provider");
+        }
+
+        /// <summary>
+        /// Extracts the linked server name from an error message.
+        /// </summary>
+        static string ExtractLinkedServerFromError(string errorMessage)
+        {
+            // Pattern: 'for linked server "ServerName"'
+            var match = System.Text.RegularExpressions.Regex.Match(
+                errorMessage, 
+                @"for linked server ""([^""]+)""",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase
+            );
+            return match.Success ? match.Groups[1].Value : null;
+        }
+
+        /// <summary>
         /// Detects if a query is primarily a data-returning SELECT that shouldn't be wrapped.
         /// These queries return actual result sets and wrapping them causes metadata conflicts.
         /// </summary>
@@ -256,14 +309,29 @@ SELECT @result AS Result, @error AS Error;";
                     ? command.ExecuteReader()
                     : command.ExecuteNonQuery();
             }
-            catch (SqlException ex) when (ex.Message.Contains("Timeout"))
+            catch (SqlException ex) when (ex.Message.Contains("Timeout") && !IsLinkedServerConnectionFailure(ex))
             {
-                Logger.Warning($"Timeout after {timeout}s. Retrying.");
+                Logger.Warning($"Query timeout after {timeout}s. Retrying with extended timeout.");
                 return ExecuteWithHandling(query, executeReader, timeout * 2, retryCount + 1);
             }
             catch (Exception ex)
             {
                 Logger.Debug($"Execution error:\n{ex.Message}");
+
+                // Handle linked server connection failures
+                if (IsLinkedServerConnectionFailure(ex))
+                {
+                    string failedServer = ExtractLinkedServerFromError(ex.Message);
+                    if (!string.IsNullOrEmpty(failedServer))
+                    {
+                        Logger.Error($"Cannot reach linked server '{failedServer}'.");
+                    }
+                    else
+                    {
+                        Logger.Error("Connection to linked server failed.");
+                    }
+                    throw; // Don't retry connection failures
+                }
 
                 if (ex.Message.Contains("not configured for RPC"))
                 {
@@ -459,6 +527,48 @@ SELECT @result AS Result, @error AS Error;";
                     ExecutionServer.Database = null;
                 }
             }
+        }
+
+        /// <summary>
+        /// Tests connectivity to all servers in the linked server chain.
+        /// Returns the name of the first unreachable server, or null if all are accessible.
+        /// </summary>
+        public string TestLinkedServerConnectivity()
+        {
+            if (_linkedServers.IsEmpty)
+                return null;
+
+            // Test each server in the chain progressively
+            var testChain = new LinkedServers();
+            
+            foreach (var server in _linkedServers.ServerChain)
+            {
+                testChain.Add(server);
+                
+                try
+                {
+                    // Build test query through current chain
+                    string testQuery = testChain.UseRemoteProcedureCall
+                        ? testChain.BuildRemoteProcedureCallChain("SELECT 1")
+                        : testChain.BuildSelectOpenQueryChain("SELECT 1");
+                    
+                    using var cmd = new SqlCommand(testQuery, Connection)
+                    {
+                        CommandTimeout = 5  // Quick timeout for connectivity test
+                    };
+                    
+                    cmd.ExecuteScalar();
+                }
+                catch (Exception ex)
+                {
+                    if (IsLinkedServerConnectionFailure(ex))
+                    {
+                        return server.Hostname;
+                    }
+                }
+            }
+            
+            return null; // All servers reachable
         }
     }
 }
