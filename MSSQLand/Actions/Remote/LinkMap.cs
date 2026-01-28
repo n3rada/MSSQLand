@@ -485,11 +485,12 @@ namespace MSSQLand.Actions.Remote
             }
 
             string privilegeMarker = lastNode.IsSysadmin ? " ★" : "";
+            string userContext = $"({lastNode.LoggedInUser} [{lastNode.MappedUser}])";
             
             LinkedServers linkedServers = new LinkedServers(serverList.ToArray());
             string chainArg = linkedServers.GetChainArguments();
             
-            Logger.InfoNested($"{endpoint}{privilegeMarker}: -l {chainArg}");
+            Logger.InfoNested($"{endpoint} {userContext}{privilegeMarker}: -l {chainArg}");
         }
 
         private static DataTable QueryAllLinkedServers(DatabaseContext databaseContext)
