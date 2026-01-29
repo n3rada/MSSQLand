@@ -80,8 +80,6 @@ namespace MSSQLand.Utilities
         {
             Console.WriteLine("Usage: <host> -c <cred> [options] <action> [action-args]\n");
 
-            Console.WriteLine("\t--version              Show version information");
-
             Console.WriteLine("\nPositional arguments:");
             Console.WriteLine("\t<host>                 Target SQL Server (format: server,port or server\\instance)");
             Console.WriteLine("\t<action>               Action to execute\n");
@@ -116,6 +114,8 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t-h actions             List all available actions");
             Console.WriteLine("\t-h credentials         Show authentication types");
             Console.WriteLine("\t<action> -h            Show help for specific action");
+            Console.WriteLine("\t--version              Show version information");
+
             Console.WriteLine();
         } 
 
