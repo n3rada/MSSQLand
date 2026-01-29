@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// Use this for device discovery, inventory queries, and finding devices by location/user/collection.
     /// InventoriedUsers column shows all users from hardware inventory with last seen date, logon count, and total minutes.
     /// Note: User data reflects periodic hardware inventory cycles (typically 24h-7d), not real-time sessions.
-    /// For ConfigMgr client health diagnostics and troubleshooting, use sccm-health instead.
+    /// For ConfigMgr client health diagnostics and troubleshooting, use cm-health instead.
     /// </summary>
     internal class CMDevices : BaseAction
     {

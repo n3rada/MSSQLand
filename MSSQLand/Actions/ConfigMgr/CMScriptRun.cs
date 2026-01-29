@@ -12,9 +12,9 @@ namespace MSSQLand.Actions.ConfigMgr
     /// <summary>
     /// Execute a PowerShell script on a target device through ConfigMgr's Background (BGB) notification channel.
     /// Use this to run commands or deploy payloads on managed devices using ConfigMgr's legitimate script execution.
-    /// Requires script GUID (from sccm-scripts or sccm-script-add) and target ResourceID (from sccm-devices).
+    /// Requires script GUID (from cm-scripts or cm-script-add) and target ResourceID (from cm-devices).
     /// Creates BGB task entries to push script execution notification to online clients.
-    /// Returns Task ID for monitoring execution status with sccm-script-status.
+    /// Returns Task ID for monitoring execution status with cm-script-status.
     /// Target device must be online with active BGB channel for immediate execution.
     /// Bypasses traditional package deployment workflows - executes directly via client notification.
     /// </summary>
@@ -182,7 +182,7 @@ WHERE TaskID = {taskId}";
                     else
                     {
                         Logger.Warning("Script is still executing or waiting in queue");
-                        Logger.InfoNested($"Use 'sccm-script-status --taskid {taskId}' to check status");
+                        Logger.WarningNested($"Use 'cm-script-status --taskid {taskId}' to check status");
                     }
                 }
                 catch (Exception ex)

@@ -8,10 +8,10 @@ using System.Data;
 namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
-    /// Monitor execution status and retrieve output from scripts run via sccm-script-run.
+    /// Monitor execution status and retrieve output from scripts run via cm-script-run.
     /// Use this to check if script execution completed, failed, or is still pending on target devices.
     /// Shows task state (Pending/Success/Failed), execution time, script output, and error messages.
-    /// Requires Task ID returned by sccm-script-run command.
+    /// Requires Task ID returned by cm-script-run command.
     /// Polls ScriptsExecutionStatus table which updates when client reports back to ConfigMgr.
     /// Essential for confirming command execution and retrieving command output from remote devices.
     /// </summary>

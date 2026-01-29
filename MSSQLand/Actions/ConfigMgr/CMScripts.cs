@@ -10,7 +10,7 @@ namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
     /// Enumerate PowerShell scripts stored in ConfigMgr with metadata overview.
-    /// Use 'sccm-script <GUID>' to view full details and script content for a specific script.
+    /// Use 'cm-script <GUID>' to view full details and script content for a specific script.
     /// Shows script names, GUIDs, approval status, authors, versions, and last update times.
     /// </summary>
     internal class CMScripts : BaseAction
@@ -85,7 +85,7 @@ ORDER BY LastUpdateTime DESC;";
                 Console.WriteLine(OutputFormatter.ConvertDataTable(result));
                 
                 Logger.Success($"Found {result.Rows.Count} script(s)");
-                Logger.SuccessNested("Use 'sccm-script <GUID>' to view full content and details for a specific script");
+                Logger.SuccessNested("Use 'cm-script <GUID>' to view full content and details for a specific script");
             }
 
             return null;

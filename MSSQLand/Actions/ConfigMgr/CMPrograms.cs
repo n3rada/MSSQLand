@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// Enumerate ConfigMgr programs (legacy package execution configurations) with command lines and run behavior.
     /// Use this to view program details including install commands, working directories, and execution flags.
     /// Programs define how packages are executed - shows command lines, user context, UI mode, and restart behavior.
-    /// For modern application deployments, use sccm-apps instead.
+    /// For modern application deployments, use cm-apps instead.
     /// </summary>
     internal class CMPrograms : BaseAction
     {

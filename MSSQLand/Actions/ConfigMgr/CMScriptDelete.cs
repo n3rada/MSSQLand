@@ -8,8 +8,8 @@ namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
     /// Remove a script from ConfigMgr's Scripts table by GUID to clean up after operations.
-    /// Use this to delete scripts added via sccm-script-add, removing evidence of custom payloads.
-    /// Requires script GUID - use sccm-scripts to find GUIDs.
+    /// Use this to delete scripts added via cm-script-add, removing evidence of custom payloads.
+    /// Requires script GUID - use cm-scripts to find GUIDs.
     /// Automatically blocks deletion of built-in CMPivot script to maintain ConfigMgr functionality.
     /// Useful for operational security and cleaning up test scripts.
     /// </summary>

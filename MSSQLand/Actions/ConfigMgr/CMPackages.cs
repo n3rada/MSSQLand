@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// Enumerate ConfigMgr packages with their properties, source locations, and program details.
     /// Use this to view package inventory including names, descriptions, source paths, versions, and associated program counts.
     /// Shows PackageID, name, source path (UNC or local), manufacturer, version, package type, and program count.
-    /// Packages are the legacy deployment model - use sccm-apps for modern application deployments.
+    /// Packages are the legacy deployment model - use cm-apps for modern application deployments.
     /// </summary>
     internal class CMPackages : BaseAction
     {

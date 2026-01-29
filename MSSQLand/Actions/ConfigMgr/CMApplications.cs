@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// Enumerate ConfigMgr applications with deployment types, installation commands, and detection methods.
     /// Use this to view application inventory including DisplayName, ModelName, deployment status, and content paths.
     /// Applications are the modern deployment model (since ConfigMgr 2012) with detection rules, dependencies, and supersedence.
-    /// For legacy package deployments, use sccm-packages instead.
+    /// For legacy package deployments, use cm-packages instead.
     /// 
     /// Note: Install/uninstall command lines are stored in the SDMPackageXML column (XML format).
     /// Query v_ConfigurationItems.SDMPackageXML to extract deployment type command lines and detection methods.

@@ -258,7 +258,7 @@ ORDER BY c.MemberCount DESC, c.Name;";
                         
                         Logger.Success($"Package is deployed to {targetedCollectionsResult.Rows.Count} collection(s) with {totalMemberships} total membership(s)");
                         Logger.SuccessNested($"Note: Same device may appear in multiple collections");
-                        Logger.SuccessNested($"Use 'sccm-collection <CollectionID>' to see device members in each collection");
+                        Logger.SuccessNested($"Use 'cm-collection <CollectionID>' to see device members in each collection");
                     }
                 }
 

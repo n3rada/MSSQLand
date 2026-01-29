@@ -9,12 +9,12 @@ using System.Text;
 namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
-    /// Upload a PowerShell script to ConfigMgr's Scripts table for later execution via sccm-script-run.
+    /// Upload a PowerShell script to ConfigMgr's Scripts table for later execution via cm-script-run.
     /// Use this to deploy custom payloads or administrative scripts without admin console approval workflow.
     /// Automatically sets script to approved state and hides it from console UI.
     /// Generates unique GUID for script identification or accepts custom GUID.
     /// Bypasses normal script approval process requiring multiple administrator roles.
-    /// Returns script GUID needed for sccm-script-run command.
+    /// Returns script GUID needed for cm-script-run command.
     /// </summary>
     internal class CMScriptAdd : BaseAction
     {

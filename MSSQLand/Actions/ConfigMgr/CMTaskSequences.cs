@@ -28,7 +28,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// 
     /// Task sequences reference multiple content types (boot images, OS images, driver packages, 
     /// applications, scripts) that are distributed to distribution points and downloaded during execution.
-    /// Use 'sccm-tasksequence <PackageID>' to view all referenced content for a specific sequence.
+    /// Use 'cm-tasksequence <PackageID>' to view all referenced content for a specific sequence.
     /// </summary>
     internal class CMTaskSequences : BaseAction
     {
@@ -131,7 +131,7 @@ ORDER BY ts.Name;
                 Console.WriteLine(OutputFormatter.ConvertDataTable(result));
 
                 Logger.Success($"Found {result.Rows.Count} task sequence(s)");
-                Logger.SuccessNested("Use 'sccm-tasksequence <PackageID>' to view detailed referenced content for a specific task sequence");
+                Logger.SuccessNested("Use 'cm-tasksequence <PackageID>' to view detailed referenced content for a specific task sequence");
             }
 
             return null;

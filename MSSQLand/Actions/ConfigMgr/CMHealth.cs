@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// Display ConfigMgr client health diagnostics and communication status.
     /// Use this for troubleshooting client issues: check-in times, inventory cycles, health evaluation results.
     /// Shows when devices last contacted ConfigMgr, inventory scan times, and policy request status.
-    /// For general device inventory and discovery, use sccm-devices instead.
+    /// For general device inventory and discovery, use cm-devices instead.
     /// </summary>
     internal class CMHealth : BaseAction
     {

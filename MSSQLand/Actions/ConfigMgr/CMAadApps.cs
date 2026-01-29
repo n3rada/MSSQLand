@@ -117,7 +117,7 @@ ORDER BY a.LastUpdateTime DESC";
                     {
                         Logger.NewLine();
                         Logger.InfoNested("Encrypted secrets found. Decrypt on Management Point with");
-                        Logger.InfoNested("sccm-script-run --resourceid <MP_ID> --scriptguid <decrypt_script>");
+                        Logger.InfoNested("cm-script-run --resourceid <MP_ID> --scriptguid <decrypt_script>");
                     }
                 }
                 catch (Exception ex)
