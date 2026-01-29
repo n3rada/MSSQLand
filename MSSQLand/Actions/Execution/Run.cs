@@ -60,8 +60,15 @@ namespace MSSQLand.Actions.Execution
 
             // Normalize path
             _filePath = _filePath.Replace("/", "\\");
+        }
 
-            // Log mode
+        /// <summary>
+        /// Executes the remote file.
+        /// </summary>
+        /// <param name="databaseContext">The DatabaseContext instance to execute the query.</param>
+        public override object Execute(DatabaseContext databaseContext)
+        {
+            // Log execution details
             if (_useXpCmd)
             {
                 Logger.Info("Command shell mode (synchronous with output capture)");
@@ -75,20 +82,11 @@ namespace MSSQLand.Actions.Execution
                 Logger.Info("Asynchronous mode (non-blocking)");
             }
 
-            Logger.Info($"Target file: {_filePath}");
+            Logger.TaskNested($"Executing remote file: {_filePath}");
             if (!string.IsNullOrWhiteSpace(_arguments))
             {
                 Logger.InfoNested($"Arguments: {_arguments}");
             }
-        }
-
-        /// <summary>
-        /// Executes the remote file.
-        /// </summary>
-        /// <param name="databaseContext">The DatabaseContext instance to execute the query.</param>
-        public override object Execute(DatabaseContext databaseContext)
-        {
-            Logger.TaskNested($"Executing remote file: {_filePath}");
 
             // Async mode = not waiting and not using command shell
             bool asyncMode = !_wait && !_useXpCmd;
