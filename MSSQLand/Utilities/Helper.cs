@@ -199,11 +199,6 @@ namespace MSSQLand.Utilities
         public static void ShowQuickStart()
         {
             Console.WriteLine("Usage: <host> -c <cred> [options] <action> [action-options]\n");
-            Console.WriteLine("Examples:");
-            Console.WriteLine("  MSSQLand -h actions                    List all actions");
-            Console.WriteLine("  MSSQLand -h credentials                Show authentication types");
-            Console.WriteLine("  MSSQLand localhost -c probe query -h   Get help for specific action");
-            Console.WriteLine();
             Console.WriteLine("For full help: -h or --help");
         }
     }
