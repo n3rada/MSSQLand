@@ -42,7 +42,6 @@ namespace MSSQLand.Utilities
             { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).", null) },
             { "permissions", (typeof(Permissions), "Enumerate user and role permissions.", null) },
             { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.", new[] { "impersonation" }) },
-            { "trustworthy", (typeof(Trustworthy), "Detect and exploit privilege escalation via TRUSTWORTHY database setting (db_owner → sysadmin).", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // DATABASE ACTIONS - OPERATIONS
