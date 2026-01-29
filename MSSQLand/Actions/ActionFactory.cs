@@ -47,8 +47,7 @@ namespace MSSQLand.Utilities
             // DATABASE ACTIONS - OPERATIONS
             // ═══════════════════════════════════════════════════════════════════════════════
             { "search", (typeof(Search), "Search for keywords in column names and data across databases.", new[] { "find" }) },
-            { "query", (typeof(Query), "Execute a custom T-SQL query.", new[] { "sql" }) },
-            { "queryall", (typeof(QueryAll), "Execute a custom T-SQL query across all databases using sp_MSforeachdb.", null) },
+            { "query", (typeof(Query), "Execute a custom T-SQL query. Use --all to execute across all accessible databases.", new[] { "sql" }) },
             { "requests", (typeof(Requests), "Display currently executing SQL requests with query text and wait information.", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
