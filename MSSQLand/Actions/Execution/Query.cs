@@ -12,26 +12,11 @@ namespace MSSQLand.Actions.Execution
 {
     public class Query : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "T-SQL query to execute")]
+        [ArgumentMetadata(Position = 0, Required = true, CaptureRemaining = true, Description = "T-SQL query to execute")]
         protected string _query;
 
         [ArgumentMetadata(LongName = "all", Description = "Execute query across all accessible databases")]
         private bool _executeAll = false;
-
-        /// <summary>
-        /// Validates the additional argument provided for the query action.
-        /// </summary>
-        /// <param name="args">The SQL query to validate.</param>
-        public override void ValidateArguments(string[] args)
-        {
-            if (args == null || args.Length == 0)
-            {
-                throw new ArgumentException("Query action requires a valid SQL query as an additional argument.");
-            }
-
-            _query = string.Join(" ", args);
-        }
-
 
         /// <summary>
         /// Executes the query action using the provided ConnectionManager.
