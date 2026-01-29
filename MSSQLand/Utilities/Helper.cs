@@ -80,7 +80,7 @@ namespace MSSQLand.Utilities
         {
             Console.WriteLine("Usage: <host> -c <cred> [options] <action> [action-args]\n");
 
-            Console.WriteLine("--version                \tShow version information");
+            Console.WriteLine("--version               \tShow version information");
 
             Console.WriteLine("\nPositional arguments:");
             Console.WriteLine("\t<host>                 Target SQL Server (format: server,port or server\\instance)");
