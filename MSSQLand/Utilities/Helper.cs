@@ -90,8 +90,10 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t-p, --password         Password (if required by credential type)");
             Console.WriteLine("\t-d, --domain           Domain (if required by credential type)\n");
 
+            Console.WriteLine("Routing:");
+            Console.WriteLine("\t-l, --links            Linked server chain semicolon-separated (e.g. srv1/l02;srv2;srv3/viewer@clients)\n");
+
             Console.WriteLine("Connection options:");
-            Console.WriteLine("\t-l, --links            Linked server chain semicolon-separated (e.g. srv1/l02;srv2;srv3/viewer@clients)");
             Console.WriteLine("\t--timeout              Connection timeout in seconds");
             Console.WriteLine("\t--workstation-id       Workstation ID");
             Console.WriteLine("\t--app-name             Application name");
