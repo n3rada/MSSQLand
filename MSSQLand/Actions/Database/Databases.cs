@@ -9,6 +9,11 @@ using System.Linq;
 
 namespace MSSQLand.Actions.Database
 {
+    /// <summary>
+    /// TRUSTWORTHY property allows code within a database to access resources outside the database.
+    /// When TRUSTWORTHY=ON, executing "EXECUTE AS USER = 'dbo'" inherits the server-level privileges
+    /// of the database's owner login (SUSER_SNAME(owner_sid)).
+    /// </summary>
     internal class Databases : BaseAction
     {
         public override object Execute(DatabaseContext databaseContext)
@@ -33,7 +38,7 @@ namespace MSSQLand.Actions.Database
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(allDatabases));
 
-            Logger.Success($"Retrieved {allDatabases.Rows.Count} database(s): {accessibleCount} accessible, {inaccessibleCount} inaccessible");
+            Logger.Success($"Retrieved {allDatabases.Rows.Count} database(s).");
             return allDatabases;
         }
 
