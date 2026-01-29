@@ -8,22 +8,8 @@ namespace MSSQLand.Actions.Execution
 {
     internal class RemotePowerShellExecutor : PowerShell
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "URL of PowerShell script to download and execute")]
+        [ArgumentMetadata(Position = 0, Required = true, CaptureRemaining = true, Description = "URL of PowerShell script to download and execute")]
         private string _url = "";
-
-        /// <summary>
-        /// Validates the arguments passed to the PowerShellScriptDownloader action.
-        /// </summary>
-        /// <param name="args">The URL of the PowerShell script to download and execute.</param>
-        public override void ValidateArguments(string[] args)
-        {
-            if (args == null || args.Length == 0)
-            {
-                throw new ArgumentException("PowerShellScriptDownloader action requires a script URL.");
-            }
-
-            _url = string.Join(" ", args);
-        }
 
         /// <summary>
         /// Executes the PowerShell command to download and run the script from the provided URL.

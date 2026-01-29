@@ -9,22 +9,8 @@ namespace MSSQLand.Actions.Execution
 {
     internal class PowerShell : XpCmd
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "PowerShell script or command to execute")]
+        [ArgumentMetadata(Position = 0, Required = true, CaptureRemaining = true, Description = "PowerShell script or command to execute")]
         private string _script = "";
-
-        /// <summary>
-        /// Validates the arguments passed to the PowerShell action.
-        /// </summary>
-        /// <param name="args">The PowerShell script to execute.</param>
-        public override void ValidateArguments(string[] args)
-        {
-            if (args == null || args.Length == 0)
-            {
-                throw new ArgumentException("PowerShell action requires a script to execute.");
-            }
-
-            _script = string.Join(" ", args);
-        }
 
         /// <summary>
         /// Executes the provided PowerShell script on the SQL server.
