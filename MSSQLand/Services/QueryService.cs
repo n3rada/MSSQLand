@@ -113,32 +113,15 @@ namespace MSSQLand.Services
             if (m.Contains("OLE DB provider") && m.Contains("for linked server"))
                 return true;
             
-            // Check for specific SQL error numbers
-            if (ex is SqlException sqlEx)
-            {
-                foreach (SqlError error in sqlEx.Errors)
-                {
-                    // Connection-related error numbers
-                    if (error.Number == 53 ||    // SQL Server not found
-                        error.Number == 40 ||    // Cannot open connection
-                        error.Number == 17 ||    // SQL Server does not exist
-                        error.Number == 2 ||     // Network error
-                        error.Number == 64 ||    // Connection error
-                        error.Number == 233 ||   // Connection initialization error
-                        error.Number == 10054 || // Connection forcibly closed
-                        error.Number == 10060 || // Connection timeout
-                        error.Number == 10061)   // Connection refused
-                    {
-                        return true;
-                    }
-                }
-            }
-            
-            // Fallback to message patterns for non-SqlException cases
+            // Check for connection error patterns and error numbers in message
             return m.Contains("Login timeout expired") ||
                    m.Contains("Could not open a connection") ||
                    m.Contains("Named Pipes Provider") ||
-                   m.Contains("TCP Provider");
+                   m.Contains("TCP Provider") ||
+                   m.Contains("[53]") ||    // SQL Server not found
+                   m.Contains("[17]") ||    // SQL Server does not exist or access denied
+                   m.Contains("[2]") ||     // Network timeout
+                   m.Contains("[40]");      // Cannot open connection
         }
 
         /// <summary>
@@ -321,15 +304,12 @@ SELECT @result AS Result, @error AS Error;";
                 // Handle linked server connection failures
                 if (IsLinkedServerConnectionFailure(ex))
                 {
-                    string failedServer = ExtractLinkedServerFromError(ex.Message);
-                    if (!string.IsNullOrEmpty(failedServer))
-                    {
-                        Logger.Error($"Cannot reach linked server '{failedServer}'.");
-                    }
-                    else
-                    {
-                        Logger.Error("Connection to linked server failed.");
-                    }
+                    // We know which server failed from ExecutionServer
+                    string failedServer = !_linkedServers.IsEmpty 
+                        ? ExecutionServer.LinkedServerAlias ?? ExecutionServer.Hostname
+                        : ExecutionServer.Hostname;
+                    
+                    Logger.Error($"Cannot reach linked server '{failedServer}'.");
                     throw; // Don't retry connection failures
                 }
 
