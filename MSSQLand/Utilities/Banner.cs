@@ -21,7 +21,7 @@ namespace MSSQLand.Utilities
  | |\/| |\___ \\___ \| |  | | |    / _` | '_ \ / _` |
  | |  | |____) |___) | |__| | |___| (_| | | | | (_| |
  |_|  |_|_____/_____/ \___\_\______\__,_|_| |_|\__,_|
- @n3rada                                   v{version}                                                  
+ @n3rada                                       v{version}                                                  
 ");
             Console.WriteLine();
         }
