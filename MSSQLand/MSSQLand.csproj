@@ -190,6 +190,7 @@
     <Compile Include="Services\Authentication\Credentials\WindowsCredentials.cs" />
     <Compile Include="Services\Authentication\Credentials\WindowsIdentityImpersonation.cs" />
 
+    <Compile Include="Utilities\Banner.cs" />
     <Compile Include="Utilities\CommandParser.cs" />
     <Compile Include="Utilities\Helper.cs" />
     <Compile Include="Utilities\Logger.cs" />

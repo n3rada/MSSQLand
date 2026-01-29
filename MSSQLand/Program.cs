@@ -18,6 +18,8 @@ namespace MSSQLand
             Console.OutputEncoding = Encoding.UTF8;
             Console.InputEncoding = Encoding.UTF8;
 
+            Banner.Show();
+
             // Parse command-line arguments
             CommandArgs arguments;
             try
@@ -132,6 +134,7 @@ namespace MSSQLand
                     bannerWidth = maxLineLength + 8;
 
                     Logger.NewLine();
+                    
                     Logger.Banner(headerContent, totalWidth: bannerWidth);
                     Logger.NewLine();
 
