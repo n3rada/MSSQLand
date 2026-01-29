@@ -14,7 +14,7 @@ using MSSQLand.Actions.ConfigMgr;
 #endif
 using MSSQLand.Exceptions;
 
-namespace MSSQLand.Utilities
+namespace MSSQLand.Actions
 {
     public static class ActionFactory
     {

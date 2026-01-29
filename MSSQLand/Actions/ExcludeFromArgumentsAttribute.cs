@@ -2,7 +2,7 @@
 
 using System;
 
-namespace MSSQLand.Utilities
+namespace MSSQLand.Actions
 {
     [AttributeUsage(AttributeTargets.Field)]
     public class ExcludeFromArgumentsAttribute : Attribute
