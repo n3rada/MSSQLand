@@ -125,20 +125,6 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
-        /// Extracts the linked server name from an error message.
-        /// </summary>
-        static string ExtractLinkedServerFromError(string errorMessage)
-        {
-            // Pattern: 'for linked server "ServerName"'
-            var match = System.Text.RegularExpressions.Regex.Match(
-                errorMessage, 
-                @"for linked server ""([^""]+)""",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase
-            );
-            return match.Success ? match.Groups[1].Value : null;
-        }
-
-        /// <summary>
         /// Detects if a query is primarily a data-returning SELECT that shouldn't be wrapped.
         /// These queries return actual result sets and wrapping them causes metadata conflicts.
         /// </summary>
@@ -235,29 +221,6 @@ SELECT @result AS Result, @error AS Error;";
         {
             var result = ExecuteWithHandling(query, executeReader: false);
             return result == null ? -1 : (int)result;
-        }
-
-        /// <summary>
-        /// Executes a query directly without linked server wrapping.
-        /// Use when you have already built the linked server chain manually.
-        /// </summary>
-        public int ExecuteDirect(string query, int timeout = 120)
-        {
-            if (string.IsNullOrEmpty(query))
-                throw new ArgumentException("Query cannot be null or empty.", nameof(query));
-
-            if (Connection.State != ConnectionState.Open)
-                return -1;
-
-            Logger.Debug($"Direct query execution: {query}");
-
-            using var command = new SqlCommand(query, Connection)
-            {
-                CommandType = CommandType.Text,
-                CommandTimeout = timeout
-            };
-
-            return command.ExecuteNonQuery();
         }
 
         /// <summary>
