@@ -508,47 +508,5 @@ SELECT @result AS Result, @error AS Error;";
                 }
             }
         }
-
-        /// <summary>
-        /// Tests connectivity to all servers in the linked server chain.
-        /// Returns the name of the first unreachable server, or null if all are accessible.
-        /// </summary>
-        public string TestLinkedServerConnectivity()
-        {
-            if (_linkedServers.IsEmpty)
-                return null;
-
-            // Test each server in the chain progressively
-            var testChain = new LinkedServers();
-            
-            foreach (var server in _linkedServers.ServerChain)
-            {
-                testChain.Add(server);
-                
-                try
-                {
-                    // Build test query through current chain
-                    string testQuery = testChain.UseRemoteProcedureCall
-                        ? testChain.BuildRemoteProcedureCallChain("SELECT 1")
-                        : testChain.BuildSelectOpenQueryChain("SELECT 1");
-                    
-                    using var cmd = new SqlCommand(testQuery, Connection)
-                    {
-                        CommandTimeout = 5  // Quick timeout for connectivity test
-                    };
-                    
-                    cmd.ExecuteScalar();
-                }
-                catch (Exception ex)
-                {
-                    if (IsLinkedServerConnectionFailure(ex))
-                    {
-                        return server.Hostname;
-                    }
-                }
-            }
-            
-            return null; // All servers reachable
-        }
     }
 }
