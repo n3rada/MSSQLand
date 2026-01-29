@@ -15,6 +15,9 @@ namespace MSSQLand.Actions.Execution
         [ArgumentMetadata(Position = 0, Required = true, Description = "T-SQL query to execute")]
         protected string _query;
 
+        [ArgumentMetadata(FlagName = "--all", Description = "Execute query across all accessible databases")]
+        private bool _executeAll = false;
+
         /// <summary>
         /// Validates the additional argument provided for the query action.
         /// </summary>
@@ -36,33 +39,54 @@ namespace MSSQLand.Actions.Execution
         /// <param name="databaseContext">The ConnectionManager for executing the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Executing against {databaseContext.QueryService.ExecutionServer.Hostname}: {_query}");
+            if (_executeAll)
+            {
+                return ExecuteAcrossAllDatabases(databaseContext);
+            }
 
+            
+            return ExecuteOn(databaseContext, _query, displayResults: true);
+        }
+
+        /// <summary>
+        /// Executes a query on the current database context.
+        /// </summary>
+        /// <param name="databaseContext">The database context.</param>
+        /// <param name="query">The query to execute.</param>
+        /// <param name="displayResults">Whether to display results to console.</param>
+        /// <param name="logQuery">Whether to log the query being executed.</param>
+        /// <returns>DataTable with results, or null for non-query commands.</returns>
+        private DataTable ExecuteOn(DatabaseContext databaseContext, string query, bool displayResults = false, bool logQuery = true)
+        {
+            if (logQuery)
+            {
+                Logger.TaskNested($"Executing against {databaseContext.QueryService.ExecutionServer.Hostname}: {query}");
+            }
+            
             try
             {
                 // Detect the type of SQL command
-                if (IsNonQuery(_query))
+                if (IsNonQuery(query))
                 {
                     Logger.TaskNested("Executing as a non-query command");
                     // Use ExecuteNonQuery for commands that don't return a result set
-                    int rowsAffected = databaseContext.QueryService.ExecuteNonProcessing(_query);
+                    int rowsAffected = databaseContext.QueryService.ExecuteNonProcessing(query);
                     if (rowsAffected >= 0)
                         Logger.Info($"Query executed successfully. Rows affected: {rowsAffected}");
                     return null;
                 }
 
                 // Use ExecuteTable for commands that return a result set
-                DataTable resultTable = databaseContext.QueryService.ExecuteTable(_query);
+                DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
 
                 Logger.Success($"Query executed successfully.");
                 Logger.SuccessNested($"Rows returned: {resultTable.Rows.Count}");
 
-                if (resultTable == null || resultTable.Rows.Count == 0)
+                if (displayResults && resultTable != null && resultTable.Rows.Count > 0)
                 {
-                    return resultTable;
+                    Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
                 }
 
-                Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
                 return resultTable;
             }
             catch (SqlException sqlEx)
@@ -80,13 +104,158 @@ namespace MSSQLand.Actions.Execution
                     Logger.WarningNested("Use explicit column list and CAST XML columns: CAST([XmlCol] AS NVARCHAR(MAX))");
                 }
 
-                return null;
+                throw;
             }
             catch (Exception ex)
             {
                 Logger.Error($"An error occurred while executing the query: {ex.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Executes the query across all accessible databases.
+        /// First tries sp_MSforeachdb, falls back to manual loop if it fails.
+        /// </summary>
+        private object ExecuteAcrossAllDatabases(DatabaseContext databaseContext)
+        {
+            Logger.TaskNested($"Executing across ALL accessible databases on {databaseContext.QueryService.ExecutionServer.Hostname}");
+
+            // Try sp_MSforeachdb first
+            try
+            {
+                Logger.Info("Attempting execution via sp_MSforeachdb");
+                return ExecuteWithMSForeachDb(databaseContext);
+            }
+            catch (Exception ex)
+            {
+                Logger.WarningNested($"sp_MSforeachdb failed: {ex.Message}");
+                Logger.Info("Falling back to manual loop across databases");
+                return ExecuteWithManualLoop(databaseContext);
+            }
+        }
+
+        /// <summary>
+        /// Executes query using sp_MSforeachdb for better performance.
+        /// </summary>
+        private object ExecuteWithMSForeachDb(DatabaseContext databaseContext)
+        {
+            // Build query with sp_MSforeachdb
+            // Note: ? is replaced with database name by sp_MSforeachdb
+            string foreachQuery = $@"
+                EXEC sp_MSforeachdb '
+                    USE [?];
+                    IF HAS_DBACCESS(DB_NAME()) = 1
+                    BEGIN
+                        SELECT DB_NAME() AS [Database], * FROM (
+                            {_query.Replace("'", "''")}
+                        ) AS QueryResults
+                    END
+                '";
+
+            DataTable resultTable = databaseContext.QueryService.ExecuteTable(foreachQuery);
+
+            Logger.Success($"Query executed successfully via sp_MSforeachdb.");
+            Logger.SuccessNested($"Total rows returned: {resultTable.Rows.Count}");
+
+            if (resultTable == null || resultTable.Rows.Count == 0)
+            {
+                Logger.Info("No rows returned from any database.");
+                return resultTable;
+            }
+
+            Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
+            return resultTable;
+        }
+
+        /// <summary>
+        /// Executes query by manually looping through accessible databases.
+        /// </summary>
+        private object ExecuteWithManualLoop(DatabaseContext databaseContext)
+        {
+            // Get list of accessible databases
+            DataTable databases = databaseContext.QueryService.ExecuteTable(
+                "SELECT name FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1 AND state = 0 ORDER BY name"
+            );
+
+            if (databases.Rows.Count == 0)
+            {
+                Logger.Warning("No accessible databases found.");
                 return null;
             }
+
+            Logger.Info($"Found {databases.Rows.Count} accessible database(s): {string.Join(", ", databases.AsEnumerable().Select(row => row["name"].ToString()))}");
+
+            // Combined results
+            DataTable combinedResults = null;
+            int totalRows = 0;
+
+            // Iterate through each database
+            foreach (DataRow dbRow in databases.Rows)
+            {
+                string dbName = dbRow["name"].ToString();
+                Logger.TaskNested($"Querying: {dbName}");
+
+                try
+                {
+                    // Build query with database context
+                    string dbQuery = $"USE [{dbName}]; {_query}";
+
+                    // Execute query using ExecuteOn (suppress query logging, we already logged the database name)
+                    DataTable dbResults = ExecuteOn(databaseContext, dbQuery, displayResults: false, logQuery: false);
+
+                    // Merge results if it's a DataTable
+                    if (dbResults != null && dbResults.Rows.Count > 0)
+                    {
+                        if (combinedResults == null)
+                        {
+                            // Initialize combined results with schema + Database column
+                            combinedResults = dbResults.Clone();
+                            combinedResults.Columns.Add("Database", typeof(string));
+                            combinedResults.Columns["Database"].SetOrdinal(0); // Make it the first column
+                        }
+
+                        // Add rows with database name
+                        foreach (DataRow row in dbResults.Rows)
+                        {
+                            DataRow newRow = combinedResults.NewRow();
+
+                            // Copy all original columns
+                            for (int i = 0; i < dbResults.Columns.Count; i++)
+                            {
+                                newRow[i + 1] = row[i]; // Offset by 1 because Database is first
+                            }
+
+                            // Set the database name in the first column
+                            newRow["Database"] = dbName;
+
+                            combinedResults.Rows.Add(newRow);
+                        }
+
+                        totalRows += dbResults.Rows.Count;
+                        Logger.SuccessNested($"Retrieved {dbResults.Rows.Count} row(s)");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.WarningNested($"Error: {ex.Message}");
+                    continue;
+                }
+            }
+
+            Logger.NewLine();
+            Logger.Success($"Total rows from all databases: {totalRows}");
+
+            if (combinedResults == null || combinedResults.Rows.Count == 0)
+            {
+                Logger.Info("No rows returned from any database.");
+                return combinedResults;
+            }
+
+            Logger.Info("Combined results");
+            Console.WriteLine(OutputFormatter.ConvertDataTable(combinedResults));
+
+            return combinedResults;
         }
 
         private bool IsNonQuery(string query)
