@@ -129,7 +129,7 @@ VALUES
                     Logger.Success("Task pushed to device");
 
                     // Step 7: Check status after brief delay
-                    Logger.TaskNested("Checking execution status...");
+                    Logger.TaskNested("Checking execution status after 2 seconds");
                     Thread.Sleep(2000); // Wait 2 seconds for execution
 
                     string outputQuery = $@"
