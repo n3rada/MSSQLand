@@ -34,7 +34,7 @@ namespace MSSQLand.Actions.ConfigMgr
             // Auto-generate stealth name if not provided
             if (string.IsNullOrWhiteSpace(_scriptName))
             {
-                _scriptName = $"CMDeploy0{new Random().Next(0, 10)}";
+                _scriptName = $"CMDeploy0{Misc.GetRandomNumber(0, 10)}";
             }
 
             // Auto-generate GUID if not provided
