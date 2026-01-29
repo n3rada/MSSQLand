@@ -15,7 +15,7 @@ namespace MSSQLand.Actions.Execution
         [ArgumentMetadata(Position = 0, Required = true, Description = "T-SQL query to execute")]
         protected string _query;
 
-        [ArgumentMetadata(FlagName = "--all", Description = "Execute query across all accessible databases")]
+        [ArgumentMetadata(LongName = "all", Description = "Execute query across all accessible databases")]
         private bool _executeAll = false;
 
         /// <summary>
@@ -63,25 +63,13 @@ namespace MSSQLand.Actions.Execution
         /// </summary>
         /// <param name="databaseContext">The database context.</param>
         /// <param name="query">The query to execute.</param>
-        /// <returns>DataTable with results, or null for non-query commands.</returns>
+        /// <returns>DataTable with results, or empty DataTable for non-query commands.</returns>
         private DataTable ExecuteOn(DatabaseContext databaseContext, string query)
         {
             try
             {
-                // Detect the type of SQL command
-                if (IsNonQuery(query))
-                {
-                    Logger.TaskNested("Executing as a non-query command");
-                    // Use ExecuteNonQuery for commands that don't return a result set
-                    int rowsAffected = databaseContext.QueryService.ExecuteNonProcessing(query);
-                    if (rowsAffected >= 0)
-                        Logger.Info($"Query executed successfully. Rows affected: {rowsAffected}");
-                    return null;
-                }
-
-                // Use ExecuteTable for commands that return a result set
+                // Execute query - SQL Server handles both queries and non-queries
                 DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
-
                 return resultTable;
             }
             catch (SqlException sqlEx)
@@ -251,22 +239,5 @@ namespace MSSQLand.Actions.Execution
 
             return combinedResults;
         }
-
-        private bool IsNonQuery(string query)
-        {
-            if (string.IsNullOrWhiteSpace(query))
-                return false;
-
-            string[] nonQueryKeywords = { "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "CREATE", "TRUNCATE" };
-
-            // Normalize query to remove extra spaces and handle multi-line cases
-            string normalizedQuery = query.Trim().ToUpperInvariant();
-
-            // Check if any keyword is present as a standalone word
-            return nonQueryKeywords.Any(keyword =>
-                normalizedQuery.Contains(keyword + " ") || normalizedQuery.Contains(keyword + ";"));
-        }
-
-
     }
 }
