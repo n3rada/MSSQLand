@@ -199,7 +199,7 @@ namespace MSSQLand.Utilities
         public static void ShowQuickStart()
         {
             Console.WriteLine("Usage: <host> -c <cred> [options] <action> [action-options]\n");
-            Console.WriteLine("For full help: -h or --help");
+            Console.WriteLine("For full help: -h or --help\n");
         }
     }
 }
