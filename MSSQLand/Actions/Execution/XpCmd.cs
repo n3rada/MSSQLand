@@ -11,30 +11,11 @@ namespace MSSQLand.Actions.Execution
 {
     internal class XpCmd : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "Operating system command to execute")]
+        [ArgumentMetadata(Position = 0, Required = true, CaptureRemaining = true, Description = "Operating system command to execute")]
         private string _command = "";
 
         [ArgumentMetadata(LongName = "ole", Description = "Use OLE Automation (stealthier, no output)")]
         private bool _useOle = false;
-
-        /// <summary>
-        /// Validates the arguments passed to the Shell action.
-        /// </summary>
-        /// <param name="args">The command to execute.</param>
-        public override void ValidateArguments(string[] args)
-        {
-            if (args == null || args.Length == 0)
-            {
-                throw new ArgumentException("Shell action requires a CMD command.");
-            }
-
-            BindArguments(args);
-
-            if (string.IsNullOrWhiteSpace(_command))
-            {
-                throw new ArgumentException("A command must be provided.");
-            }
-        }
 
         /// <summary>
         /// Executes the provided shell command on the SQL server.
