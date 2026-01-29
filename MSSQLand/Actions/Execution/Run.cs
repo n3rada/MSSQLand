@@ -41,22 +41,11 @@ namespace MSSQLand.Actions.Execution
         private string _arguments = "";
 
         /// <summary>
-        /// Validates the arguments passed to the Run action.
+        /// Validates the arguments and normalizes the file path.
         /// </summary>
-        /// <param name="args">File path and optional flags/arguments.</param>
         public override void ValidateArguments(string[] args)
         {
-            if (args == null || args.Length == 0)
-            {
-                throw new ArgumentException("Run action requires a file path as an argument.");
-            }
-
             BindArguments(args);
-
-            if (string.IsNullOrWhiteSpace(_filePath))
-            {
-                throw new ArgumentException("Run action requires a file path as an argument.");
-            }
 
             // Normalize path
             _filePath = _filePath.Replace("/", "\\");
