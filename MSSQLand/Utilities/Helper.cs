@@ -80,8 +80,8 @@ namespace MSSQLand.Utilities
         {
             Console.WriteLine("Usage: <host> -c <cred> [options] <action> [action-args]\n");
 
-            Console.WriteLine("\nPositional arguments:");
-            Console.WriteLine("\t<host>                 Target SQL Server (format: server,port or server\\instance)");
+            Console.WriteLine("Positional arguments:");
+            Console.WriteLine("\t<host>                 Target SQL Server (server:port/user@database)");
             Console.WriteLine("\t<action>               Action to execute\n");
 
             Console.WriteLine("Authentication (required):");
@@ -91,7 +91,7 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t-d, --domain           Domain (if required by credential type)\n");
 
             Console.WriteLine("Connection options:");
-            Console.WriteLine("\t-l, --links            Linked server chain");
+            Console.WriteLine("\t-l, --links            Linked server chain semicolon-separated (e.g. srv1/l02;srv2;srv3/viewer@clients)");
             Console.WriteLine("\t--timeout              Connection timeout in seconds");
             Console.WriteLine("\t--workstation-id       Workstation ID");
             Console.WriteLine("\t--app-name             Application name");
