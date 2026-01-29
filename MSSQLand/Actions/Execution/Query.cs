@@ -44,8 +44,18 @@ namespace MSSQLand.Actions.Execution
                 return ExecuteAcrossAllDatabases(databaseContext);
             }
 
-            
-            return ExecuteOn(databaseContext, _query, displayResults: true);
+            Logger.TaskNested($"Executing against {databaseContext.QueryService.ExecutionServer.Hostname}: {_query}");
+            DataTable result = ExecuteOn(databaseContext, _query);
+
+            Logger.Success("Query executed successfully.");
+
+            if (result != null && result.Rows.Count > 0)
+            {
+                Console.WriteLine(OutputFormatter.ConvertDataTable(result));
+                Logger.SuccessNested($"Total rows returned: {result.Rows.Count}");
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -53,16 +63,9 @@ namespace MSSQLand.Actions.Execution
         /// </summary>
         /// <param name="databaseContext">The database context.</param>
         /// <param name="query">The query to execute.</param>
-        /// <param name="displayResults">Whether to display results to console.</param>
-        /// <param name="logQuery">Whether to log the query being executed.</param>
         /// <returns>DataTable with results, or null for non-query commands.</returns>
-        private DataTable ExecuteOn(DatabaseContext databaseContext, string query, bool displayResults = false, bool logQuery = true)
+        private DataTable ExecuteOn(DatabaseContext databaseContext, string query)
         {
-            if (logQuery)
-            {
-                Logger.TaskNested($"Executing against {databaseContext.QueryService.ExecutionServer.Hostname}: {query}");
-            }
-            
             try
             {
                 // Detect the type of SQL command
@@ -78,14 +81,6 @@ namespace MSSQLand.Actions.Execution
 
                 // Use ExecuteTable for commands that return a result set
                 DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
-
-                Logger.Success($"Query executed successfully.");
-                Logger.SuccessNested($"Rows returned: {resultTable.Rows.Count}");
-
-                if (displayResults && resultTable != null && resultTable.Rows.Count > 0)
-                {
-                    Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
-                }
 
                 return resultTable;
             }
@@ -201,8 +196,8 @@ namespace MSSQLand.Actions.Execution
                     // Build query with database context
                     string dbQuery = $"USE [{dbName}]; {_query}";
 
-                    // Execute query using ExecuteOn (suppress query logging, we already logged the database name)
-                    DataTable dbResults = ExecuteOn(databaseContext, dbQuery, displayResults: false, logQuery: false);
+                    // Execute query using ExecuteOn
+                    DataTable dbResults = ExecuteOn(databaseContext, dbQuery);
 
                     // Merge results if it's a DataTable
                     if (dbResults != null && dbResults.Rows.Count > 0)
@@ -233,7 +228,6 @@ namespace MSSQLand.Actions.Execution
                         }
 
                         totalRows += dbResults.Rows.Count;
-                        Logger.SuccessNested($"Retrieved {dbResults.Rows.Count} row(s)");
                     }
                 }
                 catch (Exception ex)
