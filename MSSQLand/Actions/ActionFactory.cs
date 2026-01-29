@@ -108,7 +108,6 @@ namespace MSSQLand.Utilities
             // Microsoft's current official names: Configuration Manager, ConfigMgr, MCM
             // ═══════════════════════════════════════════════════════════════════════════════
             { "cm-info", (typeof(CMInfo), "Display ConfigMgr site information (site code, version, build, database server, management points) for infrastructure mapping.", null) },
-            { "cm-admins", (typeof(CMAdmins), "Enumerate ConfigMgr RBAC administrators with assigned roles and scopes to identify privileged users.", null) },
             { "cm-servers", (typeof(CMServers), "Enumerate ConfigMgr site servers, management points, and distribution points in the hierarchy for infrastructure mapping.", null) },
             { "cm-collections", (typeof(CMCollections), "Enumerate device and user collections with member counts for targeted deployment attacks.", null) },
             { "cm-collection", (typeof(CMCollection), "Display comprehensive information about a specific collection including all member devices and deployments.", null) },
