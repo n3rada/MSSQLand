@@ -20,7 +20,7 @@ namespace MSSQLand.Actions.Execution
         [ArgumentMetadata(Position = 0, Description = "Action mode: status or exec (default: status)")]
         private ActionMode _action = ActionMode.Status;
         
-        [ArgumentMetadata(Position = 1, CaptureRemaining = true, Description = "Command to execute (required for exec mode)")]
+        [ArgumentMetadata(Position = 1, Description = "Command to execute (required for exec mode)")]
         private string _command = null;
         
         [ArgumentMetadata(Position = 2, Description = "Subsystem: cmd, powershell, tsql, vbscript (default: powershell)")]

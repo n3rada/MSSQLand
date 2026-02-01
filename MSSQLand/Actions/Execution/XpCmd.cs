@@ -11,7 +11,7 @@ namespace MSSQLand.Actions.Execution
 {
     internal class XpCmd : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, CaptureRemaining = true, Description = "Operating system command to execute")]
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Operating system command to execute")]
         private string _command = "";
 
         [ArgumentMetadata(LongName = "ole", Description = "Use OLE Automation (stealthier, no output)")]

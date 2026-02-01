@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.Execution
 {
     public class Query : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, CaptureRemaining = true, Description = "T-SQL query to execute")]
+        [ArgumentMetadata(Position = 0, Required = true, Description = "T-SQL query to execute")]
         protected string _query;
 
         [ArgumentMetadata(LongName = "all", Description = "Execute query across all accessible databases")]

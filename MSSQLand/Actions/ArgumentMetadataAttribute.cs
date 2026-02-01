@@ -36,12 +36,5 @@ namespace MSSQLand.Actions
         /// Description of what this argument does.
         /// </summary>
         public string Description { get; set; }
-
-        /// <summary>
-        /// Captures all remaining positional arguments (after flags) into this field.
-        /// Field must be string type - remaining args will be joined with spaces.
-        /// Only one field per action can use this property.
-        /// </summary>
-        public bool CaptureRemaining { get; set; } = false;
     }
 }

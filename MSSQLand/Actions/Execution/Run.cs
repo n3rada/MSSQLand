@@ -37,7 +37,7 @@ namespace MSSQLand.Actions.Execution
         [ArgumentMetadata(LongName = "xpcmd", Description = "Use command shell with output capture (forces sync)")]
         private bool _useXpCmd = false;
 
-        [ArgumentMetadata(CaptureRemaining = true, Description = "Arguments to pass to the executable")]
+        [ArgumentMetadata(Position = 1, Description = "Arguments to pass to the executable")]
         private string _arguments = "";
 
         /// <summary>
