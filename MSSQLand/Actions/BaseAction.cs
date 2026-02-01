@@ -77,7 +77,7 @@ namespace MSSQLand.Actions
         protected (Dictionary<string, string> Named, List<string> Positional) ParseActionArguments(string[] args)
         {
             Logger.Trace($"Parsing action arguments: {string.Join(" ", args)}");
-            var named = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var named = new Dictionary<string, string>(StringComparer.Ordinal);
             var positional = new List<string>();
 
             if (args == null || args.Length == 0)
