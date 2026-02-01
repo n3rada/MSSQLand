@@ -41,7 +41,7 @@ namespace MSSQLand.Actions.FileSystem
 
         [ArgumentMetadata(Position = 2, ShortName = "f", LongName = "files", Description = "Show files (default: true). Disable with -f:0 or --files:false)")]
         private bool _showFiles = true;
-        
+
         [ArgumentMetadata(Position = 3, ShortName = "u", LongName = "unicode", Description = "Use Unicode box-drawing characters (default: true, set to false for ASCII)")]
         private bool _useUnicode = true;
 
@@ -79,8 +79,13 @@ namespace MSSQLand.Actions.FileSystem
             // @file: 1 = show files, 0 = directories only (default 0)
             int fileFlag = _showFiles ? 1 : 0;
 
-            // Create temporary table to store results
-            string query = $@"
+            // xp_dirtree returns 3 columns (subdirectory, depth, isfile) when @file=1,
+            // but only 2 columns (subdirectory, depth) when @file=0.
+            // Temp table and INSERT must match the actual output schema.
+            // SELECT always aliases a synthetic isfile column when files are excluded,
+            // so downstream code sees a consistent 3-column result regardless of mode.
+            string query = _showFiles
+                ? $@"
 CREATE TABLE #TreeResults (
     subdirectory NVARCHAR(512),
     depth INT,
@@ -88,9 +93,22 @@ CREATE TABLE #TreeResults (
 );
 
 INSERT INTO #TreeResults (subdirectory, depth, isfile)
-EXEC xp_dirtree '{escapedPath}', {_depth}, {fileFlag};
+EXEC xp_dirtree '{escapedPath}', {_depth}, 1;
 
 SELECT subdirectory, depth, isfile FROM #TreeResults;
+
+DROP TABLE #TreeResults;
+"
+                : $@"
+CREATE TABLE #TreeResults (
+    subdirectory NVARCHAR(512),
+    depth INT
+);
+
+INSERT INTO #TreeResults (subdirectory, depth)
+EXEC xp_dirtree '{escapedPath}', {_depth}, 0;
+
+SELECT subdirectory, depth, 0 AS isfile FROM #TreeResults;
 
 DROP TABLE #TreeResults;
 ";
