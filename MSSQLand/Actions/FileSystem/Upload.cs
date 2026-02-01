@@ -28,25 +28,14 @@ namespace MSSQLand.Actions.FileSystem
 
         private FileInfo _localFileInfo;
 
-        /// <summary>
-        /// Validates the arguments passed to the Upload action.
-        /// </summary>
-        /// <param name="args">Local file path and optional remote destination path.</param>
         public override void ValidateArguments(string[] args)
         {
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
+            BindArguments(args);
 
-            // Get local path from positional argument
-            _localPath = GetPositionalArgument(positionalArgs, 0, null);
-            if (string.IsNullOrWhiteSpace(_localPath))
-            {
-                throw new ArgumentException("Upload action requires a local file path as the first argument.");
-            }
-
-            // Expand environment variables and resolve to absolute path
+            // Expand environment variables and resolve path
             _localPath = Environment.ExpandEnvironmentVariables(_localPath);
 
-            // Validate local file exists
+            // Validate local file exists and is non-empty
             _localFileInfo = new FileInfo(_localPath);
             if (!_localFileInfo.Exists)
             {
@@ -58,31 +47,11 @@ namespace MSSQLand.Actions.FileSystem
                 throw new ArgumentException($"Local file is empty: {_localPath}");
             }
 
-            // Get remote path from positional argument or use default
-            _remotePath = GetPositionalArgument(positionalArgs, 1, null);
-
-            if (string.IsNullOrWhiteSpace(_remotePath))
+            // Normalize remote path separators if provided
+            if (!string.IsNullOrWhiteSpace(_remotePath))
             {
-                // Use C:\Windows\Tasks\ as default (world-writable directory)
-                _remotePath = $"C:\\Windows\\Tasks\\{_localFileInfo.Name}";
-                Logger.Info($"No remote path specified, using default: {_remotePath}");
-            }
-            else
-            {
-                // Normalize path
                 _remotePath = _remotePath.Replace("/", "\\");
-                
-                // If remote path ends with backslash, it's a directory - append filename
-                if (_remotePath.EndsWith("\\"))
-                {
-                    _remotePath = _remotePath + _localFileInfo.Name;
-                    Logger.Info("Remote path is a directory, appending filename");
-                }
             }
-
-            Logger.Info($"Local file: {_localFileInfo.FullName}");
-            Logger.Info($"File size: {_localFileInfo.Length:N0} bytes");
-            Logger.Info($"Remote destination: {_remotePath}");
         }
 
         /// <summary>
@@ -91,14 +60,29 @@ namespace MSSQLand.Actions.FileSystem
         /// <param name="databaseContext">The DatabaseContext instance to execute the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Uploading file to SQL Server");
+
+            Logger.Info($"Uploading file to SQL Server");
+
+            if (string.IsNullOrWhiteSpace(_remotePath))
+            {
+                _remotePath = $"C:\\Windows\\Tasks\\{_localFileInfo.Name}";
+                Logger.InfoNested($"No remote path specified, using default: {_remotePath}");
+            }
+            else if (_remotePath.EndsWith("\\"))
+            {
+                _remotePath += _localFileInfo.Name;
+                Logger.Warning("Remote path is a directory, appending filename");
+            }
+
+            Logger.InfoNested($"Local file: {_localFileInfo.FullName}");
+            Logger.InfoNested($"File size: {_localFileInfo.Length:N0} bytes");
+            Logger.InfoNested($"Remote destination: {_remotePath}");
 
             // Read local file content
             byte[] fileContent;
             try
             {
                 fileContent = File.ReadAllBytes(_localFileInfo.FullName);
-                Logger.Info($"Read {fileContent.Length:N0} bytes from local file");
             }
             catch (Exception ex)
             {
