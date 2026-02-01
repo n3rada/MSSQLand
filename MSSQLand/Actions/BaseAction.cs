@@ -86,7 +86,7 @@ namespace MSSQLand.Actions
             }
 
             // Build lookup of boolean fields from ArgumentMetadata
-            var booleanFlags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var booleanFlags = new HashSet<string>(StringComparer.Ordinal);
             var fields = GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
             foreach (var field in fields)
             {
