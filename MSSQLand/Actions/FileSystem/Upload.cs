@@ -23,7 +23,7 @@ namespace MSSQLand.Actions.FileSystem
         [ArgumentMetadata(Position = 0, Required = true, Description = "Local file path to upload")]
         private string _localPath = "";
 
-        [ArgumentMetadata(Position = 1, Description = "Remote destination path (defaults to C:\\Windows\\Tasks\\)")]
+        [ArgumentMetadata(Position = 1, Description = @"Remote destination path (defaults to C:\Windows\Tasks\)")]
         private string _remotePath = "";
 
         private FileInfo _localFileInfo;
