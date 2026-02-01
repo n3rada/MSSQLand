@@ -128,18 +128,42 @@ namespace MSSQLand.Actions
                         // Check if this flag is boolean
                         bool isBooleanFlag = booleanFlags.Contains(flagName);
                         
-                        // Check if next arg is the value
-                        if (i + 1 < args.Length && !isBooleanFlag)
+                        if (i + 1 < args.Length)
                         {
                             string nextArg = args[i + 1];
-                            // For non-boolean flags, consume next arg as value unless it looks like a flag
-                            // A flag is: starts with -- OR starts with - followed by letters (not digits/special chars)
-                            bool looksLikeFlag = nextArg.StartsWith("--") || 
-                                               (nextArg.StartsWith("-") && nextArg.Length >= 2 && char.IsLetter(nextArg[1]));
-                            
-                            if (!looksLikeFlag)
+
+                            if (isBooleanFlag)
                             {
-                                flagValue = args[++i];
+                                // For boolean flags, only consume next arg if it's an explicit boolean literal.
+                                // This allows both:
+                                //   -f            → true (bare flag, implicit)
+                                //   -f false      → false (explicit literal consumed)
+                                // Without consuming non-boolean positional args that follow:
+                                //   -C somePath   → C=true, somePath stays positional
+                                bool isExplicitBooleanValue =
+                                    nextArg.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                                    nextArg.Equals("false", StringComparison.OrdinalIgnoreCase) ||
+                                    nextArg.Equals("yes", StringComparison.OrdinalIgnoreCase) ||
+                                    nextArg.Equals("no", StringComparison.OrdinalIgnoreCase) ||
+                                    nextArg == "1" ||
+                                    nextArg == "0";
+
+                                if (isExplicitBooleanValue)
+                                {
+                                    flagValue = args[++i];
+                                }
+                            }
+                            else
+                            {
+                                // For non-boolean flags, consume next arg as value unless it looks like a flag.
+                                // A flag is: starts with -- OR starts with - followed by a letter (not digits/special chars)
+                                bool looksLikeFlag = nextArg.StartsWith("--") || 
+                                                   (nextArg.StartsWith("-") && nextArg.Length >= 2 && char.IsLetter(nextArg[1]));
+                                
+                                if (!looksLikeFlag)
+                                {
+                                    flagValue = args[++i];
+                                }
                             }
                         }
                         
