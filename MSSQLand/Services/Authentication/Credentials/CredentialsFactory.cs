@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using MSSQLand.Models;
 
 namespace MSSQLand.Services.Credentials
 {
@@ -13,9 +14,9 @@ namespace MSSQLand.Services.Credentials
         public string Description { get; set; }
         public List<string> RequiredArguments { get; set; }
         public List<string> OptionalArguments { get; set; }
-        public Func<BaseCredentials> Factory { get; set; }
+        public Func<Server, BaseCredentials> Factory { get; set; }
 
-        public CredentialMetadata(string name, string description, List<string> requiredArguments, Func<BaseCredentials> factory, List<string> optionalArguments = null)
+        public CredentialMetadata(string name, string description, List<string> requiredArguments, Func<Server, BaseCredentials> factory, List<string> optionalArguments = null)
         {
             Name = name;
             Description = description;
@@ -38,7 +39,7 @@ namespace MSSQLand.Services.Credentials
                     name: "probe",
                     description: "Test if SQL Server is alive (no auth, just connectivity check)",
                     requiredArguments: new List<string>(),
-                    factory: () => new ProbeCredentials()
+                    factory: (server) => new ProbeCredentials(server)
                 )
             },
             {
@@ -47,7 +48,7 @@ namespace MSSQLand.Services.Credentials
                     name: "token",
                     description: "Windows Integrated Security (current process token)",
                     requiredArguments: new List<string>(),
-                    factory: () => new TokenCredentials()
+                    factory: (server) => new TokenCredentials(server)
                 )
             },
             {
@@ -56,7 +57,7 @@ namespace MSSQLand.Services.Credentials
                     name: "domain",
                     description: "Domain account authentication via impersonation",
                     requiredArguments: new List<string> { "username", "password", "domain" },
-                    factory: () => new WindowsCredentials()
+                    factory: (server) => new WindowsCredentials(server)
                 )
             },
             {
@@ -65,7 +66,7 @@ namespace MSSQLand.Services.Credentials
                     name: "windows",
                     description: "Windows Authentication with impersonation (domain or local account)",
                     requiredArguments: new List<string> { "username", "password" },
-                    factory: () => new WindowsCredentials(),
+                    factory: (server) => new WindowsCredentials(server),
                     optionalArguments: new List<string> { "domain" }
                 )
             },
@@ -75,7 +76,7 @@ namespace MSSQLand.Services.Credentials
                     name: "local",
                     description: "SQL Server authentication (on-premises and Azure SQL)",
                     requiredArguments: new List<string> { "username", "password" },
-                    factory: () => new LocalCredentials()
+                    factory: (server) => new LocalCredentials(server)
                 )
             },
             {
@@ -84,7 +85,7 @@ namespace MSSQLand.Services.Credentials
                     name: "entraid",
                     description: "Azure Active Directory authentication (Azure SQL only)",
                     requiredArguments: new List<string> { "username", "password", "domain" },
-                    factory: () => new EntraIDCredentials()
+                    factory: (server) => new EntraIDCredentials(server)
                 )
             }
         };
@@ -138,12 +139,16 @@ namespace MSSQLand.Services.Credentials
         /// Gets a credentials instance for the specified type.
         /// </summary>
         /// <param name="credentialsType">The type of credentials to create.</param>
+        /// <param name="server">The target Server for this credential instance.</param>
         /// <returns>An instance of the appropriate credentials class.</returns>
         /// <exception cref="ArgumentException">If the credential type is not supported.</exception>
-        public static BaseCredentials GetCredentials(string credentialsType)
+        public static BaseCredentials GetCredentials(string credentialsType, Server server)
         {
+            if (server == null)
+                throw new ArgumentNullException(nameof(server));
+            
             var metadata = GetCredentialMetadata(credentialsType);
-            return metadata.Factory();
+            return metadata.Factory(server);
         }
 
         /// <summary>

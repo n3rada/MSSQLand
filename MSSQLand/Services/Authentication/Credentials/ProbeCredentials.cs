@@ -12,20 +12,21 @@ namespace MSSQLand.Services.Credentials
     /// </summary>
     public class ProbeCredentials : BaseCredentials
     {
+        public ProbeCredentials(Server server) : base(server) { }
 
-        public override SqlConnection Authenticate(string sqlServer, string database, string username = null, string password = null, string domain = null)
+        public override SqlConnection Authenticate(string username = null, string password = null, string domain = null)
         {
-            Logger.Info($"Probing SQL Server: {sqlServer}");
+            Logger.Info($"Probing SQL Server: {Server.GetConnectionTarget()}");
             Logger.InfoNested("Using empty credentials to test if server is alive");
             Logger.NewLine();
 
             // Use SQL auth with empty credentials - avoids sending Kerberos ticket
             // Server will reject with 18456 = alive, or network error = unreachable
-            var connectionString = $"Server={sqlServer}; Database=master; Integrated Security=False; User Id=; Password=;";
+            var connectionString = $"Server={Server.GetConnectionTarget()}; Database=master; Integrated Security=False; User Id=; Password=;";
 
             try
             {
-                CreateSqlConnection(connectionString, sqlServer);
+                CreateSqlConnection(connectionString);
                 return null;
             }
             catch (SqlException ex)

@@ -8,13 +8,14 @@ namespace MSSQLand.Services.Credentials
     /// </summary>
     public class LocalCredentials : BaseCredentials
     {
-        public override SqlConnection Authenticate(string sqlServer, string database, string username, string password, string domain = null)
+        public LocalCredentials(Server server) : base(server) { }
+
+        public override SqlConnection Authenticate(string username, string password, string domain = null)
         {
             // Encrypt by default for security best practices
             // TrustServerCertificate=True allows self-signed certs (common in on-premises)
-            // Database is optional - if not specified, uses login's default database
-            var connectionString = $"Server={sqlServer};{(string.IsNullOrEmpty(database) ? "" : $" Database={database};")} Integrated Security=False; User Id={username}; Password={password};";
-            return CreateSqlConnection(connectionString, sqlServer);
+            var connectionString = $"Server={Server.GetConnectionTarget()}; Integrated Security=False; User Id={username}; Password={password};";
+            return CreateSqlConnection(connectionString);
         }
     }
 }

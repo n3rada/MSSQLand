@@ -15,8 +15,6 @@ namespace MSSQLand.Services
 
         // Store authentication parameters for re-authentication
         private string _credentialsType;
-        private string _sqlServer;
-        private string _database;
         private string _username;
         private string _password;
         private string _domain;
@@ -45,15 +43,14 @@ namespace MSSQLand.Services
 
         /// <summary>
         /// Authenticates and establishes a connection to the database using the specified credentials type.
+        /// Uses the Server object passed in the constructor for connection details.
         /// Throws AuthenticationFailedException if authentication fails.
         /// </summary>
         /// <param name="credentialsType">The type of credentials to use (e.g., "token", "domain").</param>
-        /// <param name="sqlServer">The SQL server address.</param>
-        /// <param name="database">The target database (default: master).</param>
         /// <param name="username">The username (optional).</param>
         /// <param name="password">The password (optional).</param>
         /// <param name="domain">The domain for Windows authentication (optional).</param>
-        /// <param name="connectionTimeout">The connection timeout in seconds (default: BaseCredentials default).</param>
+        /// <param name="connectionTimeout">The connection timeout in seconds (optional).</param>
         /// <param name="appName">Custom application name (optional).</param>
         /// <param name="workstationId">Custom workstation ID (optional).</param>
         /// <param name="packetSize">Network packet size in bytes (optional).</param>
@@ -61,8 +58,6 @@ namespace MSSQLand.Services
         /// <param name="trustServerCertificate">Override server certificate trust (optional).</param>
         public void Authenticate(
             string credentialsType,
-            string sqlServer,
-            string database = null,
             string username = null,
             string password = null,
             string domain = null,
@@ -75,8 +70,6 @@ namespace MSSQLand.Services
         {
             // Store authentication parameters
             _credentialsType = credentialsType;
-            _sqlServer = sqlServer;
-            _database = database;
             _username = username;
             _password = password;
             _domain = domain;
@@ -88,7 +81,7 @@ namespace MSSQLand.Services
             _trustServerCertificate = trustServerCertificate;
 
             // Get the appropriate credentials service
-            _credentials = CredentialsFactory.GetCredentials(credentialsType);
+            _credentials = CredentialsFactory.GetCredentials(credentialsType, Server);
             if (connectionTimeout.HasValue)
                 _credentials.SetConnectionTimeout(connectionTimeout.Value);
             
@@ -107,7 +100,7 @@ namespace MSSQLand.Services
                 _credentials.TrustServerCertificate = trustServerCertificate;
 
             // Use the credentials service to authenticate and establish the connection
-            Connection = _credentials.Authenticate(sqlServer, database, username, password, domain);
+            Connection = _credentials.Authenticate(username, password, domain);
 
             // Probe mode returns null after logging results - this is expected, not a failure
             if (Connection == null)
@@ -117,7 +110,7 @@ namespace MSSQLand.Services
                     // Probe completed successfully (results already logged)
                     return;
                 }
-                throw new AuthenticationFailedException(sqlServer, credentialsType);
+                throw new AuthenticationFailedException(Server.Hostname, credentialsType);
             }
 
             Server.Version = Connection.ServerVersion;
@@ -152,12 +145,12 @@ namespace MSSQLand.Services
         /// <returns>A new SqlConnection object.</returns>
         public SqlConnection GetNewSqlConnection()
         {
-            if (string.IsNullOrEmpty(_credentialsType) || string.IsNullOrEmpty(_sqlServer))
+            if (string.IsNullOrEmpty(_credentialsType))
             {
                 throw new InvalidOperationException("Authentication parameters are missing. Authenticate must be called first.");
             }
 
-            var credentials = CredentialsFactory.GetCredentials(_credentialsType);
+            var credentials = CredentialsFactory.GetCredentials(_credentialsType, Server);
             if (_connectionTimeout.HasValue)
                 credentials.SetConnectionTimeout(_connectionTimeout.Value);
             
@@ -175,7 +168,7 @@ namespace MSSQLand.Services
             if (_trustServerCertificate.HasValue)
                 credentials.TrustServerCertificate = _trustServerCertificate;
             
-            return credentials.Authenticate(_sqlServer, _database, _username, _password, _domain);
+            return credentials.Authenticate(_username, _password, _domain);
         }
 
         /// <summary>
@@ -187,7 +180,7 @@ namespace MSSQLand.Services
         {
             // Create a copy of the Server to avoid shared state
             var duplicateService = new AuthenticationService(Server.Copy());
-            duplicateService.Authenticate(_credentialsType, _sqlServer, _database, _username, _password, _domain, _connectionTimeout, _appName, _workstationId, _packetSize, _enableEncryption, _trustServerCertificate);
+            duplicateService.Authenticate(_credentialsType, _username, _password, _domain, _connectionTimeout, _appName, _workstationId, _packetSize, _enableEncryption, _trustServerCertificate);
             return duplicateService;
         }
 

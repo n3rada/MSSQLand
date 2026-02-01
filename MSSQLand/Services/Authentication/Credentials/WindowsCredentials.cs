@@ -11,7 +11,9 @@ namespace MSSQLand.Services.Credentials
     /// </summary>
     public class WindowsCredentials : BaseCredentials
     {
-        public override SqlConnection Authenticate(string sqlServer, string database, string username, string password, string domain)
+        public WindowsCredentials(Server server) : base(server) { }
+
+        public override SqlConnection Authenticate(string username, string password, string domain)
         {
             // Determine if it's a domain or local account
             bool isLocalAccount = string.IsNullOrEmpty(domain) || domain == ".";
@@ -23,9 +25,8 @@ namespace MSSQLand.Services.Credentials
             using (new WindowsIdentityImpersonation(effectiveDomain, username, password))
             {
                 // Connection string with Integrated Security (uses impersonated token)
-                // Database is optional - if not specified, uses login's default database
-                var connectionString = $"Server={sqlServer};{(string.IsNullOrEmpty(database) ? "" : $" Database={database};")} Integrated Security=True;";
-                return CreateSqlConnection(connectionString, sqlServer);
+                var connectionString = $"Server={Server.GetConnectionTarget()}; Integrated Security=True;";
+                return CreateSqlConnection(connectionString);
             }
         }
     }

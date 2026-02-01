@@ -8,6 +8,7 @@ namespace MSSQLand.Services.Credentials
 {
     public abstract class BaseCredentials
     {
+        protected Server Server { get; private set; }
 
         private int _connectTimeout = 5;
 
@@ -45,6 +46,14 @@ namespace MSSQLand.Services.Credentials
         public int? PacketSize { get; set; } = null;
 
         /// <summary>
+        /// Initializes BaseCredentials with a target Server.
+        /// </summary>
+        public BaseCredentials(Server server)
+        {
+            Server = server ?? throw new ArgumentNullException(nameof(server));
+        }
+
+        /// <summary>
         /// Sets the connection timeout in seconds.
         /// </summary>
         public void SetConnectionTimeout(int timeout)
@@ -55,23 +64,26 @@ namespace MSSQLand.Services.Credentials
         /// <summary>
         /// Abstract method to be implemented by derived classes for unique authentication logic.
         /// </summary>
-        public abstract SqlConnection Authenticate(string sqlServer, string database, string username = null, string password = null, string domain = null);
+        public abstract SqlConnection Authenticate(string username = null, string password = null, string domain = null);
 
         /// <summary>
         /// Creates and opens a SQL connection with a specified connection string.
         /// </summary>
-        /// <param name="connectionString">The SQL connection string.</param>
-        /// <param name="sqlServer">The target SQL Server (used to derive WorkstationId if not explicitly set).</param>
+        /// <param name="connectionString">The SQL connection string (without database).</param>
         /// <returns>An open <see cref="SqlConnection"/> object.</returns>
         /// <exception cref="InvalidOperationException">Thrown when the connection could not be opened.</exception>
         /// <exception cref="SqlException">Thrown for SQL-related issues (e.g., network errors, authentication issues).</exception>
-        protected SqlConnection CreateSqlConnection(string connectionString, string sqlServer)
+        protected SqlConnection CreateSqlConnection(string connectionString)
         {
 
             // If WorkstationId not explicitly set, use target server name
-            string workstationId = WorkstationId ?? ExtractServerName(sqlServer);
+            string workstationId = WorkstationId ?? ExtractServerName(Server.GetConnectionTarget());
 
             connectionString = $"{connectionString.TrimEnd(';')}; Connect Timeout={_connectTimeout}; Application Name={AppName}; Workstation Id={workstationId}";
+
+            // Add database if provided
+            if (!string.IsNullOrEmpty(Server.Database))
+                connectionString += $"; Database={Server.Database}";
 
             // Apply optional connection string overrides (only when different from ADO.NET defaults)
             // Add Encrypt if explicitly set (default varies by .NET version)

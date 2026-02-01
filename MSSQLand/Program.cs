@@ -61,8 +61,6 @@ namespace MSSQLand
                 authService = new AuthenticationService(arguments.Host);
                 authService.Authenticate(
                     credentialsType: arguments.CredentialType,
-                    sqlServer: connectionTarget,
-                    database: arguments.Host.Database,
                     username: arguments.Username,
                     password: arguments.Password,
                     domain: arguments.Domain,
