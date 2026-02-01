@@ -24,7 +24,6 @@ namespace MSSQLand.Services.Credentials
         {
             Logger.Info($"Probing SQL Server: {Server.GetConnectionTarget()}");
             Logger.InfoNested("Using empty credentials to test if server is alive");
-            Logger.NewLine();
 
             // Use SQL auth with empty credentials - avoids sending Kerberos ticket
             // Server will reject with 18456 = alive, or network error = unreachable
@@ -37,8 +36,7 @@ namespace MSSQLand.Services.Credentials
             }
             catch (SqlException ex)
             {
-                Logger.Info($"Error {ex.Number}: {ex.Message}");
-                Logger.NewLine();
+                Logger.Trace($"SQL Error {ex.Number}: {ex.Message}");
                 // Error 18456 = Login failed - server IS alive and responding
                 if (ex.Number == 18456)
                 {
