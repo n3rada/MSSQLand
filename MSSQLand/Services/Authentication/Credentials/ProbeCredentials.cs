@@ -1,5 +1,6 @@
 // MSSQLand/Services/Authentication/Credentials/ProbeCredentials.cs
 
+using MSSQLand.Models;
 using MSSQLand.Utilities;
 using System.Data.SqlClient;
 
