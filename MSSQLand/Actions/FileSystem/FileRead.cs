@@ -1,4 +1,19 @@
-﻿internal class FileRead : BaseAction
+﻿// MSSQLand/Actions/FileSystem/FileRead.cs
+
+using MSSQLand.Services;
+using MSSQLand.Utilities;
+using System;
+
+namespace MSSQLand.Actions.FileSystem
+{
+    /// <summary>
+    /// Read file contents from the SQL Server filesystem using OPENROWSET BULK.
+    /// 
+    /// Requires ADMINISTER BULK OPERATIONS or ADMINISTER DATABASE BULK OPERATIONS permission,
+    /// or membership in the bulk_admin server role.
+    /// </summary>
+   
+    internal class FileRead : BaseAction
     {
         // Default to a file that always exists and is readable on Windows
         private const string DefaultFilePath = @"C:\Windows\win.ini";
@@ -75,3 +90,4 @@ FROM (SELECT A AS B FROM OPENROWSET(BULK '{escapedPath}', SINGLE_BLOB) AS R(A)) 
             }
         }
     }
+}
