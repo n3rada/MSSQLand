@@ -39,9 +39,9 @@ namespace MSSQLand.Actions.FileSystem
         [ArgumentMetadata(Position = 1, ShortName = "d", LongName = "depth", Description = "Directory depth to traverse (1-255)")]
         private int _depth = 3;
 
-        [ArgumentMetadata(Position = 2, ShortName = "f", LongName = "files", Description = "Show files (1|0 or true|false)")]
+        [ArgumentMetadata(Position = 2, ShortName = "f", LongName = "files", Description = "Show files (default: true). Disable with -f:0 or --files:false)")]
         private bool _showFiles = true;
-
+        
         [ArgumentMetadata(Position = 3, ShortName = "u", LongName = "unicode", Description = "Use Unicode box-drawing characters (default: true, set to false for ASCII)")]
         private bool _useUnicode = true;
 
@@ -51,65 +51,13 @@ namespace MSSQLand.Actions.FileSystem
         /// <param name="args">Path and optional parameters.</param>
         public override void ValidateArguments(string[] args)
         {
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-
-            // Get path from positional argument or use current directory
-            _path = GetPositionalArgument(positionalArgs, 0, ".");
-            if (string.IsNullOrWhiteSpace(_path))
-            {
-                _path = ".";
-            }
-
-            // Get depth from named argument or positional argument
-            string depthStr = GetNamedArgument(namedArgs, "depth", 
-                              GetNamedArgument(namedArgs, "d", 
-                              GetPositionalArgument(positionalArgs, 1, "3")));
-
-            if (!int.TryParse(depthStr, out _depth))
-            {
-                Logger.Warning($"Invalid depth value '{depthStr}', using default depth of 3. " +
-                             "If your path contains spaces, enclose it in quotes (e.g., \"C:\\Program Files\")");
-                _depth = 3;
-            }
+            BindArguments(args);
 
             if (_depth < 1 || _depth > 255)
             {
                 throw new ArgumentException("Depth must be between 1 and 255");
             }
-
-            // Get show files flag from named argument or positional argument
-            string filesStr = GetNamedArgument(namedArgs, "files", 
-                              GetNamedArgument(namedArgs, "f", 
-                              GetPositionalArgument(positionalArgs, 2, "true")));
-
-            _showFiles = filesStr.Trim().ToLower() switch
-            {
-                "1" => true,
-                "0" => false,
-                "true" => true,
-                "false" => false,
-                "yes" => true,
-                "no" => false,
-                _ => true
-            };
-
-            // Get Unicode mode flag from named argument or positional argument
-            string unicodeStr = GetNamedArgument(namedArgs, "unicode", 
-                                GetNamedArgument(namedArgs, "u", 
-                                GetPositionalArgument(positionalArgs, 3, "true")));
-
-            _useUnicode = unicodeStr.Trim().ToLower() switch
-            {
-                "1" => true,
-                "0" => false,
-                "true" => true,
-                "false" => false,
-                "yes" => true,
-                "no" => false,
-                _ => true
-            };
         }
-
         /// <summary>
         /// Executes the Tree action to display directory structure.
         /// </summary>
