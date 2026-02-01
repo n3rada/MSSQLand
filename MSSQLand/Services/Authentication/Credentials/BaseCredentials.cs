@@ -27,7 +27,7 @@ namespace MSSQLand.Services.Credentials
         /// <summary>
         /// The workstation ID used for the SQL connection.
         /// </summary>
-        public string WorkstationId { get; set; } = null;
+        public string WorkstationId { get; set; } = "SQLMonitor";
 
         /// <summary>
         /// Optional: Override encryption setting. Null uses the credential-specific default.
@@ -78,10 +78,12 @@ namespace MSSQLand.Services.Credentials
         protected SqlConnection CreateSqlConnection(string connectionString)
         {
 
-            // If WorkstationId not explicitly set, use target server name
-            string workstationId = WorkstationId ?? ExtractServerName(Server.GetConnectionTarget());
+            connectionString = $"{connectionString.TrimEnd(';')}; Connect Timeout={_connectTimeout}; Application Name={AppName}";
 
-            connectionString = $"{connectionString.TrimEnd(';')}; Connect Timeout={_connectTimeout}; Application Name={AppName}; Workstation Id={workstationId}";
+            // Add Workstation ID if provided
+            if (!string.IsNullOrEmpty(WorkstationId))
+                connectionString += $"; Workstation ID={WorkstationId}";
+
 
             // Add database if provided
             if (!string.IsNullOrEmpty(Server.Database))
