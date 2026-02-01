@@ -239,7 +239,7 @@ EXEC sp_OADestroy @ObjectToken;
             try
             {
                 databaseContext.QueryService.ExecuteNonProcessing(query);
-                Logger.Info("OLE upload command executed successfully");
+                Logger.Success("OLE upload command executed successfully");
                 return true;
             }
             catch (Exception ex)
