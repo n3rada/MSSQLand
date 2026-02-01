@@ -611,7 +611,7 @@ namespace MSSQLand.Utilities
                         else
                         {
                             Logger.Error($"Action '{ex.ActionName}' not found.");
-                            Logger.ErrorNested("Use -h or --help to see all available actions.");
+                            Logger.ErrorNested("Use -h actions to see all available actions.");
                         }
                         
                         return (ParseResultType.InvalidInput, null);

@@ -133,8 +133,7 @@ namespace MSSQLand.Utilities
             if (action == default)
             {
                 Logger.Error($"Action '{actionName}' not found.");
-                Console.WriteLine();
-                Console.WriteLine("Use -h or --help to see all available actions.");
+                Logger.ErrorNested("Use -h actions to see all available actions.");
                 return;
             }
 
