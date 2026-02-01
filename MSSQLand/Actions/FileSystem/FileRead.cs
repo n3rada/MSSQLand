@@ -1,18 +1,4 @@
-﻿// MSSQLand/Actions/FileSystem/FileRead.cs
-
-using MSSQLand.Services;
-using MSSQLand.Utilities;
-using System;
-
-namespace MSSQLand.Actions.FileSystem
-{
-    /// <summary>
-    /// Read file contents from the SQL Server filesystem using OPENROWSET BULK.
-    /// 
-    /// Requires ADMINISTER BULK OPERATIONS or ADMINISTER DATABASE BULK OPERATIONS permission,
-    /// or membership in the bulk_admin server role.
-    /// </summary>
-    internal class FileRead : BaseAction
+﻿internal class FileRead : BaseAction
     {
         // Default to a file that always exists and is readable on Windows
         private const string DefaultFilePath = @"C:\Windows\win.ini";
@@ -23,30 +9,12 @@ namespace MSSQLand.Actions.FileSystem
         [ArgumentMetadata(ShortName = "b64", LongName = "base64", Description = "Output file content as base64 encoded (useful for binary files)")]
         private bool _base64 = false;
 
-        public override void ValidateArguments(string[] args)
-        {
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-
-            _filePath = GetPositionalArgument(positionalArgs, 0, DefaultFilePath);
-            if (string.IsNullOrWhiteSpace(_filePath))
-            {
-                _filePath = DefaultFilePath;
-            }
-
-            _base64 = namedArgs.ContainsKey("b64") || namedArgs.ContainsKey("base64");
-        }
-
         /// <summary>
         /// Executes the Read action to fetch the content of a file using OPENROWSET BULK.
         /// </summary>
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            if (string.IsNullOrWhiteSpace(_filePath))
-            {
-                _filePath = DefaultFilePath;
-            }
-
             Logger.TaskNested($"Reading file: {_filePath}");
             if (_base64)
             {
@@ -107,4 +75,3 @@ FROM (SELECT A AS B FROM OPENROWSET(BULK '{escapedPath}', SINGLE_BLOB) AS R(A)) 
             }
         }
     }
-}
