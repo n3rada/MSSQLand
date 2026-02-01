@@ -111,15 +111,8 @@ namespace MSSQLand
                     TimeSpan offset = localTimeZone.BaseUtcOffset;
                     string formattedOffset = $"{(offset.Hours >= 0 ? "+" : "-")}{Math.Abs(offset.Hours)}:{Math.Abs(offset.Minutes):D2}";
 
-                    // Build target info
-                    string targetInfo = arguments.Host.Hostname;
-                    if (arguments.ResolvedIpAddress != null)
-                    {
-                        targetInfo = $"{arguments.Host.Hostname} ({arguments.ResolvedIpAddress})";
-                    }
-
                     // Pre-calculate all banner content to determine max width
-                    string headerContent = $"From: {Environment.MachineName}\n{DateTime.Now:HH:mm:ss} UTC{formattedOffset} ({localTimeZone.Id})\nTo: {targetInfo}";
+                    string headerContent = $"From: {Environment.MachineName}\n{DateTime.Now:HH:mm:ss} UTC{formattedOffset} ({localTimeZone.Id})\nTo: {arguments.Host.Hostname}";
                     string startContent = $"Start at {startTime:yyyy-MM-dd HH:mm:ss:fffff} UTC";
                     
                     // Find the longest line across all banners
@@ -149,7 +142,7 @@ namespace MSSQLand
                     Logger.SuccessNested($"Server: {connection.DataSource}");
                     Logger.SuccessNested($"Database: {connection.Database}");
                     Logger.SuccessNested($"Server Version: {connection.ServerVersion}");
-                    Logger.SuccessNested($"Client Workstation ID: {authService.Credentials.WorkstationId}");
+                    Logger.SuccessNested($"Client Workstation ID: {connection.WorkstationId}");
                     Logger.SuccessNested($"Client Application Name: {authService.Credentials.AppName}");
                     Logger.SuccessNested($"Client Connection ID: {connection.ClientConnectionId}");
                     Logger.NewLine();

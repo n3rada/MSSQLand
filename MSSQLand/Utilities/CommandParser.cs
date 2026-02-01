@@ -280,41 +280,9 @@ namespace MSSQLand.Utilities
                 hostArg = args[currentIndex++];
                 parsedArgs.Host = Server.ParseServer(hostArg);
                 
-                // Validate DNS resolution for the target server (skip for named pipes and localhost)
+                // DNS resolution is deferred to SqlConnection for normal auth
+                // Only resolve for utility modes that need the IP address upfront
                 IPAddress resolvedIp = null;
-                if (!parsedArgs.Host.UsesNamedPipe)
-                {
-                    // Skip DNS resolution for localhost/loopback addresses
-                    if (parsedArgs.Host.Hostname.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
-                        parsedArgs.Host.Hostname.Equals("127.0.0.1") ||
-                        parsedArgs.Host.Hostname.Equals("::1"))
-                    {
-                        Logger.Trace($"Using loopback address: {parsedArgs.Host.Hostname}");
-                        resolvedIp = parsedArgs.Host.Hostname.Equals("::1") 
-                            ? IPAddress.IPv6Loopback 
-                            : IPAddress.Loopback;
-                    }
-                    else
-                    {
-                        try
-                        {
-                            var addresses = Misc.ValidateDnsResolution(parsedArgs.Host.Hostname, throwOnFailure: true);
-
-                            // Prefer IPv4
-                            resolvedIp = addresses?.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) 
-                                       ?? addresses?.First();
-
-                            Logger.Trace($"Resolved {parsedArgs.Host.Hostname} to {resolvedIp}");
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.Error($"DNS resolution failed: {ex.Message}");
-                            return (ParseResultType.InvalidInput, null);
-                        }
-                    }
-                    
-                    parsedArgs.ResolvedIpAddress = resolvedIp;
-                }
 
                 // Check for utility modes that work on a specific host
                 if (currentIndex < args.Length)
@@ -323,6 +291,20 @@ namespace MSSQLand.Utilities
                     
                     if (nextArg == "-browse" || nextArg == "--browse" || nextArg == "-browser" || nextArg == "--browser")
                     {
+                        // Resolve DNS for utility mode
+                        if (!parsedArgs.Host.UsesNamedPipe)
+                        {
+                            try
+                            {
+                                resolvedIp = ResolveDnsIfNeeded(parsedArgs.Host.Hostname);
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Error($"DNS resolution failed: {ex.Message}");
+                                return (ParseResultType.InvalidInput, null);
+                            }
+                        }
+
                         Logger.Info($"Querying SQL Browser service on {hostArg} (UDP 1434)");                        
                         var instances = SqlBrowser.Query(resolvedIp, hostArg);
                         SqlBrowser.LogInstances(hostArg, instances);
@@ -332,6 +314,20 @@ namespace MSSQLand.Utilities
                     
                     if (nextArg == "-portscan" || nextArg == "--portscan")
                     {
+                        // Resolve DNS for utility mode
+                        if (!parsedArgs.Host.UsesNamedPipe)
+                        {
+                            try
+                            {
+                                resolvedIp = ResolveDnsIfNeeded(parsedArgs.Host.Hostname);
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Error($"DNS resolution failed: {ex.Message}");
+                                return (ParseResultType.InvalidInput, null);
+                            }
+                        }
+
                         // Check for port specification or flags
                         int[] customPorts = null;
                         bool scanAll = false;
@@ -629,6 +625,34 @@ namespace MSSQLand.Utilities
                 Logger.Error($"Error parsing command line arguments: {ex.Message}");
                 return (ParseResultType.InvalidInput, null);
             }
+        }
+
+        /// <summary>
+        /// Resolves DNS for a hostname, with special handling for localhost/loopback addresses.
+        /// Returns the resolved IP address.
+        /// </summary>
+        private static IPAddress ResolveDnsIfNeeded(string hostname)
+        {
+            // Skip DNS resolution for localhost/loopback addresses
+            if (hostname.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+                hostname.Equals("127.0.0.1") ||
+                hostname.Equals("::1"))
+            {
+                Logger.Trace($"Using loopback address: {hostname}");
+                return hostname.Equals("::1") 
+                    ? IPAddress.IPv6Loopback 
+                    : IPAddress.Loopback;
+            }
+
+            // Resolve hostname to IP
+            var addresses = Misc.ValidateDnsResolution(hostname, throwOnFailure: true);
+            
+            // Prefer IPv4
+            var resolvedIp = addresses?.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) 
+                           ?? addresses?.First();
+
+            Logger.Trace($"Resolved {hostname} to {resolvedIp}");
+            return resolvedIp;
         }
 
         private void ValidateCredentialArguments(string credentialType, string username, string password, string domain)
