@@ -1,4 +1,6 @@
-﻿using Microsoft.Win32.SafeHandles;
+﻿// MSSQLand/Services/Authentication/Credentials/WindowsIdentityImpersonation.cs
+
+using Microsoft.Win32.SafeHandles;
 using MSSQLand.Utilities;
 using System;
 using System.ComponentModel;
