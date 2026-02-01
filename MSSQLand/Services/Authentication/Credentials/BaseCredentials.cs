@@ -1,8 +1,10 @@
 ﻿// MSSQLand/Services/Authentication/Credentials/BaseCredentials.cs
 
-using MSSQLand.Utilities;
 using System;
 using System.Data.SqlClient;
+
+using MSSQLand.Utilities;
+using MSSQLand.Models;
 
 namespace MSSQLand.Services.Credentials
 {
