@@ -24,6 +24,7 @@ namespace MSSQLand.Services.Credentials
             if (!string.IsNullOrEmpty(domain))
             {
                 throw new InvalidCredentialException(
+                    "local",
                     $"Domain parameter cannot be used with local SQL authentication."
                 );
             }
