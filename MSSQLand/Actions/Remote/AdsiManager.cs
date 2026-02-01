@@ -71,17 +71,14 @@ namespace MSSQLand.Actions.Remote
             AdsiService adsiService = new(databaseContext);
             List<string> adsiServers = adsiService.ListAdsiServers();
 
-            if (adsiServers == null || adsiServers.Count == 0)
+            if (adsiServers.Count == 0)
             {
-                Logger.Warning("No ADSI linked servers found.");
-                return null;
+                Logger.Warning("No ADSI linked servers found");
+                return adsiServers;
             }
 
-            Logger.Success($"Found {adsiServers.Count} ADSI linked server{(adsiServers.Count > 1 ? "s" : "")}");
-            Logger.NewLine();
-
-            // Display formatted markdown table
             Console.WriteLine(OutputFormatter.ConvertList(adsiServers, "ADSI Servers"));
+            Logger.Success($"Found {adsiServers.Count} ADSI linked server{(adsiServers.Count > 1 ? "s" : "")}");
 
             return adsiServers;
         }

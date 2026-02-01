@@ -27,23 +27,17 @@ namespace MSSQLand.Services
         /// <summary>
         /// Lists all ADSI linked servers.
         /// </summary>
-        /// <returns>A list of ADSI server names, or null if none found.</returns>
+        /// <returns>A list of ADSI server names. Empty if none found.</returns>
         public List<string> ListAdsiServers()
         {
-            // Filter by ADsDSOObject provider (product name varies, provider is consistent)
             string query = "SELECT srvname FROM master.dbo.sysservers WHERE providername = 'ADsDSOObject'";
             DataTable result = _databaseContext.QueryService.ExecuteTable(query);
-
-            if (result.Rows.Count == 0)
-            {
-                return null;
-            }
 
             return result.AsEnumerable()
                          .Select(row => row.Field<string>("srvname"))
                          .ToList();
         }
-
+        
         /// <summary>
         /// Checks if an ADSI linked server exists.
         /// </summary>
@@ -51,8 +45,7 @@ namespace MSSQLand.Services
         /// <returns>True if the server exists and is an ADSI provider; otherwise, false.</returns>
         public bool AdsiServerExists(string serverName)
         {
-            List<string> adsiServers = ListAdsiServers();
-            return adsiServers != null && adsiServers.Contains(serverName, StringComparer.OrdinalIgnoreCase);
+            return ListAdsiServers().Contains(serverName, StringComparer.OrdinalIgnoreCase);
         }
 
         public bool CreateAdsiLinkedServer(string serverName, string dataSource = "localhost")
