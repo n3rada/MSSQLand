@@ -39,7 +39,7 @@ namespace MSSQLand.Services.Credentials
                     name: "probe",
                     description: "Test if SQL Server is alive (no auth, just connectivity check)",
                     requiredArguments: new List<string>(),
-                    factory: (server) => new ProbeCredentials(server)
+                    factory: ProbeCredentials.Create
                 )
             },
             {
@@ -48,7 +48,7 @@ namespace MSSQLand.Services.Credentials
                     name: "token",
                     description: "Windows Integrated Security (current process token)",
                     requiredArguments: new List<string>(),
-                    factory: (server) => new TokenCredentials(server)
+                    factory: TokenCredentials.Create
                 )
             },
             {
@@ -57,7 +57,7 @@ namespace MSSQLand.Services.Credentials
                     name: "domain",
                     description: "Domain account authentication via impersonation",
                     requiredArguments: new List<string> { "username", "password", "domain" },
-                    factory: (server) => new WindowsCredentials(server)
+                    factory: WindowsCredentials.Create
                 )
             },
             {
@@ -66,7 +66,7 @@ namespace MSSQLand.Services.Credentials
                     name: "windows",
                     description: "Windows Authentication with impersonation (domain or local account)",
                     requiredArguments: new List<string> { "username", "password" },
-                    factory: (server) => new WindowsCredentials(server),
+                    factory: WindowsCredentials.Create,
                     optionalArguments: new List<string> { "domain" }
                 )
             },
@@ -76,7 +76,7 @@ namespace MSSQLand.Services.Credentials
                     name: "local",
                     description: "SQL Server authentication (on-premises and Azure SQL)",
                     requiredArguments: new List<string> { "username", "password" },
-                    factory: (server) => new LocalCredentials(server)
+                    factory: LocalCredentials.Create
                 )
             },
             {
@@ -85,7 +85,7 @@ namespace MSSQLand.Services.Credentials
                     name: "entraid",
                     description: "Azure Active Directory authentication (Azure SQL only)",
                     requiredArguments: new List<string> { "username", "password", "domain" },
-                    factory: (server) => new EntraIDCredentials(server)
+                    factory: EntraIDCredentials.Create
                 )
             }
         };

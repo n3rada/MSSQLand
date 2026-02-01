@@ -6,6 +6,11 @@ namespace MSSQLand.Services.Credentials
     {
         public EntraIDCredentials(Server server) : base(server) { }
 
+        /// <summary>
+        /// Factory method for creating EntraIDCredentials instances.
+        /// </summary>
+        public static EntraIDCredentials Create(Server server) => new EntraIDCredentials(server);
+
         public override SqlConnection Authenticate(string username, string password, string domain)
         {
             username = $"{username}@{domain}";

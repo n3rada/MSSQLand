@@ -13,6 +13,11 @@ namespace MSSQLand.Services.Credentials
     {
         public WindowsCredentials(Server server) : base(server) { }
 
+        /// <summary>
+        /// Factory method for creating WindowsCredentials instances.
+        /// </summary>
+        public static WindowsCredentials Create(Server server) => new WindowsCredentials(server);
+
         public override SqlConnection Authenticate(string username, string password, string domain)
         {
             // Determine if it's a domain or local account

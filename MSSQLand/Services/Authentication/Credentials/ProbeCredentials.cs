@@ -14,6 +14,11 @@ namespace MSSQLand.Services.Credentials
     {
         public ProbeCredentials(Server server) : base(server) { }
 
+        /// <summary>
+        /// Factory method for creating ProbeCredentials instances.
+        /// </summary>
+        public static ProbeCredentials Create(Server server) => new ProbeCredentials(server);
+
         public override SqlConnection Authenticate(string username = null, string password = null, string domain = null)
         {
             Logger.Info($"Probing SQL Server: {Server.GetConnectionTarget()}");

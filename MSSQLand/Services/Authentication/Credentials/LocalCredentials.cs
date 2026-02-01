@@ -10,6 +10,11 @@ namespace MSSQLand.Services.Credentials
     {
         public LocalCredentials(Server server) : base(server) { }
 
+        /// <summary>
+        /// Factory method for creating LocalCredentials instances.
+        /// </summary>
+        public static LocalCredentials Create(Server server) => new LocalCredentials(server);
+
         public override SqlConnection Authenticate(string username, string password, string domain = null)
         {
             // Encrypt by default for security best practices

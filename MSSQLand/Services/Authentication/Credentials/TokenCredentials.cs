@@ -6,6 +6,11 @@ namespace MSSQLand.Services.Credentials
     {
         public TokenCredentials(Server server) : base(server) { }
 
+        /// <summary>
+        /// Factory method for creating TokenCredentials instances.
+        /// </summary>
+        public static TokenCredentials Create(Server server) => new TokenCredentials(server);
+
         public override SqlConnection Authenticate(string username = null, string password = null, string domain = null)
         {
             // Connection string with Integrated Security (uses current token)
