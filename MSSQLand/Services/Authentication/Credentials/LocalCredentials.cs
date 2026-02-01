@@ -1,4 +1,5 @@
-﻿using MSSQLand.Models;
+﻿using MSSQLand.Exceptions;
+using MSSQLand.Models;
 using System.Data.SqlClient;
 
 namespace MSSQLand.Services.Credentials
@@ -18,12 +19,18 @@ namespace MSSQLand.Services.Credentials
 
         public override SqlConnection Authenticate(string username, string password, string domain = null)
         {
-            // Build the user ID, including domain if provided
-            string userId = string.IsNullOrEmpty(domain) ? username : $"{domain}\\{username}";
+            // SQL Server local authentication uses plain username, not domain\username format
+            // Domain accounts should use -c windows (which does NTLM negotiation) instead
+            if (!string.IsNullOrEmpty(domain))
+            {
+                throw new InvalidCredentialException(
+                    $"Domain parameter cannot be used with local SQL authentication."
+                );
+            }
             
             // Encrypt by default for security best practices
             // TrustServerCertificate=True allows self-signed certs (common in on-premises)
-            var connectionString = $"Server={Server.GetConnectionTarget()}; Integrated Security=False; User Id={userId}; Password={password};";
+            var connectionString = $"Server={Server.GetConnectionTarget()}; Integrated Security=False; User Id={username}; Password={password};";
             return CreateSqlConnection(connectionString);
         }
     }
