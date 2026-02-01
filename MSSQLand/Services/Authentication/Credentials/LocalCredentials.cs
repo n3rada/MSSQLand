@@ -18,9 +18,12 @@ namespace MSSQLand.Services.Credentials
 
         public override SqlConnection Authenticate(string username, string password, string domain = null)
         {
+            // Build the user ID, including domain if provided
+            string userId = string.IsNullOrEmpty(domain) ? username : $"{domain}\\{username}";
+            
             // Encrypt by default for security best practices
             // TrustServerCertificate=True allows self-signed certs (common in on-premises)
-            var connectionString = $"Server={Server.GetConnectionTarget()}; Integrated Security=False; User Id={username}; Password={password};";
+            var connectionString = $"Server={Server.GetConnectionTarget()}; Integrated Security=False; User Id={userId}; Password={password};";
             return CreateSqlConnection(connectionString);
         }
     }
