@@ -17,7 +17,7 @@ namespace MSSQLand.Actions.FileSystem
         // Default to a file that always exists and is readable on Windows
         private const string DefaultFilePath = @"C:\Windows\win.ini";
 
-        [ArgumentMetadata(Position = 0, Required = false, Description = "Full path to the file to read (default: C:\\Windows\\win.ini)")]
+        [ArgumentMetadata(Position = 0, Required = false, Description = @"Full path to the file to read (default: C:\Windows\win.ini)")]
         private string _filePath = DefaultFilePath;
 
         [ArgumentMetadata(ShortName = "b64", LongName = "base64", Description = "Output file content as base64 encoded (useful for binary files)")]
