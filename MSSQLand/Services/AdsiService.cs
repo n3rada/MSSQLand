@@ -55,53 +55,13 @@ namespace MSSQLand.Services
             return adsiServers != null && adsiServers.Contains(serverName, StringComparer.OrdinalIgnoreCase);
         }
 
-        public bool CheckLinkedServer(string linkedServerName)
-        {
-            try
-            {
-                // Retrieve the list of linked servers
-                DataTable result = _databaseContext.QueryService.ExecuteTable("EXEC sp_linkedservers;");
-
-                // Check if the linked server exists and has the correct provider
-                foreach (DataRow row in result.Rows)
-                {
-                    string srvName = row[0].ToString(); // First column (srv_name)
-                    string srvProviderName = row[1].ToString(); // Second column (srv_providername)
-
-                    if (srvName.Equals(linkedServerName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (srvProviderName.Equals("ADSDSOObject", StringComparison.OrdinalIgnoreCase))
-                        {
-                            // Linked server exists and is properly configured
-                            return true;
-                        }
-                        else
-                        {
-                            // Linked server exists but has an incorrect provider
-                            Logger.Error($"Linked server '{linkedServerName}' exists, but the provider is '{srvProviderName}' instead of 'ADSDSOObject'.");
-                            return false;
-                        }
-                    }
-                }
-
-                // If no matching linked server was found
-                Logger.Error($"Linked server '{linkedServerName}' does not exist.");
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Error while checking linked server: {ex.Message}");
-                return false;
-            }
-        }
-
         public bool CreateAdsiLinkedServer(string serverName, string dataSource = "localhost")
         {
             string query = @$"
             EXEC sp_addlinkedserver 
                 @server = '{serverName}',
                 @srvproduct = 'ADSI',
-                @provider = 'ADSDSOObject',
+                @provider = 'ADsDSOObject',
                 @datasrc = '{dataSource}';";
 
             try
