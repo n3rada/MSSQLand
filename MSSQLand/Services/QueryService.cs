@@ -319,7 +319,8 @@ SELECT @result AS Result, @error AS Error;";
         /// </summary>
         private string PrepareQuery(string query)
         {
-            Logger.Debug($"Query to execute: {query}");
+            Logger.Debug($"Query to execute");
+            Logger.DebugNested(query);
 
             if (_linkedServers.IsEmpty)
                 return query;
