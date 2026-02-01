@@ -137,28 +137,5 @@ namespace MSSQLand.Services.Credentials
             return GetType().Name;
         }
 
-
-        /// <summary>
-        /// Extracts the server name from connection string format.
-        /// Handles: SQLSERVER01, SQLSERVER01\INSTANCE, SQLSERVER01,1433, etc.
-        /// </summary>
-        private string ExtractServerName(string sqlServer)
-        {
-            if (string.IsNullOrWhiteSpace(sqlServer))
-                return "SQLNODE01"; // Fallback
-            
-            // Remove port if present: "SERVER,1433" -> "SERVER"
-            string serverName = sqlServer.Split(',')[0];
-            
-            // Remove instance name if present: "SERVER\INSTANCE" -> "SERVER"
-            serverName = serverName.Split('\\')[0];
-            
-            // Remove protocol prefix if present: "tcp:SERVER" -> "SERVER"
-            if (serverName.Contains(":"))
-                serverName = serverName.Split(':')[1];
-            
-            return serverName.Trim();
-        }
-
     }
 }
