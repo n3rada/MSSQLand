@@ -239,7 +239,7 @@ ORDER BY o.object_id, c.column_id;";
             
             if (!_showPermissions)
             {
-                Logger.InfoNested("Use -p to show permissions");
+                Logger.Info("Use -p to show permissions");
             }
 
             return tables;
