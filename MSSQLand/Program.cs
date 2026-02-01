@@ -77,6 +77,11 @@ namespace MSSQLand
                     return 1;
                 }
             }
+            catch (InvalidCredentialException ex)
+            {
+                Logger.Error($"Invalid credentials: {ex.Message}");
+                return 1;
+            }
             catch (AuthenticationFailedException ex)
             {
                 Logger.Error($"Authentication failed: {ex.Message}");
