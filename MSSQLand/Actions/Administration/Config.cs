@@ -66,7 +66,7 @@ namespace MSSQLand.Actions.Administration
             // Mode 2: Show specific option status
             if (!string.IsNullOrEmpty(_optionName) && _value < 0)
             {
-                Logger.Task($"Checking status of '{_optionName}'");
+                Logger.TaskNested($"Checking status of '{_optionName}'");
                 int status = databaseContext.ConfigService.GetConfigurationStatus(_optionName);
                 
                 if (status < 0)
@@ -80,7 +80,7 @@ namespace MSSQLand.Actions.Administration
             }
 
             // Mode 3: List all security-sensitive configurations
-            Logger.Task("Listing all configuration options");
+            Logger.TaskNested("Listing all configuration options");
             var results = CheckConfigurationOptions(databaseContext);
 
             if (results.Count > 0)
