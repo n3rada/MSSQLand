@@ -48,6 +48,8 @@ namespace MSSQLand.Actions.Database
                 {
                     { "Host Name", "SELECT SERVERPROPERTY('MachineName');" },
                     { "SQL Service Process ID", "SELECT SERVERPROPERTY('ProcessId');" },
+                    { "Instance Data Path", "SELECT SERVERPROPERTY('InstanceDefaultDataPath');" },
+                    { "Instance Log Path", "SELECT SERVERPROPERTY('InstanceDefaultLogPath');" },
                     { "Operating System Version", "SELECT TOP(1) windows_release + ISNULL(' ' + windows_service_pack_level, '') FROM master.sys.dm_os_windows_info;" },
                     { "OS Architecture", "SELECT CASE WHEN CAST(SERVERPROPERTY('Edition') AS NVARCHAR(128)) LIKE '%64%' THEN '64-bit' ELSE '32-bit' END;" }
                 }
