@@ -12,18 +12,18 @@ namespace MSSQLand.Actions.Database
 {
     /// <summary>
     /// Search for keywords in column names and data.
-    /// 
+    ///
     /// Defaults:
     /// - Scope: current database only.
     /// - Mode: data + headers.
-    /// 
+    ///
     /// Options:
     /// - -d/--database <name>: search in specific database.
     /// - -a/--all: search across all accessible databases.
     /// - <schema.table> or <database.schema.table>: limit to one table (positional arg).
     /// - --column-name: search for keyword in column names only (fast, no row scanning).
     /// - -c/--column <pattern>: search data only in columns matching pattern.
-    /// 
+    ///
     /// Examples:
     /// - search password                           (search 'password' in all data, current database)
     /// - search password --all                     (search in all accessible databases)
@@ -77,7 +77,7 @@ namespace MSSQLand.Actions.Database
                 try
                 {
                     var (database, schema, table) = Misc.ParseQualifiedTableName(_target);
-                    
+
                     if (!string.IsNullOrEmpty(database) && !string.IsNullOrEmpty(schema) && !string.IsNullOrEmpty(table))
                     {
                         // database.schema.table
@@ -134,7 +134,7 @@ namespace MSSQLand.Actions.Database
                 string dbName = _limitDatabase ?? databaseContext.QueryService.ExecutionServer.Database;
                 Logger.TaskNested($"Looking inside {Misc.BuildQualifiedTableName(dbName, _targetSchema, _targetTable)}");
                 var (headerMatches, rowMatches, _) = SearchDatabase(databaseContext, dbName, _targetSchema, _targetTable);
-                
+
                 Logger.Success($"Search completed");
                 Logger.SuccessNested($"Column header matches: {headerMatches}");
                 Logger.SuccessNested($"Row matches: {rowMatches}");
@@ -156,7 +156,7 @@ namespace MSSQLand.Actions.Database
                     databasesToSearch.Add(row["name"].ToString());
                 }
 
-                Logger.TaskNested($"Found {databasesToSearch.Count} accessible database(s) to search");
+                Logger.InfoNested($"Found {databasesToSearch.Count} accessible database(s) to search");
             }
             else if (!string.IsNullOrEmpty(_limitDatabase))
             {
@@ -170,7 +170,7 @@ namespace MSSQLand.Actions.Database
                 Logger.Info($"Searching in current database: [{currentDb}]");
                 databasesToSearch.Add(currentDb);
             }
-            
+
             int totalHeaderMatches = 0;
             int totalRowMatches = 0;
             int totalTablesSearched = 0;
@@ -238,11 +238,11 @@ namespace MSSQLand.Actions.Database
             foreach (string dbName in databasesToSearch)
             {
                 string metadataQuery = $@"
-                    SELECT 
+                    SELECT
                         '{dbName}' AS [Database],
-                        s.name AS [Schema], 
-                        t.name AS [Table], 
-                        c.name AS [Column], 
+                        s.name AS [Schema],
+                        t.name AS [Table],
+                        c.name AS [Column],
                         ty.name AS [Data Type],
                         c.column_id AS [Position]
                     FROM [{dbName}].sys.tables t
@@ -256,7 +256,7 @@ namespace MSSQLand.Actions.Database
                 try
                 {
                     DataTable matches = databaseContext.QueryService.ExecuteTable(metadataQuery);
-                    
+
                     foreach (DataRow row in matches.Rows)
                     {
                         allMatches.Rows.Add(
@@ -268,7 +268,7 @@ namespace MSSQLand.Actions.Database
                             row["Position"]
                         );
                     }
-                    
+
                     totalMatches += matches.Rows.Count;
                 }
                 catch (Exception ex)
@@ -304,11 +304,11 @@ namespace MSSQLand.Actions.Database
 
             // Query to get all columns in all tables of the specified database
             string metadataQuery = $@"
-                SELECT 
-                    s.name AS TABLE_SCHEMA, 
-                    t.name AS TABLE_NAME, 
-                    c.name AS COLUMN_NAME, 
-                    ty.name AS DATA_TYPE, 
+                SELECT
+                    s.name AS TABLE_SCHEMA,
+                    t.name AS TABLE_NAME,
+                    c.name AS COLUMN_NAME,
+                    ty.name AS DATA_TYPE,
                     c.column_id AS ORDINAL_POSITION
                 FROM [{database}].sys.tables t
                 INNER JOIN [{database}].sys.schemas s ON t.schema_id = s.schema_id
@@ -316,7 +316,7 @@ namespace MSSQLand.Actions.Database
                 INNER JOIN [{database}].sys.types ty ON c.user_type_id = ty.user_type_id
                 WHERE t.is_ms_shipped = 0 {tableFilter}{BuildColumnFilterCondition()}
                 ORDER BY s.name, t.name, c.column_id;";
-            
+
             DataTable columnsTable;
             try
             {
@@ -386,7 +386,7 @@ namespace MSSQLand.Actions.Database
 
                 // Build WHERE clause - only search text-based columns and convert others to string
                 List<string> conditions = new List<string>();
-                
+
                 foreach (var (columnName, dataType, _) in tableEntry.Value)
                 {
                     // Escape column names with square brackets
@@ -415,14 +415,14 @@ namespace MSSQLand.Actions.Database
 
                 // Get ALL matching rows without limit
                 string searchQuery = $@"
-                    SELECT * 
+                    SELECT *
                     FROM {Misc.BuildQualifiedTableName(database, schema, table)}
                     WHERE {whereClause};";
 
                 try
                 {
                     tablesSearched++;
-                    
+
                     DataTable resultTable = databaseContext.QueryService.ExecuteTable(searchQuery);
 
                     if (resultTable.Rows.Count > 0)
@@ -470,7 +470,7 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private bool IsConvertibleType(string dataType)
         {
-            string[] convertibleTypes = { 
+            string[] convertibleTypes = {
                 "int", "bigint", "smallint", "tinyint", "bit",
                 "decimal", "numeric", "float", "real", "money", "smallmoney",
                 "date", "datetime", "datetime2", "smalldatetime", "time", "datetimeoffset",
