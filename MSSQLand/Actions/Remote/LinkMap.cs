@@ -254,7 +254,7 @@ namespace MSSQLand.Actions.Remote
                 // Check for loop in THIS chain path only
                 if (visitedInChain.Contains(stateHash))
                 {
-                    Logger.TraceNested($"Loop detected at server '{targetServer}' with user '{currentState.SystemUser}'. Skipping to prevent infinite recursion.");
+                    Logger.TraceNested($"Loop detected at server '{targetServer}' with user '{remoteLoggedInUser}'. Skipping to prevent infinite recursion.");
                     return;
                 }
 
@@ -568,9 +568,10 @@ ORDER BY srv.provider, srv.name;";
 
         private static string BuildStateHash(string hostname, string mappedUser, string systemUser, bool isSysadmin)
         {
-            string stateString = $"{hostname?.ToUpperInvariant() ?? ""}" +
-                                $"{mappedUser?.ToUpperInvariant() ?? ""}" +
-                                $"{systemUser?.ToUpperInvariant() ?? ""}" +
+            // Use pipe delimiter to prevent collisions from adjacent string boundaries
+            string stateString = $"{hostname?.ToUpperInvariant() ?? ""}|" +
+                                $"{mappedUser?.ToUpperInvariant() ?? ""}|" +
+                                $"{systemUser?.ToUpperInvariant() ?? ""}|" +
                                 $"{isSysadmin}";
 
             return Misc.ComputeSHA256(stateString);
