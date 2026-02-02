@@ -22,6 +22,12 @@ namespace MSSQLand.Utilities
     /// <summary>
     /// Provides logging functionality with compact and visually intuitive output.
     /// </summary>
+    /// <remarks>
+    /// Usage convention:
+    /// - Task/TaskNested: an operation about to execute (query/run/create/scan)
+    /// - Info/InfoNested: context, configuration, or results
+    /// - Success/Warning/Error: outcomes
+    /// </remarks>
     internal static class Logger
     {
         /// <summary>
@@ -45,7 +51,7 @@ namespace MSSQLand.Utilities
             if (IsSilentModeEnabled) return 0;
 
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            
+
             if (string.IsNullOrWhiteSpace(message))
             {
                 Console.Out.WriteLine(new string(borderChar, 30)); // Default width for empty or null messages
@@ -56,7 +62,7 @@ namespace MSSQLand.Utilities
             int padding = 2; // Minimum padding on each side of the message
 
             int maxLineLength = lines.Max(line => line.Length);
-            
+
             if (totalWidth == 0 || totalWidth < maxLineLength + (padding * 2))
             {
                 totalWidth = maxLineLength + (padding * 2);
