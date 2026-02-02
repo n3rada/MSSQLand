@@ -14,7 +14,7 @@ namespace MSSQLand.Services
         private readonly DatabaseContext _databaseContext;
 
         public int Port = 12235;
-     
+
         public string AssemblyName = "ldapServer";
         public string FunctionName = $"f_{Misc.GetRandomIdentifier()}";
         public string LibraryPath = $"l_{Misc.GetRandomIdentifier()}";
@@ -37,7 +37,7 @@ namespace MSSQLand.Services
                          .Select(row => row.Field<string>("srvname"))
                          .ToList();
         }
-        
+
         /// <summary>
         /// Checks if an ADSI linked server exists.
         /// </summary>
@@ -48,10 +48,22 @@ namespace MSSQLand.Services
             return ListAdsiServers().Contains(serverName, StringComparer.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Creates an ADSI linked server with an explicit name.
+        /// Use <see cref="CreateAdsiLinkedServer(out string, string)"/> to auto-generate a stealth name.
+        /// </summary>
+        /// <param name="serverName">Explicit linked server name (required).</param>
+        /// <param name="dataSource">ADSI data source (default: localhost).</param>
+        /// <returns>True if created successfully; otherwise false.</returns>
         public bool CreateAdsiLinkedServer(string serverName, string dataSource = "localhost")
         {
+            if (string.IsNullOrWhiteSpace(serverName))
+            {
+                throw new ArgumentException("Server name is required when using this overload.");
+            }
+
             string query = @$"
-            EXEC sp_addlinkedserver 
+            EXEC sp_addlinkedserver
                 @server = '{serverName}',
                 @srvproduct = 'ADSI',
                 @provider = 'ADsDSOObject',
@@ -67,6 +79,19 @@ namespace MSSQLand.Services
                 Logger.Error($"Error while creating linked server: {ex.Message}");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Creates an ADSI linked server with a stealth auto-generated name.
+        /// The generated name is returned via the <paramref name="serverName"/> out parameter.
+        /// </summary>
+        /// <param name="serverName">Outputs the generated linked server name.</param>
+        /// <param name="dataSource">ADSI data source (default: localhost).</param>
+        /// <returns>True if created successfully; otherwise false.</returns>
+        public bool CreateAdsiLinkedServer(out string serverName, string dataSource = "localhost")
+        {
+            serverName = $"SQLSRV_{Misc.GetRandomIdentifier(6)}";
+            return CreateAdsiLinkedServer(serverName, dataSource);
         }
 
         public void DropLinkedServer(string serverName)
@@ -96,7 +121,7 @@ namespace MSSQLand.Services
 
                         // Set the result once the query completes
                         taskCompletionSource.TrySetResult(result);
-                    } 
+                    }
                     catch
                     {
                         // Could happen if the query times out

@@ -101,14 +101,12 @@ namespace MSSQLand.Actions.Remote
         /// </summary>
         private Tuple<string, string> ExtractWithTemporaryServer(DatabaseContext databaseContext)
         {
-            _targetServer = $"ADSI-{Guid.NewGuid().ToString("N").Substring(0, 6)}";
-
-            Logger.Task($"Creating temporary ADSI server '{_targetServer}' for credential extraction");
+            Logger.Task("Creating temporary ADSI server for credential extraction");
 
             AdsiService adsiService = new(databaseContext);
 
             // Try to create the ADSI server
-            if (!adsiService.CreateAdsiLinkedServer(_targetServer))
+            if (!adsiService.CreateAdsiLinkedServer(out _targetServer))
             {
                 // If creation failed, try to clean up and retry once
                 Logger.Warning("Initial creation failed. Attempting cleanup and retry...");
@@ -121,12 +119,14 @@ namespace MSSQLand.Actions.Remote
                     // Ignore cleanup errors
                 }
 
-                if (!adsiService.CreateAdsiLinkedServer(_targetServer))
+                if (!adsiService.CreateAdsiLinkedServer(out _targetServer))
                 {
                     Logger.Error("Failed to create temporary ADSI server.");
                     return null;
                 }
             }
+
+            Logger.TaskNested($"Server name: {_targetServer}");
 
             try
             {

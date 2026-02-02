@@ -11,68 +11,57 @@ namespace MSSQLand.Actions.Remote
     /// <summary>
     /// Performs LDAP queries against ADSI linked servers via SQL Server's OPENQUERY.
     ///
-    /// Argument resolution is context-dependent and cannot use auto-binding:
-    ///   adsiquery <fqdn> <ldap query>            → temp server, custom query
-    ///   adsiquery <server> <fqdn> <ldap query>   → existing linked server, custom query
+    /// Argument resolution:
+    ///   adsiquery "<ldap query>"                 → temp server
+    ///   adsiquery "<ldap query>" --server <name> → existing server
+    ///
+    /// LDAP query format (ADsDSOObject SQL dialect):
+    ///   SELECT [ALL] * | select-list FROM 'ADsPath' [WHERE search-condition] [ORDER BY sort-list]
+    /// Notes:
+    ///   - ADsPath must be wrapped in single quotes.
+    ///   - ORDER BY supports a single sort key in AD.
+    ///   - Joins are not supported by the ADsDSOObject provider.
+    ///   - Escape special characters in filters using ADSI escape sequences (see link below).
+    /// Reference: https://learn.microsoft.com/en-us/windows/win32/adsi/sql-dialect
+    ///
+    /// LDAP query examples:
+    ///   SELECT ADsPath, cn FROM 'LDAP://DC=contoso,DC=local' WHERE objectCategory='group'
+    ///   SELECT cn,sAMAccountName FROM 'LDAP://DC=contoso,DC=local' WHERE objectClass='user'
+    ///   SELECT cn FROM 'LDAP://OU=Workstations,DC=contoso,DC=local' WHERE sAMAccountName='alice'
     /// </summary>
     internal class AdsiQuery : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Description = "ADSI linked server name (optional - creates temporary server if omitted)")]
+        [ArgumentMetadata(LongName = "server", Required = false, Description = "ADSI linked server name (creates temporary server if omitted)")]
         private string _adsiServerName = "";
 
-        [ArgumentMetadata(Position = 1, Description = "FQDN of the target domain")]
-        private string _domainFqdn = "";
-
-        [ArgumentMetadata(Position = 2, Description = "LDAP query to execute against the ADSI server")]
+        [ArgumentMetadata(Position = 0, LongName = "ldap", Description = "LDAP query to execute against the ADSI server")]
         private string _ldapQuery = "";
 
         private bool _usingTempServer = false;
 
         public override void ValidateArguments(string[] args)
         {
+            BindArguments(args);
+
             if (args == null || args.Length == 0)
             {
                 throw new ArgumentException(
-                    "FQDN and LDAP query are required.\n" +
-                    "  Temp server:      adsiquery <fqdn> \"<ldap query>\"\n" +
-                    "  Existing server:  adsiquery <server> <fqdn> \"<ldap query>\"");
+                    "LDAP query is required.\n" +
+                    "  Temp server:      adsiquery \"<ldap query>\"\n" +
+                    "  Existing server:  adsiquery \"<ldap query>\" --server <name>");
             }
 
-            BindArguments(args);
+            bool hasExplicitLdap = !string.IsNullOrWhiteSpace(_ldapQuery);
+            bool hasExplicitServer = !string.IsNullOrWhiteSpace(_adsiServerName);
 
-            // Argument resolution is positionally ambiguous — the first arg could be
-            // a domain FQDN or a linked server name. Disambiguate by checking for a
-            // dot: FQDNs contain dots, linked server names do not.
-            if (args[0].Contains("."))
+            if (!hasExplicitLdap)
             {
-                // adsiquery <fqdn> <ldap query>
-                _usingTempServer = true;
-                _domainFqdn = args[0];
-                _adsiServerName = "";
-
-                if (args.Length < 2)
-                    throw new ArgumentException("LDAP query is required");
-
-                _ldapQuery = string.Join(" ", args, 1, args.Length - 1);
-            }
-            else
-            {
-                // adsiquery <server> <fqdn> <ldap query>
-                _adsiServerName = args[0];
-
-                if (args.Length < 2)
-                    throw new ArgumentException("FQDN is required");
-
-                _domainFqdn = args[1];
-
-                if (args.Length < 3)
-                    throw new ArgumentException("LDAP query is required");
-
-                _ldapQuery = string.Join(" ", args, 2, args.Length - 2);
+                throw new ArgumentException(
+                    "Provide LDAP query as the first argument (and optionally --server <name>)."
+                );
             }
 
-            if (string.IsNullOrWhiteSpace(_domainFqdn))
-                throw new ArgumentException("Domain FQDN cannot be empty");
+            _usingTempServer = !hasExplicitServer;
 
             if (string.IsNullOrWhiteSpace(_ldapQuery))
                 throw new ArgumentException("LDAP query cannot be empty");
@@ -80,13 +69,6 @@ namespace MSSQLand.Actions.Remote
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            // FQDN format warning here — ValidateArguments must not log
-            if (!_domainFqdn.Contains("."))
-            {
-                Logger.Warning($"'{_domainFqdn}' does not appear to be a fully qualified domain name");
-                return null;
-            }
-
             AdsiService adsiService = new(databaseContext);
             bool cleanupRequired = false;
 
@@ -94,15 +76,15 @@ namespace MSSQLand.Actions.Remote
             {
                 if (_usingTempServer)
                 {
-                    _adsiServerName = $"ADSI_{Guid.NewGuid().ToString("N").Substring(0, 6)}";
+                    Logger.Task("Creating temporary ADSI linked server");
 
-                    Logger.Task($"Creating temporary ADSI linked server '{_adsiServerName}'");
-
-                    if (!adsiService.CreateAdsiLinkedServer(_adsiServerName))
+                    if (!adsiService.CreateAdsiLinkedServer(out _adsiServerName))
                     {
                         Logger.Error("Failed to create temporary ADSI linked server");
                         return null;
                     }
+
+                    Logger.TaskNested($"Server name: {_adsiServerName}");
 
                     // Data access is off by default on new linked servers.
                     // Must be enabled before OPENQUERY will work.
@@ -127,10 +109,10 @@ namespace MSSQLand.Actions.Remote
                 }
 
                 Logger.Task($"Querying ADSI server '{_adsiServerName}'");
-                Logger.TaskNested($"Domain: {_domainFqdn}");
                 Logger.TaskNested($"LDAP: {_ldapQuery}");
 
-                string query = $"SELECT * FROM OPENQUERY([{_adsiServerName}], '{EscapeSingleQuotes(_ldapQuery)}')";
+                string escapedLdapQuery = _ldapQuery?.Replace("'", "''");
+                string query = $"SELECT * FROM OPENQUERY([{_adsiServerName}], '{escapedLdapQuery}')";
 
                 DataTable result;
                 try
@@ -174,7 +156,7 @@ namespace MSSQLand.Actions.Remote
                 else if (ex.Message.Contains("Provider cannot be found"))
                     Logger.Info("The ADSDSOObject OLE DB provider is not available on this server");
                 else if (ex.Message.Contains("syntax") || ex.Message.Contains("LDAP"))
-                    Logger.Info($"Check LDAP query syntax. Current domain: {_domainFqdn}");
+                    Logger.Info("Check LDAP query syntax.");
 
                 return null;
             }
@@ -195,19 +177,5 @@ namespace MSSQLand.Actions.Remote
             }
         }
 
-        /// <summary>
-        /// Converts a fully qualified domain name to an LDAP base DN path.
-        /// e.g. "contoso.local" → "LDAP://DC=contoso,DC=local"
-        /// </summary>
-        private string BuildLdapPath(string domainFqdn)
-        {
-            string[] parts = domainFqdn.Split('.');
-            return "LDAP://" + string.Join(",", Array.ConvertAll(parts, p => $"DC={p}"));
-        }
-
-        private string EscapeSingleQuotes(string input)
-        {
-            return input?.Replace("'", "''");
-        }
     }
 }
