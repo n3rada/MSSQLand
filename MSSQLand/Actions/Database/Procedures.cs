@@ -74,13 +74,13 @@ namespace MSSQLand.Actions.Database
             try
             {
                 var (database, schema, procedure) = Misc.ParseQualifiedTableName(procedureName);
-                
+
                 // We require schema.procedure (2 parts), not database.schema.procedure (3 parts)
                 if (!string.IsNullOrEmpty(database))
                 {
                     throw new ArgumentException($"Use 'schema.procedure' format, not database-qualified. Got: '{procedureName}'");
                 }
-                
+
                 if (string.IsNullOrEmpty(schema) || string.IsNullOrEmpty(procedure))
                 {
                     throw new ArgumentException($"Procedure name must be in 'schema.procedure' format. Got: '{procedureName}'");
@@ -118,11 +118,11 @@ namespace MSSQLand.Actions.Database
             Logger.TaskNested($"Retrieving all stored procedures in [{databaseContext.QueryService.ExecutionServer.Database}]");
 
             string query = $@"
-                SELECT 
+                SELECT
                     SCHEMA_NAME(p.schema_id) AS [Schema],
                     p.name AS [Name],
                     USER_NAME(OBJECTPROPERTY(p.object_id, 'OwnerId')) AS [Owner],
-                    CASE 
+                    CASE
                         WHEN m.execute_as_principal_id IS NULL THEN ''
                         WHEN m.execute_as_principal_id = -2 THEN 'OWNER'
                         ELSE USER_NAME(m.execute_as_principal_id)
@@ -142,7 +142,7 @@ namespace MSSQLand.Actions.Database
 
             // Get all permissions in a single query
             string allPermissionsQuery = @"
-                SELECT 
+                SELECT
                     SCHEMA_NAME(o.schema_id) AS schema_name,
                     o.name AS object_name,
                     p.permission_name
@@ -155,7 +155,7 @@ namespace MSSQLand.Actions.Database
 
             // Build a dictionary for fast lookup: key = "schema.procedure", value = list of permissions
             var permissionsDict = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>>();
-            
+
             foreach (DataRow permRow in allPermissions.Rows)
             {
                 string key = $"{permRow["schema_name"]}.{permRow["object_name"]}";
@@ -190,7 +190,7 @@ namespace MSSQLand.Actions.Database
 
             // Sort in C#: execution context, then permissions, then schema/name
             var sortedRows = procedures.AsEnumerable()
-                .OrderBy(row => 
+                .OrderBy(row =>
                 {
                     string execContext = row["ExecuteAsContext"].ToString();
                     return (execContext == "CALLER" || execContext == "OWNER") ? 1 : 0;
@@ -239,7 +239,6 @@ namespace MSSQLand.Actions.Database
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
 
                 Logger.Success($"Stored procedure executed successfully.");
-                Logger.NewLine();
                 Console.WriteLine(OutputFormatter.ConvertDataTable(result));
                 return result;
             }
@@ -261,12 +260,12 @@ namespace MSSQLand.Actions.Database
             Logger.TaskNested($"Retrieving definition of [{databaseContext.QueryService.ExecutionServer.Database}].[{schema}].[{procedure}]");
 
             string query = $@"
-                SELECT 
+                SELECT
                     m.definition
                 FROM sys.sql_modules AS m
                 INNER JOIN sys.objects AS o ON m.object_id = o.object_id
                 INNER JOIN sys.schemas AS s ON o.schema_id = s.schema_id
-                WHERE o.type = 'P' 
+                WHERE o.type = 'P'
                 AND o.name = '{procedure.Replace("'", "''")}'
                 AND s.name = '{schema.Replace("'", "''")}'";
 
@@ -301,14 +300,14 @@ namespace MSSQLand.Actions.Database
             Logger.TaskNested($"Searching for keyword '{keyword}' in [{databaseContext.QueryService.ExecutionServer.Database}] procedures");
 
             string query = $@"
-                SELECT 
+                SELECT
                     SCHEMA_NAME(o.schema_id) AS schema_name,
                     o.name AS procedure_name,
                     o.create_date,
                     o.modify_date
                 FROM sys.sql_modules AS m
                 INNER JOIN sys.objects AS o ON m.object_id = o.object_id
-                WHERE o.type = 'P' 
+                WHERE o.type = 'P'
                 AND m.definition LIKE '%{keyword.Replace("'", "''")}%'
                 ORDER BY o.modify_date DESC;";
 
