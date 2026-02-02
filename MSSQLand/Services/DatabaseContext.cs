@@ -1,8 +1,9 @@
 ﻿// MSSQLand/Services/DatabaseContext.cs
 
 using MSSQLand.Utilities;
-using System;
 using MSSQLand.Models;
+
+using System;
 
 namespace MSSQLand.Services
 {
@@ -43,7 +44,7 @@ namespace MSSQLand.Services
             {
                 if (UserService.CanImpersonate(impersonateTarget))
                 {
-  
+
                     UserService.ImpersonateUser(impersonateTarget);
                     Logger.Success($"Successfully impersonated user: {impersonateTarget}");
                     return true;
@@ -76,8 +77,8 @@ namespace MSSQLand.Services
 
         /// <summary>
         /// Creates a deep copy of the current DatabaseContext while keeping the same connection.
-        /// This means that any **impersonation** or **persistent session modifications** 
-        /// (e.g., `EXECUTE AS`, temp table changes, transaction states) 
+        /// This means that any **impersonation** or **persistent session modifications**
+        /// (e.g., `EXECUTE AS`, temp table changes, transaction states)
         /// will also be reflected in the copied context.
         /// Use cautiously when dealing with impersonation-sensitive operations.
         /// </summary>

@@ -108,11 +108,11 @@ namespace MSSQLand.Services
         static bool IsLinkedServerConnectionFailure(Exception ex)
         {
             string m = ex.Message;
-            
+
             // Check for OLE DB provider errors (linked server specific)
             if (m.Contains("OLE DB provider") && m.Contains("for linked server"))
                 return true;
-            
+
             // Check for connection error patterns and error numbers in message
             return m.Contains("Login timeout expired") ||
                    m.Contains("Could not open a connection") ||
@@ -131,7 +131,7 @@ namespace MSSQLand.Services
         static bool IsDataReturningSelect(string sql)
         {
             string normalized = sql.Trim().ToUpperInvariant();
-            
+
             // Skip USE statements to find the actual query
             int useEnd = 0;
             while (true)
@@ -143,12 +143,12 @@ namespace MSSQLand.Services
                 int semi = normalized.IndexOf(";", bracket);
                 useEnd = semi > bracket ? semi + 1 : bracket + 1;
             }
-            
+
             string afterUse = normalized.Substring(useEnd).TrimStart();
-            
+
             // If it starts with SELECT and has FROM, it's likely returning data
             // Exclude simple scalar selects like SELECT @@VERSION, SELECT DB_NAME()
-            if (afterUse.StartsWith("SELECT") && 
+            if (afterUse.StartsWith("SELECT") &&
                 afterUse.Contains(" FROM ") &&
                 !afterUse.Contains("INSERT") &&
                 !afterUse.Contains("UPDATE") &&
@@ -156,7 +156,7 @@ namespace MSSQLand.Services
             {
                 return true;
             }
-            
+
             return false;
         }
 
@@ -268,10 +268,10 @@ SELECT @result AS Result, @error AS Error;";
                 if (IsLinkedServerConnectionFailure(ex))
                 {
                     // We know which server failed from ExecutionServer
-                    string failedServer = !_linkedServers.IsEmpty 
+                    string failedServer = !_linkedServers.IsEmpty
                         ? ExecutionServer.LinkedServerAlias ?? ExecutionServer.Hostname
                         : ExecutionServer.Hostname;
-                    
+
                     Logger.Error($"Cannot reach linked server '{failedServer}'.");
                     throw; // Don't retry connection failures
                 }
@@ -295,7 +295,7 @@ SELECT @result AS Result, @error AS Error;";
                         Logger.Debug("Query already wrapped, cannot recover from OPENQUERY failure.");
                         throw;
                     }
-                    
+
                     // Don't wrap data-returning SELECTs - they have a different issue
                     // (usually USE statement incompatibility with OPENQUERY)
                     if (IsDataReturningSelect(query))
@@ -304,7 +304,7 @@ SELECT @result AS Result, @error AS Error;";
                         Logger.Warning("Query contains USE statement which is incompatible with OPENQUERY. Consider using 3-part names (database.schema.table) instead.");
                         throw;
                     }
-                    
+
                     Logger.Debug("OPENQUERY returned no rowset. Wrapping query.");
                     return ExecuteWithHandling(WrapForOpenQuery(query), executeReader, timeout, retryCount + 1);
                 }
@@ -406,9 +406,9 @@ SELECT @result AS Result, @error AS Error;";
                 // Direct connection: ExecutionServer is already set
                 return;
             }
-            
+
             Server last = _linkedServers.ServerChain.Last();
-            
+
             // IMPORTANT: Create a COPY to avoid mutating the actual chain entry
             // The chain must preserve the original alias for query routing
             ExecutionServer = last.Copy();
