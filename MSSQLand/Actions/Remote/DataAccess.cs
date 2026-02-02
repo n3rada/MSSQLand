@@ -35,6 +35,8 @@ namespace MSSQLand.Actions.Remote
                 throw new ArgumentException(error);
             }
 
+            _enable = enable;
+
             var normalizedArgs = (string[])args.Clone();
             normalizedArgs[0] = enable ? "true" : "false";
 
