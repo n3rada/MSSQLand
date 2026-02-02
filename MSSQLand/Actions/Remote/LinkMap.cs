@@ -78,7 +78,7 @@ namespace MSSQLand.Actions.Remote
             // Separate SQL Server links (chainable) from others (queryable only)
             var sqlServerLinks = new List<DataRow>();
             var otherLinks = new List<DataRow>();
-            
+
             foreach (DataRow row in allLinkedServers.Rows)
             {
                 string provider = row["Provider"].ToString();
@@ -133,10 +133,13 @@ namespace MSSQLand.Actions.Remote
             }
 
             // Compute starting server's state hash for loop detection
-            ServerExecutionState startingState = ServerExecutionState.FromContext(
-                databaseContext.Server.Hostname, 
-                databaseContext.UserService
-            );
+            ServerExecutionState startingState = new()
+            {
+                Hostname = databaseContext.Server.Hostname,
+                MappedUser = _rootNode.MappedUser,
+                SystemUser = _rootNode.LoggedInUser,
+                IsSysadmin = _rootNode.IsSysadmin
+            };
             string startingHash = startingState.GetStateHash();
 
             // Mark starting server as explored
@@ -146,8 +149,8 @@ namespace MSSQLand.Actions.Remote
             foreach (DataRow row in sqlServerLinks)
             {
                 string remoteServer = row["Link"].ToString();
-                string localLogin = row["Local Login"] == DBNull.Value || string.IsNullOrEmpty(row["Local Login"].ToString()) 
-                    ? null 
+                string localLogin = row["Local Login"] == DBNull.Value || string.IsNullOrEmpty(row["Local Login"].ToString())
+                    ? null
                     : row["Local Login"].ToString();
 
                 // Skip if already explored (shouldn't happen at root level, but be safe)
@@ -160,13 +163,13 @@ namespace MSSQLand.Actions.Remote
                 HashSet<string> visitedInChain = new() { startingHash };
                 DatabaseContext tempContext = databaseContext.Copy();
                 List<ServerNode> currentPath = new();
-                
+
                 ExploreLinkedServer(tempContext, remoteServer, localLogin, _rootNode, currentPath, visitedInChain, currentDepth: 0);
             }
 
             // Count total chains
             int totalChains = CountLeafNodes(_rootNode);
-            
+
             if (totalChains == 0)
             {
                 Logger.Warning("No accessible linked server chains found.");
@@ -247,7 +250,13 @@ namespace MSSQLand.Actions.Remote
                 Logger.TraceNested($"Logged in to server '{targetServer}' (actual: {actualServerName}) as: '{remoteLoggedInUser}' [{mappedUser}]");
 
                 // Create state hash for loop detection
-                ServerExecutionState currentState = ServerExecutionState.FromContext(targetServer, databaseContext.UserService);
+                ServerExecutionState currentState = new()
+                {
+                    Hostname = targetServer,
+                    MappedUser = mappedUser,
+                    SystemUser = remoteLoggedInUser,
+                    IsSysadmin = databaseContext.UserService.IsAdmin()
+                };
                 string stateHash = currentState.GetStateHash();
 
                 // Check for loop in THIS chain path only
@@ -353,7 +362,7 @@ namespace MSSQLand.Actions.Remote
         {
             if (node.Children.Count == 0)
                 return 1;
-            
+
             int count = 0;
             foreach (var child in node.Children)
             {
@@ -370,7 +379,7 @@ namespace MSSQLand.Actions.Remote
             // Root node - show privilege marker if sysadmin
             string rootPrivilege = _rootNode.IsSysadmin ? " ★" : "";
             Console.WriteLine($"{_rootNode.Alias} ({_rootNode.LoggedInUser} [{_rootNode.MappedUser}]){rootPrivilege}");
-            
+
             if (_rootNode.NonSqlLinks.Count > 0)
             {
                 Console.WriteLine($"    └── [OPENQUERY] {string.Join(", ", _rootNode.NonSqlLinks)}");
@@ -445,7 +454,7 @@ namespace MSSQLand.Actions.Remote
             foreach (var chain in _allChains)
             {
                 if (chain.Count == 0) continue;
-                
+
                 var lastNode = chain[chain.Count - 1];
                 if (lastNode.IsSysadmin)
                     privilegedChains.Add(chain);
@@ -505,10 +514,10 @@ namespace MSSQLand.Actions.Remote
             {
                 roleInfo = $" [{string.Join(", ", lastNode.ServerRoles)}]";
             }
-            
+
             LinkedServers linkedServers = new LinkedServers(serverList.ToArray());
             string chainArg = linkedServers.GetChainArguments();
-            
+
             Logger.InfoNested($"{endpoint} {userContext}{roleInfo}: -l \"{chainArg}\"");
         }
 
@@ -547,17 +556,17 @@ WHERE type = 'R' AND is_fixed_role = 1 AND name != 'public'
         private static DataTable QueryAllLinkedServers(DatabaseContext databaseContext)
         {
             string query = @"
-SELECT 
-    srv.name AS [Link], 
+SELECT
+    srv.name AS [Link],
     srv.provider AS [Provider],
     srv.product AS [Product],
     srv.data_source AS [DataSource],
     prin.name AS [Local Login],
     ll.remote_name AS [Remote Login]
 FROM master.sys.servers srv
-LEFT JOIN master.sys.linked_logins ll 
+LEFT JOIN master.sys.linked_logins ll
     ON srv.server_id = ll.server_id
-LEFT JOIN master.sys.server_principals prin 
+LEFT JOIN master.sys.server_principals prin
     ON ll.local_principal_id = prin.principal_id
 WHERE srv.is_linked = 1
 ORDER BY srv.provider, srv.name;";

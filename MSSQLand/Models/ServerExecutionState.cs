@@ -1,15 +1,15 @@
 // MSSQLand/Models/ServerExecutionState.cs
 
+using System;
 using MSSQLand.Services;
 using MSSQLand.Utilities;
-using System;
 
 namespace MSSQLand.Models
 {
     /// <summary>
     /// Represents the runtime execution state of a SQL Server connection.
     /// Used for loop detection in linked server chains by tracking the exact execution context.
-    /// 
+    ///
     /// This is separate from Server (which represents connection configuration) to maintain
     /// clean separation of concerns: Server = static config, ServerExecutionState = runtime state.
     /// </summary>
@@ -38,26 +38,6 @@ namespace MSSQLand.Models
         public bool IsSysadmin { get; set; }
 
         /// <summary>
-        /// Factory method to create a ServerExecutionState from a DatabaseContext.
-        /// Automatically queries the current user info and admin status.
-        /// </summary>
-        /// <param name="hostname">The server hostname</param>
-        /// <param name="userService">The UserService to query current execution state</param>
-        /// <returns>A new ServerExecutionState representing the current execution context</returns>
-        public static ServerExecutionState FromContext(string hostname, UserService userService)
-        {
-            var (mappedUser, systemUser) = userService.GetInfo();
-            
-            return new ServerExecutionState
-            {
-                Hostname = hostname,
-                MappedUser = mappedUser,
-                SystemUser = systemUser,
-                IsSysadmin = userService.IsAdmin()
-            };
-        }
-
-        /// <summary>
         /// Computes a unique state hash for loop detection.
         /// Hash is based on: Hostname, MappedUser, SystemUser, and IsSysadmin.
         /// </summary>
@@ -68,7 +48,7 @@ namespace MSSQLand.Models
                                 $"{MappedUser?.ToUpperInvariant() ?? ""}" +
                                 $"{SystemUser?.ToUpperInvariant() ?? ""}" +
                                 $"{IsSysadmin}";
-            
+
             return Misc.ComputeSHA256(stateString);
         }
 
