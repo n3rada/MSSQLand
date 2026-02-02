@@ -25,7 +25,7 @@ namespace MSSQLand.Utilities
                 return;
             }
 
-            if (topic.Equals("credentials", StringComparison.OrdinalIgnoreCase) || 
+            if (topic.Equals("credentials", StringComparison.OrdinalIgnoreCase) ||
                 topic.Equals("creds", StringComparison.OrdinalIgnoreCase))
             {
                 ShowCredentialTypes();
@@ -55,11 +55,11 @@ namespace MSSQLand.Utilities
             }
 
             Console.WriteLine("Available Actions\n");
-            
+
             foreach (var group in groupedActions.OrderBy(g => g.Key))
             {
                 Console.WriteLine($"  [{group.Key}]");
-                
+
                 // Display max 6 actions per line
                 var actionsList = group.Value.OrderBy(a => a).ToList();
                 for (int i = 0; i < actionsList.Count; i += 6)
@@ -108,7 +108,7 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t--trace                Enable trace logging\n");
 
             Console.WriteLine("Discovery (no authentication required):");
-            Console.WriteLine("\t-findsql [domain]      Find SQL Servers via AD SPNs (add --gc for Global Catalog)");
+            Console.WriteLine("\t-findsql [domain]      Find SQL Servers via LDAP query (add --gc for Global Catalog)");
             Console.WriteLine("\t<host> -browse         Query SQL Browser service (UDP 1434)");
             Console.WriteLine("\t<host> -portscan       Scan for SQL Server ports with TDS validation\n");
 
@@ -119,7 +119,7 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t--version              Show version information");
 
             Console.WriteLine();
-        } 
+        }
 
         /// <summary>
         /// Displays help for a specific action.
@@ -169,12 +169,12 @@ namespace MSSQLand.Utilities
             Console.WriteLine("Available Credential Types\n");
 
             var credentials = Services.Credentials.CredentialsFactory.GetAvailableCredentials();
-            
+
             foreach (var credential in credentials.Values.OrderBy(c => c.Name))
             {
                 Console.WriteLine($"  [{credential.Name}]");
                 Console.WriteLine($"\t{credential.Description}");
-                
+
                 if (credential.RequiredArguments.Any())
                 {
                     Console.WriteLine($"\tRequired: {string.Join(", ", credential.RequiredArguments)}");
