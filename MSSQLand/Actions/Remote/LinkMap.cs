@@ -133,14 +133,12 @@ namespace MSSQLand.Actions.Remote
             }
 
             // Compute starting server's state hash for loop detection
-            ServerExecutionState startingState = new()
-            {
-                Hostname = databaseContext.Server.Hostname,
-                MappedUser = _rootNode.MappedUser,
-                SystemUser = _rootNode.LoggedInUser,
-                IsSysadmin = _rootNode.IsSysadmin
-            };
-            string startingHash = startingState.GetStateHash();
+            string startingHash = BuildStateHash(
+                databaseContext.Server.Hostname,
+                _rootNode.MappedUser,
+                _rootNode.LoggedInUser,
+                _rootNode.IsSysadmin
+            );
 
             // Mark starting server as explored
             _globallyExploredServers.Add(databaseContext.Server.Hostname);
@@ -250,14 +248,8 @@ namespace MSSQLand.Actions.Remote
                 Logger.TraceNested($"Logged in to server '{targetServer}' (actual: {actualServerName}) as: '{remoteLoggedInUser}' [{mappedUser}]");
 
                 // Create state hash for loop detection
-                ServerExecutionState currentState = new()
-                {
-                    Hostname = targetServer,
-                    MappedUser = mappedUser,
-                    SystemUser = remoteLoggedInUser,
-                    IsSysadmin = databaseContext.UserService.IsAdmin()
-                };
-                string stateHash = currentState.GetStateHash();
+                bool isSysadmin = databaseContext.UserService.IsAdmin();
+                string stateHash = BuildStateHash(targetServer, mappedUser, remoteLoggedInUser, isSysadmin);
 
                 // Check for loop in THIS chain path only
                 if (visitedInChain.Contains(stateHash))
@@ -273,10 +265,10 @@ namespace MSSQLand.Actions.Remote
                 {
                     Alias = targetServer,
                     ActualName = actualServerName,
-                    LoggedInUser = currentState.SystemUser,
-                    MappedUser = currentState.MappedUser,
+                    LoggedInUser = remoteLoggedInUser,
+                    MappedUser = mappedUser,
                     ImpersonatedUser = impersonatedUser,
-                    IsSysadmin = currentState.IsSysadmin,
+                    IsSysadmin = isSysadmin,
                     ServerRoles = GetUserServerRoles(databaseContext)
                 };
 
@@ -572,6 +564,16 @@ WHERE srv.is_linked = 1
 ORDER BY srv.provider, srv.name;";
 
             return databaseContext.QueryService.ExecuteTable(query);
+        }
+
+        private static string BuildStateHash(string hostname, string mappedUser, string systemUser, bool isSysadmin)
+        {
+            string stateString = $"{hostname?.ToUpperInvariant() ?? ""}" +
+                                $"{mappedUser?.ToUpperInvariant() ?? ""}" +
+                                $"{systemUser?.ToUpperInvariant() ?? ""}" +
+                                $"{isSysadmin}";
+
+            return Misc.ComputeSHA256(stateString);
         }
     }
 }
