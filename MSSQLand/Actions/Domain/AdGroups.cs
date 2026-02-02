@@ -18,7 +18,7 @@ namespace MSSQLand.Actions.Domain
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Retrieving Active Directory groups with SQL Server access");
+            Logger.TaskNested("Retrieving Active Directory groups with SQL Server access");
 
             try
             {
@@ -35,7 +35,7 @@ namespace MSSQLand.Actions.Domain
                 Logger.Info("Checking Active Directory group memberships via IS_MEMBER");
                 Logger.InfoNested("Only showing AD domain groups that exist as SQL Server principals");
                 Logger.InfoNested("For all Windows token groups (BUILTIN, NT AUTHORITY, etc.), use 'authtoken' action");
-                
+
                 string groupsQuery = @"
                     SELECT name
                     FROM master.sys.server_principals
@@ -80,7 +80,7 @@ namespace MSSQLand.Actions.Domain
 
                 // Query additional details for each group
                 var groups = new List<Dictionary<string, string>>();
-                
+
                 foreach (string groupName in groupNames)
                 {
                     try
@@ -89,9 +89,9 @@ namespace MSSQLand.Actions.Domain
                             SELECT type_desc, is_disabled
                             FROM master.sys.server_principals
                             WHERE name = '{groupName.Replace("'", "''")}';";
-                        
+
                         var details = databaseContext.QueryService.ExecuteTable(detailsQuery);
-                        
+
                         if (details.Rows.Count > 0)
                         {
                             groups.Add(new Dictionary<string, string>
