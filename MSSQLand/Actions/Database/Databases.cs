@@ -26,15 +26,15 @@ namespace MSSQLand.Actions.Database
                     d.name,
                     CAST(HAS_DBACCESS(d.name) AS BIT) AS Accessible,
                     d.is_trustworthy_on AS Trustworthy,
+                    d.state_desc AS [State],
+                    d.user_access_desc AS [Access],
+                    d.is_read_only AS [ReadOnly],
+                    d.recovery_model_desc AS [Recovery Model],
                     SUSER_SNAME(d.owner_sid) AS Owner,
-                    d.create_date AS crdate
+                    d.create_date AS [Created]
                 FROM sys.databases d
-                WHERE d.state = 0
                 ORDER BY HAS_DBACCESS(d.name) DESC, d.create_date DESC;"
             );
-
-            int accessibleCount = allDatabases.AsEnumerable().Count(r => Convert.ToBoolean(r["Accessible"]));
-            int inaccessibleCount = allDatabases.Rows.Count - accessibleCount;
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(allDatabases));
 
