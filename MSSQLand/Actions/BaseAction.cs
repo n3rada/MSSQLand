@@ -11,42 +11,58 @@ namespace MSSQLand.Actions
 {
     /// <summary>
     /// Abstract base class for all actions, enforcing validation and execution logic.
-    /// 
+    ///
     /// ARGUMENT BINDING:
     /// =================
-    /// 
+    ///
     /// DEFAULT BEHAVIOR (auto-binding):
     /// --------------------------------
     /// Decorate fields with [ArgumentMetadata] and let the base class handle binding:
-    /// 
+    ///
     ///    [ArgumentMetadata(Position = 0, Required = true, Description = "Table name")]
     ///    private string _tableName;
-    /// 
+    ///
     ///    [ArgumentMetadata(Position = 1, ShortName = "l", LongName = "limit", Description = "Row limit")]
     ///    private int _limit = 25;  // Use typed fields, not string + parsing
-    /// 
+    ///
     /// If no custom validation is needed, you don't need to override ValidateArguments().
     /// The base class will call BindArguments() automatically.
-    /// 
+    ///
     /// CUSTOM VALIDATION:
     /// ------------------
     /// Override ValidateArguments() only when additional validation is required:
-    /// 
+    ///
     ///    public override void ValidateArguments(string[] args)
     ///    {
     ///        BindArguments(args);  // Always call first
     ///        if (_limit &lt; 0) throw new ArgumentException("Limit must be positive");
     ///    }
-    /// 
+    ///
     /// MANUAL PARSING (for complex cases):
     /// -----------------------------------
     /// Use ParseActionArguments(), GetNamedArgument(), GetPositionalArgument()
     /// when auto-binding is insufficient (e.g., FQTN parsing, joined arguments).
     /// </summary>
-    
+
     [AttributeUsage(AttributeTargets.Field)]
     public abstract class BaseAction : Attribute
     {
+        private static readonly Dictionary<string, bool> ToggleActionAliases = new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "+", true },
+            { "add", true },
+            { "on", true },
+            { "1", true },
+            { "true", true },
+            { "enable", true },
+            { "-", false },
+            { "del", false },
+            { "off", false },
+            { "0", false },
+            { "false", false },
+            { "disable", false }
+        };
+
 
         /// <summary>
         /// Validates the action arguments passed as string array (argparse-style).
@@ -69,7 +85,7 @@ namespace MSSQLand.Actions
         /// <summary>
         /// Parse action arguments using modern CLI patterns (argparse-style).
         /// Supports: positional args, -flag value, --long-flag value, -flag:value, --long-flag=value
-        /// 
+        ///
         /// Used internally by BindArguments(). Only use directly for complex custom parsing.
         /// </summary>
         /// <param name="args">The action arguments array.</param>
@@ -124,10 +140,10 @@ namespace MSSQLand.Actions
                     {
                         // Flag without inline value: -flag value or --flag value
                         flagName = arg.StartsWith("--") ? arg.Substring(2) : arg.Substring(1);
-                        
+
                         // Check if this flag is boolean
                         bool isBooleanFlag = booleanFlags.Contains(flagName);
-                        
+
                         if (i + 1 < args.Length)
                         {
                             string nextArg = args[i + 1];
@@ -157,16 +173,16 @@ namespace MSSQLand.Actions
                             {
                                 // For non-boolean flags, consume next arg as value unless it looks like a flag.
                                 // A flag is: starts with -- OR starts with - followed by a letter (not digits/special chars)
-                                bool looksLikeFlag = nextArg.StartsWith("--") || 
+                                bool looksLikeFlag = nextArg.StartsWith("--") ||
                                                    (nextArg.StartsWith("-") && nextArg.Length >= 2 && char.IsLetter(nextArg[1]));
-                                
+
                                 if (!looksLikeFlag)
                                 {
                                     flagValue = args[++i];
                                 }
                             }
                         }
-                        
+
                         // Only add to dictionary if:
                         // 1. It's a boolean flag (can be without value)
                         // 2. It's a non-boolean flag WITH a value
@@ -205,6 +221,37 @@ namespace MSSQLand.Actions
             }
 
             return (named, positional);
+        }
+
+        /// <summary>
+        /// Parses a standard enable/disable toggle value.
+        /// Accepts: +/-, on/off, 1/0, true/false, enable/disable, add/del.
+        /// </summary>
+        /// <param name="value">Input value to parse.</param>
+        /// <param name="enabled">Parsed boolean value.</param>
+        /// <param name="error">Error message when parsing fails.</param>
+        /// <returns>True if parsed successfully; otherwise false.</returns>
+        protected static bool TryParseToggleAction(string value, out bool enabled, out string error)
+        {
+            enabled = false;
+            error = null;
+
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                error = "Action is required: enable/disable.";
+                return false;
+            }
+
+            string actionArg = value.Trim();
+            if (ToggleActionAliases.TryGetValue(actionArg, out enabled))
+            {
+                return true;
+            }
+
+            var enableAliases = string.Join(", ", ToggleActionAliases.Where(kv => kv.Value).Select(kv => $"'{kv.Key}'"));
+            var disableAliases = string.Join(", ", ToggleActionAliases.Where(kv => !kv.Value).Select(kv => $"'{kv.Key}'"));
+            error = $"Invalid action: '{actionArg}'. Valid actions are: {enableAliases} (to enable) or {disableAliases} (to disable).";
+            return false;
         }
 
         /// <summary>
@@ -311,7 +358,7 @@ namespace MSSQLand.Actions
             if (targetType == typeof(bool))
             {
                 // Handle common boolean representations
-                if (string.IsNullOrEmpty(value) || 
+                if (string.IsNullOrEmpty(value) ||
                     value.Equals("true", StringComparison.OrdinalIgnoreCase) ||
                     value.Equals("1", StringComparison.OrdinalIgnoreCase) ||
                     value.Equals("yes", StringComparison.OrdinalIgnoreCase))

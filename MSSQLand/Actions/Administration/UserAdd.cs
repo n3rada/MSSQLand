@@ -22,46 +22,7 @@ namespace MSSQLand.Actions.Administration
 
         public override void ValidateArguments(string[] args)
         {
-            if (args == null || args.Length == 0)
-            {
-                return;
-            }
-
-            // Parse both named and positional arguments using modern argparse-style
-            var (named, positional) = ParseActionArguments(args);
-
-            // Priority 1: Named arguments (most explicit)
-            // Support both short (-u) and long (--username) forms
-            if (named.TryGetValue("u", out string username) || named.TryGetValue("username", out username))
-            {
-                _username = username;
-            }
-            
-            if (named.TryGetValue("p", out string password) || named.TryGetValue("password", out password))
-            {
-                _password = password;
-            }
-            
-            if (named.TryGetValue("r", out string role) || named.TryGetValue("role", out role))
-            {
-                _role = role;
-            }
-
-            // Priority 2: Positional arguments (fallback if no named args)
-            if (!named.ContainsKey("u") && !named.ContainsKey("username") && positional.Count > 0)
-            {
-                _username = positional[0];
-            }
-
-            if (!named.ContainsKey("p") && !named.ContainsKey("password") && positional.Count > 1)
-            {
-                _password = positional[1];
-            }
-
-            if (!named.ContainsKey("r") && !named.ContainsKey("role") && positional.Count > 2)
-            {
-                _role = positional[2];
-            }
+            BindArguments(args);
 
             // Validate inputs
             if (string.IsNullOrWhiteSpace(_username))
@@ -90,7 +51,7 @@ namespace MSSQLand.Actions.Administration
             {
                 // Escape single quotes in password
                 string escapedPassword = _password.Replace("'", "''");
-                
+
                 // Try to create new login
                 string createLoginQuery = $@"CREATE LOGIN [{_username}] WITH PASSWORD = '{escapedPassword}', CHECK_POLICY = OFF, CHECK_EXPIRATION = OFF;";
                 databaseContext.QueryService.ExecuteNonProcessing(createLoginQuery);
@@ -100,7 +61,7 @@ namespace MSSQLand.Actions.Administration
             {
                 // Login exists, update password instead
                 Logger.Warning($"SQL login '{_username}' already exists. Updating password.");
-                
+
                 string escapedPassword = _password.Replace("'", "''");
                 string alterPasswordQuery = $@"ALTER LOGIN [{_username}] WITH PASSWORD = '{escapedPassword}';";
                 databaseContext.QueryService.ExecuteNonProcessing(alterPasswordQuery);
@@ -111,10 +72,10 @@ namespace MSSQLand.Actions.Administration
             {
                 // Add the login to the specified server role
                 Logger.TaskNested($"Adding '{_username}' to {_role} server role.");
-                
+
                 string addRoleToNewUserQuery = $"ALTER SERVER ROLE [{_role}] ADD MEMBER [{_username}];";
                 databaseContext.QueryService.ExecuteNonProcessing(addRoleToNewUserQuery);
-                
+
                 Logger.Success($"'{_username}' added to {_role} role successfully.");
 
                 return true;
@@ -126,7 +87,7 @@ namespace MSSQLand.Actions.Administration
                     Logger.Info($"'{_username}' is already a member of {_role} role.");
                     return true;
                 }
-                
+
                 if (ex.Message.Contains("permission") || ex.Message.Contains("denied"))
                 {
                     Logger.Error($"Insufficient privileges: {ex.Message}");

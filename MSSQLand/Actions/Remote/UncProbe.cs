@@ -18,12 +18,19 @@ namespace MSSQLand.Actions.Remote
         /// <param name="args">The UNC path.</param>
         public override void ValidateArguments(string[] args)
         {
-            if (args == null || args.Length == 0)
+            BindArguments(args);
+
+            if (args != null && args.Length > 1)
             {
-                throw new ArgumentException("SMB action requires targeted UNC path (e.g., \\\\172.16.118.218\\shared).");
+                _uncPath = string.Join(" ", args).Trim();
             }
 
-            string path = string.Join(" ", args).Trim();
+            if (string.IsNullOrWhiteSpace(_uncPath))
+            {
+                throw new ArgumentException(@"UNC path required.");
+            }
+
+            string path = _uncPath.Trim();
 
             // Auto-prepend \\ if missing
             if (!path.StartsWith("\\\\"))

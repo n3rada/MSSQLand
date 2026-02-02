@@ -3,8 +3,6 @@
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace MSSQLand.Actions.Remote
 {
@@ -14,28 +12,9 @@ namespace MSSQLand.Actions.Remote
     /// </summary>
     internal class DataAccess : BaseAction
     {
-        private enum DataAccessMode { Enable, Disable }
-        
-        // Mapping of all accepted aliases to their normalized action
-        private static readonly Dictionary<string, DataAccessMode> ActionAliases = new(StringComparer.OrdinalIgnoreCase)
-        {
-            { "+", DataAccessMode.Enable },
-            { "add", DataAccessMode.Enable },
-            { "on", DataAccessMode.Enable },
-            { "1", DataAccessMode.Enable },
-            { "true", DataAccessMode.Enable },
-            { "enable", DataAccessMode.Enable },
-            { "-", DataAccessMode.Disable },
-            { "del", DataAccessMode.Disable },
-            { "off", DataAccessMode.Disable },
-            { "0", DataAccessMode.Disable },
-            { "false", DataAccessMode.Disable },
-            { "disable", DataAccessMode.Disable }
-        };
-        
         [ArgumentMetadata(Position = 0, Required = true, Description = "Action: enable/disable (or aliases: +/-, on/off, 1/0, true/false, add/del)")]
-        private DataAccessMode _action;
-        
+        private bool _enable;
+
         [ArgumentMetadata(Position = 1, Required = true, Description = "Linked server name")]
         private string _linkedServerName = "";
 
@@ -51,23 +30,21 @@ namespace MSSQLand.Actions.Remote
                 throw new ArgumentException("Data access action requires exactly two arguments: action and linked server name.");
             }
 
-            // Map action alias to enum value
-            string actionArg = args[0].Trim();
-            
-            if (!ActionAliases.TryGetValue(actionArg, out _action))
+            if (!TryParseToggleAction(args[0], out bool enable, out string error))
             {
-                var enableAliases = string.Join(", ", ActionAliases.Where(kv => kv.Value == DataAccessMode.Enable).Select(kv => $"'{kv.Key}'"));
-                var disableAliases = string.Join(", ", ActionAliases.Where(kv => kv.Value == DataAccessMode.Disable).Select(kv => $"'{kv.Key}'"));
-                throw new ArgumentException($"Invalid action: '{actionArg}'. Valid actions are: {enableAliases} (to enable) or {disableAliases} (to disable).");
+                throw new ArgumentException(error);
             }
 
-            _linkedServerName = args[1].Trim();
+            var normalizedArgs = (string[])args.Clone();
+            normalizedArgs[0] = enable ? "true" : "false";
+
+            BindArguments(normalizedArgs);
         }
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            string dataAccessValue = _action == DataAccessMode.Enable ? "true" : "false";
-            string actionVerb = _action == DataAccessMode.Enable ? "Enabling" : "Disabling";
+            string dataAccessValue = _enable ? "true" : "false";
+            string actionVerb = _enable ? "Enabling" : "Disabling";
 
             Logger.TaskNested($"{actionVerb} data access on linked server '{_linkedServerName}'");
 
@@ -75,9 +52,9 @@ namespace MSSQLand.Actions.Remote
 
             if (success)
             {
-                string status = _action == DataAccessMode.Enable ? "enabled" : "disabled";
+                string status = _enable ? "enabled" : "disabled";
                 Logger.Success($"Data access successfully {status} on '{_linkedServerName}'");
-                if (_action == DataAccessMode.Enable)
+                if (_enable)
                 {
                     Logger.SuccessNested("OPENQUERY operations are now available for this server.");
                 }

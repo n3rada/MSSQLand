@@ -38,6 +38,8 @@ namespace MSSQLand.Actions.Remote
                     "  Existing server:  adsiquery <server> <fqdn> \"<ldap query>\"");
             }
 
+            BindArguments(args);
+
             // Argument resolution is positionally ambiguous — the first arg could be
             // a domain FQDN or a linked server name. Disambiguate by checking for a
             // dot: FQDNs contain dots, linked server names do not.
@@ -46,6 +48,7 @@ namespace MSSQLand.Actions.Remote
                 // adsiquery <fqdn> <ldap query>
                 _usingTempServer = true;
                 _domainFqdn = args[0];
+                _adsiServerName = "";
 
                 if (args.Length < 2)
                     throw new ArgumentException("LDAP query is required");

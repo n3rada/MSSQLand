@@ -16,23 +16,34 @@ namespace MSSQLand.Actions.Domain
         [ArgumentMetadata(Position = 0, Required = true, Description = "AD group name")]
         private string _groupName = "";
 
-        [ExcludeFromArguments]
+        [ArgumentMetadata(LongName = "openquery", Description = "Use OPENQUERY method with ADSI fallback")]
         private bool _useOpenQuery = false;
 
         public override void ValidateArguments(string[] args)
         {
-            if (args == null || args.Length == 0)
+            BindArguments(args);
+
+            if (string.IsNullOrWhiteSpace(_groupName))
             {
                 throw new ArgumentException("Group name is required");
             }
 
-            string[] parts = args;
-            _groupName = parts[0].Trim();
-
-            // Check for openquery flag
-            if (parts.Length > 1 && parts[1].Trim().Equals("openquery", StringComparison.OrdinalIgnoreCase))
+            // Back-compat: allow positional "openquery" as second argument
+            if (args != null && args.Length > 1)
             {
-                _useOpenQuery = true;
+                if (args.Length > 2)
+                {
+                    throw new ArgumentException("Too many arguments. Usage: ad-members <DOMAIN\\Group> [openquery]");
+                }
+
+                if (args[1].Trim().Equals("openquery", StringComparison.OrdinalIgnoreCase))
+                {
+                    _useOpenQuery = true;
+                }
+                else
+                {
+                    throw new ArgumentException("Invalid argument. Use 'openquery' as the optional second argument.");
+                }
             }
 
             // Ensure the group name contains a backslash (domain separator)
@@ -48,7 +59,7 @@ namespace MSSQLand.Actions.Domain
 
             // Try xp_logininfo first (most common method)
             DataTable result = TryXpLoginInfo(databaseContext);
-            
+
             if (result != null)
             {
                 return result;
@@ -59,7 +70,7 @@ namespace MSSQLand.Actions.Domain
             {
                 Logger.Info("Attempting OPENQUERY method with ADSI...");
                 result = TryOpenQueryAdsi(databaseContext);
-                
+
                 if (result != null)
                 {
                     return result;
@@ -163,7 +174,7 @@ namespace MSSQLand.Actions.Domain
             catch (Exception ex)
             {
                 Logger.Warning($"OPENQUERY/ADSI method failed: {ex.Message}");
-                
+
                 return null;
             }
         }

@@ -15,12 +15,19 @@ namespace MSSQLand.Actions.Administration
 
         public override void ValidateArguments(string[] args)
         {
+            BindArguments(args);
+
             if (args == null || args.Length == 0)
             {
                 throw new ArgumentException("Please specify a session ID or 'all' as an argument.");
             }
 
-            _target = string.Join(" ", args).Trim();
+            if (args.Length != 1)
+            {
+                throw new ArgumentException("Provide exactly one argument: a session ID or 'all'.");
+            }
+
+            _target = _target.Trim();
 
             // Verify target is "all" or a valid integer
             if (_target.ToLower() != "all" && (!Int16.TryParse(_target, out Int16 sessionId) || sessionId <= 0))
@@ -35,7 +42,7 @@ namespace MSSQLand.Actions.Administration
             Logger.Info($"Preparing to kill session(s) for target: {_target}");
 
             string allSessionsQuery = @"
-            SELECT 
+            SELECT
                 r.session_id AS SessionID,
                 r.request_id AS RequestID,
                 r.start_time AS StartTime,

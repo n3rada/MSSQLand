@@ -15,30 +15,31 @@ namespace MSSQLand.Actions.Administration
         [ArgumentMetadata(Position = 0, ShortName = "o", LongName = "option", Required = false, Description = "Configuration option name (omit to list all)")]
         private string _optionName = null;
 
-        [ArgumentMetadata(Position = 1, ShortName = "v", LongName = "value", Required = false, Description = "Value to set (0=disable, 1=enable)")]
+        [ArgumentMetadata(Position = 1, ShortName = "v", LongName = "value", Required = false, Description = "Value to set (0/1 or enable/disable)")]
+        private string _valueRaw = null;
+
+        [ExcludeFromArguments]
         private int _value = -1;
 
         public override void ValidateArguments(string[] args)
         {
-            var (namedArgs, positionalArgs) = ParseActionArguments(args);
-            
-            // Parse option name (optional)
-            _optionName = GetPositionalArgument(positionalArgs, 0, null);
-            if (string.IsNullOrEmpty(_optionName))
+            BindArguments(args);
+
+            if (string.IsNullOrWhiteSpace(_valueRaw))
             {
-                _optionName = GetNamedArgument(namedArgs, "option", GetNamedArgument(namedArgs, "o", null));
+                _value = -1;
             }
-            
-            // Parse value (optional)
-            string valueStr = GetPositionalArgument(positionalArgs, 1, "-1");
-            if (valueStr == "-1")
+            else if (int.TryParse(_valueRaw, out int parsedValue))
             {
-                valueStr = GetNamedArgument(namedArgs, "value", GetNamedArgument(namedArgs, "v", "-1"));
+                _value = parsedValue;
             }
-            
-            if (!int.TryParse(valueStr, out _value))
+            else if (TryParseToggleAction(_valueRaw, out bool enabled, out string error))
             {
-                throw new ArgumentException($"Invalid value: {valueStr}. Must be a number.");
+                _value = enabled ? 1 : 0;
+            }
+            else
+            {
+                throw new ArgumentException(error);
             }
 
             // Validation
@@ -68,7 +69,7 @@ namespace MSSQLand.Actions.Administration
             {
                 Logger.TaskNested($"Checking status of '{_optionName}'");
                 int status = databaseContext.ConfigService.GetConfigurationStatus(_optionName);
-                
+
                 if (status < 0)
                 {
                     Logger.Warning($"Configuration '{_optionName}' not found or inaccessible");
@@ -124,12 +125,12 @@ namespace MSSQLand.Actions.Administration
                 // Fetch all configurations at once
                 string query = "SELECT name, value_in_use FROM sys.configurations ORDER BY name;";
                 DataTable configsTable = databaseContext.QueryService.ExecuteTable(query);
-                
+
                 foreach (DataRow row in configsTable.Rows)
                 {
                     string name = row["name"].ToString();
                     int status = Convert.ToInt32(row["value_in_use"]);
-                    
+
                     results.Add(new Dictionary<string, object>
                     {
                         { "Feature", name },
