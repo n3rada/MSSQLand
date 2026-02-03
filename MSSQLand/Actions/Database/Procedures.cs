@@ -212,6 +212,16 @@ namespace MSSQLand.Actions.Database
             Console.WriteLine(OutputFormatter.ConvertDataTable(sortedProcedures));
 
             Logger.Info($"Total: {sortedProcedures.Rows.Count} stored procedure(s) found");
+
+            // Show example using the first procedure
+            if (sortedProcedures.Rows.Count > 0)
+            {
+                string exampleSchema = sortedProcedures.Rows[0]["Schema"].ToString();
+                string exampleName = sortedProcedures.Rows[0]["Name"].ToString();
+                Logger.InfoNested($"Use 'procedures read {exampleSchema}.{exampleName}' to view definition");
+            }
+
+            Logger.NewLine();
             Logger.Warning("Execution context depends on the statements used inside the stored procedure.");
             Logger.WarningNested("Dynamic SQL executed with EXEC or sp_executesql runs under caller permissions by default.");
             Logger.WarningNested("Static SQL inside a procedure uses ownership chaining, which may allow operations (e.g., SELECT) that the caller is not directly permitted to perform.");
