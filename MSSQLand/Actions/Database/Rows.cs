@@ -69,16 +69,64 @@ namespace MSSQLand.Actions.Database
 
             // Build the qualified table name for the query
             string targetTable = Misc.BuildQualifiedTableName(database, schema, table);
-            
-            Logger.TaskNested($"Retrieving rows from {targetTable}");
-            
-            if (_limit > 0)
+
+            // Get approximate row count from sys.partitions (fast metadata lookup)
+            string schemaFilter = string.IsNullOrEmpty(schema) ? "dbo" : schema;
+            string countQuery = $@"
+SELECT SUM(p.rows)
+FROM [{database}].sys.partitions p
+JOIN [{database}].sys.objects o ON p.object_id = o.object_id
+JOIN [{database}].sys.schemas s ON o.schema_id = s.schema_id
+WHERE o.name = '{table.Replace("'", "''")}'
+  AND s.name = '{schemaFilter.Replace("'", "''")}'
+  AND p.index_id IN (0, 1);";
+
+            long totalRows = 0;
+            try
             {
+                object result = databaseContext.QueryService.ExecuteScalar(countQuery);
+                if (result != null && result != DBNull.Value)
+                {
+                    totalRows = Convert.ToInt64(result);
+                }
+            }
+            catch (Exception)
+            {
+                // Ignore count errors, continue without row count
+                Logger.Warning("Could not retrieve row count metadata.");
+            }
+
+            Logger.TaskNested($"Retrieving rows from {targetTable}");
+
+            // Intelligently decide whether to use TOP
+            bool useTop = _limit > 0 && _limit < totalRows;
+
+            // Display appropriate message based on limit and row count
+            if (_limit == 0)
+            {
+                // Unlimited mode
+                if (totalRows > 0)
+                    Logger.TaskNested($"Retrieving all {totalRows:N0} rows");
+            }
+            else if (totalRows == 0)
+            {
+                // Limited mode, no count info
                 Logger.TaskNested($"Limiting to {_limit} row(s)");
                 Logger.TaskNested("Use --all to retrieve all rows");
             }
+            else if (useTop)
+            {
+                // Limited mode, applying TOP
+                Logger.TaskNested($"Limiting to {_limit} row(s) over {totalRows:N0}");
+                Logger.TaskNested("Use --all to retrieve all rows");
+            }
+            else
+            {
+                // Limited mode, but limit exceeds total
+                Logger.TaskNested($"Retrieving all {totalRows:N0} rows (limit {_limit} exceeds total)");
+            }
 
-            string topClause = _limit > 0 ? $"TOP ({_limit}) " : "";
+            string topClause = useTop ? $"TOP ({_limit}) " : "";
             DataTable rows;
 
             try
@@ -92,7 +140,7 @@ namespace MSSQLand.Actions.Database
                 // Error 9514: XML data type not supported in distributed queries
                 // Fall back to explicit column list with XML columns cast to NVARCHAR(MAX)
                 Logger.Warning("XML columns detected - retrying with CAST to NVARCHAR(MAX)");
-                
+
                 string columnList = BuildColumnListWithXmlCast(databaseContext, database, schema, table);
                 string query = $"SELECT {topClause}{columnList} FROM {targetTable};";
                 rows = databaseContext.QueryService.ExecuteTable(query);
@@ -119,8 +167,8 @@ FROM [{database}].sys.columns c
 JOIN [{database}].sys.types t ON c.user_type_id = t.user_type_id
 JOIN [{database}].sys.objects o ON c.object_id = o.object_id
 JOIN [{database}].sys.schemas s ON o.schema_id = s.schema_id
-WHERE o.name = '{table.Replace("'", "''")}' 
-  AND s.name = '{schemaFilter.Replace("'", "''")}'  
+WHERE o.name = '{table.Replace("'", "''")}'
+  AND s.name = '{schemaFilter.Replace("'", "''")}'
 ORDER BY c.column_id;";
 
             DataTable columnsTable = databaseContext.QueryService.ExecuteTable(columnQuery);
