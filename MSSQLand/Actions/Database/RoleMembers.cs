@@ -10,7 +10,7 @@ namespace MSSQLand.Actions.Database
     internal class RoleMembers : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "Server role name (e.g., sysadmin, serveradmin)")]
-        private string _roleName = "sysadmin";
+        private string _roleName = string.Empty;
 
         public override object Execute(DatabaseContext databaseContext)
         {
