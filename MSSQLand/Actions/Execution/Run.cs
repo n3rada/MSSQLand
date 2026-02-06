@@ -3,9 +3,7 @@
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 
 namespace MSSQLand.Actions.Execution
 {
@@ -67,17 +65,7 @@ namespace MSSQLand.Actions.Execution
                 Logger.InfoNested($"Arguments: {_arguments}");
             }
 
-            // Check if OLE Automation is available
-            bool oleAvailable = databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1);
-
-            if (!oleAvailable)
-            {
-                Logger.Error("Cannot enable OLE Automation (no ALTER SETTINGS permission)");
-                Logger.ErrorNested("Use 'xpcmd' action if OLE Automation is unavailable");
-                return null;
-            }
-
-            Logger.Info("OLE Automation is available, using OLE method");
+            // Try execution directly - enable OLE only if needed
             return ExecuteViaOle(databaseContext, !_wait);
         }
 
@@ -89,25 +77,20 @@ namespace MSSQLand.Actions.Execution
         /// <returns>Success message or exit code information.</returns>
         private object ExecuteViaOle(DatabaseContext databaseContext, bool asyncMode)
         {
-            try
-            {
-                // Escape single quotes for SQL
-                string escapedPath = _filePath.Replace("'", "''");
-                string escapedArgs = _arguments.Replace("'", "''");
+            // Escape single quotes for SQL
+            string escapedPath = _filePath.Replace("'", "''");
+            string escapedArgs = _arguments.Replace("'", "''");
 
-                // Build the command string (always quote path for spaces)
-                string command = string.IsNullOrWhiteSpace(_arguments)
-                    ? $"\"{escapedPath}\""
-                    : $"\"{escapedPath}\" {escapedArgs}";
+            // Build the command string (always quote path for spaces)
+            string command = string.IsNullOrWhiteSpace(_arguments)
+                ? $"\"{escapedPath}\""
+                : $"\"{escapedPath}\" {escapedArgs}";
 
-                // waitOnReturn: 0 = async (don't wait), 1 = sync (wait for completion)
-                string waitParam = asyncMode ? "0" : "1";
+            // waitOnReturn: 0 = async (don't wait), 1 = sync (wait for completion)
+            string waitParam = asyncMode ? "0" : "1";
 
-                if (asyncMode)
-                {
-                    // Async mode - no exit code returned
-                    // Creates WScript.Shell object and calls Run method with waitOnReturn=0 (don't wait)
-                    string query = $@"
+            // Declare queries outside try/catch for scope access in catch block
+            string query = $@"
 DECLARE @ObjectToken INT;
 DECLARE @Result INT;
 DECLARE @ErrorSource NVARCHAR(255);
@@ -133,15 +116,7 @@ END
 EXEC sp_OADestroy @ObjectToken;
 ";
 
-                    databaseContext.QueryService.ExecuteNonProcessing(query);
-                    Logger.Success("File launched successfully via OLE (running in background)");
-                    return "Process launched in background";
-                }
-
-                // Sync mode - wait and return exit code
-                // Creates WScript.Shell object and calls Run method with waitOnReturn=1 (wait for completion)
-                // Returns the exit code from the executed process
-                string syncQuery = $@"
+            string syncQuery = $@"
 DECLARE @ObjectToken INT;
 DECLARE @Result INT;
 DECLARE @ErrorSource NVARCHAR(255);
@@ -170,6 +145,20 @@ EXEC sp_OADestroy @ObjectToken;
 SELECT @ExitCode AS ExitCode;
 ";
 
+            try
+            {
+                if (asyncMode)
+                {
+                    // Async mode - no exit code returned
+                    // Creates WScript.Shell object and calls Run method with waitOnReturn=0 (don't wait)
+                    databaseContext.QueryService.ExecuteNonProcessing(query);
+                    Logger.Success("File launched successfully via OLE (running in background)");
+                    return "Process launched in background";
+                }
+
+                // Sync mode - wait and return exit code
+                // Creates WScript.Shell object and calls Run method with waitOnReturn=1 (wait for completion)
+                // Returns the exit code from the executed process
                 DataTable result = databaseContext.QueryService.ExecuteTable(syncQuery);
 
                 if (result != null && result.Rows.Count > 0)
@@ -186,6 +175,50 @@ SELECT @ExitCode AS ExitCode;
             }
             catch (Exception ex)
             {
+                // Check if error is due to OLE being disabled
+                if (ex.Message.Contains("SQL Server blocked access to procedure") &&
+                    ex.Message.Contains("'sys.sp_OACreate'"))
+                {
+                    Logger.Warning("OLE Automation is disabled, attempting to enable it");
+
+                    if (!databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1))
+                    {
+                        Logger.Error("Cannot enable OLE Automation (no ALTER SETTINGS permission)");
+                        Logger.ErrorNested("Use 'xpcmd' action if OLE Automation is unavailable");
+                        return null;
+                    }
+
+                    // Retry execution after enabling OLE
+                    try
+                    {
+                        if (asyncMode)
+                        {
+                            databaseContext.QueryService.ExecuteNonProcessing(query);
+                            Logger.Success("File launched successfully via OLE (running in background)");
+                            return "Process launched in background";
+                        }
+                        else
+                        {
+                            DataTable retryResult = databaseContext.QueryService.ExecuteTable(syncQuery);
+                            if (retryResult != null && retryResult.Rows.Count > 0)
+                            {
+                                int exitCode = retryResult.Rows[0]["ExitCode"] != DBNull.Value
+                                    ? Convert.ToInt32(retryResult.Rows[0]["ExitCode"])
+                                    : -1;
+                                Logger.Success($"File executed successfully via OLE (Exit Code: {exitCode})");
+                                return $"Exit code: {exitCode}";
+                            }
+                            Logger.Error("OLE execution failed after retry");
+                            return null;
+                        }
+                    }
+                    catch (Exception retryEx)
+                    {
+                        Logger.Error($"Failed to execute via OLE after enabling: {retryEx.Message}");
+                        return null;
+                    }
+                }
+
                 if (ex.Message.Contains("cannot find") || ex.Message.Contains("not found") || ex.Message.Contains("does not exist"))
                 {
                     Logger.Error($"File does not exist: {_filePath}");
