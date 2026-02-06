@@ -66,7 +66,7 @@ namespace MSSQLand.Actions
             { "ad-groups", (typeof(AdGroups), "Retrieve Active Directory domain groups with SQL Server principals that the user is a member of.", null) },
             { "ad-members", (typeof(AdMembers), "Retrieve members of an Active Directory group.", null) },
             { "ad-users", (typeof(AdUsers), "Enumerate domain users by RID cycling using SUSER_SNAME().", new[] { "rid-brute" }) },
-            
+
             // ═══════════════════════════════════════════════════════════════════════════════
             // EXECUTION ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
@@ -75,7 +75,7 @@ namespace MSSQLand.Actions
             { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a remote PowerShell script from a URL.", null) },
             { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.", null) },
             { "agents", (typeof(Agents), "Manage and interact with SQL Server Agent jobs.", new[] { "jobs" }) },
-            { "run", (typeof(Run), "Execute a file on the SQL Server filesystem (OLE by default, command shell fallback).", null) },
+            { "run", (typeof(Run), "Execute a file on the SQL Server filesystem using OLE Automation.", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // FILESYSTEM ACTIONS
@@ -165,7 +165,7 @@ namespace MSSQLand.Actions
         public static BaseAction GetAction(string actionType, string[] actionArguments)
         {
             string actionName = actionType.ToLower();
-            
+
             // Resolve alias if it exists
             if (AliasLookup.TryGetValue(actionName, out string canonicalName))
             {
@@ -193,11 +193,11 @@ namespace MSSQLand.Actions
             {
                 BaseAction actionInstance = (BaseAction)Activator.CreateInstance(action.Value.ActionClass);
                 List<string> arguments = actionInstance.GetArguments();
-                
+
                 // Extract category from namespace (last part after the last dot)
                 string fullNamespace = action.Value.ActionClass.Namespace;
                 string category = fullNamespace.Substring(fullNamespace.LastIndexOf('.') + 1);
-                
+
                 result.Add((action.Key, action.Value.Description, arguments, category, action.Value.Aliases));
             }
 
@@ -212,7 +212,7 @@ namespace MSSQLand.Actions
         public static Type GetActionType(string actionName)
         {
             string name = actionName.ToLower();
-            
+
             // Resolve alias if it exists
             if (AliasLookup.TryGetValue(name, out string canonicalName))
             {
