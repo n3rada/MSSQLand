@@ -23,7 +23,7 @@ namespace MSSQLand.Actions.FileSystem
         [ArgumentMetadata(Position = 0, Required = true, Description = "Local file path to upload")]
         private string _localPath = "";
 
-        [ArgumentMetadata(Position = 1, Description = @"Remote destination path (defaults to C:\Windows\Tasks\)")]
+        [ArgumentMetadata(Position = 1, Description = "Remote destination path (defaults to SQL Server DATA folder)")]
         private string _remotePath = "";
 
         private FileInfo _localFileInfo;
@@ -69,8 +69,7 @@ namespace MSSQLand.Actions.FileSystem
 
             if (string.IsNullOrWhiteSpace(_remotePath))
             {
-                _remotePath = $"C:\\Windows\\Tasks\\{_localFileInfo.Name}";
-                Logger.InfoNested($"No remote path specified, using default: {_remotePath}");
+                _remotePath = GetDefaultUploadPath(databaseContext);
             }
             else if (_remotePath.EndsWith("\\") || !Path.HasExtension(_remotePath))
             {
@@ -252,6 +251,27 @@ EXEC sp_OADestroy @ObjectToken;
                 Logger.Error($"OLE upload failed: {ex.Message}");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Gets the default upload path using the SQL Server DATA folder.
+        /// </summary>
+        /// <param name="databaseContext">The database context.</param>
+        /// <returns>The default upload path with filename appended.</returns>
+        private string GetDefaultUploadPath(DatabaseContext databaseContext)
+        {
+            // Query the instance data path (e.g., C:\Program Files\Microsoft SQL Server\MSSQL17.MSSQLSERVER\MSSQL\DATA\)
+            string dataPath = databaseContext.QueryService.ExecuteScalar(
+                "SELECT SERVERPROPERTY('InstanceDefaultDataPath')")?.ToString();
+
+            if (string.IsNullOrEmpty(dataPath))
+            {
+                throw new InvalidOperationException("Could not determine SQL Server DATA folder path");
+            }
+
+            string uploadPath = Path.Combine(dataPath, _localFileInfo.Name);
+            Logger.InfoNested($"Using SQL Server DATA folder: {uploadPath}");
+            return uploadPath;
         }
 
     }
