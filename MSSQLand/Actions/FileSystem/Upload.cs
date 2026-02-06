@@ -11,11 +11,11 @@ namespace MSSQLand.Actions.FileSystem
 {
     /// <summary>
     /// Upload a local file to the SQL Server filesystem.
-    /// 
+    ///
     /// This action reads a file from the local filesystem and writes it to a
     /// remote path on the SQL Server using OLE Automation (ADODB.Stream).
     /// After upload, it verifies the file was created.
-    /// 
+    ///
     /// Method used: OLE Automation with ADODB.Stream (handles binary data well)
     /// </summary>
     internal class Upload : BaseAction
@@ -47,9 +47,13 @@ namespace MSSQLand.Actions.FileSystem
                 throw new ArgumentException($"Local file is empty: {_localPath}");
             }
 
-            // Normalize remote path separators if provided
+            // Clean up remote path if provided
             if (!string.IsNullOrWhiteSpace(_remotePath))
             {
+                // Remove trailing quotes (PowerShell escaping issue: "path\" becomes path")
+                _remotePath = _remotePath.TrimEnd('"');
+
+                // Normalize path separators
                 _remotePath = _remotePath.Replace("/", "\\");
             }
         }
@@ -68,10 +72,11 @@ namespace MSSQLand.Actions.FileSystem
                 _remotePath = $"C:\\Windows\\Tasks\\{_localFileInfo.Name}";
                 Logger.InfoNested($"No remote path specified, using default: {_remotePath}");
             }
-            else if (_remotePath.EndsWith("\\"))
+            else if (_remotePath.EndsWith("\\") || !Path.HasExtension(_remotePath))
             {
-                _remotePath += _localFileInfo.Name;
-                Logger.Warning("Remote path is a directory, appending filename");
+                // Path is a directory (ends with \ or has no extension)
+                _remotePath = Path.Combine(_remotePath, _localFileInfo.Name);
+                Logger.InfoNested($"Remote path is a directory, appending filename");
             }
 
             Logger.InfoNested($"Local file: {_localFileInfo.FullName}");
