@@ -144,7 +144,7 @@ namespace MSSQLand
                     Logger.Success($"Connection opened successfully");
                     Logger.SuccessNested($"Server: {connection.DataSource}");
                     Logger.SuccessNested($"Database: {connection.Database}");
-                    Logger.SuccessNested($"Server Version: {authService.Server.FullVersionString ?? connection.ServerVersion}");
+                    Logger.SuccessNested($"Server Version: {connection.ServerVersion}");
                     Logger.SuccessNested($"Client Workstation ID: {connection.WorkstationId}");
                     Logger.SuccessNested($"Client Application Name: {authService.Credentials.AppName}");
                     Logger.SuccessNested($"Client Connection ID: {connection.ClientConnectionId}");
