@@ -84,7 +84,7 @@ namespace MSSQLand.Services
             _credentials = CredentialsFactory.GetCredentials(credentialsType, Server);
             if (connectionTimeout.HasValue)
                 _credentials.SetConnectionTimeout(connectionTimeout.Value);
-            
+
             // Apply connection string customization if provided
             if (!string.IsNullOrEmpty(appName))
                 _credentials.AppName = appName;
@@ -92,7 +92,7 @@ namespace MSSQLand.Services
                 _credentials.WorkstationId = workstationId;
             if (packetSize.HasValue)
                 _credentials.PacketSize = packetSize;
-            
+
             // Apply connection string boolean overrides if provided
             if (enableEncryption.HasValue)
                 _credentials.EnableEncryption = enableEncryption;
@@ -113,23 +113,33 @@ namespace MSSQLand.Services
                 throw new AuthenticationFailedException(Server.Hostname, credentialsType);
             }
 
-            Server.Version = Connection.ServerVersion;
-            
             // Set database from connection if not already set
             if (string.IsNullOrEmpty(Server.Database))
             {
                 Server.Database = Connection.Database;
             }
-            
-            // Query actual SQL Server name and set Server.Hostname (includes instance name)
+
+            // Query full version string and detect Azure SQL on initial connection
             try
             {
-                using (SqlCommand cmd = new SqlCommand("SELECT @@SERVERNAME", Connection))
+                using (SqlCommand cmd = new SqlCommand("SELECT @@SERVERNAME, @@VERSION", Connection))
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    string serverName = cmd.ExecuteScalar()?.ToString();
-                    if (!string.IsNullOrEmpty(serverName))
+                    if (reader.Read())
                     {
-                        Server.Hostname = serverName;
+                        string serverName = reader.IsDBNull(0) ? null : reader.GetString(0);
+                        string fullVersion = reader.IsDBNull(1) ? null : reader.GetString(1);
+
+                        if (!string.IsNullOrEmpty(serverName))
+                        {
+                            Server.Hostname = serverName;
+                        }
+
+                        if (!string.IsNullOrEmpty(fullVersion))
+                        {
+                            // Setting FullVersionString triggers Azure SQL detection in the setter
+                            Server.FullVersionString = fullVersion;
+                        }
                     }
                 }
             }
@@ -153,7 +163,7 @@ namespace MSSQLand.Services
             var credentials = CredentialsFactory.GetCredentials(_credentialsType, Server);
             if (_connectionTimeout.HasValue)
                 credentials.SetConnectionTimeout(_connectionTimeout.Value);
-            
+
             // Apply connection string customization if provided
             if (!string.IsNullOrEmpty(_appName))
                 credentials.AppName = _appName;
@@ -161,13 +171,13 @@ namespace MSSQLand.Services
                 credentials.WorkstationId = _workstationId;
             if (_packetSize.HasValue)
                 credentials.PacketSize = _packetSize;
-            
+
             // Apply connection string boolean overrides if provided
             if (_enableEncryption.HasValue)
                 credentials.EnableEncryption = _enableEncryption;
             if (_trustServerCertificate.HasValue)
                 credentials.TrustServerCertificate = _trustServerCertificate;
-            
+
             return credentials.Authenticate(_username, _password, _domain);
         }
 

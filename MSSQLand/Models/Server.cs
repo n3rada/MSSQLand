@@ -20,19 +20,55 @@ namespace MSSQLand.Models
         private string version;
 
         /// <summary>
-        /// The full version string of the server (e.g., "15.00.2000").
-        /// Setting this also updates the major version.
+        /// The version string of the server (e.g., "15.0.2000").
+        /// Automatically set when FullVersionString is assigned.
         /// </summary>
         public string Version
         {
             get => version;
-            set
+            private set
             {
                 version = value;
                 MajorVersion = ParseMajorVersion(version);
-                if (MajorVersion <= 13)
+                if (MajorVersion > 0 && MajorVersion <= 13)
                 {
                     IsLegacy = true;
+                }
+            }
+        }
+
+        private string fullVersionString;
+
+        /// <summary>
+        /// The complete @@VERSION output from SQL Server.
+        /// Setting this automatically:
+        /// - Extracts and sets the Version property
+        /// - Detects Azure SQL Database
+        /// - Updates IsLegacy status
+        /// </summary>
+        public string FullVersionString
+        {
+            get => fullVersionString;
+            set
+            {
+                fullVersionString = value;
+                if (string.IsNullOrEmpty(value)) return;
+
+                // Extract version number (e.g., "15.0.2000" from "Microsoft SQL Server 2019 (RTM) - 15.0.2000.5...")
+                var match = System.Text.RegularExpressions.Regex.Match(value, @"\s(\d+\.\d+\.\d+)");
+                if (match.Success)
+                {
+                    Version = match.Groups[1].Value;
+                }
+
+                // Detect Azure SQL Database (not Managed Instance)
+                bool azure = value.IndexOf("Microsoft SQL Azure", StringComparison.OrdinalIgnoreCase) >= 0;
+                bool mi = value.IndexOf("Managed Instance", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                if (azure && !mi)
+                {
+                    IsAzureSQL = true;
+                    IsLegacy = false; // Azure SQL version 12 is current, not legacy
                 }
             }
         }
@@ -65,7 +101,7 @@ namespace MSSQLand.Models
         /// The mapped database user (runtime state, populated by UserService).
         /// </summary>
         public string MappedUser { get; set; }
-        
+
         /// <summary>
         /// The system login user (runtime state, populated by UserService).
         /// </summary>
@@ -97,7 +133,7 @@ namespace MSSQLand.Models
         {
             if (UsesNamedPipe)
                 return NamedPipe;
-            
+
             return Port == 1433 ? Hostname : $"{Hostname},{Port}";
         }
 
@@ -110,6 +146,7 @@ namespace MSSQLand.Models
             {
                 Hostname = this.Hostname,
                 version = this.version,
+                fullVersionString = this.fullVersionString,
                 MajorVersion = this.MajorVersion,
                 IsLegacy = this.IsLegacy,
                 IsAzureSQL = this.IsAzureSQL,
@@ -136,7 +173,7 @@ namespace MSSQLand.Models
 
             return int.TryParse(versionParts[0], out int majorVersion) ? majorVersion : 0;
         }
-        
+
         /// <summary>
         /// Parses a server input string into a Server object.
         /// Format: server[:port][/user][@database] or [server][:port][/user][@database]
@@ -173,7 +210,7 @@ namespace MSSQLand.Models
                 // Extract named pipe path
                 string pipePath = remaining;
                 string database = null;
-                
+
                 // Check for @database suffix
                 int atIndex = remaining.LastIndexOf('@');
                 if (atIndex > 0 && !remaining.Substring(0, atIndex).EndsWith(@"\"))
@@ -182,14 +219,14 @@ namespace MSSQLand.Models
                     database = remaining.Substring(atIndex + 1);
                     pipePath = remaining.Substring(0, atIndex);
                 }
-                
+
                 server.NamedPipe = pipePath;
                 server.Database = database;
-                
+
                 // Extract hostname from pipe path for display purposes
                 // Format: \\hostname\pipe\... or np:\\hostname\pipe\...
-                string pathPart = pipePath.StartsWith("np:", StringComparison.OrdinalIgnoreCase) 
-                    ? pipePath.Substring(3) 
+                string pathPart = pipePath.StartsWith("np:", StringComparison.OrdinalIgnoreCase)
+                    ? pipePath.Substring(3)
                     : pipePath;
                 if (pathPart.StartsWith(@"\\"))
                 {
@@ -205,7 +242,7 @@ namespace MSSQLand.Models
                         server.Hostname = nextSlash > 2 ? pathPart.Substring(2, nextSlash - 2) : pathPart.Substring(2);
                     }
                 }
-                
+
                 return server;
             }
 
@@ -218,17 +255,17 @@ namespace MSSQLand.Models
 
                 // Extract hostname without brackets
                 server.Hostname = remaining.Substring(1, closingBracket - 1);
-                
+
                 if (string.IsNullOrWhiteSpace(server.Hostname))
                     throw new ArgumentException("Server hostname cannot be empty");
 
                 // Continue parsing modifiers after the closing bracket
                 remaining = remaining.Substring(closingBracket + 1);
-                
+
                 // If nothing remains after bracket, we're done
                 if (string.IsNullOrWhiteSpace(remaining))
                     return server;
-                
+
                 // Determine first modifier delimiter after bracket
                 if (remaining.Length > 0)
                 {
@@ -240,7 +277,7 @@ namespace MSSQLand.Models
                         firstDelimiter = '@';
                     else
                         throw new ArgumentException($"Invalid character after closing bracket: {remaining[0]}");
-                    
+
                     remaining = remaining.Substring(1);
                 }
             }

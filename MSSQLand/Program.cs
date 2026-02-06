@@ -117,7 +117,7 @@ namespace MSSQLand
                     // Pre-calculate all banner content to determine max width
                     string headerContent = $"From: {Environment.MachineName}\n{DateTime.Now:HH:mm:ss} UTC{formattedOffset} ({localTimeZone.Id})\nTo: {arguments.Host.Hostname}";
                     string startContent = $"Start at {startTime:yyyy-MM-dd HH:mm:ss:fffff} UTC";
-                    
+
                     // Find the longest line across all banners
                     int maxLineLength = 0;
                     foreach (string line in headerContent.Split('\n'))
@@ -125,18 +125,18 @@ namespace MSSQLand
                         if (line.Length > maxLineLength) maxLineLength = line.Length;
                     }
                     if (startContent.Length > maxLineLength) maxLineLength = startContent.Length;
-                    
+
                     // Add padding (4 spaces on each side) + 2 for border chars
                     bannerWidth = maxLineLength + 8;
 
                     Logger.NewLine();
-                    
+
                     Logger.Banner(headerContent, totalWidth: bannerWidth);
                     Logger.NewLine();
 
                     Logger.Banner(startContent, totalWidth: bannerWidth);
                     Logger.NewLine();
-                    
+
                     executionStarted = true;
 
                     // Log connection information
@@ -144,17 +144,11 @@ namespace MSSQLand
                     Logger.Success($"Connection opened successfully");
                     Logger.SuccessNested($"Server: {connection.DataSource}");
                     Logger.SuccessNested($"Database: {connection.Database}");
-                    Logger.SuccessNested($"Server Version: {connection.ServerVersion}");
+                    Logger.SuccessNested($"Server Version: {authService.Server.FullVersionString ?? connection.ServerVersion}");
                     Logger.SuccessNested($"Client Workstation ID: {connection.WorkstationId}");
                     Logger.SuccessNested($"Client Application Name: {authService.Credentials.AppName}");
                     Logger.SuccessNested($"Client Connection ID: {connection.ClientConnectionId}");
                     Logger.NewLine();
-
-                    if (authService.Server.IsLegacy)
-                    {
-                        Logger.Warning("Connected to a legacy SQL Server version (2016 or earlier).");
-                        Logger.NewLine();
-                    }
 
                     DatabaseContext databaseContext = new(authService);
 
@@ -166,6 +160,12 @@ namespace MSSQLand
                     Logger.Info($"Logged in on {databaseContext.Server.Hostname}");
                     Logger.InfoNested($"Login: {systemUser}");
                     Logger.InfoNested($"Mapped to user: {userName}");
+
+                    if (!databaseContext.Server.IsAzureSQL and databaseContext.Server.IsLegacy)
+                    {
+                        Logger.NewLine();
+                        Logger.Warning($"Connected to legacy SQL Server (version {databaseContext.Server.MajorVersion}).");
+                    }
 
                     // Compute effective user (domain users only)
                     if (databaseContext.UserService.IsDomainUser)
@@ -208,25 +208,29 @@ namespace MSSQLand
                         Logger.InfoNested($"Mapped to user: {userName}");
                         Logger.InfoNested($"Execution database: {databaseContext.QueryService.ExecutionServer.Database}");
 
-                        if (databaseContext.QueryService.ExecutionServer.IsLegacy)
+                        // Show Azure/Legacy status for execution server (linked server target)
+                        if (databaseContext.QueryService.ExecutionServer.IsAzureSQL)
                         {
                             Logger.NewLine();
-                            Logger.Warning($"Execution server '{databaseContext.QueryService.ExecutionServer.Hostname}' is running legacy SQL Server (version {databaseContext.QueryService.ExecutionServer.MajorVersion}).");
+                            Logger.Info("Azure SQL Database detected");
+                        }
+                        else if (databaseContext.QueryService.ExecutionServer.IsLegacy)
+                        {
+                            Logger.NewLine();
+                            Logger.Warning($"Execution server is running legacy SQL Server (version {databaseContext.QueryService.ExecutionServer.MajorVersion}).");
                         }
                     }
 
-                    databaseContext.QueryService.IsAzureSQL();
+                    Logger.NewLine();
 
                     // Execute action
                     if (arguments.Action != null)
                     {
-                        Logger.NewLine();
                         Logger.Task($"Executing action '{arguments.Action.GetName()}' against {databaseContext.QueryService.ExecutionServer.Hostname}");
                         arguments.Action.Execute(databaseContext);
                     }
                     else
                     {
-                        Logger.NewLine();
                         Logger.Success("Connection test successful. No action specified.");
                     }
 

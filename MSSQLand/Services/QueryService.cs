@@ -51,11 +51,6 @@ namespace MSSQLand.Services
         private static bool _rpcWarningShown = false;
 
         /// <summary>
-        /// Per-server Azure SQL detection cache.
-        /// </summary>
-        private readonly ConcurrentDictionary<string, bool> _isAzureSQLCache = new();
-
-        /// <summary>
         /// Determines if a SQL statement requires RPC execution because it modifies server-level state.
         /// These commands cannot be executed over OPENQUERY.
         /// </summary>
@@ -361,38 +356,12 @@ SELECT @result AS Result, @error AS Error;";
         }
 
         /// <summary>
-        /// Determines whether the final execution server is Azure SQL Database (PaaS).
-        /// Results are cached.
+        /// Returns whether the execution server is Azure SQL Database (PaaS).
+        /// Detection happens automatically when FullVersionString is set.
         /// </summary>
         public bool IsAzureSQL()
         {
-            if (_isAzureSQLCache.TryGetValue(ExecutionServer.Hostname, out bool cached))
-                return cached;
-
-            bool isAzure = DetectAzureSQL();
-            _isAzureSQLCache[ExecutionServer.Hostname] = isAzure;
-            return isAzure;
-        }
-
-        /// <summary>
-        /// Detects Azure SQL by inspecting @@VERSION output.
-        /// </summary>
-        private bool DetectAzureSQL()
-        {
-            try
-            {
-                string version = ExecuteScalar("SELECT @@VERSION")?.ToString();
-                if (string.IsNullOrEmpty(version)) return false;
-
-                bool azure = version.IndexOf("Microsoft SQL Azure", StringComparison.OrdinalIgnoreCase) >= 0;
-                bool mi = version.IndexOf("Managed Instance", StringComparison.OrdinalIgnoreCase) >= 0;
-
-                if (azure && !mi)
-                    Logger.Info($"Azure SQL Database detected on {ExecutionServer.Hostname}");
-
-                return azure && !mi;
-            }
-            catch { return false; }
+            return ExecutionServer.IsAzureSQL;
         }
 
         /// <summary>
@@ -418,43 +387,33 @@ SELECT @result AS Result, @error AS Error;";
             string linkedServerAlias = last.Hostname;
             ExecutionServer.LinkedServerAlias = linkedServerAlias;
 
-            // Query the actual server name (@@SERVERNAME) for display/identification
+            // Query server name and version in one shot
+            // Setting FullVersionString automatically detects Azure SQL
             try
             {
-                string actualServerName = ExecuteScalar("SELECT @@SERVERNAME")?.ToString();
-                if (!string.IsNullOrEmpty(actualServerName))
+                DataTable result = ExecuteTable("SELECT @@SERVERNAME, @@VERSION");
+                if (result.Rows.Count > 0)
                 {
-                    ExecutionServer.Hostname = actualServerName;
-                    if (!actualServerName.Equals(linkedServerAlias, StringComparison.OrdinalIgnoreCase))
-                    {
-                        Logger.Trace($"Linked server alias '{linkedServerAlias}' resolves to '{actualServerName}'");
-                    }
-                }
-            }
-            catch
-            {
-                // Query failed - keep the alias as hostname
-            }
+                    DataRow row = result.Rows[0];
 
-            // Query and set the server version for linked server
-            try
-            {
-                string version = ExecuteScalar("SELECT @@VERSION")?.ToString();
-                if (!string.IsNullOrEmpty(version))
-                {
-                    // Extract version number from version string
-                    // Example: "Microsoft SQL Server 2019 (RTM) - 15.0.2000.5..."
-                    var match = System.Text.RegularExpressions.Regex.Match(version, @"\s(\d+\.\d+\.\d+)");
-                    if (match.Success)
+                    string actualServerName = row[0]?.ToString();
+                    if (!string.IsNullOrEmpty(actualServerName))
                     {
-                        ExecutionServer.Version = match.Groups[1].Value;
-                        Logger.Debug($"Execution server version: {ExecutionServer.Version} (Major: {ExecutionServer.MajorVersion})");
+                        ExecutionServer.Hostname = actualServerName;
+                        if (!actualServerName.Equals(linkedServerAlias, StringComparison.OrdinalIgnoreCase))
+                        {
+                            Logger.Trace($"Linked server alias '{linkedServerAlias}' resolves to '{actualServerName}'");
+                        }
                     }
+
+                    // Setting FullVersionString triggers version extraction and Azure SQL detection
+                    ExecutionServer.FullVersionString = row[1].ToString();
+                    Logger.Debug($"Execution server version: {ExecutionServer.Version} (Major: {ExecutionServer.MajorVersion})");
                 }
             }
             catch
             {
-                // Version detection is optional
+                // Server info detection is optional - keep alias as hostname
             }
 
             // Set database: use configured database or query DB_NAME()
