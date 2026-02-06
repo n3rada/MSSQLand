@@ -136,19 +136,19 @@ namespace MSSQLand.Utilities.Discovery
             Logger.NewLine();
 
             // Phase 1: Known ports
-            Logger.Info($"Testing {KnownPorts.Length} known ports");
-            Logger.InfoNested($"{string.Join(", ", KnownPorts)}");
+            Logger.Task($"Testing {KnownPorts.Length} known ports");
+            Logger.TaskNested($"{string.Join(", ", KnownPorts)}");
             var knownStopwatch = Stopwatch.StartNew();
             var knownResults = ScanPortsParallel(ip, KnownPorts, timeoutMs, maxParallelism, stopOnFirst ? cts : null);
             knownStopwatch.Stop();
 
             if (knownResults.Count > 0)
             {
-                Logger.SuccessNested($"Found {knownResults.Count}: {string.Join(", ", knownResults.Select(r => r.Port))} ({knownStopwatch.ElapsedMilliseconds}ms)");
+                Logger.Success($"Found {knownResults.Count}: {string.Join(", ", knownResults.Select(r => r.Port))} ({knownStopwatch.ElapsedMilliseconds}ms)");
             }
             else
             {
-                Logger.InfoNested($"None found ({knownStopwatch.ElapsedMilliseconds}ms)");
+                Logger.Warning($"None found ({knownStopwatch.ElapsedMilliseconds}ms)");
             }
 
             if (stopOnFirst && knownResults.Count > 0)
@@ -162,7 +162,7 @@ namespace MSSQLand.Utilities.Discovery
             int ephemeralCount = ephemeralPortsToScan.Length;
 
             Logger.NewLine();
-            Logger.Info($"Scanning ephemeral range ({EphemeralStart}-{EphemeralEnd}) - {ephemeralCount} ports");
+            Logger.Task($"Scanning ephemeral range ({EphemeralStart}-{EphemeralEnd}) - {ephemeralCount} ports");
 
             var ephemeralStopwatch = Stopwatch.StartNew();
             var ephemeralPorts = ReorderEdgesToMiddle(ephemeralPortsToScan);
@@ -173,13 +173,13 @@ namespace MSSQLand.Utilities.Discovery
 
             if (ephemeralResults.Count > 0)
             {
-                Logger.SuccessNested($"Found {ephemeralResults.Count}: {string.Join(", ", ephemeralResults.Select(r => r.Port))} ({ephemeralStopwatch.Elapsed.TotalSeconds:F1}s, {ephemeralPortsPerSec} ports/sec)");
+                Logger.Success($"Found {ephemeralResults.Count}: {string.Join(", ", ephemeralResults.Select(r => r.Port))} ({ephemeralStopwatch.Elapsed.TotalSeconds:F1}s, {ephemeralPortsPerSec} ports/sec)");
             }
             else
             {
-                Logger.InfoNested($"None found ({ephemeralStopwatch.Elapsed.TotalSeconds:F1}s, {ephemeralPortsPerSec} ports/sec)");
+                Logger.Warning($"None found ({ephemeralStopwatch.Elapsed.TotalSeconds:F1}s, {ephemeralPortsPerSec} ports/sec)");
             }
-            
+
             if (stopOnFirst && ephemeralResults.Count > 0)
             {
                 var allResults = knownResults.Concat(ephemeralResults).OrderBy(r => r.Port).ToList();
@@ -190,28 +190,28 @@ namespace MSSQLand.Utilities.Discovery
             // Phase 3: Middle range (1433-49151, excluding known ports already scanned)
             var middlePorts = GenerateMiddleRangePorts();
             int middleCount = middlePorts.Length;
-            
+
             if (middleCount > 0)
             {
                 Logger.NewLine();
-                Logger.Info($"Scanning middle range ({MiddleRangeStart}-{MiddleRangeEnd}, excluding known ports) - {middleCount} ports");
-                
+                Logger.Task($"Scanning middle range ({MiddleRangeStart}-{MiddleRangeEnd}, excluding known ports) - {middleCount} ports");
+
                 var middleStopwatch = Stopwatch.StartNew();
                 var reorderedMiddlePorts = ReorderEdgesToMiddle(middlePorts);
                 var middleResults = ScanPortsParallel(ip, reorderedMiddlePorts, timeoutMs, maxParallelism, stopOnFirst ? cts : null);
                 middleStopwatch.Stop();
-                
+
                 int middlePortsPerSec = (int)(middleCount * 1000L / Math.Max(1, middleStopwatch.ElapsedMilliseconds));
-                
+
                 if (middleResults.Count > 0)
                 {
-                    Logger.SuccessNested($"Found {middleResults.Count}: {string.Join(", ", middleResults.Select(r => r.Port))} ({middleStopwatch.Elapsed.TotalSeconds:F1}s, {middlePortsPerSec} ports/sec)");
+                    Logger.Success($"Found {middleResults.Count}: {string.Join(", ", middleResults.Select(r => r.Port))} ({middleStopwatch.Elapsed.TotalSeconds:F1}s, {middlePortsPerSec} ports/sec)");
                 }
                 else
                 {
-                    Logger.InfoNested($"None found ({middleStopwatch.Elapsed.TotalSeconds:F1}s, {middlePortsPerSec} ports/sec)");
+                    Logger.Warning($"None found ({middleStopwatch.Elapsed.TotalSeconds:F1}s, {middlePortsPerSec} ports/sec)");
                 }
-                
+
                 var allResults = knownResults.Concat(ephemeralResults).Concat(middleResults).OrderBy(r => r.Port).ToList();
                 bool stoppedEarly = stopOnFirst && allResults.Count > 0;
                 LogSummary(hostname, allResults, globalStopwatch, stoppedEarly);
@@ -422,7 +422,7 @@ namespace MSSQLand.Utilities.Discovery
         {
             var knownPortsSet = new HashSet<int>(KnownPorts);
             var middlePorts = new List<int>();
-            
+
             for (int port = MiddleRangeStart; port <= MiddleRangeEnd; port++)
             {
                 if (!knownPortsSet.Contains(port))
@@ -430,7 +430,7 @@ namespace MSSQLand.Utilities.Discovery
                     middlePorts.Add(port);
                 }
             }
-            
+
             return middlePorts.ToArray();
         }
 
@@ -452,7 +452,7 @@ namespace MSSQLand.Utilities.Discovery
 
             Logger.NewLine();
             Logger.InfoNested($"Testing ports: {FormatPortList(ports)}");
-            
+
             // Apply edges-to-middle strategy for better discovery (especially for large ranges)
             if (ports.Length > 10)
             {
@@ -464,7 +464,7 @@ namespace MSSQLand.Utilities.Discovery
             LogSummary(hostname, results, globalStopwatch);
             return results;
         }
-        
+
         /// <summary>
         /// Reorders an array of ports to scan from edges toward middle.
         /// Preserves original port order but reorders for optimal discovery.
