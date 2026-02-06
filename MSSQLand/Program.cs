@@ -161,7 +161,7 @@ namespace MSSQLand
                     Logger.InfoNested($"Login: {systemUser}");
                     Logger.InfoNested($"Mapped to user: {userName}");
 
-                    if (!databaseContext.Server.IsAzureSQL and databaseContext.Server.IsLegacy)
+                    if (!databaseContext.Server.IsAzureSQL && databaseContext.Server.IsLegacy)
                     {
                         Logger.NewLine();
                         Logger.Warning($"Connected to legacy SQL Server (version {databaseContext.Server.MajorVersion}).");
