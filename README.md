@@ -81,9 +81,9 @@ Chain multiple SQL servers using the `-l` flag with **semicolon (`;`) as the sep
 
 ## 🔧 Configuration Manager (ConfigMgr) Support
 
-MSSQLand includes comprehensive support for **[Microsoft Configuration Manager](https://learn.microsoft.com/fr-fr/intune/configmgr/)** (formerly SCCM/MECM) exploitation and reconnaissance. When you have access to a ConfigMgr database server, you can leverage specialized actions for device intelligence (e.g., `cm-devices`) or infrastructure mapping.
+MSSQLand includes comprehensive support for **[Microsoft Configuration Manager](https://learn.microsoft.com/fr-fr/intune/configmgr/)** (formerly SCCM / MECM) exploitation and reconnaissance. When you have access to a ConfigMgr database server, you can leverage specialized actions for device intelligence (e.g., `cm-devices`) or infrastructure mapping.
 
-All ConfigMgr actions use the `cm-` prefix (e.g., `cm-scripts`, `cm-package`) to align with Microsoft's [official PowerShell cmdlet](https://learn.microsoft.com/en-us/powershell/module/configurationmanager/?view=sccm-ps) naming convention (`Get-CM*`, `Set-CM*`, etc.). The legacy "SCCM" branding is still widely recognized.
+All ConfigMgr actions use the `cm-` prefix (e.g., `cm-scripts`, `cm-package`) to align with Microsoft's [official PowerShell cmdlet](https://learn.microsoft.com/en-us/powershell/module/configurationmanager/?view=sccm-ps) naming convention (`Get-CM*`, `Set-CM*`, etc.).
 
 ## 📸 Clean Output for Clean Reports
 
