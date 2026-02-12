@@ -202,11 +202,3 @@ sudo socat TCP4-LISTEN:1433,fork,reuseaddr TCP:10.10.11.90:1433
 
 This command listens on port 1433 on your Linux machine and forwards all traffic to the target SQL Server at `10.10.11.90:1433`. You can then connect MSSQLand to your Linux VM's IP from your Windows host.
 
----
-
-## 📚 Related Documentation
-
-- **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md) for PR guidelines, commit signing, and code review process
-- **Security**: See [SECURITY.md](SECURITY.md) for reporting vulnerabilities
-- **Releases**: See [RELEASING.md](RELEASING.md) for versioning and release process (maintainers only)
-- **Usage**: See [README.md](../README.md) for user-facing documentation
