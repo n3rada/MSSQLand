@@ -1,5 +1,3 @@
-# Contributing to MSSQLand 🫂
-
 Thank you for considering contributing to MSSQLand! Your efforts help make this tool better for everyone, and every contribution is valued. This document outlines the guidelines for contributing to ensure a productive and fair collaboration.
 
 ## 🆕 Feature Requests
@@ -40,7 +38,6 @@ Have an idea for a new feature?
 ### Code Guidelines
 
 - **C# Version:** 11.0 targeting .NET Framework 4.8
-- **Code Style:** Follow existing patterns (see `.editorconfig`)
 - **Naming:** Use descriptive names, follow C# conventions
 - **Comments:** Add XML documentation for public APIs, file path comments at the top of each file
 - **Actions:** New actions should inherit from `BaseAction`
@@ -126,58 +123,25 @@ Before submitting:
    ```
 2. **Test against a real SQL Server** instance
 3. **Verify no warnings** during build
-4. **Test both editions** (standard and ConfigMgr if applicable)
-5. **Verify no regressions** in existing features
+4. **Verify no regressions** in existing features
 
 ## Signing Your Commits 🗝️
+
 To ensure accountability and transparency in contributions, always sign your commits. This helps verify the authenticity of the commit and ensures a clear history of who contributed what.
 
 Follow [GitHub’s guide on signing commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) to generate a GPG key and configure it for Git.
-
-Signed commits ensure the integrity and authenticity of contributions, reflecting the highest standards of professionalism in the project.
 
 ## Handling of Pull Requests
 
 Contributions are preserved transparently in Git history. No fear to have here—no one will copy-paste your code without adhering to the collaborative ethos of open-source.
 
-If the code needs changes, it will be merged - yet accepted - into a specific branch to preserve the contributor's effort while allowing for refactoring and thorough review.
-
-### PR Accepted ✅
-- All commits will be retained in the repository, ensuring proper credit is given.
-- Any modifications or refactors will be performed **after merging**, with clear documentation of changes.
-
-### PR Rejected ❌
-- Feedback will be provided with reasons for rejection.
-- You are encouraged to resubmit after addressing the concerns.
-- No one's contributions will be erased or dismissed without acknowledgment.
+If the code needs changes, it will be merged into a specific branch to preserve the contributor's effort while allowing for refactoring and thorough review.
 
 ## 🐛 Reporting Issues
 
 If you find a bug:
 1. **Check existing issues** to avoid duplicates
 2. **Create a new issue** with clear description, steps to reproduce, and environment details
-
-## 🔒 Security Vulnerabilities
-
-**Do not open public issues for security vulnerabilities.**
-
-See [.github/SECURITY.md](.github/SECURITY.md) for how to report security issues responsibly.
-
-## 📚 Documentation
-
-- **Overview**: [README.md](./README.md)
-- **Development Guide**: [.github/DEVELOPMENT.md](.github/DEVELOPMENT.md) - Architecture, structure, and how to add new actions
-- **Release Process**: [.github/RELEASING.md](.github/RELEASING.md) - For maintainers
-
-## ❓ Questions?
-
-- **General questions:** [GitHub Discussions](https://github.com/n3rada/MSSQLand/discussions)
-- **Bug reports:** [GitHub Issues](https://github.com/n3rada/MSSQLand/issues)
-- **Security:** See [.github/SECURITY.md](.github/SECURITY.md)
-
----
-
-Thank you for contributing to MSSQLand! 🎉
 
 
 
