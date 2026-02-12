@@ -100,7 +100,7 @@ VALUES (
     '{template["SourceSite"]}'
 );";
 
-                    databaseContext.QueryService.ExecuteNonQuery(insertQuery);
+                    databaseContext.QueryService.ExecuteNonProcessing(insertQuery);
 
                     Logger.NewLine();
                     Logger.Success("RBAC admin created successfully");
