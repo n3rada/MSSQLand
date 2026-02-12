@@ -146,6 +146,7 @@
     <Compile Include="Actions\ConfigMgr\CMScriptDelete.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\ConfigMgr\CMScriptRun.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\ConfigMgr\CMScriptStatus.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMRbacAdd.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\ConfigMgr\CMAccounts.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\ConfigMgr\CMAadApps.cs" Condition="'$(EnableCM)' == 'true'" />
     <Compile Include="Actions\ConfigMgr\CMDeployments.cs" Condition="'$(EnableCM)' == 'true'" />

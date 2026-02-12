@@ -133,7 +133,8 @@ namespace MSSQLand.Actions
             { "cm-script-add", (typeof(CMScriptAdd), "Upload PowerShell script to ConfigMgr bypassing approval workflow (auto-approved, hidden from console).", null) },
             { "cm-script-delete", (typeof(CMScriptDelete), "Remove script from ConfigMgr by GUID to clean up operational artifacts.", null) },
             { "cm-script-run", (typeof(CMScriptRun), "Execute PowerShell script on target device via BGB notification channel (requires ResourceID and script GUID).", null) },
-            { "cm-script-status", (typeof(CMScriptStatus), "Monitor script execution status and retrieve output from target devices by Task ID.", null) }
+            { "cm-script-status", (typeof(CMScriptStatus), "Monitor script execution status and retrieve output from target devices by Task ID.", null) },
+            { "cm-admin-add", (typeof(CMRbacAdd), "Create stealthy RBAC admin by mimicking existing admin attributes (dates, patterns).", new[] { "cm-rbac-add" }) }
 #endif
         };
 
