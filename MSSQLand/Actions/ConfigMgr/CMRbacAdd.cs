@@ -100,7 +100,13 @@ VALUES (
     '{template["SourceSite"]}'
 );";
 
-                    databaseContext.QueryService.ExecuteNonProcessing(insertQuery);
+                    int rowsAffected = databaseContext.QueryService.ExecuteNonProcessing(insertQuery);
+
+                    if (rowsAffected <= 0)
+                    {
+                        Logger.Error("Failed to create admin (no rows inserted)");
+                        return null;
+                    }
 
                     Logger.NewLine();
                     Logger.Success("RBAC admin created successfully");
