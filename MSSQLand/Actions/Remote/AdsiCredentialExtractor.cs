@@ -182,11 +182,11 @@ namespace MSSQLand.Actions.Remote
 
                 Logger.TaskNested("Executing LDAP solicitation");
 
-                string impersonateTarget = databaseContext.QueryService.ExecutionServer.ImpersonationUser;
+                string[] impersonateTargets = databaseContext.QueryService.ExecutionServer.ImpersonationUsers;
 
-                if (!string.IsNullOrEmpty(impersonateTarget))
+                if (impersonateTargets != null && impersonateTargets.Length > 0)
                 {
-                    Logger.Warning("Cannot retrieve impersonated user credentials - not mapped to temporary ADSI server");
+                    Logger.Warning("Cannot retrieve impersonated user credentials. Not mapped to temporary ADSI server");
                     Logger.WarningNested("The impersonated context uses the original user's authentication method");
                     return null;
                 }

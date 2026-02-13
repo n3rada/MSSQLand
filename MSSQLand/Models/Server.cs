@@ -93,9 +93,10 @@ namespace MSSQLand.Models
         public string Database { get; set; } = null;
 
         /// <summary>
-        /// The user to impersonate on this server (optional).
+        /// The users to impersonate on this server (optional).
+        /// Supports cascading impersonation: ["user1", "user2"] means EXECUTE AS LOGIN = 'user1'; EXECUTE AS LOGIN = 'user2';
         /// </summary>
-        public string ImpersonationUser { get; set; }
+        public string[] ImpersonationUsers { get; set; }
 
         /// <summary>
         /// The mapped database user (runtime state, populated by UserService).
@@ -153,7 +154,7 @@ namespace MSSQLand.Models
                 Port = this.Port,
                 NamedPipe = this.NamedPipe,
                 Database = this.Database,
-                ImpersonationUser = this.ImpersonationUser,
+                ImpersonationUsers = this.ImpersonationUsers,
                 MappedUser = this.MappedUser,
                 SystemUser = this.SystemUser,
                 LinkedServerAlias = this.LinkedServerAlias
@@ -346,7 +347,35 @@ namespace MSSQLand.Models
                 }
                 else if (firstDelimiter == '/')
                 {
-                    server.ImpersonationUser = component;
+                    // Collect all consecutive impersonation users
+                    System.Collections.Generic.List<string> impersonationList = new();
+                    impersonationList.Add(component);
+
+                    // Check if there are more users to impersonate
+                    while (nextDelimiter == '/' && nextDelimiterIndex < remaining.Length)
+                    {
+                        remaining = remaining.Substring(nextDelimiterIndex + 1);
+
+                        // Find next delimiter
+                        nextDelimiterIndex = remaining.Length;
+                        nextDelimiter = '\0';
+
+                        colonIndex = remaining.IndexOf(':');
+                        slashIndex = remaining.IndexOf('/');
+                        atIndex = remaining.IndexOf('@');
+
+                        if (colonIndex >= 0 && colonIndex < nextDelimiterIndex) { nextDelimiterIndex = colonIndex; nextDelimiter = ':'; }
+                        if (slashIndex >= 0 && slashIndex < nextDelimiterIndex) { nextDelimiterIndex = slashIndex; nextDelimiter = '/'; }
+                        if (atIndex >= 0 && atIndex < nextDelimiterIndex) { nextDelimiterIndex = atIndex; nextDelimiter = '@'; }
+
+                        string nextUser = remaining.Substring(0, nextDelimiterIndex);
+                        if (string.IsNullOrWhiteSpace(nextUser))
+                            throw new ArgumentException("Impersonation user cannot be empty after /");
+
+                        impersonationList.Add(nextUser);
+                    }
+
+                    server.ImpersonationUsers = impersonationList.ToArray();
                 }
                 else if (firstDelimiter == '@')
                 {

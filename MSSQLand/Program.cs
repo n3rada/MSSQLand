@@ -194,11 +194,15 @@ namespace MSSQLand
                     {
                         databaseContext.QueryService.LinkedServers = arguments.LinkedServers;
 
-                        // Get display chain (shows alias [actual] when they differ)
-                        var chainParts = databaseContext.QueryService.LinkedServers.GetDisplayChainParts();
-
                         Logger.NewLine();
-                        Logger.Info($"Server chain: {arguments.Host.Hostname} -> " + string.Join(" -> ", chainParts));
+
+                        // Build formatted chain display with impersonation as connectors
+                        string chainDisplay = databaseContext.QueryService.LinkedServers.FormatChainDisplay(
+                            initialHost: arguments.Host.Hostname,
+                            initialImpersonation: arguments.Host.ImpersonationUsers
+                        );
+
+                        Logger.Info($"Server chain: {chainDisplay}");
                         Logger.NewLine();
 
                         (userName, systemUser) = databaseContext.UserService.GetInfo();

@@ -484,7 +484,7 @@ namespace MSSQLand.Actions.Remote
                 serverList.Add(new Server
                 {
                     Hostname = node.Alias,
-                    ImpersonationUser = node.ImpersonatedUser,
+                    ImpersonationUsers = string.IsNullOrEmpty(node.ImpersonatedUser) ? null : new[] { node.ImpersonatedUser },
                     Database = null
                 });
             }

@@ -11,18 +11,18 @@ namespace MSSQLand.Models
 {
     /// <summary>
     /// Manages linked server chains for SQL Server connections.
-    /// 
+    ///
     /// Syntax:
     /// - Semicolon (;) - Separates servers in the chain
     /// - Forward slash (/) - Specifies user to impersonate ("execute as user")
     /// - At sign (@) - Specifies database context
     /// - Brackets [...] - Used to protect the server name from being split by our delimiters
-    /// 
+    ///
     /// Chain Format:
     /// - Servers are separated by semicolons: server1;server2;server3
     /// - Format for each server: hostname[:port][/user][@database]
     /// - Use brackets [] for hostnames containing any delimiter (: / @ ;)
-    /// 
+    ///
     /// Examples:
     /// - Simple: SQL01;SQL02;SQL03
     /// - With users: SQL01/admin;SQL02/webapp@mydb
@@ -30,7 +30,7 @@ namespace MSSQLand.Models
     /// - Hostname with delimiters: [SQL02;PROD];[SQL03/TEST];[SQL04@INST]
     /// - Complex: SQL01:1433/admin;[SQL02;PROD]/domain_user@db_name;SQL03
     /// - Bracketed with modifiers: [SERVER;PROD]:1434/admin@clients
-    /// 
+    ///
     /// Note: Brackets protect only the hostname from delimiter interpretation.
     /// Port/user/database modifiers are specified after the closing bracket.
     /// Brackets are only needed when the hostname itself contains : / @ ; characters.
@@ -49,10 +49,11 @@ namespace MSSQLand.Models
         private string[] ComputableServerNames { get; set; }
 
         /// <summary>
-        /// A computed array of impersonation names extracted from the server chain.
-        /// Expectation of {"webapp03", "", "webapp05", ... }
+        /// A computed array of impersonation user arrays extracted from the server chain.
+        /// Each entry is an array of users to impersonate in sequence on that server.
+        /// Expectation: [["user1", "user2"], [], ["user3"], ...]
         /// </summary>
-        private string[] ComputableImpersonationNames { get; set; }
+        private string[][] ComputableImpersonationUsers { get; set; }
 
         /// <summary>
         /// A computed array of database names extracted from the server chain.
@@ -96,7 +97,7 @@ namespace MSSQLand.Models
             ComputableServerNames = new string[ServerChain.Length + 1];
             ComputableServerNames[0] = "0";
 
-            ComputableImpersonationNames = new string[ServerChain.Length];
+            ComputableImpersonationUsers = new string[ServerChain.Length][];
             ComputableDatabaseNames = new string[ServerChain.Length];
             ServerNames = new string[ServerChain.Length];
 
@@ -105,7 +106,7 @@ namespace MSSQLand.Models
                 // Use QueryRoutingName for query building (prefers LinkedServerAlias if set)
                 ComputableServerNames[i + 1] = ServerChain[i].QueryRoutingName;
                 ServerNames[i] = ServerChain[i].QueryRoutingName;
-                ComputableImpersonationNames[i] = ServerChain[i].ImpersonationUser ?? "";
+                ComputableImpersonationUsers[i] = ServerChain[i].ImpersonationUsers ?? Array.Empty<string>();
                 ComputableDatabaseNames[i] = ServerChain[i].Database ?? "";
             }
         }
@@ -130,7 +131,7 @@ namespace MSSQLand.Models
                 {
                     Hostname = server.Hostname,
                     LinkedServerAlias = server.LinkedServerAlias,
-                    ImpersonationUser = server.ImpersonationUser,
+                    ImpersonationUsers = server.ImpersonationUsers,
                     Database = server.Database
                 }).ToArray();
             }
@@ -148,7 +149,7 @@ namespace MSSQLand.Models
         /// <summary>
         /// Returns a properly formatted linked server chain string.
         /// Automatically adds brackets around hostnames containing any delimiter (: / @ ;).
-        /// 
+        ///
         /// Examples:
         /// - SQL01, SQL02 → ["SQL01", "SQL02"]
         /// - SQL02;PROD → ["[SQL02;PROD]"]
@@ -165,7 +166,7 @@ namespace MSSQLand.Models
             {
                 // Use QueryRoutingName (alias) for display - this is what user needs to type
                 string serverName = ServerChain[i].QueryRoutingName;
-                string impersonationUser = ServerChain[i].ImpersonationUser;
+                string[] impersonationUsers = ServerChain[i].ImpersonationUsers;
                 string database = ServerChain[i].Database;
 
                 // Bracket the hostname if it contains ANY delimiter character
@@ -173,16 +174,17 @@ namespace MSSQLand.Models
 
                 StringBuilder part = new StringBuilder(serverName);
 
-                // Add /user@database or just @database
-                if (!string.IsNullOrEmpty(impersonationUser) && !string.IsNullOrEmpty(database))
+                // Add cascading impersonation users /user1/user2/user3
+                if (impersonationUsers != null && impersonationUsers.Length > 0)
                 {
-                    part.Append($"/{impersonationUser}@{database}");
+                    foreach (var user in impersonationUsers)
+                    {
+                        part.Append($"/{user}");
+                    }
                 }
-                else if (!string.IsNullOrEmpty(impersonationUser))
-                {
-                    part.Append($"/{impersonationUser}");
-                }
-                else if (!string.IsNullOrEmpty(database))
+
+                // Add database
+                if (!string.IsNullOrEmpty(database))
                 {
                     part.Append($"@{database}");
                 }
@@ -194,32 +196,71 @@ namespace MSSQLand.Models
         }
 
         /// <summary>
-        /// Returns a list of server names for display purposes.
-        /// Shows "alias [actual]" format when the linked server alias differs from the actual server name.
-        /// 
+        /// Builds a formatted chain display string showing the full server path with impersonation.
+        /// Impersonation on intermediate servers is shown as part of the connector arrow,
+        /// making it clear which identity is used for each hop.
+        /// Impersonation on the last server is shown as the execution context.
+        ///
         /// Examples:
-        /// - When alias == actual: "SQL01"
-        /// - When alias != actual: "REPORTING_DB [SQL-REPORT-01]"
+        /// - No impersonation:              SQL01 ──> SQL02 ──> SQL03
+        /// - Initial host cascade:          SQL01 ─(lowpriv → midpriv)─> SQL02 ──> SQL03
+        /// - Intermediate impersonation:    SQL01 ──> SQL02 ─(user02)─> SQL03
+        /// - Last server impersonation:     SQL01 ──> SQL02 ──> SQL03 (as webapp)
+        /// - Last server cascade:           SQL01 ──> SQL02 ──> SQL03 (as test_user → log_user)
+        /// - Mixed cascade:                 SQL01 ─(user02)─> SQL02 ──> SQL03 ─(test_user → log_user)─> SQL04
         /// </summary>
-        public List<string> GetDisplayChainParts()
+        /// <param name="initialHost">The initial host server name.</param>
+        /// <param name="initialImpersonation">Optional impersonation users on the initial host.</param>
+        /// <returns>A formatted chain display string.</returns>
+        public string FormatChainDisplay(string initialHost, string[] initialImpersonation = null)
         {
-            List<string> displayParts = new();
+            StringBuilder sb = new();
+            sb.Append(initialHost);
 
-            foreach (var server in ServerChain)
+            // Initial host impersonation becomes the connector to the first linked server
+            sb.Append(FormatConnector(initialImpersonation));
+
+            for (int i = 0; i < ServerChain.Length; i++)
             {
-                string displayName = server.QueryRoutingName;
+                var server = ServerChain[i];
 
-                // Show both alias and actual hostname when they differ
-                if (!string.IsNullOrEmpty(server.LinkedServerAlias) &&
-                    !server.LinkedServerAlias.Equals(server.Hostname, StringComparison.OrdinalIgnoreCase))
+                sb.Append(server.QueryRoutingName);
+
+                bool isLast = i == ServerChain.Length - 1;
+                string[] users = server.ImpersonationUsers;
+                bool hasImpersonation = users != null && users.Length > 0;
+
+                if (isLast)
                 {
-                    displayName = $"{server.LinkedServerAlias} [{server.Hostname}]";
+                    // Last server: impersonation is the execution context, not a hop
+                    if (hasImpersonation)
+                    {
+                        string cascade = string.Join(" → ", users);
+                        sb.Append($" (as {cascade})");
+                    }
                 }
-
-                displayParts.Add(displayName);
+                else
+                {
+                    // Intermediate server: impersonation is shown as part of the connector
+                    sb.Append(FormatConnector(users));
+                }
             }
 
-            return displayParts;
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Formats a connector arrow between servers, optionally including impersonation cascade.
+        /// </summary>
+        private static string FormatConnector(string[] impersonationUsers)
+        {
+            if (impersonationUsers != null && impersonationUsers.Length > 0)
+            {
+                string cascade = string.Join(" → ", impersonationUsers);
+                return $" ─({cascade})─> ";
+            }
+
+            return " ──> ";
         }
 
 
@@ -228,9 +269,9 @@ namespace MSSQLand.Models
         /// If the chain is empty, it creates a new LinkedServers instance.
         /// </summary>
         /// <param name="newServer">The hostname of the new linked server.</param>
-        /// <param name="impersonationUser">Optional impersonation user.</param>
+        /// <param name="impersonationUsers">Optional array of impersonation users for cascading.</param>
         /// <param name="database">Optional database context.</param>
-        public void AddToChain(string newServer, string? impersonationUser = null, string? database = null)
+        public void AddToChain(string newServer, string[]? impersonationUsers = null, string? database = null)
         {
             Logger.Debug($"Adding server {newServer} to the linked server chain.");
 
@@ -240,10 +281,10 @@ namespace MSSQLand.Models
             }
 
             List<Server> updatedChain = ServerChain.ToList();
-            updatedChain.Add(new Server 
-            { 
-                Hostname = newServer, 
-                ImpersonationUser = impersonationUser,
+            updatedChain.Add(new Server
+            {
+                Hostname = newServer,
+                ImpersonationUsers = impersonationUsers,
                 Database = database
             });
 
@@ -255,23 +296,23 @@ namespace MSSQLand.Models
 
         /// <summary>
         /// Parses a semicolon-separated list of servers into an array of Server objects.
-        /// 
+        ///
         /// Syntax:
         /// - Semicolon (;) - Separates servers in the chain
         /// - Forward slash (/) - Specifies user to impersonate ("execute as user")
         /// - At sign (@) - Specifies database context
         /// - Brackets [...] - Used to protect the server name from being split by our delimiters
-        /// 
+        ///
         /// Format: "server1;server2;server3"
         /// Each server: hostname[:port][/user][@database]
-        /// 
+        ///
         /// Examples:
         /// - "SQL27/user01;SQL53/user02"
         /// - "SQL27:1433/user01@db;SQL53/user02"
         /// - "[SQL02;PROD];[SQL03/TEST];[SQL04@INST]/admin@mydb"
         /// - "[SQL02:8080]/domain_user@db_name;SQL03" (brackets protect : in hostname)
         /// - "[SERVER;PROD]:1434/admin@clients;SQL03" (bracketed hostname with port, user, and database)
-        /// 
+        ///
         /// Note: Brackets protect only the hostname. Port/user/database modifiers come after the closing bracket.
         /// </summary>
         /// <param name="chainInput">Semicolon-separated list of servers.</param>
@@ -288,29 +329,29 @@ namespace MSSQLand.Models
             // because ports are not expected in linked server chains.
             List<string> serverStrings = new List<string>();
             int pos = 0;
-            
+
             while (pos < chainInput.Length)
             {
                 // Skip whitespace
                 while (pos < chainInput.Length && char.IsWhiteSpace(chainInput[pos]))
                     pos++;
-                
+
                 if (pos >= chainInput.Length)
                     break;
-                
+
                 string serverString;
-                
+
                 // Check if this entry is bracketed
                 if (chainInput[pos] == '[')
                 {
                     int closingBracket = chainInput.IndexOf(']', pos);
                     if (closingBracket == -1)
                         throw new ArgumentException($"Unclosed bracket in server chain at position {pos}");
-                    
+
                     // Extract content between brackets (this is the hostname)
                     string bracketedHostname = chainInput.Substring(pos + 1, closingBracket - pos - 1);
                     pos = closingBracket + 1;
-                    
+
                     // Continue extracting modifiers (port/user/database) after the bracket until semicolon
                     int semicolon = chainInput.IndexOf(';', pos);
                     string modifiers;
@@ -324,7 +365,7 @@ namespace MSSQLand.Models
                         modifiers = chainInput.Substring(pos, semicolon - pos);
                         pos = semicolon + 1;
                     }
-                    
+
                     // Combine bracketed hostname with modifiers for parsing
                     serverString = bracketedHostname + modifiers;
                 }
@@ -343,10 +384,10 @@ namespace MSSQLand.Models
                         pos = semicolon + 1;
                     }
                 }
-                
+
                 serverStrings.Add(serverString.Trim());
             }
-            
+
             return serverStrings.Select(s => Server.ParseServer(s)).ToArray();
         }
 
@@ -354,7 +395,7 @@ namespace MSSQLand.Models
         /// Constructs a nested `OPENQUERY` statement for querying linked SQL servers in a chain.
         /// It passes the query string as-is to the linked server without attempting to parse or validate it as T-SQL on the local server.
         /// https://learn.microsoft.com/en-us/sql/t-sql/functions/openquery-transact-sql
-        /// 
+        ///
         /// </summary>
         /// <param name="query">The SQL query to execute at the final server.</param>
         /// <returns>A string containing the nested `OPENQUERY` statement.</returns>
@@ -363,7 +404,7 @@ namespace MSSQLand.Models
             return BuildSelectOpenQueryChainRecursive(
                 linkedServers: ComputableServerNames,
                 query: query,
-                linkedImpersonation: ComputableImpersonationNames,
+                linkedImpersonation: ComputableImpersonationUsers,
                 linkedDatabases: ComputableDatabaseNames
              );
         }
@@ -376,10 +417,10 @@ namespace MSSQLand.Models
         /// <param name="linkedServers">An array of server names representing the path of linked servers to traverse. '0' in front of them is mandatory to make the query work properly.</param>
         /// <param name="query">The SQL query to be executed at the final server in the linked server path.</param>
         /// <param name="thicksCounter">A counter used to double the single quotes for each level of nesting.</param>
-        /// <param name="linkedImpersonation">An array of impersonation users for each server.</param>
+        /// <param name="linkedImpersonation">An array of impersonation user arrays for each server.</param>
         /// <param name="linkedDatabases">An array of database contexts for each server.</param>
         /// <returns>A string containing the nested `OPENQUERY` statement.</returns>
-        private string BuildSelectOpenQueryChainRecursive(string[] linkedServers, string query, int thicksCounter = 0, string[] linkedImpersonation = null, string[] linkedDatabases = null)
+        private string BuildSelectOpenQueryChainRecursive(string[] linkedServers, string query, int thicksCounter = 0, string[][] linkedImpersonation = null, string[] linkedDatabases = null)
         {
             if (linkedServers == null || linkedServers.Length == 0)
             {
@@ -387,14 +428,13 @@ namespace MSSQLand.Models
             }
 
             string currentQuery = query;
-            
 
-            // Prepare the impersonation login, if any
-            string login = null;
+
+            // Prepare the cascading impersonation users, if any
+            string[] impersonationUsers = null;
             if (linkedImpersonation != null && linkedImpersonation.Length > 0)
             {
-
-                login = linkedImpersonation[0];
+                impersonationUsers = linkedImpersonation[0];
                 // Create a new array without the first element
                 linkedImpersonation = linkedImpersonation.Skip(1).ToArray();
             }
@@ -416,9 +456,13 @@ namespace MSSQLand.Models
             {
                 StringBuilder baseQuery = new StringBuilder();
 
-                if (!string.IsNullOrEmpty(login))
+                // Add cascading impersonation
+                if (impersonationUsers != null && impersonationUsers.Length > 0)
                 {
-                    baseQuery.Append($"EXECUTE AS LOGIN = '{login}';");
+                    foreach (var user in impersonationUsers)
+                    {
+                        baseQuery.Append($"EXECUTE AS LOGIN = '{user}';");
+                    }
                 }
 
                 if (!string.IsNullOrEmpty(database))
@@ -441,16 +485,19 @@ namespace MSSQLand.Models
             // Taking the next server in the path.
             stringBuilder.Append($"[{linkedServers[1]}],");
 
-            
+
             stringBuilder.Append(thicksRepr);
 
             // We are now inside the query, on the linked server
 
-            // Add impersonation if applicable
-            if (!string.IsNullOrEmpty(login))
+            // Add cascading impersonation if applicable
+            if (impersonationUsers != null && impersonationUsers.Length > 0)
             {
-                string impersonationQuery = $"EXECUTE AS LOGIN = '{login}';";
-                stringBuilder.Append(impersonationQuery.Replace("'", new('\'',(1 << (thicksCounter + 1)))));
+                foreach (var user in impersonationUsers)
+                {
+                    string impersonationQuery = $"EXECUTE AS LOGIN = '{user}';";
+                    stringBuilder.Append(impersonationQuery.Replace("'", new('\'',(1 << (thicksCounter + 1)))));
+                }
             }
 
             // Add database context if applicable
@@ -463,7 +510,7 @@ namespace MSSQLand.Models
 
             // Recursive call for the remaining servers
             string recursiveCall = BuildSelectOpenQueryChainRecursive(
-                linkedServers: linkedServers.Skip(1).ToArray(), // Skip the current server
+                linkedServers: linkedServers.Skip(1).ToArray(),
                 linkedImpersonation: linkedImpersonation,
                 linkedDatabases: linkedDatabases,
                 query: currentQuery,
@@ -474,7 +521,7 @@ namespace MSSQLand.Models
 
             // Closing the remote request
             stringBuilder.Append(thicksRepr);
-            stringBuilder.Append(")");
+            stringBuilder.Append(")");;
 
 
             return stringBuilder.ToString();
@@ -491,7 +538,7 @@ namespace MSSQLand.Models
             return BuildRemoteProcedureCallRecursive(
                 linkedServers: ComputableServerNames,
                 query: query,
-                linkedImpersonation: ComputableImpersonationNames,
+                linkedImpersonation: ComputableImpersonationUsers,
                 linkedDatabases: ComputableDatabaseNames
              );
         }
@@ -501,17 +548,17 @@ namespace MSSQLand.Models
         /// It loop from innermost server to outermost server.
         /// Each iteration adds impersonation and database context if provided. Then, appends prior query escaped.
         /// And finally wraps everything in EXEC ('...') AT [server].
-        /// 
+        ///
         /// Big-O time complexity of O(n * L) where:
         ///     n = number of linked servers
         ///     L = final query string length
         /// This is expected and optimal: you must touch the whole string each time because SQL must be re-encoded at each hop.
         /// <param name="linkedServers">An array of server names.</param>
         /// <param name="query">The SQL query to execute.</param>
-        /// <param name="linkedImpersonation">An array of impersonation users for each server.</param>
+        /// <param name="linkedImpersonation">An array of impersonation user arrays for each server.</param>
         /// <param name="linkedDatabases">An array of database contexts for each server.</param>
         /// <returns>A string containing the nested EXEC AT statement.</returns>
-        private static string BuildRemoteProcedureCallRecursive(string[] linkedServers, string query, string[] linkedImpersonation = null, string[] linkedDatabases = null)
+        private static string BuildRemoteProcedureCallRecursive(string[] linkedServers, string query, string[][] linkedImpersonation = null, string[] linkedDatabases = null)
         {
             string currentQuery = query;
 
@@ -520,13 +567,17 @@ namespace MSSQLand.Models
             {
                 string server = linkedServers[i];
                 StringBuilder queryBuilder = new StringBuilder();
-         
+
+                // Add cascading impersonation
                 if (linkedImpersonation != null && linkedImpersonation.Length > 0)
                 {
-                    string login = linkedImpersonation[i-1];
-                    if (!string.IsNullOrEmpty(login))
+                    string[] impersonationUsers = linkedImpersonation[i-1];
+                    if (impersonationUsers != null && impersonationUsers.Length > 0)
                     {
-                        queryBuilder.Append($"EXECUTE AS LOGIN = '{login}'; ");
+                        foreach (var user in impersonationUsers)
+                        {
+                            queryBuilder.Append($"EXECUTE AS LOGIN = '{user}'; ");
+                        }
                     }
                 }
 
@@ -541,7 +592,7 @@ namespace MSSQLand.Models
 
                 queryBuilder.Append(currentQuery.TrimEnd(';'));
                 queryBuilder.Append(";");
-                    
+
                 // Double single quotes to escape them in the SQL string
                 currentQuery = $"EXEC ('{queryBuilder.ToString().Replace("'", "''")}') AT [{server}]";
             }
@@ -558,7 +609,7 @@ namespace MSSQLand.Models
             ComputableServerNames = new string[ServerChain.Length + 1];
             ComputableServerNames[0] = "0";
 
-            ComputableImpersonationNames = new string[ServerChain.Length];
+            ComputableImpersonationUsers = new string[ServerChain.Length][];
             ComputableDatabaseNames = new string[ServerChain.Length];
             ServerNames = new string[ServerChain.Length];
 
@@ -567,7 +618,7 @@ namespace MSSQLand.Models
                 // Use QueryRoutingName for query building (prefers LinkedServerAlias if set)
                 ComputableServerNames[i + 1] = ServerChain[i].QueryRoutingName;
                 ServerNames[i] = ServerChain[i].QueryRoutingName;
-                ComputableImpersonationNames[i] = ServerChain[i].ImpersonationUser ?? "";
+                ComputableImpersonationUsers[i] = ServerChain[i].ImpersonationUsers ?? Array.Empty<string>();
                 ComputableDatabaseNames[i] = ServerChain[i].Database ?? "";
             }
         }

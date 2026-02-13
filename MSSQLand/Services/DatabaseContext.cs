@@ -36,22 +36,31 @@ namespace MSSQLand.Services
 
         /// <summary>
         /// Handles user impersonation if specified in the target.
+        /// Supports cascading impersonation (executing multiple EXECUTE AS LOGIN statements in sequence).
         /// </summary>
         private bool HandleImpersonation()
         {
-            string impersonateTarget = Server.ImpersonationUser;
-            if (!string.IsNullOrEmpty(impersonateTarget))
+            string[] impersonationUsers = Server.ImpersonationUsers;
+            if (impersonationUsers != null && impersonationUsers.Length > 0)
             {
-                if (UserService.CanImpersonate(impersonateTarget))
+                int totalUsers = impersonationUsers.Length;
+                for (int i = 0; i < totalUsers; i++)
                 {
+                    string user = impersonationUsers[i];
+                    int position = i + 1;
 
-                    UserService.ImpersonateUser(impersonateTarget);
-                    Logger.Success($"Successfully impersonated user: {impersonateTarget}");
-                    return true;
+                    try
+                    {
+                        UserService.ImpersonateUser(user);
+                        Logger.Success($"Successfully impersonated user: {user} ({position}/{totalUsers})");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"Failed to impersonate user '{user}' at step {position}/{totalUsers}: {ex.Message}");
+                        return false;
+                    }
                 }
-
-                Logger.Error($"Cannot impersonate user: {impersonateTarget}");
-                return false;
+                return true;
             }
 
             return true;

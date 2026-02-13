@@ -29,7 +29,9 @@ MSSQLand.exe <host> -c <cred> [options] <action> [action-options]
 Format: `server:port/user@database` or any combination `server/user@database:port`.
 - `server` (required) - The SQL Server hostname or IP
 - `:port` (optional) - Port number (default: 1433, also common: 1434, 14333, 2433)
-- `/user` (optional) - User to impersonate on this server ("execute as user")
+- `/user` (optional) - User to impersonate on this server ("execute as login")
+  - Supports **cascading impersonation**: `/user1/user2/user3` executes `EXECUTE AS LOGIN = 'user1'; EXECUTE AS LOGIN = 'user2'; EXECUTE AS LOGIN = 'user3';`
+  - Each `/user` pushes a new impersonation context onto the security stack
 - `@database` (optional) - Database context (defaults to 'master' if not specified)
 
 ```shell
@@ -51,7 +53,8 @@ Chain multiple SQL servers using the `-l` flag with **semicolon (`;`) as the sep
 
 **Syntax:**
 - **Semicolon (`;`)** - Separates servers in the chain
-- **Forward slash (`/`)** - Specifies user to impersonate ("execute as user")
+- **Forward slash (`/`)** - Specifies user to impersonate ("execute as login")
+  - Supports **cascading impersonation**: `/user1/user2` executes sequential impersonations
 - **At sign (`@`)** - Specifies database context
 - **Brackets (`[...]`)** - Used to protect the server name from being split by our delimiters
 
@@ -62,6 +65,12 @@ Chain multiple SQL servers using the `-l` flag with **semicolon (`;`) as the sep
 
 # With impersonation and databases
 -l SQL01/admin;SQL02;SQL03/manager@clients
+
+# Cascading impersonation (impersonate user1, then user2 on SQL01)
+-l SQL01/user1/user2;SQL02;SQL03
+
+# Mixed cascading (SQL01: user1→user2, SQL03: user3→user4→user5)
+-l SQL01/user1/user2;SQL02;SQL03/user3/user4/user5@database
 
 # Server names can contain hyphens, dots (no brackets needed)
 -l SQL-01;SERVER.001;HOST.DOMAIN.COM
