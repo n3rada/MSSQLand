@@ -64,9 +64,7 @@ ORDER BY sp.name;";
 
             Logger.Trace($"Exploring depth={depth}, path=[{string.Join(" -> ", currentPath)}]");
 
-            bool isLinkedServer = !databaseContext.QueryService.LinkedServers.IsEmpty;
-
-            if (isLinkedServer)
+            if (!databaseContext.QueryService.LinkedServers.IsEmpty)
             {
                 var lastServer = databaseContext.QueryService.LinkedServers.ServerChain.Last();
                 Logger.Trace($"Querying linked server with impersonation: [{(lastServer.ImpersonationUsers != null ? string.Join(" -> ", lastServer.ImpersonationUsers) : "none")}]");
@@ -97,20 +95,10 @@ ORDER BY sp.name;";
                 var newVisited = new HashSet<string>(visited, StringComparer.OrdinalIgnoreCase) { loginToImpersonate };
 
                 // Impersonate and recurse to find deeper chains
-                string[] savedImpersonations = null;
-
                 try
                 {
                     Logger.Debug($"Impersonating '{loginToImpersonate}' to explore deeper chains");
-
-                    if (isLinkedServer)
-                    {
-                        savedImpersonations = PushLinkedImpersonation(databaseContext, loginToImpersonate);
-                    }
-                    else
-                    {
-                        databaseContext.QueryService.ExecuteNonProcessing($"EXECUTE AS LOGIN = '{loginToImpersonate.Replace("'", "''")}';");
-                    }
+                    databaseContext.UserService.ImpersonateUser(loginToImpersonate);
 
                     BuildImpersonationMap(databaseContext, startingLogin, newPath, allChains, newVisited, depth + 1);
                 }
@@ -123,14 +111,7 @@ ORDER BY sp.name;";
                     // Always restore impersonation state
                     try
                     {
-                        if (isLinkedServer)
-                        {
-                            RestoreLinkedImpersonation(databaseContext, savedImpersonations);
-                        }
-                        else
-                        {
-                            databaseContext.QueryService.ExecuteNonProcessing("REVERT;");
-                        }
+                        databaseContext.UserService.RevertImpersonation();
                     }
                     catch (Exception ex)
                     {
@@ -140,45 +121,6 @@ ORDER BY sp.name;";
                     Logger.Debug($"Reverted from '{loginToImpersonate}'");
                 }
             }
-        }
-
-        /// <summary>
-        /// Pushes a new login onto the linked server impersonation chain.
-        /// Returns the previous impersonation array for later restoration.
-        /// </summary>
-        private static string[] PushLinkedImpersonation(DatabaseContext databaseContext, string login)
-        {
-            int lastServerIndex = databaseContext.QueryService.LinkedServers.ServerChain.Length - 1;
-            string[] previous = databaseContext.QueryService.LinkedServers.ServerChain[lastServerIndex].ImpersonationUsers;
-
-            var updated = new List<string>();
-            if (previous != null)
-            {
-                updated.AddRange(previous);
-            }
-            updated.Add(login);
-
-            string[] updatedArray = updated.ToArray();
-
-            databaseContext.QueryService.LinkedServers.ServerChain[lastServerIndex].ImpersonationUsers = updatedArray;
-            databaseContext.QueryService.LinkedServers.ComputableImpersonationUsers[lastServerIndex] = updatedArray;
-
-            Logger.Trace($"Impersonation chain: [{string.Join(", ", updated)}]");
-
-            return previous;
-        }
-
-        /// <summary>
-        /// Restores the linked server impersonation chain to a previous state.
-        /// </summary>
-        private static void RestoreLinkedImpersonation(DatabaseContext databaseContext, string[] previous)
-        {
-            int lastServerIndex = databaseContext.QueryService.LinkedServers.ServerChain.Length - 1;
-
-            databaseContext.QueryService.LinkedServers.ServerChain[lastServerIndex].ImpersonationUsers = previous;
-            databaseContext.QueryService.LinkedServers.ComputableImpersonationUsers[lastServerIndex] = previous ?? Array.Empty<string>();
-
-            Logger.Trace($"Restored chain to: [{(previous != null ? string.Join(", ", previous) : "none")}]");
         }
 
         /// <summary>
