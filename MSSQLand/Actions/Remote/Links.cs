@@ -32,6 +32,8 @@ namespace MSSQLand.Actions.Remote
                 Logger.Success($"Found {resultTable.Rows.Count} linked server(s).");
             }
 
+            Logger.Warning("Only returns the linked servers that user has visibility into.");
+
             return resultTable;
         }
 
