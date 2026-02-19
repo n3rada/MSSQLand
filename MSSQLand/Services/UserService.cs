@@ -6,6 +6,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Linq;
 
 namespace MSSQLand.Services
 {
@@ -52,6 +53,16 @@ namespace MSSQLand.Services
         public UserService(QueryService queryService)
         {
             _queryService = queryService;
+        }
+
+        /// <summary>
+        /// Clears cached admin and domain user status.
+        /// Call this when the execution context changes (e.g., after modifying the linked server chain).
+        /// </summary>
+        public void ClearCaches()
+        {
+            _adminStatusCache.Clear();
+            _isDomainUserCache.Clear();
         }
 
         public bool IsAdmin()
@@ -241,12 +252,21 @@ ORDER BY dp.principal_id;";
         }
 
         /// <summary>
-        /// Impersonates a specified user on the initial connection.
-        /// Throws ImpersonationFailedException if impersonation fails.
+        /// Impersonates a specified login.
+        /// For direct connections: issues EXECUTE AS LOGIN that persists in the session.
+        /// For linked servers: updates the impersonation arrays prepended to every query
+        /// (EXECUTE AS doesn't persist across separate EXEC() AT calls).
+        /// Throws ImpersonationFailedException if impersonation fails on direct connections.
         /// </summary>
         /// <param name="user">The login to impersonate.</param>
         public void ImpersonateUser(string user)
         {
+            if (!_queryService.LinkedServers.IsEmpty)
+            {
+                PushLinkedImpersonation(user);
+                return;
+            }
+
             try
             {
                 const string query = "EXECUTE AS LOGIN = @User;";
@@ -263,15 +283,80 @@ ORDER BY dp.principal_id;";
         }
 
         /// <summary>
-        /// Reverts any active impersonation and restores the original login.
+        /// Attempts to impersonate a specified login without throwing on failure.
+        /// </summary>
+        /// <param name="user">The login to impersonate.</param>
+        /// <returns>True if impersonation succeeded; false otherwise.</returns>
+        public bool TryImpersonateUser(string user)
+        {
+            try
+            {
+                ImpersonateUser(user);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Reverts the last impersonation hop.
+        /// For direct connections: issues a REVERT command.
+        /// For linked servers: pops the last login from the impersonation arrays.
         /// </summary>
         public void RevertImpersonation()
         {
+            if (!_queryService.LinkedServers.IsEmpty)
+            {
+                PopLinkedImpersonation();
+                return;
+            }
+
             const string query = "REVERT;";
             using var command = new SqlCommand(query, _queryService.Connection);
             command.ExecuteNonQuery();
 
-            Logger.Info("Reverted impersonation, restored original login.");
+            Logger.Debug("Reverted impersonation");
+        }
+
+        /// <summary>
+        /// Pushes a login onto the linked server impersonation chain (last server in the chain).
+        /// </summary>
+        private void PushLinkedImpersonation(string login)
+        {
+            int lastIdx = _queryService.LinkedServers.ServerChain.Length - 1;
+            string[] current = _queryService.LinkedServers.ServerChain[lastIdx].ImpersonationUsers;
+
+            var updated = new List<string>();
+            if (current != null) updated.AddRange(current);
+            updated.Add(login);
+
+            string[] updatedArray = updated.ToArray();
+            _queryService.LinkedServers.ServerChain[lastIdx].ImpersonationUsers = updatedArray;
+            _queryService.LinkedServers.ComputableImpersonationUsers[lastIdx] = updatedArray;
+
+            Logger.Trace($"Linked impersonation chain set to: [{string.Join(" -> ", updated)}]");
+        }
+
+        /// <summary>
+        /// Pops the last login from the linked server impersonation chain (last server in the chain).
+        /// </summary>
+        private void PopLinkedImpersonation()
+        {
+            int lastIdx = _queryService.LinkedServers.ServerChain.Length - 1;
+            string[] current = _queryService.LinkedServers.ServerChain[lastIdx].ImpersonationUsers;
+            string[] restored = null;
+
+            if (current != null && current.Length > 1)
+            {
+                restored = current.Take(current.Length - 1).ToArray();
+            }
+
+            _queryService.LinkedServers.ServerChain[lastIdx].ImpersonationUsers = restored;
+            _queryService.LinkedServers.ComputableImpersonationUsers[lastIdx] = restored ?? Array.Empty<string>();
+
+            Logger.Trace($"Linked impersonation reverted to: [{(restored != null ? string.Join(" -> ", restored) : "none")}]");
         }
     }
 }
