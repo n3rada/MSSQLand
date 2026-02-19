@@ -129,10 +129,10 @@ ORDER BY sp.name;";
         private static DataTable FormatResults(List<(string StartingLogin, List<string> Path)> chains)
         {
             DataTable result = new DataTable();
+            result.Columns.Add("Hops", typeof(int));
             result.Columns.Add("Starting Login", typeof(string));
             result.Columns.Add("Middle Logins", typeof(string));
             result.Columns.Add("End Login", typeof(string));
-            result.Columns.Add("Hops", typeof(int));
 
             foreach (var (startingLogin, path) in chains.OrderBy(c => c.Path.Count).ThenBy(c => string.Join(" -> ", c.Path)))
             {
@@ -141,7 +141,7 @@ ORDER BY sp.name;";
                     ? string.Join(", ", path.Take(path.Count - 1))
                     : "";
 
-                result.Rows.Add(startingLogin, middleLogins, endLogin, path.Count);
+                result.Rows.Add(path.Count, startingLogin, middleLogins, endLogin);
             }
 
             return result;
