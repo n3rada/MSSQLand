@@ -161,18 +161,10 @@ namespace MSSQLand
 
                     // Show impersonation chain if any occurred on the initial host
                     string[] impersonationUsers = databaseContext.Server.ImpersonationUsers;
-                    string originalLogin = databaseContext.UserService.OriginalLogin;
-
-
-                    // Show original login if different from current (i.e. impersonation occurred)
-                    if (!originalLogin.Equals(systemUser, StringComparison.OrdinalIgnoreCase))
-                    {
-                        Logger.InfoNested($"Original login: {originalLogin}");
-                    }
 
                     if (impersonationUsers != null && impersonationUsers.Length > 0)
                     {
-                        string chain = originalLogin + " → " + string.Join(" → ", impersonationUsers);
+                        string chain = (arguments.Username ?? systemUser) + " → " + string.Join(" → ", impersonationUsers);
                         Logger.InfoNested($"Impersonation chain: {chain}");
                     }
 
