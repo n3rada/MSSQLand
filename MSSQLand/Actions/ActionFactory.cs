@@ -41,8 +41,8 @@ namespace MSSQLand.Actions
             { "roles", (typeof(Roles), "List all database roles and their members in the current database.", null) },
             { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).", null) },
             { "permissions", (typeof(Permissions), "Enumerate user and role permissions.", null) },
-            { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.", new[] { "impersonation" }) },
-            { "impersonate-chains", (typeof(ImpersonationChains), "Map impersonation chains to discover reachable logins through delegation paths.", new[] { "impchains", "imptree" }) },
+            { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.", new[] { "impersonation", "imp" }) },
+            { "impersonate-chains", (typeof(ImpersonationChains), "Map impersonation chains to discover reachable logins through delegation paths.", new[] { "impchains", "impmap" }) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // DATABASE ACTIONS - OPERATIONS
