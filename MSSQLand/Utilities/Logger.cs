@@ -40,6 +40,32 @@ namespace MSSQLand.Utilities
         /// </summary>
         public static bool IsSilentModeEnabled { get; set; } = false;
 
+        /// <summary>
+        /// Temporarily enables silent mode for the duration of the returned IDisposable.
+        /// Use with 'using' statement to automatically restore previous state.
+        /// </summary>
+        /// <returns>An IDisposable that restores the previous silent mode state when disposed.</returns>
+        public static IDisposable TemporarilySilent()
+        {
+            return new SilentModeScope();
+        }
+
+        private class SilentModeScope : IDisposable
+        {
+            private readonly bool _previousState;
+
+            public SilentModeScope()
+            {
+                _previousState = IsSilentModeEnabled;
+                IsSilentModeEnabled = true;
+            }
+
+            public void Dispose()
+            {
+                IsSilentModeEnabled = _previousState;
+            }
+        }
+
         public static void NewLine()
         {
             if (IsSilentModeEnabled) return;
