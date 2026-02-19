@@ -302,6 +302,23 @@ namespace MSSQLand.Models
         }
 
         /// <summary>
+        /// Removes the last server from the linked server chain.
+        /// This is the inverse of AddToChain, used for backtracking during exploration.
+        /// </summary>
+        public void RemoveLastFromChain()
+        {
+            if (ServerChain.Length == 0)
+            {
+                Logger.Debug("Cannot remove from an empty linked server chain.");
+                return;
+            }
+
+            Logger.Debug($"Removing server {ServerChain.Last().Hostname} from the linked server chain.");
+            ServerChain = ServerChain.Take(ServerChain.Length - 1).ToArray();
+            RecomputeChain();
+        }
+
+        /// <summary>
         /// Parses a semicolon-separated list of servers into an array of Server objects.
         ///
         /// Syntax:
