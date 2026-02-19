@@ -100,7 +100,30 @@ WHERE HAS_PERMS_BY_NAME(sp.name, 'LOGIN', 'IMPERSONATE') = 1
     AND sp.name NOT LIKE '##%'
 ORDER BY sp.name;";
 
+            // Trace execution context before query
+            bool isLinkedServer = !databaseContext.QueryService.LinkedServers.IsEmpty;
+            if (isLinkedServer)
+            {
+                Logger.Trace($"About to execute query through linked server");
+                Logger.Trace($"ExecutionServer.ImpersonationUsers before query: [{(databaseContext.QueryService.ExecutionServer.ImpersonationUsers != null ? string.Join(", ", databaseContext.QueryService.ExecutionServer.ImpersonationUsers) : "null")}]");
+            }
+
             DataTable impersonatableLogins = databaseContext.QueryService.ExecuteTable(query);
+
+            // Trace the actual logins found
+            if (impersonatableLogins.Rows.Count > 0)
+            {
+                var foundLogins = new List<string>();
+                foreach (DataRow row in impersonatableLogins.Rows)
+                {
+                    foundLogins.Add(row["name"].ToString());
+                }
+                Logger.Trace($"Query returned logins: [{string.Join(", ", foundLogins)}]");
+            }
+            else
+            {
+                Logger.Trace("Query returned no logins");
+            }
 
             Logger.Debug($"Found {impersonatableLogins.Rows.Count} impersonatable login(s) at depth {depth}");
 
@@ -111,6 +134,10 @@ ORDER BY sp.name;";
             {
                 string loginToImpersonate = row["name"].ToString();
 
+                // Skip self-impersonation back to the starting login
+                if (loginToImpersonate.Equals(startingLogin, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
                 // Avoid cycles
                 if (visited.Contains(loginToImpersonate))
                     continue;
@@ -118,38 +145,108 @@ ORDER BY sp.name;";
                 // Create a new chain path
                 List<string> newPath = new List<string>(currentPath) { loginToImpersonate };
 
-                // Add this chain (skip if starting login is the same as end login)
-                if (!loginToImpersonate.Equals(startingLogin, StringComparison.OrdinalIgnoreCase))
+                // Add this chain
+                allChains.Add(new ImpersonationChain
                 {
-                    allChains.Add(new ImpersonationChain
-                    {
-                        StartingLogin = startingLogin,
-                        ChainPath = new List<string>(newPath),
-                        Hops = depth + 1
-                    });
-                }
+                    StartingLogin = startingLogin,
+                    ChainPath = new List<string>(newPath),
+                    Hops = depth + 1
+                });
 
                 // Mark as visited for this branch
                 HashSet<string> newVisited = new HashSet<string>(visited) { loginToImpersonate };
 
+                // Check if we're executing through a linked server
+                string[] previousImpersonations = null;
+
                 // Impersonate the login and recurse
                 try
                 {
-                    Logger.Debug($"Impersonating '{loginToImpersonate}' to explore deeper chains...");
-                    databaseContext.QueryService.ExecuteNonProcessing($"EXECUTE AS LOGIN = '{loginToImpersonate.Replace("'", "''")}';");
+                    Logger.Debug($"Impersonating '{loginToImpersonate}' to explore deeper chains");
+
+                    if (isLinkedServer)
+                    {
+                        // For linked servers, track impersonation in ExecutionServer
+                        // so it's prepended to all subsequent queries
+                        previousImpersonations = databaseContext.QueryService.ExecutionServer.ImpersonationUsers;
+
+                        // Add new impersonation to the chain
+                        var newImpersonations = new List<string>();
+                        if (previousImpersonations != null)
+                        {
+                            newImpersonations.AddRange(previousImpersonations);
+                        }
+                        newImpersonations.Add(loginToImpersonate);
+
+                        // Update ExecutionServer
+                        databaseContext.QueryService.ExecutionServer.ImpersonationUsers = newImpersonations.ToArray();
+                        Logger.Trace($"Set ExecutionServer.ImpersonationUsers to: [{string.Join(", ", newImpersonations)}]");
+
+                        // Also update the LinkedServers ComputableImpersonationUsers cache
+                        int lastServerIndex = databaseContext.QueryService.LinkedServers.ServerChain.Length - 1;
+                        if (lastServerIndex >= 0)
+                        {
+                            databaseContext.QueryService.LinkedServers.ComputableImpersonationUsers[lastServerIndex] = newImpersonations.ToArray();
+                        }
+
+                        Logger.Trace($"Updated impersonation chain to: [{string.Join(", ", newImpersonations)}]");
+                    }
+                    else
+                    {
+                        // Direct connection: use EXECUTE AS
+                        databaseContext.QueryService.ExecuteNonProcessing($"EXECUTE AS LOGIN = '{loginToImpersonate.Replace("'", "''")}';");
+                    }
 
                     // Recursively find more chains
                     BuildImpersonationMap(databaseContext, startingLogin, newPath, allChains, newVisited, depth + 1);
 
                     // Revert impersonation
                     Logger.Debug($"Reverting from '{loginToImpersonate}'");
-                    databaseContext.QueryService.ExecuteNonProcessing("REVERT;");
+
+                    if (isLinkedServer)
+                    {
+                        // Restore previous impersonation chain
+                        databaseContext.QueryService.ExecutionServer.ImpersonationUsers = previousImpersonations;
+
+                        // Also restore ComputableImpersonationUsers cache
+                        int lastServerIndex = databaseContext.QueryService.LinkedServers.ServerChain.Length - 1;
+                        if (lastServerIndex >= 0)
+                        {
+                            databaseContext.QueryService.LinkedServers.ComputableImpersonationUsers[lastServerIndex] = previousImpersonations ?? Array.Empty<string>();
+                        }
+
+                        Logger.Trace($"Restored impersonation chain to: [{(previousImpersonations != null ? string.Join(", ", previousImpersonations) : "null")}]");
+                    }
+                    else
+                    {
+                        // Direct connection: use REVERT
+                        databaseContext.QueryService.ExecuteNonProcessing("REVERT;");
+                    }
                 }
                 catch (Exception ex)
                 {
                     Logger.Warning($"Failed to impersonate '{loginToImpersonate}': {ex.Message}");
-                    // Try to revert just in case
-                    try { databaseContext.QueryService.ExecuteNonProcessing("REVERT;"); } catch { }
+
+                    // Try to revert/restore impersonation state
+                    try
+                    {
+                        if (isLinkedServer)
+                        {
+                            databaseContext.QueryService.ExecutionServer.ImpersonationUsers = previousImpersonations;
+
+                            // Restore ComputableImpersonationUsers cache
+                            int lastServerIndex = databaseContext.QueryService.LinkedServers.ServerChain.Length - 1;
+                            if (lastServerIndex >= 0)
+                            {
+                                databaseContext.QueryService.LinkedServers.ComputableImpersonationUsers[lastServerIndex] = previousImpersonations ?? Array.Empty<string>();
+                            }
+                        }
+                        else
+                        {
+                            databaseContext.QueryService.ExecuteNonProcessing("REVERT;");
+                        }
+                    }
+                    catch { }
                 }
             }
         }
