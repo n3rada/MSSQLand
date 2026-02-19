@@ -29,6 +29,14 @@ namespace MSSQLand.Actions.Database
             Logger.TaskNested("Starting impersonation chain mapping");
 
             string startingLogin = databaseContext.UserService.SystemUser;
+
+            // Check if user is sysadmin - they can impersonate anyone, so no need to map chains
+            if (databaseContext.UserService.IsAdmin())
+            {
+                Logger.Success("Current user is 'sysadmin'; can impersonate any login directly (no chain mapping needed).");
+                return new DataTable();
+            }
+
             List<ImpersonationChain> allChains = new List<ImpersonationChain>();
 
             // Build chains recursively
