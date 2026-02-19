@@ -73,7 +73,11 @@ namespace MSSQLand.Actions.Database
                 result.Rows.Add(chain.StartingLogin, middleLogins, endLogin, chain.Hops);
             }
 
-            Console.WriteLine(OutputFormatter.ConvertDataTable(result));
+            if (!Logger.IsSilentModeEnabled)
+            {
+                Console.WriteLine(OutputFormatter.ConvertDataTable(result));
+            }
+
             Logger.Success($"Found {allChains.Count} impersonation chain(s)");
 
             return result;
