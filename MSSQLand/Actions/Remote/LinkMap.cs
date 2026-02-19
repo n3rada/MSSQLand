@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using MSSQLand.Actions.Database;
 using MSSQLand.Models;
 using MSSQLand.Services;
@@ -41,13 +40,13 @@ namespace MSSQLand.Actions.Remote
         private ServerNode _rootNode;
 
         /// <summary>
-        /// Global set of server aliases that have been fully explored.
-        /// Once a server is explored via any path, we don't need to explore it again
-        /// since it will have the same linked servers regardless of how we reached it.
-        /// This prevents combinatorial explosion in mesh topologies.
+        /// Global set of (server, login) pairs that have been fully explored.
+        /// A server explored as one user may have different linked servers and permissions
+        /// when accessed as a different user, so we track both.
+        /// This prevents infinite loops while allowing re-exploration with different user contexts.
         /// </summary>
         [ExcludeFromArguments]
-        private readonly HashSet<string> _globallyExploredServers = new(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _globallyExploredContexts = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Tracks all discovered chains for programmatic access.
@@ -146,8 +145,8 @@ namespace MSSQLand.Actions.Remote
                 return null;
             }
 
-            // Mark starting server as explored
-            _globallyExploredServers.Add(databaseContext.Server.Hostname);
+            // Mark starting server+user as explored
+            _globallyExploredContexts.Add($"{databaseContext.Server.Hostname}|{databaseContext.Server.SystemUser}".ToUpperInvariant());
 
             // Compute starting server's state hash for loop detection
             string startingHash = BuildStateHash(
@@ -197,51 +196,59 @@ namespace MSSQLand.Actions.Remote
 
             Logger.TaskNested($"Total reachable SQL Server linked servers: {allSqlLinks.Count}");
 
-            // Explore each discovered SQL link
+            // Explore each discovered SQL link using the SAME connection
             foreach (var kvp in allSqlLinks)
             {
                 string remoteServer = kvp.Key;
                 var (linkRow, chainToReach) = kvp.Value;
                 string requiredLogin = linkRow["Local Login"] == DBNull.Value ? "" : linkRow["Local Login"].ToString();
 
-                if (_globallyExploredServers.Contains(remoteServer))
+                if (_globallyExploredContexts.Contains($"{remoteServer}|{requiredLogin}".ToUpperInvariant()))
                 {
-                    Logger.TraceNested($"Server '{remoteServer}' already explored. Skipping.");
+                    Logger.TraceNested($"Server '{remoteServer}' already explored as '{requiredLogin}'. Skipping.");
                     continue;
                 }
 
                 HashSet<string> visitedInChain = new() { startingHash };
-                DatabaseContext tempContext = databaseContext.Duplicate();
                 List<ServerNode> currentPath = new();
 
-                // Apply the full impersonation chain needed to reach the right login context
+                // Apply session-level impersonation (EXECUTE AS on the direct connection)
+                // At this point LinkedServers is empty, so TryApplyImpersonationChain uses EXECUTE AS mode
+                int sessionHops = 0;
                 if (chainToReach != null && chainToReach.Count > 0)
                 {
-                    if (!TryApplyImpersonationChain(tempContext, chainToReach))
+                    if (!TryApplyImpersonationChain(databaseContext, chainToReach))
                     {
                         Logger.TraceNested($"Cannot apply impersonation chain for link to '{remoteServer}'. Skipping.");
                         continue;
                     }
+                    sessionHops = chainToReach.Count;
                 }
-                else if (!string.IsNullOrEmpty(requiredLogin) && !requiredLogin.Equals(tempContext.Server.SystemUser, StringComparison.OrdinalIgnoreCase))
+                else if (!string.IsNullOrEmpty(requiredLogin) && !requiredLogin.Equals(databaseContext.Server.SystemUser, StringComparison.OrdinalIgnoreCase))
                 {
-                    try
-                    {
-                        tempContext.QueryService.ExecuteNonProcessing($"EXECUTE AS LOGIN = '{requiredLogin.Replace("'", "''")}';" );
-                    }
-                    catch
+                    if (!TryApplyImpersonationChain(databaseContext, new List<string> { requiredLogin }))
                     {
                         Logger.TraceNested($"Cannot impersonate '{requiredLogin}' on starting server. Skipping link to '{remoteServer}'.");
                         continue;
                     }
+                    sessionHops = 1;
                 }
 
-                // Determine the impersonation chain used on the starting server to reach this link
-                List<string> startingImpersonation = chainToReach ?? (!string.IsNullOrEmpty(requiredLogin) && !requiredLogin.Equals(databaseContext.Server.SystemUser, StringComparison.OrdinalIgnoreCase)
-                    ? new List<string> { requiredLogin }
-                    : new List<string>());
+                try
+                {
+                    // Determine the impersonation chain used on the starting server to reach this link
+                    List<string> startingImpersonation = chainToReach ?? (!string.IsNullOrEmpty(requiredLogin) && !requiredLogin.Equals(databaseContext.Server.SystemUser, StringComparison.OrdinalIgnoreCase)
+                        ? new List<string> { requiredLogin }
+                        : new List<string>());
 
-                ExploreLinkedServer(tempContext, remoteServer, _rootNode, currentPath, visitedInChain, startingImpersonation, currentDepth: 0);
+                    ExploreLinkedServer(databaseContext, remoteServer, _rootNode, currentPath, visitedInChain, startingImpersonation, currentDepth: 0);
+                }
+                finally
+                {
+                    // Revert session-level impersonation (LinkedServers is empty again after ExploreLinkedServer)
+                    if (sessionHops > 0)
+                        RevertChain(databaseContext, sessionHops);
+                }
             }
 
             // Count total chains
@@ -269,6 +276,8 @@ namespace MSSQLand.Actions.Remote
         /// <summary>
         /// Recursively explores linked servers, building a tree structure.
         /// At each server, dynamically discovers what users can be impersonated and what linked servers they have access to.
+        /// Uses a single connection with AddToChain/RemoveLastFromChain for clean push/pop semantics,
+        /// and EXECUTE AS arrays for linked server impersonation (same pattern as ImpersonationMap).
         /// </summary>
         private void ExploreLinkedServer(DatabaseContext databaseContext, string targetServer,
             ServerNode parentNode, List<ServerNode> currentPath, HashSet<string> visitedInChain,
@@ -280,12 +289,15 @@ namespace MSSQLand.Actions.Remote
                 return;
             }
 
+            // Push this server onto the linked chain — popped in finally
+            databaseContext.QueryService.LinkedServers.AddToChain(targetServer);
+
             try
             {
-                // Add server to chain
-                databaseContext.QueryService.LinkedServers.AddToChain(targetServer);
+                // Clear stale caches since we changed execution context
+                databaseContext.UserService.ClearCaches();
 
-                // Query actual server name
+                // Query actual server name through the chain
                 string actualServerName = targetServer;
                 try
                 {
@@ -300,7 +312,7 @@ namespace MSSQLand.Actions.Remote
                     // Keep alias as fallback
                 }
 
-                // Query user info through the chain
+                // Query user info through the chain (also updates UserService.SystemUser for ImpersonationMap)
                 var (mappedUser, remoteLoggedInUser) = databaseContext.UserService.GetInfo();
                 Logger.TraceNested($"Logged in to server '{targetServer}' (actual: {actualServerName}) as: '{remoteLoggedInUser}' [{mappedUser}]");
 
@@ -336,8 +348,8 @@ namespace MSSQLand.Actions.Remote
                 var newPath = new List<ServerNode>(currentPath) { currentNode };
                 _allChains.Add(newPath);
 
-                // Mark this server as globally explored
-                _globallyExploredServers.Add(targetServer);
+                // Mark this server+user as globally explored
+                _globallyExploredContexts.Add($"{targetServer}|{remoteLoggedInUser}".ToUpperInvariant());
 
                 // Build complete map of reachable links via all transitive impersonation chains.
                 // Key: server name, Value: (row with link info, chain needed to reach that context)
@@ -414,45 +426,68 @@ namespace MSSQLand.Actions.Remote
                 // Explore each SQL Server link
                 foreach (var (nextServer, nextLocalLogin, row, chainToReach) in remoteSqlLinks)
                 {
-                    // Skip if already explored globally
-                    if (_globallyExploredServers.Contains(nextServer))
+                    // Skip if already explored with the same user context
+                    string remoteLogin = nextLocalLogin;
+                    // If we don't know the remote login yet, we can't pre-filter — explore and let the hash check handle it
+                    if (!string.IsNullOrEmpty(remoteLogin) && _globallyExploredContexts.Contains($"{nextServer}|{remoteLogin}".ToUpperInvariant()))
                     {
-                        Logger.TraceNested($"Server '{nextServer}' already explored via another path. Skipping.");
+                        Logger.TraceNested($"Server '{nextServer}' already explored as '{remoteLogin}'. Skipping.");
                         continue;
                     }
 
                     HashSet<string> branchVisited = new(visitedInChain);
-                    DatabaseContext branchContext = databaseContext.Duplicate();
 
-                    // Apply the full impersonation chain needed to reach the right login context
+                    // Apply impersonation chain on this linked server for the child link
+                    // Since LinkedServers is not empty, TryApplyImpersonationChain uses array mode
+                    int impersonationHops = 0;
                     if (chainToReach != null && chainToReach.Count > 0)
                     {
-                        if (!TryApplyImpersonationChain(branchContext, chainToReach))
+                        if (!TryApplyImpersonationChain(databaseContext, chainToReach))
                         {
                             Logger.TraceNested($"Cannot apply impersonation chain on '{targetServer}' for link to '{nextServer}'. Skipping.");
                             continue;
                         }
+                        impersonationHops = chainToReach.Count;
                     }
-                    else if (!string.IsNullOrEmpty(nextLocalLogin) && !nextLocalLogin.Equals(branchContext.Server.SystemUser, StringComparison.OrdinalIgnoreCase))
+                    else if (!string.IsNullOrEmpty(nextLocalLogin) && !nextLocalLogin.Equals(remoteLoggedInUser, StringComparison.OrdinalIgnoreCase))
                     {
-                        if (!TryApplyImpersonationChain(branchContext, new List<string> { nextLocalLogin }))
+                        if (TryApplyImpersonationChain(databaseContext, new List<string> { nextLocalLogin }))
+                        {
+                            impersonationHops = 1;
+                        }
+                        else
                         {
                             Logger.TraceNested($"Cannot impersonate '{nextLocalLogin}' on '{targetServer}' for link to '{nextServer}'. Trying without impersonation.");
                         }
                     }
 
-                    // Determine the impersonation chain used on this server to reach the next link
-                    List<string> nextImpersonation = chainToReach ?? (!string.IsNullOrEmpty(nextLocalLogin) && !nextLocalLogin.Equals(databaseContext.Server.SystemUser, StringComparison.OrdinalIgnoreCase)
-                        ? new List<string> { nextLocalLogin }
-                        : new List<string>());
+                    try
+                    {
+                        // Determine the impersonation chain used on this server to reach the next link
+                        List<string> nextImpersonation = chainToReach ?? (!string.IsNullOrEmpty(nextLocalLogin) && !nextLocalLogin.Equals(remoteLoggedInUser, StringComparison.OrdinalIgnoreCase)
+                            ? new List<string> { nextLocalLogin }
+                            : new List<string>());
 
-                    // Explore recursively
-                    ExploreLinkedServer(branchContext, nextServer, currentNode, newPath, branchVisited, nextImpersonation, currentDepth + 1);
+                        // Recurse — ExploreLinkedServer will AddToChain/RemoveLastFromChain internally
+                        ExploreLinkedServer(databaseContext, nextServer, currentNode, newPath, branchVisited, nextImpersonation, currentDepth + 1);
+                    }
+                    finally
+                    {
+                        // Revert impersonation on this server's linked array slot
+                        if (impersonationHops > 0)
+                            RevertChain(databaseContext, impersonationHops);
+                    }
                 }
             }
             catch (Exception ex)
             {
                 Logger.TraceNested($"Failed to explore {targetServer}: {ex.Message}");
+            }
+            finally
+            {
+                // Pop this server from the linked chain and clear stale caches
+                databaseContext.QueryService.LinkedServers.RemoveLastFromChain();
+                databaseContext.UserService.ClearCaches();
             }
         }
 
@@ -501,43 +536,18 @@ namespace MSSQLand.Actions.Remote
 
         /// <summary>
         /// Applies a full multi-hop impersonation chain.
-        /// For linked servers: updates the impersonation arrays so EXECUTE AS gets prepended to every query.
-        /// For direct connections: issues individual EXECUTE AS commands that persist in the session.
+        /// Delegates to UserService which handles both direct and linked server modes.
         /// </summary>
         private static bool TryApplyImpersonationChain(DatabaseContext databaseContext, List<string> chain)
         {
-            if (!databaseContext.QueryService.LinkedServers.IsEmpty)
-            {
-                // Linked servers: EXECUTE AS doesn't persist across separate EXEC() calls.
-                // Instead, add logins to the impersonation arrays prepended to every query.
-                string[] current = databaseContext.QueryService.ExecutionServer.ImpersonationUsers;
-                var updated = new List<string>();
-                if (current != null) updated.AddRange(current);
-                updated.AddRange(chain);
-
-                string[] updatedArray = updated.ToArray();
-                databaseContext.QueryService.ExecutionServer.ImpersonationUsers = updatedArray;
-
-                int lastServerIndex = databaseContext.QueryService.LinkedServers.ServerChain.Length - 1;
-                if (lastServerIndex >= 0)
-                {
-                    databaseContext.QueryService.LinkedServers.ComputableImpersonationUsers[lastServerIndex] = updatedArray;
-                }
-
-                Logger.Trace($"Linked impersonation chain set to: [{string.Join(" -> ", updated)}]");
-                return true;
-            }
-
-            // Direct connection: EXECUTE AS persists in the session
             int applied = 0;
             foreach (string login in chain)
             {
-                try
+                if (databaseContext.UserService.TryImpersonateUser(login))
                 {
-                    databaseContext.QueryService.ExecuteNonProcessing($"EXECUTE AS LOGIN = '{login.Replace("'", "''")}';");
                     applied++;
                 }
-                catch
+                else
                 {
                     RevertChain(databaseContext, applied);
                     return false;
@@ -547,37 +557,15 @@ namespace MSSQLand.Actions.Remote
         }
 
         /// <summary>
-        /// Reverts a multi-hop impersonation chain.
-        /// For linked servers: removes the last N logins from the impersonation arrays.
-        /// For direct connections: issues REVERT once per hop.
+        /// Reverts a multi-hop impersonation chain by reverting one hop at a time.
+        /// Delegates to UserService which handles both direct and linked server modes.
         /// </summary>
         private static void RevertChain(DatabaseContext databaseContext, int hops)
         {
-            if (!databaseContext.QueryService.LinkedServers.IsEmpty)
-            {
-                string[] current = databaseContext.QueryService.ExecutionServer.ImpersonationUsers;
-                string[] restored = null;
-
-                if (current != null && current.Length > hops)
-                {
-                    restored = current.Take(current.Length - hops).ToArray();
-                }
-
-                databaseContext.QueryService.ExecutionServer.ImpersonationUsers = restored;
-
-                int lastServerIndex = databaseContext.QueryService.LinkedServers.ServerChain.Length - 1;
-                if (lastServerIndex >= 0)
-                {
-                    databaseContext.QueryService.LinkedServers.ComputableImpersonationUsers[lastServerIndex] = restored ?? Array.Empty<string>();
-                }
-
-                Logger.Trace($"Linked impersonation chain restored to: [{(restored != null ? string.Join(" -> ", restored) : "none")}]");
-                return;
-            }
-
-            // Direct connection: REVERT once per hop
             for (int i = 0; i < hops; i++)
-                try { databaseContext.QueryService.ExecuteNonProcessing("REVERT;"); } catch { }
+            {
+                try { databaseContext.UserService.RevertImpersonation(); } catch { }
+            }
         }
 
         private int CountLeafNodes(ServerNode node)
