@@ -52,14 +52,14 @@ namespace MSSQLand.Services
                     try
                     {
                         UserService.ImpersonateUser(user);
-                        Logger.Success($"Successfully impersonated user: {user} ({position}/{totalUsers})");
                     }
                     catch (Exception ex)
                     {
-                        Logger.Error($"Failed to impersonate user '{user}' at step {position}/{totalUsers}: {ex.Message}");
+                        Logger.Error($"Failed to impersonate '{user}' at step {position}/{totalUsers}: {ex.Message}");
                         return false;
                     }
                 }
+
                 return true;
             }
 

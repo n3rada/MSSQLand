@@ -203,19 +203,26 @@ namespace MSSQLand.Models
         ///
         /// Examples:
         /// - No impersonation:              SQL01 ──> SQL02 ──> SQL03
-        /// - Initial host cascade:          SQL01 ─(lowpriv → midpriv)─> SQL02 ──> SQL03
+        /// - With login:                    SQL01 (sa) ──> SQL02 ──> SQL03
+        /// - Initial host cascade:          SQL01 (test) ─(lowpriv → midpriv)─> SQL02 ──> SQL03
         /// - Intermediate impersonation:    SQL01 ──> SQL02 ─(user02)─> SQL03
         /// - Last server impersonation:     SQL01 ──> SQL02 ──> SQL03 (as webapp)
         /// - Last server cascade:           SQL01 ──> SQL02 ──> SQL03 (as test_user → log_user)
-        /// - Mixed cascade:                 SQL01 ─(user02)─> SQL02 ──> SQL03 ─(test_user → log_user)─> SQL04
+        /// - Mixed cascade:                 SQL01 (sa) ─(user02)─> SQL02 ──> SQL03 ─(test_user → log_user)─> SQL04
         /// </summary>
         /// <param name="initialHost">The initial host server name.</param>
+        /// <param name="initialLogin">Optional login name shown on the initial host.</param>
         /// <param name="initialImpersonation">Optional impersonation users on the initial host.</param>
         /// <returns>A formatted chain display string.</returns>
-        public string FormatChainDisplay(string initialHost, string[] initialImpersonation = null)
+        public string FormatChainDisplay(string initialHost, string initialLogin = null, string[] initialImpersonation = null)
         {
             StringBuilder sb = new();
             sb.Append(initialHost);
+
+            if (!string.IsNullOrEmpty(initialLogin))
+            {
+                sb.Append($" ({initialLogin})");
+            }
 
             // Initial host impersonation becomes the connector to the first linked server
             sb.Append(FormatConnector(initialImpersonation));

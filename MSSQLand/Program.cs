@@ -158,6 +158,15 @@ namespace MSSQLand
                     databaseContext.Server.SystemUser = systemUser;
 
                     Logger.Info($"Logged in on {databaseContext.Server.Hostname}");
+
+                    // Show impersonation chain if any occurred on the initial host
+                    string[] impersonationUsers = databaseContext.Server.ImpersonationUsers;
+                    if (impersonationUsers != null && impersonationUsers.Length > 0)
+                    {
+                        string chain = string.Join(" → ", impersonationUsers);
+                        Logger.InfoNested($"Impersonation chain: {chain}");
+                    }
+
                     Logger.InfoNested($"Login: {systemUser}");
                     Logger.InfoNested($"Mapped to user: {userName}");
 
@@ -199,6 +208,7 @@ namespace MSSQLand
                         // Build formatted chain display with impersonation as connectors
                         string chainDisplay = databaseContext.QueryService.LinkedServers.FormatChainDisplay(
                             initialHost: arguments.Host.Hostname,
+                            initialLogin: arguments.Username ?? systemUser,
                             initialImpersonation: arguments.Host.ImpersonationUsers
                         );
 

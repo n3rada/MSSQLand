@@ -17,19 +17,19 @@ namespace MSSQLand.Services
         /// Dictionary to cache admin status for each execution server.
         /// </summary>
         private readonly ConcurrentDictionary<string, bool> _adminStatusCache = new();
-        
+
         /// <summary>
         /// Dictionary to cache domain user status for each execution server.
         /// </summary>
         private readonly ConcurrentDictionary<string, bool> _isDomainUserCache = new();
-        
+
         public string MappedUser { get; private set; }
         public string SystemUser { get; private set; }
         public string EffectiveUser { get; private set; }
         public string SourcePrincipal { get; private set; }
-        
-        public bool IsDomainUser 
-        { 
+
+        public bool IsDomainUser
+        {
             get
             {
                 // Check if the domain user status is already cached for the current ExecutionServer
@@ -131,10 +131,10 @@ namespace MSSQLand.Services
         /// This handles cases where access is granted through AD group membership
         /// rather than direct login mapping (e.g., DOMAIN\User -> AD Group -> Database User).
         /// Uses the token from integrated Windows authentication.
-        /// 
+        ///
         /// IMPORTANT: Only works on direct connections. Does NOT work through linked servers
         /// as sys.login_token is not available in remote execution contexts.
-        /// 
+        ///
         /// https://learn.microsoft.com/fr-fr/sql/relational-databases/system-catalog-views/sys-login-token-transact-sql
         /// </summary>
         /// <returns>Tuple of (EffectiveUser, SourcePrincipal)</returns>
@@ -203,7 +203,7 @@ ORDER BY dp.principal_id;";
 
             // Check if username has the DOMAIN\username format
             int backslashIndex = SystemUser.IndexOf('\\');
-            
+
             if (backslashIndex <= 0 || backslashIndex >= SystemUser.Length - 1)
             {
                 // No backslash or invalid format - not a domain user
@@ -255,7 +255,7 @@ ORDER BY dp.principal_id;";
                 command.Parameters.AddWithValue("@User", user);
 
                 command.ExecuteNonQuery();
-                Logger.Info($"Impersonated user {user} for current connection");
+                Logger.Debug($"Impersonated user {user} for current connection");
             }
             catch (Exception ex)
             {
