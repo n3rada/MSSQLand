@@ -89,6 +89,8 @@ namespace MSSQLand.Actions.Database
             const int maxDepth = 10;
             if (depth >= maxDepth) return;
 
+            Logger.Trace($"BuildImpersonationMap: depth={depth}, currentPath=[{string.Join(" -> ", currentPath)}], visited=[{string.Join(", ", visited)}]");
+
             // Get logins that can be impersonated from current context
             string query = @"
 SELECT sp.name
@@ -96,10 +98,11 @@ FROM sys.server_principals sp
 WHERE HAS_PERMS_BY_NAME(sp.name, 'LOGIN', 'IMPERSONATE') = 1
     AND sp.type_desc IN ('SQL_LOGIN', 'WINDOWS_LOGIN')
     AND sp.name NOT LIKE '##%'
-    AND sp.name != SYSTEM_USER
 ORDER BY sp.name;";
 
             DataTable impersonatableLogins = databaseContext.QueryService.ExecuteTable(query);
+
+            Logger.Debug($"Found {impersonatableLogins.Rows.Count} impersonatable login(s) at depth {depth}");
 
             if (impersonatableLogins.Rows.Count == 0)
                 return;
@@ -115,13 +118,16 @@ ORDER BY sp.name;";
                 // Create a new chain path
                 List<string> newPath = new List<string>(currentPath) { loginToImpersonate };
 
-                // Add this chain
-                allChains.Add(new ImpersonationChain
+                // Add this chain (skip if starting login is the same as end login)
+                if (!loginToImpersonate.Equals(startingLogin, StringComparison.OrdinalIgnoreCase))
                 {
-                    StartingLogin = startingLogin,
-                    ChainPath = new List<string>(newPath),
-                    Hops = depth + 1
-                });
+                    allChains.Add(new ImpersonationChain
+                    {
+                        StartingLogin = startingLogin,
+                        ChainPath = new List<string>(newPath),
+                        Hops = depth + 1
+                    });
+                }
 
                 // Mark as visited for this branch
                 HashSet<string> newVisited = new HashSet<string>(visited) { loginToImpersonate };
@@ -129,12 +135,14 @@ ORDER BY sp.name;";
                 // Impersonate the login and recurse
                 try
                 {
+                    Logger.Debug($"Impersonating '{loginToImpersonate}' to explore deeper chains...");
                     databaseContext.QueryService.ExecuteNonProcessing($"EXECUTE AS LOGIN = '{loginToImpersonate.Replace("'", "''")}';");
 
                     // Recursively find more chains
                     BuildImpersonationMap(databaseContext, startingLogin, newPath, allChains, newVisited, depth + 1);
 
                     // Revert impersonation
+                    Logger.Debug($"Reverting from '{loginToImpersonate}'");
                     databaseContext.QueryService.ExecuteNonProcessing("REVERT;");
                 }
                 catch (Exception ex)
