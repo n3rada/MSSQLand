@@ -25,6 +25,7 @@ namespace MSSQLand.Services
 
         public string MappedUser { get; private set; }
         public string SystemUser { get; private set; }
+        public string OriginalLogin { get; private set; }
         public string EffectiveUser { get; private set; }
         public string SourcePrincipal { get; private set; }
 
@@ -98,16 +99,18 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
-        /// Retrieves information about the current user, including the username and system user.
+        /// Retrieves information about the current user, including the username, system user, and original login.
+        /// ORIGINAL_LOGIN() returns the login that initially authenticated the session,
+        /// before any EXECUTE AS impersonation.
         /// </summary>
-        /// <param name="connection">An open SQL connection to use for the query.</param>
-        /// <returns>A tuple containing the username and system user.</returns>
+        /// <returns>A tuple containing the mapped user and system user.</returns>
         public (string MappedUser, string SystemUser) GetInfo()
         {
-            const string query = "SELECT USER_NAME() AS U, SYSTEM_USER AS S;";
+            const string query = "SELECT USER_NAME() AS U, SYSTEM_USER AS S, ORIGINAL_LOGIN() AS O;";
 
             string mappedUser = "";
             string systemUser = "";
+            string originalLogin = "";
 
             // Close the reader before executing subsequent queries
             using (var reader = _queryService.Execute(query))
@@ -116,12 +119,14 @@ namespace MSSQLand.Services
                 {
                     mappedUser = reader["U"]?.ToString() ?? "Unknown";
                     systemUser = reader["S"]?.ToString() ?? "Unknown";
+                    originalLogin = reader["O"]?.ToString() ?? systemUser;
                 }
             } // DataReader is closed here
 
             // Update the properties
             this.MappedUser = mappedUser;
             this.SystemUser = systemUser;
+            this.OriginalLogin = originalLogin;
 
             return (mappedUser, systemUser);
         }
