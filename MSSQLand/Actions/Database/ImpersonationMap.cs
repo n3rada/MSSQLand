@@ -65,6 +65,12 @@ ORDER BY sp.name;";
             Logger.Trace($"Exploring depth={depth}, path=[{string.Join(" -> ", currentPath)}]");
 
             bool isLinkedServer = !databaseContext.QueryService.LinkedServers.IsEmpty;
+
+            if (isLinkedServer)
+            {
+                Logger.Trace($"Querying linked server with impersonation: [{(databaseContext.QueryService.ExecutionServer.ImpersonationUsers != null ? string.Join(" -> ", databaseContext.QueryService.ExecutionServer.ImpersonationUsers) : "none")}]");
+            }
+
             DataTable impersonatableLogins = databaseContext.QueryService.ExecuteTable(ImpersonatableLoginsQuery);
 
             if (impersonatableLogins.Rows.Count == 0) return;
