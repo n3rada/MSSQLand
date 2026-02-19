@@ -1,4 +1,4 @@
-// MSSQLand/Actions/Database/ImpersonationChains.cs
+// MSSQLand/Actions/Database/ImpersonationMap.cs
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace MSSQLand.Actions.Database
 {
-    internal class ImpersonationChains : BaseAction
+    internal class ImpersonationMap : BaseAction
     {
         private class ImpersonationChain
         {
@@ -40,7 +40,7 @@ namespace MSSQLand.Actions.Database
             List<ImpersonationChain> allChains = new List<ImpersonationChain>();
 
             // Build chains recursively
-            BuildImpersonationChains(databaseContext, startingLogin, new List<string>(), allChains, new HashSet<string>(), 0);
+            BuildImpersonationMap(databaseContext, startingLogin, new List<string>(), allChains, new HashSet<string>(), 0);
 
             if (allChains.Count == 0)
             {
@@ -83,7 +83,7 @@ namespace MSSQLand.Actions.Database
             return result;
         }
 
-        private void BuildImpersonationChains(DatabaseContext databaseContext, string startingLogin,
+        private void BuildImpersonationMap(DatabaseContext databaseContext, string startingLogin,
             List<string> currentPath, List<ImpersonationChain> allChains, HashSet<string> visited, int depth)
         {
             const int maxDepth = 10;
@@ -132,7 +132,7 @@ ORDER BY sp.name;";
                     databaseContext.QueryService.ExecuteNonProcessing($"EXECUTE AS LOGIN = '{loginToImpersonate.Replace("'", "''")}';");
 
                     // Recursively find more chains
-                    BuildImpersonationChains(databaseContext, startingLogin, newPath, allChains, newVisited, depth + 1);
+                    BuildImpersonationMap(databaseContext, startingLogin, newPath, allChains, newVisited, depth + 1);
 
                     // Revert impersonation
                     databaseContext.QueryService.ExecuteNonProcessing("REVERT;");
