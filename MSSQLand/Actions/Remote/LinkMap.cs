@@ -26,7 +26,11 @@ namespace MSSQLand.Actions.Remote
             public string ActualName { get; set; }
             public string LoggedInUser { get; set; }
             public string MappedUser { get; set; }
-            public string ImpersonatedUser { get; set; }
+            /// <summary>
+            /// The impersonation chain used on the parent server to reach this linked server.
+            /// e.g., ["test02", "test03"] means EXECUTE AS test02 then test03 before accessing this link.
+            /// </summary>
+            public List<string> ImpersonationChain { get; set; } = new();
             public bool IsSysadmin { get; set; }
             public List<string> ServerRoles { get; set; } = new();
             public List<string> NonSqlLinks { get; set; } = new();
@@ -112,7 +116,6 @@ namespace MSSQLand.Actions.Remote
                 ActualName = databaseContext.Server.Hostname,
                 LoggedInUser = databaseContext.Server.SystemUser,
                 MappedUser = databaseContext.Server.MappedUser,
-                ImpersonatedUser = null,
                 IsSysadmin = databaseContext.UserService.IsAdmin(),
                 ServerRoles = GetUserServerRoles(databaseContext)
             };
@@ -233,7 +236,12 @@ namespace MSSQLand.Actions.Remote
                     }
                 }
 
-                ExploreLinkedServer(tempContext, remoteServer, _rootNode, currentPath, visitedInChain, currentDepth: 0);
+                // Determine the impersonation chain used on the starting server to reach this link
+                List<string> startingImpersonation = chainToReach ?? (!string.IsNullOrEmpty(requiredLogin) && !requiredLogin.Equals(databaseContext.Server.SystemUser, StringComparison.OrdinalIgnoreCase)
+                    ? new List<string> { requiredLogin }
+                    : new List<string>());
+
+                ExploreLinkedServer(tempContext, remoteServer, _rootNode, currentPath, visitedInChain, startingImpersonation, currentDepth: 0);
             }
 
             // Count total chains
@@ -263,7 +271,8 @@ namespace MSSQLand.Actions.Remote
         /// At each server, dynamically discovers what users can be impersonated and what linked servers they have access to.
         /// </summary>
         private void ExploreLinkedServer(DatabaseContext databaseContext, string targetServer,
-            ServerNode parentNode, List<ServerNode> currentPath, HashSet<string> visitedInChain, int currentDepth)
+            ServerNode parentNode, List<ServerNode> currentPath, HashSet<string> visitedInChain,
+            List<string> parentImpersonationChain, int currentDepth)
         {
             if (currentDepth >= _limit)
             {
@@ -315,7 +324,7 @@ namespace MSSQLand.Actions.Remote
                     ActualName = actualServerName,
                     LoggedInUser = remoteLoggedInUser,
                     MappedUser = mappedUser,
-                    ImpersonatedUser = null,
+                    ImpersonationChain = parentImpersonationChain ?? new List<string>(),
                     IsSysadmin = isSysadmin,
                     ServerRoles = GetUserServerRoles(databaseContext)
                 };
@@ -432,8 +441,13 @@ namespace MSSQLand.Actions.Remote
                         }
                     }
 
+                    // Determine the impersonation chain used on this server to reach the next link
+                    List<string> nextImpersonation = chainToReach ?? (!string.IsNullOrEmpty(nextLocalLogin) && !nextLocalLogin.Equals(databaseContext.Server.SystemUser, StringComparison.OrdinalIgnoreCase)
+                        ? new List<string> { nextLocalLogin }
+                        : new List<string>());
+
                     // Explore recursively
-                    ExploreLinkedServer(branchContext, nextServer, currentNode, newPath, branchVisited, currentDepth + 1);
+                    ExploreLinkedServer(branchContext, nextServer, currentNode, newPath, branchVisited, nextImpersonation, currentDepth + 1);
                 }
             }
             catch (Exception ex)
@@ -606,12 +620,24 @@ namespace MSSQLand.Actions.Remote
             string connector = isLast ? "└── " : "├── ";
             string childIndent = indent + (isLast ? "    " : "│   ");
 
-            // Build chain path for this node
+            // Build chain path for this node, including impersonation on the parent server
             List<string> currentPath = new(parentPath);
             string chainPart = node.Alias;
-            if (!string.IsNullOrEmpty(node.ImpersonatedUser))
+            if (node.ImpersonationChain.Count > 0)
             {
-                chainPart = $"{node.Alias}/{node.ImpersonatedUser}";
+                // Impersonation goes on the PREVIOUS server in the chain (the parent)
+                // If this is the first hop, it goes on the starting server connection string
+                if (currentPath.Count > 0)
+                {
+                    // Append impersonation to the last entry (parent server)
+                    string lastPart = currentPath[currentPath.Count - 1];
+                    currentPath[currentPath.Count - 1] = lastPart + "/" + string.Join("/", node.ImpersonationChain);
+                }
+                else
+                {
+                    // First hop: impersonation is on the starting server, show in main connection
+                    chainPart = $"({string.Join(" → ", node.ImpersonationChain)}) {node.Alias}";
+                }
             }
             currentPath.Add(chainPart);
             string chainCommand = string.Join(";", currentPath);
@@ -634,8 +660,13 @@ namespace MSSQLand.Actions.Remote
                 roleMarkers = $" [{string.Join(", ", node.ServerRoles)}]";
             }
 
+            // Build impersonation indicator
+            string impersonationInfo = node.ImpersonationChain.Count > 0
+                ? $" via {string.Join(" → ", node.ImpersonationChain)}"
+                : "";
+
             // Build the main line: name (user [mapped]) -l chain
-            Console.WriteLine($"{indent}{connector}{displayName} ({node.LoggedInUser} [{node.MappedUser}]){roleMarkers}  -l \"{chainCommand}\"");
+            Console.WriteLine($"{indent}{connector}{displayName} ({node.LoggedInUser} [{node.MappedUser}]{impersonationInfo}){roleMarkers}  -l \"{chainCommand}\"");
 
             // Show non-SQL links if any
             if (node.NonSqlLinks.Count > 0)
@@ -695,12 +726,23 @@ namespace MSSQLand.Actions.Remote
             if (chain.Count == 0) return;
 
             var serverList = new List<Server>();
-            foreach (var node in chain)
+            for (int i = 0; i < chain.Count; i++)
             {
+                var node = chain[i];
+
+                // The impersonation chain on a node refers to what was done on the PARENT server.
+                // For the first node, it's impersonation on the starting server (not part of -l).
+                // For subsequent nodes, attach impersonation to the previous server entry.
+                if (i > 0 && node.ImpersonationChain.Count > 0)
+                {
+                    // Update the previous server entry with impersonation users
+                    serverList[serverList.Count - 1].ImpersonationUsers = node.ImpersonationChain.ToArray();
+                }
+
                 serverList.Add(new Server
                 {
                     Hostname = node.Alias,
-                    ImpersonationUsers = string.IsNullOrEmpty(node.ImpersonatedUser) ? null : new[] { node.ImpersonatedUser },
+                    ImpersonationUsers = null,
                     Database = null
                 });
             }
@@ -726,7 +768,14 @@ namespace MSSQLand.Actions.Remote
             LinkedServers linkedServers = new LinkedServers(serverList.ToArray());
             string chainArg = linkedServers.GetChainArguments();
 
-            Logger.InfoNested($"{endpoint} {userContext}{roleInfo}: -l \"{chainArg}\"");
+            // Check if first hop requires impersonation on the starting server
+            string startingServerImp = "";
+            if (chain.Count > 0 && chain[0].ImpersonationChain.Count > 0)
+            {
+                startingServerImp = $" (requires: {_rootNode.Alias}/{string.Join("/", chain[0].ImpersonationChain)})";
+            }
+
+            Logger.InfoNested($"{endpoint} {userContext}{roleInfo}: -l \"{chainArg}\"{startingServerImp}");
         }
 
         /// <summary>
