@@ -159,7 +159,7 @@ namespace MSSQLand.Actions.Remote
                 }
 
                 HashSet<string> visitedInChain = new() { startingHash };
-                DatabaseContext tempContext = databaseContext.Copy();
+                DatabaseContext tempContext = databaseContext.Duplicate();
                 List<ServerNode> currentPath = new();
 
                 ExploreLinkedServer(tempContext, remoteServer, localLogin, _rootNode, currentPath, visitedInChain, currentDepth: 0);
@@ -338,7 +338,7 @@ namespace MSSQLand.Actions.Remote
 
                     // Create copies for this branch
                     HashSet<string> branchVisited = new(visitedInChain);
-                    DatabaseContext branchContext = databaseContext.Copy();
+                    DatabaseContext branchContext = databaseContext.Duplicate();
 
                     // Explore recursively
                     ExploreLinkedServer(branchContext, nextServer, nextLocalLogin, currentNode, newPath, branchVisited, currentDepth + 1);
