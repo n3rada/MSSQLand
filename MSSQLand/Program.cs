@@ -164,7 +164,7 @@ namespace MSSQLand
 
                     if (impersonationUsers != null && impersonationUsers.Length > 0)
                     {
-                        string chain = (arguments.Username ?? systemUser) + " → " + string.Join(" → ", impersonationUsers);
+                        string chain = string.Join(" → ", impersonationUsers);
                         Logger.InfoNested($"Impersonation chain: {chain}");
                     }
 
