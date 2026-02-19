@@ -2,9 +2,7 @@
 
 Land gracefully in your target Microsoft SQL Server (MS SQL) DBMS, as if arriving on a business-class flight with a champagne glass in hand. 🥂
 
-<p align="center">
-    <img width="1000" src="/media/chain.jpg" alt="MSSQLand chaining">
-</p>
+![MSSQLand chaining capabilities](/media/chain.jpg)
 
 MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikipedia.org/wiki/Microsoft_SQL_Server) database management system (DBMS) during your red team activities or any security audit. Designed to run inside the target environment directly through your beacons (e.g., using assembly execution), it allows you to pave your way across multiple linked servers and impersonate whoever you can along the way, emerging from the last hop with any desired action.
 
