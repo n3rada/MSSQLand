@@ -46,7 +46,7 @@ ORDER BY sp.name;";
 
             DataTable result = FormatResults(allChains);
 
-            if (!Logger.IsSilentModeEnabled)
+            if (!Logger.IsSilenced)
             {
                 Console.WriteLine(OutputFormatter.ConvertDataTable(result));
             }
@@ -68,7 +68,8 @@ ORDER BY sp.name;";
 
             if (isLinkedServer)
             {
-                Logger.Trace($"Querying linked server with impersonation: [{(databaseContext.QueryService.ExecutionServer.ImpersonationUsers != null ? string.Join(" -> ", databaseContext.QueryService.ExecutionServer.ImpersonationUsers) : "none")}]");
+                var lastServer = databaseContext.QueryService.LinkedServers.ServerChain.Last();
+                Logger.Trace($"Querying linked server with impersonation: [{(lastServer.ImpersonationUsers != null ? string.Join(" -> ", lastServer.ImpersonationUsers) : "none")}]");
             }
 
             DataTable impersonatableLogins = databaseContext.QueryService.ExecuteTable(ImpersonatableLoginsQuery);
@@ -147,7 +148,8 @@ ORDER BY sp.name;";
         /// </summary>
         private static string[] PushLinkedImpersonation(DatabaseContext databaseContext, string login)
         {
-            string[] previous = databaseContext.QueryService.ExecutionServer.ImpersonationUsers;
+            int lastServerIndex = databaseContext.QueryService.LinkedServers.ServerChain.Length - 1;
+            string[] previous = databaseContext.QueryService.LinkedServers.ServerChain[lastServerIndex].ImpersonationUsers;
 
             var updated = new List<string>();
             if (previous != null)
@@ -158,13 +160,8 @@ ORDER BY sp.name;";
 
             string[] updatedArray = updated.ToArray();
 
-            databaseContext.QueryService.ExecutionServer.ImpersonationUsers = updatedArray;
-
-            int lastServerIndex = databaseContext.QueryService.LinkedServers.ServerChain.Length - 1;
-            if (lastServerIndex >= 0)
-            {
-                databaseContext.QueryService.LinkedServers.ComputableImpersonationUsers[lastServerIndex] = updatedArray;
-            }
+            databaseContext.QueryService.LinkedServers.ServerChain[lastServerIndex].ImpersonationUsers = updatedArray;
+            databaseContext.QueryService.LinkedServers.ComputableImpersonationUsers[lastServerIndex] = updatedArray;
 
             Logger.Trace($"Impersonation chain: [{string.Join(", ", updated)}]");
 
@@ -176,13 +173,10 @@ ORDER BY sp.name;";
         /// </summary>
         private static void RestoreLinkedImpersonation(DatabaseContext databaseContext, string[] previous)
         {
-            databaseContext.QueryService.ExecutionServer.ImpersonationUsers = previous;
-
             int lastServerIndex = databaseContext.QueryService.LinkedServers.ServerChain.Length - 1;
-            if (lastServerIndex >= 0)
-            {
-                databaseContext.QueryService.LinkedServers.ComputableImpersonationUsers[lastServerIndex] = previous ?? Array.Empty<string>();
-            }
+
+            databaseContext.QueryService.LinkedServers.ServerChain[lastServerIndex].ImpersonationUsers = previous;
+            databaseContext.QueryService.LinkedServers.ComputableImpersonationUsers[lastServerIndex] = previous ?? Array.Empty<string>();
 
             Logger.Trace($"Restored chain to: [{(previous != null ? string.Join(", ", previous) : "none")}]");
         }
