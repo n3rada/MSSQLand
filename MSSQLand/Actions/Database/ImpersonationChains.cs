@@ -33,7 +33,7 @@ namespace MSSQLand.Actions.Database
             // Check if user is sysadmin - they can impersonate anyone, so no need to map chains
             if (databaseContext.UserService.IsAdmin())
             {
-                Logger.Success("Current user is 'sysadmin'; can impersonate any login directly (no chain mapping needed).");
+                Logger.Success("Current user can impersonate any login directly (no chain mapping needed).");
                 return new DataTable();
             }
 
