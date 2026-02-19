@@ -15,7 +15,7 @@ namespace MSSQLand.Services.Credentials
         public override SqlConnection Authenticate(string username, string password, string domain)
         {
             username = $"{username}@{domain}";
-            
+
             // Azure SQL requires proper certificate validation
             TrustServerCertificate = false;
 
@@ -23,7 +23,7 @@ namespace MSSQLand.Services.Credentials
             // Unlike on-premises SQL Server, Azure doesn't have login-level default databases
             string database = Server.Database ?? "master";
 
-            var connectionString = $"Server={Server.GetConnectionTarget()}; Database={database}; Authentication=Active Directory Password; User ID={username}; Password='{password}';";
+            var connectionString = $"Data Source={Server.GetConnectionTarget()}; Database={database}; Authentication=Active Directory Password; User ID={username}; Password='{password}';";
             return CreateSqlConnection(connectionString);
         }
     }

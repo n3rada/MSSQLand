@@ -27,7 +27,7 @@ namespace MSSQLand.Services.Credentials
 
             // Use SQL auth with empty credentials - avoids sending Kerberos ticket
             // Server will reject with 18456 = alive, or network error = unreachable
-            var connectionString = $"Server={Server.GetConnectionTarget()}; Database=master; Integrated Security=False; User Id=; Password=;";
+            var connectionString = $"Data Source={Server.GetConnectionTarget()}; Database=master; Integrated Security=False; User Id=; Password=;";
 
             try
             {

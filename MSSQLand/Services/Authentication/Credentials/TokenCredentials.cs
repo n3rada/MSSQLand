@@ -15,7 +15,7 @@ namespace MSSQLand.Services.Credentials
         public override SqlConnection Authenticate(string username = null, string password = null, string domain = null)
         {
             // Connection string with Integrated Security (uses current token)
-            var connectionString = $"Server={Server.GetConnectionTarget()}; Integrated Security=True;";
+            var connectionString = $"Data Source={Server.GetConnectionTarget()}; Integrated Security=True;";
             return CreateSqlConnection(connectionString);
         }
     }

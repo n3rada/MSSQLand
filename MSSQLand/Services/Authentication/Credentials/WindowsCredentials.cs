@@ -23,15 +23,15 @@ namespace MSSQLand.Services.Credentials
         {
             // Determine if it's a domain or local account
             bool isLocalAccount = string.IsNullOrEmpty(domain) || domain == ".";
-            
+
             // For local accounts, use the machine name or "."
             string effectiveDomain = isLocalAccount ? "." : domain;
-                        
+
             // Use impersonation to authenticate
             using (new WindowsIdentityImpersonation(effectiveDomain, username, password))
             {
                 // Connection string with Integrated Security (uses impersonated token)
-                var connectionString = $"Server={Server.GetConnectionTarget()}; Integrated Security=True;";
+                var connectionString = $"Data Source={Server.GetConnectionTarget()}; Integrated Security=True;";
                 return CreateSqlConnection(connectionString);
             }
         }
