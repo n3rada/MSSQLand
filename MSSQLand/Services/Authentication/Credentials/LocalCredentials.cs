@@ -28,10 +28,10 @@ namespace MSSQLand.Services.Credentials
                     $"Domain parameter cannot be used with local SQL authentication."
                 );
             }
-            
+
             // Encrypt by default for security best practices
             // TrustServerCertificate=True allows self-signed certs (common in on-premises)
-            var connectionString = $"Server={Server.GetConnectionTarget()}; Integrated Security=False; User Id={username}; Password='{password}';";
+            var connectionString = $"Data Source={Server.GetConnectionTarget()};Integrated Security=False;User ID={username};Password='{password}';";
             return CreateSqlConnection(connectionString);
         }
     }

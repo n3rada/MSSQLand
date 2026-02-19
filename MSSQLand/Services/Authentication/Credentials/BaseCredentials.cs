@@ -78,29 +78,29 @@ namespace MSSQLand.Services.Credentials
         protected SqlConnection CreateSqlConnection(string connectionString)
         {
 
-            connectionString = $"{connectionString.TrimEnd(';')}; Connect Timeout={_connectTimeout}; Application Name={AppName}";
+            connectionString = $"{connectionString.TrimEnd(';')};Connect Timeout={_connectTimeout};Application Name={AppName}";
 
             // Add Workstation ID if provided
             if (!string.IsNullOrEmpty(WorkstationId))
-                connectionString += $"; Workstation ID={WorkstationId}";
+                connectionString += $";Workstation ID={WorkstationId}";
 
 
             // Add database if provided
             if (!string.IsNullOrEmpty(Server.Database))
-                connectionString += $"; Database={Server.Database}";
+                connectionString += $";Database={Server.Database}";
 
             // Apply optional connection string overrides (only when different from ADO.NET defaults)
             // Add Encrypt if explicitly set (default varies by .NET version)
             if (EnableEncryption.HasValue)
-                connectionString += $"; Encrypt={EnableEncryption.Value}";
-            
+                connectionString += $";Encrypt={EnableEncryption.Value}";
+
             // Add TrustServerCertificate if explicitly set (ADO.NET default is False)
             if (TrustServerCertificate.HasValue)
-                connectionString += $"; TrustServerCertificate={TrustServerCertificate.Value}";
-            
+                connectionString += $";TrustServerCertificate={TrustServerCertificate.Value}";
+
             // Only add Packet Size if explicitly set (ADO.NET uses 8192 by default)
             if (PacketSize.HasValue)
-                connectionString += $"; Packet Size={PacketSize.Value}";
+                connectionString += $";Packet Size={PacketSize.Value}";
 
             Logger.Debug($"Attempting connection with {GetName()}");
             Logger.DebugNested($"Connection timeout: {_connectTimeout} seconds");
