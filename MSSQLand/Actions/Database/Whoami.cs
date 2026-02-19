@@ -15,18 +15,19 @@ namespace MSSQLand.Actions.Database
         public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested("Retrieving current user information");
-            
+
             (string userName, string systemUser) = databaseContext.UserService.GetInfo();
 
             // Get all roles and check membership in a single query
             // This uses IS_SRVROLEMEMBER which works even with AD group-based access
             string rolesQuery = @"
-                SELECT 
+                SELECT
                     name,
                     is_fixed_role,
                     ISNULL(IS_SRVROLEMEMBER(name), 0) AS is_member
-                FROM sys.server_principals 
-                WHERE type = 'R' 
+                FROM sys.server_principals
+                WHERE type = 'R'
+                AND name NOT LIKE '##%##'
                 ORDER BY is_fixed_role DESC, name;";
 
             DataTable allRolesTable = databaseContext.QueryService.ExecuteTable(rolesQuery);
@@ -68,7 +69,7 @@ namespace MSSQLand.Actions.Database
 
             // Get database roles in current database
             string dbRolesQuery = @"
-                SELECT 
+                SELECT
                     name,
                     ISNULL(IS_ROLEMEMBER(name), 0) AS is_member
                 FROM sys.database_principals
@@ -76,7 +77,7 @@ namespace MSSQLand.Actions.Database
                 ORDER BY name;";
 
             DataTable dbRolesTable = databaseContext.QueryService.ExecuteTable(dbRolesQuery);
-            
+
             var userDbRoles = new List<string>();
             foreach (DataRow dbRoleRow in dbRolesTable.Rows)
             {
@@ -86,11 +87,11 @@ namespace MSSQLand.Actions.Database
                 }
             }
 
-            
+
             // Only show roles where user is a member
             var userFixedRoles = fixedRoles.Where(r => r.IsMember).Select(r => r.Role);
             var userCustomRoles = customRoles.Where(r => r.IsMember).Select(r => r.Role);
-            
+
             var userDetails = new Dictionary<string, string>
             {
                 { "Login", systemUser },
