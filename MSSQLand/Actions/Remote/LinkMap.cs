@@ -746,7 +746,7 @@ namespace MSSQLand.Actions.Remote
             string roleInfo = "";
             if (lastNode.IsSysadmin)
             {
-                roleInfo = " ★";
+                roleInfo = " ★ ";
             }
             else if (lastNode.ServerRoles.Count > 0)
             {
@@ -760,7 +760,7 @@ namespace MSSQLand.Actions.Remote
             string startingServerImp = "";
             if (chain.Count > 0 && chain[0].ImpersonationChain.Count > 0)
             {
-                startingServerImp = $" (requires: {_rootNode.Alias}/{string.Join("/", chain[0].ImpersonationChain)})";
+                startingServerImp = $" (requires host: {_rootNode.Alias}/{string.Join("/", chain[0].ImpersonationChain)})";
             }
 
             Logger.InfoNested($"{endpoint} {userContext}{roleInfo}: -l \"{chainArg}\"{startingServerImp}");
