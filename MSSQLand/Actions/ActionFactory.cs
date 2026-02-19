@@ -42,6 +42,7 @@ namespace MSSQLand.Actions
             { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).", null) },
             { "permissions", (typeof(Permissions), "Enumerate user and role permissions.", null) },
             { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.", new[] { "impersonation" }) },
+            { "impersonate-chains", (typeof(ImpersonationChains), "Map impersonation chains to discover reachable logins through delegation paths.", new[] { "impchains", "imptree" }) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // DATABASE ACTIONS - OPERATIONS
