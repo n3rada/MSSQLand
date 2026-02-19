@@ -53,7 +53,7 @@ namespace MSSQLand.Models
         /// Each entry is an array of users to impersonate in sequence on that server.
         /// Expectation: [["user1", "user2"], [], ["user3"], ...]
         /// </summary>
-        private string[][] ComputableImpersonationUsers { get; set; }
+        public string[][] ComputableImpersonationUsers { get; set; }
 
         /// <summary>
         /// A computed array of database names extracted from the server chain.
