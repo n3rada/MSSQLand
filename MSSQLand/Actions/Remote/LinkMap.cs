@@ -820,9 +820,10 @@ namespace MSSQLand.Actions.Remote
         private DataTable DisplayChainCommands()
         {
             DataTable result = new DataTable();
-            result.Columns.Add("Server Roles", typeof(string));
             result.Columns.Add("Endpoint", typeof(string));
             result.Columns.Add("Login", typeof(string));
+            result.Columns.Add("Mapped To", typeof(string));
+            result.Columns.Add("Server Roles", typeof(string));
             result.Columns.Add("Command", typeof(string));
 
             foreach (var chain in _allChains.OrderByDescending(c => GetChainPriority(c)))
@@ -899,7 +900,8 @@ namespace MSSQLand.Actions.Remote
             }
 
             // Login context
-            string login = $"{lastNode.LoggedInUser} [{lastNode.MappedUser}]";
+            string login = lastNode.LoggedInUser;
+            string mappedTo = lastNode.MappedUser;
 
             // Privilege level
             string privilege;
@@ -910,7 +912,7 @@ namespace MSSQLand.Actions.Remote
             else
                 privilege = "";
 
-            return new object[] { privilege, endpoint, login, command };
+            return new object[] { endpoint, login, mappedTo, privilege, command };
         }
 
         /// <summary>
