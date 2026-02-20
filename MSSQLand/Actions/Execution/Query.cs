@@ -72,7 +72,7 @@ namespace MSSQLand.Actions.Execution
                     Logger.WarningNested("Use explicit column list and CAST XML columns: CAST([XmlCol] AS NVARCHAR(MAX))");
                 }
 
-                throw;
+                return null;
             }
             catch (Exception ex)
             {
