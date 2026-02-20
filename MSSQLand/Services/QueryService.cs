@@ -89,6 +89,27 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
+        /// Extracts the server name from a "not configured for RPC" error message.
+        /// Example: "Server 'LAB-SQL01\SQL01' is not configured for RPC." → "LAB-SQL01\SQL01"
+        /// </summary>
+        /// <param name="errorMessage">The SQL error message.</param>
+        /// <returns>The server name, or null if not found.</returns>
+        static string ExtractNonRpcServer(string errorMessage)
+        {
+            const string prefix = "Server '";
+            const string suffix = "' is not configured for RPC";
+
+            int startIdx = errorMessage.IndexOf(prefix);
+            if (startIdx < 0) return null;
+            startIdx += prefix.Length;
+
+            int endIdx = errorMessage.IndexOf(suffix, startIdx);
+            if (endIdx < 0) return null;
+
+            return errorMessage.Substring(startIdx, endIdx - startIdx);
+        }
+
+        /// <summary>
         /// Detects if a query has already been wrapped by WrapForOpenQuery.
         /// </summary>
         static bool IsAlreadyWrapped(string sql)
@@ -274,16 +295,43 @@ SELECT @result AS Result, @error AS Error;";
 
                 if (ex.Message.Contains("not configured for RPC"))
                 {
-                    if (!_rpcWarningShown)
+                    string failedServer = ExtractNonRpcServer(ex.Message);
+
+                    if (failedServer != null)
                     {
-                        Logger.Debug("RPC unavailable. Switching to OPENQUERY.");
-                        _rpcWarningShown = true;
+                        _linkedServers.MarkServerAsNonRpc(failedServer);
+
+                        if (_linkedServers.AllServersNonRpc)
+                        {
+                            // Every server in the chain lacks RPC — full OPENQUERY fallback
+                            if (!_rpcWarningShown)
+                            {
+                                Logger.Debug("All linked servers lack RPC. Switching to full OPENQUERY.");
+                                _rpcWarningShown = true;
+                            }
+                            _linkedServers.UseRemoteProcedureCall = false;
+                        }
+                        else
+                        {
+                            // Only some hops lack RPC — use hybrid routing
+                            Logger.Debug($"RPC unavailable for '{failedServer}'. Using hybrid RPC/OPENQUERY routing.");
+                        }
                     }
-                    _linkedServers.UseRemoteProcedureCall = false;
+                    else
+                    {
+                        // Could not extract server name — fall back to full OPENQUERY
+                        if (!_rpcWarningShown)
+                        {
+                            Logger.Debug("RPC unavailable. Switching to OPENQUERY.");
+                            _rpcWarningShown = true;
+                        }
+                        _linkedServers.UseRemoteProcedureCall = false;
+                    }
+
                     return ExecuteWithHandling(query, executeReader, timeout, retryCount + 1);
                 }
 
-                if (!_linkedServers.UseRemoteProcedureCall && IsOpenQueryRowsetFailure(ex))
+                if ((!_linkedServers.UseRemoteProcedureCall || _linkedServers.HasNonRpcServers) && IsOpenQueryRowsetFailure(ex))
                 {
                     // Don't wrap if already wrapped (prevents infinite loop)
                     if (IsAlreadyWrapped(query))
@@ -326,9 +374,21 @@ SELECT @result AS Result, @error AS Error;";
                 throw new RpcRequiredException(query);
             }
 
-            string finalQuery = _linkedServers.UseRemoteProcedureCall
-                ? _linkedServers.BuildRemoteProcedureCallChain(query)
-                : _linkedServers.BuildSelectOpenQueryChain(query);
+            string finalQuery;
+
+            if (_linkedServers.UseRemoteProcedureCall && _linkedServers.HasNonRpcServers)
+            {
+                // Hybrid mode: RPC for capable hops, OPENQUERY for non-RPC hops
+                finalQuery = _linkedServers.BuildHybridChain(query);
+            }
+            else if (_linkedServers.UseRemoteProcedureCall)
+            {
+                finalQuery = _linkedServers.BuildRemoteProcedureCallChain(query);
+            }
+            else
+            {
+                finalQuery = _linkedServers.BuildSelectOpenQueryChain(query);
+            }
 
             Logger.DebugNested($"Linked query: {finalQuery}");
             return finalQuery;
