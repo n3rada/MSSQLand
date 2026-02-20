@@ -3,10 +3,12 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using MSSQLand.Actions.Database;
 using MSSQLand.Models;
 using MSSQLand.Services;
 using MSSQLand.Utilities;
+using MSSQLand.Utilities.Formatters;
 
 namespace MSSQLand.Actions.Remote
 {
@@ -16,6 +18,43 @@ namespace MSSQLand.Actions.Remote
     /// </summary>
     internal class LinkMap : BaseAction
     {
+        /// <summary>
+        /// Server roles that grant significant privileges beyond standard access.
+        /// These get special highlighting in the tree and chain summary.
+        /// </summary>
+        private static readonly HashSet<string> ElevatedRoles = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "securityadmin",  // Can grant permissions — near-sysadmin
+            "serveradmin",    // Can change server configuration
+            "setupadmin",     // Can add/remove linked servers
+            "processadmin",   // Can kill processes
+            "dbcreator",      // Can create/alter/drop databases
+            "diskadmin",      // Can manage disk files
+            "bulkadmin"       // Can run BULK INSERT
+        };
+
+        /// <summary>
+        /// Represents a single impersonation step with the login name and its server roles.
+        /// </summary>
+        private class ImpersonationStep
+        {
+            public string Login { get; set; }
+            public List<string> Roles { get; set; } = new();
+            public bool IsSysadmin => Roles.Exists(r => r.Equals("sysadmin", StringComparison.OrdinalIgnoreCase));
+            public bool IsElevated => !IsSysadmin && Roles.Exists(r => ElevatedRoles.Contains(r));
+
+            public string PrivilegeMarker
+            {
+                get
+                {
+                    if (IsSysadmin) return " ★";
+                    if (Roles.Count == 0) return "";
+                    if (IsElevated) return $" ◆ [{string.Join(", ", Roles)}]";
+                    return $" [{string.Join(", ", Roles)}]";
+                }
+            }
+        }
+
         /// <summary>
         /// Represents a node in the linked server tree.
         /// </summary>
@@ -27,13 +66,38 @@ namespace MSSQLand.Actions.Remote
             public string MappedUser { get; set; }
             /// <summary>
             /// The impersonation chain used on the parent server to reach this linked server.
-            /// e.g., ["test02", "test03"] means EXECUTE AS test02 then test03 before accessing this link.
+            /// Each step includes the login name and its server roles for visibility.
             /// </summary>
-            public List<string> ImpersonationChain { get; set; } = new();
+            public List<ImpersonationStep> ImpersonationChain { get; set; } = new();
             public bool IsSysadmin { get; set; }
             public List<string> ServerRoles { get; set; } = new();
             public List<string> NonSqlLinks { get; set; } = new();
             public List<ServerNode> Children { get; set; } = new();
+
+            /// <summary>
+            /// True if the user has any elevated (security-relevant) server roles beyond sysadmin.
+            /// </summary>
+            public bool IsElevated => !IsSysadmin && ServerRoles.Exists(r => ElevatedRoles.Contains(r));
+
+            /// <summary>
+            /// Returns the privilege marker for display: ★ sysadmin, ◆ elevated, roles list otherwise.
+            /// Sysadmin implies all roles, so only shows ★ without listing them.
+            /// </summary>
+            public string PrivilegeMarker
+            {
+                get
+                {
+                    if (IsSysadmin) return " ★";
+                    if (Roles.Count == 0) return "";
+                    if (IsElevated) return $" ◆ [{string.Join(", ", Roles)}]";
+                    return $" [{string.Join(", ", Roles)}]";
+                }
+            }
+
+            /// <summary>
+            /// Server roles excluding sysadmin (which is shown via ★).
+            /// </summary>
+            private List<string> Roles => ServerRoles.FindAll(r => !r.Equals("sysadmin", StringComparison.OrdinalIgnoreCase));
         }
 
         [ExcludeFromArguments]
@@ -237,9 +301,12 @@ namespace MSSQLand.Actions.Remote
                 try
                 {
                     // Determine the impersonation chain used on the starting server to reach this link
-                    List<string> startingImpersonation = chainToReach ?? (!string.IsNullOrEmpty(requiredLogin) && !requiredLogin.Equals(databaseContext.Server.SystemUser, StringComparison.OrdinalIgnoreCase)
+                    List<string> startingImpersonationLogins = chainToReach ?? (!string.IsNullOrEmpty(requiredLogin) && !requiredLogin.Equals(databaseContext.Server.SystemUser, StringComparison.OrdinalIgnoreCase)
                         ? new List<string> { requiredLogin }
                         : new List<string>());
+
+                    // Build impersonation steps with roles (chain is already applied at this point)
+                    List<ImpersonationStep> startingImpersonation = BuildImpersonationSteps(databaseContext, startingImpersonationLogins);
 
                     ExploreLinkedServer(databaseContext, remoteServer, _rootNode, currentPath, visitedInChain, startingImpersonation, currentDepth: 0);
                 }
@@ -281,7 +348,7 @@ namespace MSSQLand.Actions.Remote
         /// </summary>
         private void ExploreLinkedServer(DatabaseContext databaseContext, string targetServer,
             ServerNode parentNode, List<ServerNode> currentPath, HashSet<string> visitedInChain,
-            List<string> parentImpersonationChain, int currentDepth)
+            List<ImpersonationStep> parentImpersonationChain, int currentDepth)
         {
             if (currentDepth >= _limit)
             {
@@ -336,7 +403,7 @@ namespace MSSQLand.Actions.Remote
                     ActualName = actualServerName,
                     LoggedInUser = remoteLoggedInUser,
                     MappedUser = mappedUser,
-                    ImpersonationChain = parentImpersonationChain ?? new List<string>(),
+                    ImpersonationChain = parentImpersonationChain ?? new List<ImpersonationStep>(),
                     IsSysadmin = isSysadmin,
                     ServerRoles = GetUserServerRoles(databaseContext)
                 };
@@ -464,9 +531,12 @@ namespace MSSQLand.Actions.Remote
                     try
                     {
                         // Determine the impersonation chain used on this server to reach the next link
-                        List<string> nextImpersonation = chainToReach ?? (!string.IsNullOrEmpty(nextLocalLogin) && !nextLocalLogin.Equals(remoteLoggedInUser, StringComparison.OrdinalIgnoreCase)
+                        List<string> nextImpersonationLogins = chainToReach ?? (!string.IsNullOrEmpty(nextLocalLogin) && !nextLocalLogin.Equals(remoteLoggedInUser, StringComparison.OrdinalIgnoreCase)
                             ? new List<string> { nextLocalLogin }
                             : new List<string>());
+
+                        // Build impersonation steps with roles (chain is already applied at this point)
+                        List<ImpersonationStep> nextImpersonation = BuildImpersonationSteps(databaseContext, nextImpersonationLogins);
 
                         // Recurse — ExploreLinkedServer will AddToChain/RemoveLastFromChain internally
                         ExploreLinkedServer(databaseContext, nextServer, currentNode, newPath, branchVisited, nextImpersonation, currentDepth + 1);
@@ -568,6 +638,45 @@ namespace MSSQLand.Actions.Remote
             }
         }
 
+        /// <summary>
+        /// Builds ImpersonationStep list with roles for each login in the chain.
+        /// The impersonation chain must already be applied (via TryApplyImpersonationChain)
+        /// so we can query roles at the final state. For efficiency, we query roles once
+        /// at the end of the chain rather than at each step — the last user's roles are most relevant.
+        /// For intermediate users, we apply step-by-step and query roles at each step.
+        /// </summary>
+        private static List<ImpersonationStep> BuildImpersonationSteps(DatabaseContext databaseContext, List<string> logins)
+        {
+            if (logins == null || logins.Count == 0)
+                return new List<ImpersonationStep>();
+
+            var steps = new List<ImpersonationStep>();
+
+            // The full chain is already applied. To get roles at each step,
+            // revert all, then re-apply one by one, querying roles at each step.
+            int total = logins.Count;
+            RevertChain(databaseContext, total);
+
+            for (int i = 0; i < total; i++)
+            {
+                TryApplyImpersonationChain(databaseContext, new List<string> { logins[i] });
+
+                var step = new ImpersonationStep { Login = logins[i] };
+                try
+                {
+                    step.Roles = GetUserServerRoles(databaseContext);
+                }
+                catch
+                {
+                    // Roles query failed, leave empty
+                }
+                steps.Add(step);
+            }
+
+            // Chain is now fully re-applied
+            return steps;
+        }
+
         private int CountLeafNodes(ServerNode node)
         {
             if (node.Children.Count == 0)
@@ -586,9 +695,8 @@ namespace MSSQLand.Actions.Remote
         /// </summary>
         private void DisplayTree()
         {
-            // Root node - show privilege marker if sysadmin
-            string rootPrivilege = _rootNode.IsSysadmin ? " ★" : "";
-            Console.WriteLine($"{_rootNode.Alias} ({_rootNode.LoggedInUser} [{_rootNode.MappedUser}]){rootPrivilege}");
+            // Root node - show privilege marker
+            Console.WriteLine($"{_rootNode.Alias} ({_rootNode.LoggedInUser} [{_rootNode.MappedUser}]){_rootNode.PrivilegeMarker}");
 
             if (_rootNode.NonSqlLinks.Count > 0)
             {
@@ -605,26 +713,21 @@ namespace MSSQLand.Actions.Remote
 
         private void DisplayTreeNode(ServerNode node, string indent, bool isLast, List<string> parentPath)
         {
-            string connector = isLast ? "└── " : "├── ";
-            string childIndent = indent + (isLast ? "    " : "│   ");
-
             // Build chain path for this node, including impersonation on the parent server
             List<string> currentPath = new(parentPath);
             string chainPart = node.Alias;
-            if (node.ImpersonationChain.Count > 0)
+            List<string> impLogins = node.ImpersonationChain.ConvertAll(s => s.Login);
+
+            if (impLogins.Count > 0)
             {
-                // Impersonation goes on the PREVIOUS server in the chain (the parent)
-                // If this is the first hop, it goes on the starting server connection string
                 if (currentPath.Count > 0)
                 {
-                    // Append impersonation to the last entry (parent server)
                     string lastPart = currentPath[currentPath.Count - 1];
-                    currentPath[currentPath.Count - 1] = lastPart + "/" + string.Join("/", node.ImpersonationChain);
+                    currentPath[currentPath.Count - 1] = lastPart + "/" + string.Join("/", impLogins);
                 }
                 else
                 {
-                    // First hop: impersonation is on the starting server, show in main connection
-                    chainPart = $"({string.Join(" → ", node.ImpersonationChain)}) {node.Alias}";
+                    chainPart = $"({string.Join(" → ", impLogins)}) {node.Alias}";
                 }
             }
             currentPath.Add(chainPart);
@@ -637,94 +740,123 @@ namespace MSSQLand.Actions.Remote
                 displayName = $"{node.Alias} [{node.ActualName}]";
             }
 
-            // Build role indicators
-            string roleMarkers = "";
-            if (node.IsSysadmin)
+            bool hasChildren = node.Children.Count > 0 || node.NonSqlLinks.Count > 0;
+
+            if (node.ImpersonationChain.Count > 0)
             {
-                roleMarkers = " ★";
+                // Render impersonation steps as intermediate tree nodes
+                string currentIndent = indent;
+                for (int s = 0; s < node.ImpersonationChain.Count; s++)
+                {
+                    var step = node.ImpersonationChain[s];
+
+                    string stepConnector;
+                    string stepChildIndent;
+                    if (s == 0)
+                    {
+                        stepConnector = isLast ? "└── " : "├── ";
+                        stepChildIndent = currentIndent + (isLast ? "    " : "│   ");
+                    }
+                    else
+                    {
+                        stepConnector = "└── ";
+                        stepChildIndent = currentIndent + "    ";
+                    }
+
+                    Console.WriteLine($"{currentIndent}{stepConnector}{step.Login}{step.PrivilegeMarker}");
+                    currentIndent = stepChildIndent;
+                }
+
+                // After all impersonation steps, render the linked server node
+                string serverChildIndent = currentIndent + "    ";
+                Console.WriteLine($"{currentIndent}╚══ {displayName} ({node.LoggedInUser} [{node.MappedUser}]){node.PrivilegeMarker}");
+
+                if (node.NonSqlLinks.Count > 0)
+                {
+                    Console.WriteLine($"{serverChildIndent}└── [OPENQUERY] {string.Join(", ", node.NonSqlLinks)}");
+                }
+
+                for (int i = 0; i < node.Children.Count; i++)
+                {
+                    bool childIsLast = (i == node.Children.Count - 1);
+                    DisplayTreeNode(node.Children[i], serverChildIndent, childIsLast, currentPath);
+                }
             }
-            else if (node.ServerRoles.Count > 0)
+            else
             {
-                roleMarkers = $" [{string.Join(", ", node.ServerRoles)}]";
-            }
+                // No impersonation — render directly
+                string connector = isLast ? "╚══ " : "╠══ ";
+                string childIndent = indent + (isLast ? "    " : "║   ");
 
-            // Build impersonation indicator
-            string impersonationInfo = node.ImpersonationChain.Count > 0
-                ? $" via {string.Join(" → ", node.ImpersonationChain)}"
-                : "";
+                Console.WriteLine($"{indent}{connector}{displayName} ({node.LoggedInUser} [{node.MappedUser}]){node.PrivilegeMarker}");
 
-            // Build the main line: name (user [mapped]) -l chain
-            Console.WriteLine($"{indent}{connector}{displayName} ({node.LoggedInUser} [{node.MappedUser}]{impersonationInfo}){roleMarkers}  -l \"{chainCommand}\"");
+                if (node.NonSqlLinks.Count > 0)
+                {
+                    Console.WriteLine($"{childIndent}└── [OPENQUERY] {string.Join(", ", node.NonSqlLinks)}");
+                }
 
-            // Show non-SQL links if any
-            if (node.NonSqlLinks.Count > 0)
-            {
-                Console.WriteLine($"{childIndent}└── [OPENQUERY] {string.Join(", ", node.NonSqlLinks)}");
-            }
-
-            // Display children
-            for (int i = 0; i < node.Children.Count; i++)
-            {
-                bool childIsLast = (i == node.Children.Count - 1);
-                DisplayTreeNode(node.Children[i], childIndent, childIsLast, currentPath);
+                for (int i = 0; i < node.Children.Count; i++)
+                {
+                    bool childIsLast = (i == node.Children.Count - 1);
+                    DisplayTreeNode(node.Children[i], childIndent, childIsLast, currentPath);
+                }
             }
         }
 
         /// <summary>
-        /// Displays chain commands for all discovered paths, grouped by privilege level.
+        /// Builds a summary DataTable of all discovered chains and displays them grouped by privilege.
         /// </summary>
-        private void DisplayChainCommands()
+        private DataTable DisplayChainCommands()
         {
-            var privilegedChains = new List<List<ServerNode>>();
-            var standardChains = new List<List<ServerNode>>();
+            DataTable result = new DataTable();
+            result.Columns.Add("Server Roles", typeof(string));
+            result.Columns.Add("Endpoint", typeof(string));
+            result.Columns.Add("Login", typeof(string));
+            result.Columns.Add("Command", typeof(string));
 
-            foreach (var chain in _allChains)
+            foreach (var chain in _allChains.OrderByDescending(c => GetChainPriority(c)))
             {
                 if (chain.Count == 0) continue;
-
-                var lastNode = chain[chain.Count - 1];
-                if (lastNode.IsSysadmin)
-                    privilegedChains.Add(chain);
-                else
-                    standardChains.Add(chain);
+                var row = BuildChainRow(chain);
+                result.Rows.Add(row);
             }
 
-            if (privilegedChains.Count > 0)
+            if (result.Rows.Count > 0)
             {
-                Logger.Success($"Privileged chains ({privilegedChains.Count}) - sysadmin at endpoint:");
-                foreach (var chain in privilegedChains)
-                {
-                    DisplayChainCommand(chain);
-                }
+                Console.WriteLine(OutputFormatter.ConvertDataTable(result));
             }
 
-            if (standardChains.Count > 0)
-            {
-                Logger.NewLine();
-                Logger.Info($"Standard chains ({standardChains.Count}):");
-                foreach (var chain in standardChains)
-                {
-                    DisplayChainCommand(chain);
-                }
-            }
+            return result;
         }
 
-        private void DisplayChainCommand(List<ServerNode> chain)
+        /// <summary>
+        /// Returns a sort priority: 2 = privileged (sysadmin), 1 = elevated, 0 = standard.
+        /// </summary>
+        private static int GetChainPriority(List<ServerNode> chain)
         {
-            if (chain.Count == 0) return;
+            if (chain.Count == 0) return 0;
+            var lastNode = chain[chain.Count - 1];
+            if (lastNode.IsSysadmin) return 2;
+            if (lastNode.IsElevated) return 1;
+            return 0;
+        }
 
+        /// <summary>
+        /// Builds a DataRow array for a single chain, showing the real MSSQLand command.
+        /// </summary>
+        private object[] BuildChainRow(List<ServerNode> chain)
+        {
+            var lastNode = chain[chain.Count - 1];
+
+            // Build linked server list for -l argument
             var serverList = new List<Server>();
             for (int i = 0; i < chain.Count; i++)
             {
                 var node = chain[i];
 
-                // The impersonation chain on a node refers to what was done on the PARENT server.
-                // For the first node, it's impersonation on the starting server (not part of -l).
-                // For subsequent nodes, attach impersonation to the previous server entry.
                 if (i > 0 && node.ImpersonationChain.Count > 0)
                 {
-                    // Update the previous server entry with impersonation users
-                    serverList[serverList.Count - 1].ImpersonationUsers = node.ImpersonationChain.ToArray();
+                    serverList[serverList.Count - 1].ImpersonationUsers = node.ImpersonationChain.ConvertAll(s => s.Login).ToArray();
                 }
 
                 serverList.Add(new Server
@@ -735,47 +867,54 @@ namespace MSSQLand.Actions.Remote
                 });
             }
 
-            var lastNode = chain[chain.Count - 1];
+            LinkedServers linkedServers = new LinkedServers(serverList.ToArray());
+            string chainArg = linkedServers.GetChainArguments();
+
+            // Build host argument with starting server impersonation
+            string hostArg = Misc.BracketIdentifier(_rootNode.Alias);
+            if (chain.Count > 0 && chain[0].ImpersonationChain.Count > 0)
+            {
+                hostArg += "/" + string.Join("/", chain[0].ImpersonationChain.ConvertAll(s => s.Login));
+            }
+
+            // Full command
+            string command = $"\"{hostArg}\" -l \"{chainArg}\"";
+
+            // Endpoint display
             string endpoint = lastNode.Alias;
             if (!lastNode.Alias.Equals(lastNode.ActualName, StringComparison.OrdinalIgnoreCase))
             {
                 endpoint = $"{lastNode.Alias} [{lastNode.ActualName}]";
             }
 
-            string userContext = $"({lastNode.LoggedInUser} [{lastNode.MappedUser}])";
-            string roleInfo = "";
+            // Login context
+            string login = $"{lastNode.LoggedInUser} [{lastNode.MappedUser}]";
+
+            // Privilege level
+            string privilege;
             if (lastNode.IsSysadmin)
-            {
-                roleInfo = " ★ ";
-            }
-            else if (lastNode.ServerRoles.Count > 0)
-            {
-                roleInfo = $" [{string.Join(", ", lastNode.ServerRoles)}]";
-            }
+                privilege = "sysadmin";
+            else if (lastNode.IsElevated)
+                privilege = string.Join(", ", lastNode.ServerRoles.FindAll(r => ElevatedRoles.Contains(r)));
+            else
+                privilege = "";
 
-            LinkedServers linkedServers = new LinkedServers(serverList.ToArray());
-            string chainArg = linkedServers.GetChainArguments();
-
-            // Check if first hop requires impersonation on the starting server
-            string startingServerImp = "";
-            if (chain.Count > 0 && chain[0].ImpersonationChain.Count > 0)
-            {
-                startingServerImp = $" (requires host: {_rootNode.Alias}/{string.Join("/", chain[0].ImpersonationChain)})";
-            }
-
-            Logger.InfoNested($"{endpoint} {userContext}{roleInfo}: -l \"{chainArg}\"{startingServerImp}");
+            return new object[] { privilege, endpoint, login, command };
         }
 
         /// <summary>
-        /// Gets the server roles for the current user.
+        /// Gets all server roles (fixed and custom) the current user is a member of.
         /// </summary>
         private static List<string> GetUserServerRoles(DatabaseContext databaseContext)
         {
             string query = @"
 SELECT name
 FROM sys.server_principals
-WHERE type = 'R' AND is_fixed_role = 1 AND name != 'public'
-  AND IS_SRVROLEMEMBER(name) = 1;";
+WHERE type = 'R'
+  AND name != 'public'
+  AND name NOT LIKE '##%##'
+  AND ISNULL(IS_SRVROLEMEMBER(name), 0) = 1
+ORDER BY name;";
 
             var roles = new List<string>();
             try
@@ -783,12 +922,7 @@ WHERE type = 'R' AND is_fixed_role = 1 AND name != 'public'
                 DataTable rolesTable = databaseContext.QueryService.ExecuteTable(query);
                 foreach (DataRow row in rolesTable.Rows)
                 {
-                    string roleName = row["name"].ToString();
-                    // Skip sysadmin since it's shown with ★
-                    if (!roleName.Equals("sysadmin", StringComparison.OrdinalIgnoreCase))
-                    {
-                        roles.Add(roleName);
-                    }
+                    roles.Add(row["name"].ToString());
                 }
             }
             catch
