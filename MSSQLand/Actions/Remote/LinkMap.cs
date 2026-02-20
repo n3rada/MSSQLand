@@ -378,23 +378,33 @@ namespace MSSQLand.Actions.Remote
                 // Clear stale caches since we changed execution context
                 databaseContext.UserService.ClearCaches();
 
-                // Query actual server name through the chain
+                // Silently probe connectivity — avoids noisy error output for inaccessible servers
                 string actualServerName = targetServer;
+                string mappedUser, remoteLoggedInUser;
                 try
                 {
-                    string serverNameResult = databaseContext.QueryService.ExecuteScalar("SELECT @@SERVERNAME")?.ToString();
-                    if (!string.IsNullOrEmpty(serverNameResult))
+                    using (Logger.TemporarilySilent())
                     {
-                        actualServerName = serverNameResult;
+                        try
+                        {
+                            string serverNameResult = databaseContext.QueryService.ExecuteScalar("SELECT @@SERVERNAME")?.ToString();
+                            if (!string.IsNullOrEmpty(serverNameResult))
+                                actualServerName = serverNameResult;
+                        }
+                        catch
+                        {
+                            // Keep alias as fallback
+                        }
+
+                        (mappedUser, remoteLoggedInUser) = databaseContext.UserService.GetInfo();
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Keep alias as fallback
+                    Logger.TraceNested($"Failed to explore {targetServer}: {ex.Message}");
+                    return;
                 }
 
-                // Query user info through the chain (also updates UserService.SystemUser for ImpersonationMap)
-                var (mappedUser, remoteLoggedInUser) = databaseContext.UserService.GetInfo();
                 Logger.TraceNested($"Logged in to server '{targetServer}' (actual: {actualServerName}) as: '{remoteLoggedInUser}' [{mappedUser}]");
 
                 // Create state hash for loop detection
