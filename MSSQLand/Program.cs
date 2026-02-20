@@ -224,6 +224,9 @@ namespace MSSQLand
                         Logger.InfoNested($"Mapped to user: {userName}");
                         Logger.InfoNested($"Execution database: {databaseContext.QueryService.ExecutionServer.Database}");
 
+                        Logger.NewLine();
+                        Logger.Info($"Server version: {databaseContext.QueryService.ExecutionServer.Version}");
+
                         // Show Azure/Legacy status for execution server (linked server target)
                         if (databaseContext.QueryService.ExecutionServer.IsAzureSQL)
                         {

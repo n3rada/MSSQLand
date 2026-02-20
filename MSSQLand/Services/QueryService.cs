@@ -502,7 +502,6 @@ SELECT @result AS Result, @error AS Error;";
 
                     // Setting FullVersionString triggers version extraction and Azure SQL detection
                     ExecutionServer.FullVersionString = row[1].ToString();
-                    Logger.Debug($"Execution server version: {ExecutionServer.Version} (Major: {ExecutionServer.MajorVersion})");
                 }
             }
             catch
