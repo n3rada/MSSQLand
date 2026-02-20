@@ -74,7 +74,7 @@ namespace MSSQLand.Actions.FileSystem
             string escapedPath = path.Replace("'", "''");
 
             int fileFlag = _showFiles ? 1 : 0;
-            string query = $"EXEC xp_dirtree '{escapedPath}', {_depth}, {fileFlag}";
+            string query = $"EXEC master..xp_dirtree '{escapedPath}', {_depth}, {fileFlag}";
 
             try
             {
