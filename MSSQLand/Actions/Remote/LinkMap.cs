@@ -222,16 +222,18 @@ namespace MSSQLand.Actions.Remote
             );
 
             // Build complete map of reachable SQL links across all transitive impersonation chains.
-            // Key: server name, Value: (row with link info, chain needed to reach that login context)
+            // Key: (server name, local login) — same server with different login mappings are separate entries.
             var reachableChains = GetReachableLoginChains(databaseContext);
-            var allSqlLinks = new Dictionary<string, (DataRow row, List<string> chain)>(StringComparer.OrdinalIgnoreCase);
+            var allSqlLinks = new Dictionary<(string server, string localLogin), (DataRow row, List<string> chain)>();
 
             // Current user's links (already filtered to SQL above)
             foreach (DataRow row in sqlServerLinks)
             {
                 string link = row["Link"].ToString();
-                if (!allSqlLinks.ContainsKey(link) || string.IsNullOrEmpty(allSqlLinks[link].row["Local Login"]?.ToString()))
-                    allSqlLinks[link] = (row, null);
+                string localLogin = row["Local Login"] == DBNull.Value ? "" : row["Local Login"].ToString();
+                var key = (link.ToUpperInvariant(), localLogin.ToUpperInvariant());
+                if (!allSqlLinks.ContainsKey(key))
+                    allSqlLinks[key] = (row, null);
             }
 
             // Additional links visible from each transitive impersonation chain
@@ -248,9 +250,10 @@ namespace MSSQLand.Actions.Remote
                         if (!provider.StartsWith("SQLNCLI") && !provider.StartsWith("MSOLEDBSQL"))
                             continue;
                         string link = row["Link"].ToString();
-                        // Prefer rows that have a login mapping (more specific)
-                        if (!allSqlLinks.ContainsKey(link) || string.IsNullOrEmpty(allSqlLinks[link].row["Local Login"]?.ToString()))
-                            allSqlLinks[link] = (row, chain);
+                        string localLogin = row["Local Login"] == DBNull.Value ? "" : row["Local Login"].ToString();
+                        var key = (link.ToUpperInvariant(), localLogin.ToUpperInvariant());
+                        if (!allSqlLinks.ContainsKey(key))
+                            allSqlLinks[key] = (row, chain);
                     }
                 }
                 finally
@@ -266,7 +269,7 @@ namespace MSSQLand.Actions.Remote
             // Explore each discovered SQL link using the SAME connection
             foreach (var kvp in allSqlLinks)
             {
-                string remoteServer = kvp.Key;
+                string remoteServer = kvp.Key.server;
                 var (linkRow, chainToReach) = kvp.Value;
                 string requiredLogin = linkRow["Local Login"] == DBNull.Value ? "" : linkRow["Local Login"].ToString();
 
@@ -430,11 +433,11 @@ namespace MSSQLand.Actions.Remote
                 _globallyExploredContexts.Add($"{targetServer}|{remoteLoggedInUser}".ToUpperInvariant());
 
                 // Build complete map of reachable links via all transitive impersonation chains.
-                // Key: server name, Value: (row with link info, chain needed to reach that context)
+                // Key: (server name, local login) — same server with different login mappings are separate entries.
                 var remoteReachableChains = GetReachableLoginChains(databaseContext);
                 Logger.TraceNested($"Reachable login chains on '{targetServer}': {remoteReachableChains.Count}");
 
-                var allLinkedServersOnThisServer = new Dictionary<string, (DataRow row, List<string> chain)>(StringComparer.OrdinalIgnoreCase);
+                var allLinkedServersOnThisServer = new Dictionary<(string server, string localLogin), (DataRow row, List<string> chain)>();
 
                 // Current user's links
                 try
@@ -443,8 +446,10 @@ namespace MSSQLand.Actions.Remote
                     foreach (DataRow row in currentUserLinks.Rows)
                     {
                         string serverLink = row["Link"].ToString();
-                        if (!allLinkedServersOnThisServer.ContainsKey(serverLink) || string.IsNullOrEmpty(allLinkedServersOnThisServer[serverLink].row["Local Login"]?.ToString()))
-                            allLinkedServersOnThisServer[serverLink] = (row, null);
+                        string localLogin = row["Local Login"] == DBNull.Value ? "" : row["Local Login"].ToString();
+                        var key = (serverLink.ToUpperInvariant(), localLogin.ToUpperInvariant());
+                        if (!allLinkedServersOnThisServer.ContainsKey(key))
+                            allLinkedServersOnThisServer[key] = (row, null);
                     }
                 }
                 catch (Exception ex)
@@ -463,9 +468,10 @@ namespace MSSQLand.Actions.Remote
                         foreach (DataRow row in chainLinks.Rows)
                         {
                             string serverLink = row["Link"].ToString();
-                            // Prefer rows that have a login mapping (more specific)
-                            if (!allLinkedServersOnThisServer.ContainsKey(serverLink) || string.IsNullOrEmpty(allLinkedServersOnThisServer[serverLink].row["Local Login"]?.ToString()))
-                                allLinkedServersOnThisServer[serverLink] = (row, chain);
+                            string localLogin = row["Local Login"] == DBNull.Value ? "" : row["Local Login"].ToString();
+                            var key = (serverLink.ToUpperInvariant(), localLogin.ToUpperInvariant());
+                            if (!allLinkedServersOnThisServer.ContainsKey(key))
+                                allLinkedServersOnThisServer[key] = (row, chain);
                         }
                     }
                     finally
@@ -480,7 +486,7 @@ namespace MSSQLand.Actions.Remote
 
                 foreach (var kvp in allLinkedServersOnThisServer)
                 {
-                    string serverLink = kvp.Key;
+                    string serverLink = kvp.Key.server;
                     DataRow row = kvp.Value.row;
                     List<string> chain = kvp.Value.chain;
                     string provider = row["Provider"].ToString();
