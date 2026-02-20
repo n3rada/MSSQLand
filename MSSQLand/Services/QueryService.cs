@@ -51,6 +51,11 @@ namespace MSSQLand.Services
         private static bool _rpcWarningShown = false;
 
         /// <summary>
+        /// Tracks linked servers already reported as unreachable to suppress duplicate error messages.
+        /// </summary>
+        private readonly System.Collections.Generic.HashSet<string> _reportedUnreachableServers = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
         /// Determines if a SQL statement requires RPC execution because it modifies server-level state.
         /// These commands cannot be executed over OPENQUERY.
         /// </summary>
@@ -86,6 +91,20 @@ namespace MSSQLand.Services
             return m.Contains("metadata") ||
                    m.Contains("no columns") ||
                    m.Contains("Deferred prepare");
+        }
+
+        /// <summary>
+        /// Detects if an exception is a terminal impersonation failure.
+        /// These are definitive errors — no retry, wrapping, or routing change will resolve them.
+        /// SQL Server may append a secondary "metadata could not be determined" message
+        /// which would otherwise trigger OPENQUERY wrapping; this check prevents that.
+        /// </summary>
+        static bool IsImpersonationFailure(Exception ex)
+        {
+            string m = ex.Message;
+
+            return m.Contains("Cannot execute as the server principal") ||
+                   m.Contains("cannot be impersonated");
         }
 
         /// <summary>
@@ -289,7 +308,12 @@ SELECT @result AS Result, @error AS Error;";
                         ? ExecutionServer.LinkedServerAlias ?? ExecutionServer.Hostname
                         : ExecutionServer.Hostname;
 
-                    Logger.Error($"Cannot reach linked server '{failedServer}'.");
+                    // Only log the error the first time for each server
+                    if (_reportedUnreachableServers.Add(failedServer))
+                    {
+                        Logger.Error($"Cannot reach linked server '{failedServer}'.");
+                    }
+
                     throw; // Don't retry connection failures
                 }
 
@@ -329,6 +353,15 @@ SELECT @result AS Result, @error AS Error;";
                     }
 
                     return ExecuteWithHandling(query, executeReader, timeout, retryCount + 1);
+                }
+
+                // Impersonation failures are terminal — wrapping or retrying won't help.
+                // Check this before IsOpenQueryRowsetFailure because SQL Server appends
+                // "The metadata could not be determined..." to impersonation errors,
+                // which would otherwise trigger the OPENQUERY wrapping path.
+                if (IsImpersonationFailure(ex))
+                {
+                    throw;
                 }
 
                 if ((!_linkedServers.UseRemoteProcedureCall || _linkedServers.HasNonRpcServers) && IsOpenQueryRowsetFailure(ex))

@@ -85,6 +85,12 @@ namespace MSSQLand.Models
         private readonly HashSet<string> _nonRpcServers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
+        /// Tracks servers for which the impersonation-via-OPENQUERY incompatibility
+        /// warning has already been shown. Prevents repeated warnings across queries.
+        /// </summary>
+        private readonly HashSet<string> _openQueryImpersonationWarned = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
         /// Returns true if any server in the chain has been marked as non-RPC capable.
         /// </summary>
         public bool HasNonRpcServers => _nonRpcServers.Count > 0;
@@ -516,12 +522,15 @@ namespace MSSQLand.Models
             {
                 StringBuilder baseQuery = new StringBuilder();
 
-                // Add cascading impersonation
+                // Skip impersonation — this content will be wrapped inside the parent's
+                // OPENQUERY, and EXECUTE AS LOGIN inside OPENQUERY always fails because
+                // sp_describe_first_result_set cannot handle it during metadata probing.
                 if (impersonationUsers != null && impersonationUsers.Length > 0)
                 {
-                    foreach (var user in impersonationUsers)
+                    if (_openQueryImpersonationWarned.Add(linkedServers[0]))
                     {
-                        baseQuery.Append($"EXECUTE AS LOGIN = '{user}';");
+                        string users = string.Join(" \u2192 ", impersonationUsers);
+                        Logger.Warning($"Impersonation ({users}) skipped on '{linkedServers[0]}': EXECUTE AS LOGIN is incompatible with OPENQUERY. Enable RPC on this linked server for impersonation support.");
                     }
                 }
 
@@ -550,13 +559,14 @@ namespace MSSQLand.Models
 
             // We are now inside the query, on the linked server
 
-            // Add cascading impersonation if applicable
+            // Skip impersonation — EXECUTE AS LOGIN inside OPENQUERY always fails
+            // because sp_describe_first_result_set cannot handle it during metadata probing.
             if (impersonationUsers != null && impersonationUsers.Length > 0)
             {
-                foreach (var user in impersonationUsers)
+                if (_openQueryImpersonationWarned.Add(linkedServers[1]))
                 {
-                    string impersonationQuery = $"EXECUTE AS LOGIN = '{user}';";
-                    stringBuilder.Append(impersonationQuery.Replace("'", new('\'',(1 << (thicksCounter + 1)))));
+                    string users = string.Join(" \u2192 ", impersonationUsers);
+                    Logger.Warning($"Impersonation ({users}) skipped on '{linkedServers[1]}': EXECUTE AS LOGIN is incompatible with OPENQUERY. Enable RPC on this linked server for impersonation support.");
                 }
             }
 
@@ -711,11 +721,21 @@ namespace MSSQLand.Models
                     {
                         if (!useRpc)
                         {
-                            Logger.Warning($"Impersonation on '{server}' may not propagate correctly via OPENQUERY. Consider enabling RPC.");
+                            // EXECUTE AS LOGIN inside OPENQUERY always fails because
+                            // sp_describe_first_result_set cannot handle it during metadata probing.
+                            // Skip impersonation for this hop entirely.
+                            if (_openQueryImpersonationWarned.Add(server))
+                            {
+                                string users = string.Join(" \u2192 ", impersonationUsers);
+                                Logger.Warning($"Impersonation ({users}) skipped on '{server}': EXECUTE AS LOGIN is incompatible with OPENQUERY. Enable RPC on this linked server for impersonation support.");
+                            }
                         }
-                        foreach (var user in impersonationUsers)
+                        else
                         {
-                            queryBuilder.Append($"EXECUTE AS LOGIN = '{user}'; ");
+                            foreach (var user in impersonationUsers)
+                            {
+                                queryBuilder.Append($"EXECUTE AS LOGIN = '{user}'; ");
+                            }
                         }
                     }
                 }
