@@ -84,6 +84,7 @@ namespace MSSQLand.Actions
             { "read", (typeof(FileRead), "Read file contents from the server's file system.", new[] { "cat" }) },
             { "tree", (typeof(Tree), "Display directory tree structure in Linux tree-style format.", null) },
             { "upload", (typeof(Upload), "Upload a local file to the SQL Server filesystem.", null) },
+            { "rm", (typeof(RemoveFile), "Delete a file on the SQL Server filesystem.", new[] { "del", "delete" }) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // REMOTE DATA ACCESS ACTIONS
