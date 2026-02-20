@@ -73,20 +73,8 @@ namespace MSSQLand.Actions.FileSystem
             // Escape single quotes in path
             string escapedPath = path.Replace("'", "''");
 
-            // Always fetch files from xp_dirtree; filter in C# if _showFiles is false.
-            // This avoids branching on the column count (2 vs 3) returned by xp_dirtree.
-            string query = $@"
-DECLARE @results TABLE (
-    subdirectory NVARCHAR(512),
-    depth INT,
-    isfile BIT
-);
-
-INSERT INTO @results
-EXEC xp_dirtree '{escapedPath}', {_depth}, 1;
-
-SELECT * FROM @results;
-";
+            int fileFlag = _showFiles ? 1 : 0;
+            string query = $"EXEC xp_dirtree '{escapedPath}', {_depth}, {fileFlag}";
 
             try
             {
@@ -111,9 +99,11 @@ SELECT * FROM @results;
                 int dirCount = 0;
                 int fileCount = 0;
 
+                bool hasIsFile = results.Columns.Contains("isfile");
+
                 foreach (DataRow row in results.Rows)
                 {
-                    bool isFile = row["isfile"] != DBNull.Value && Convert.ToBoolean(row["isfile"]);
+                    bool isFile = hasIsFile && row["isfile"] != DBNull.Value && Convert.ToBoolean(row["isfile"]);
                     int depth = row["depth"] != DBNull.Value ? Convert.ToInt32(row["depth"]) : 1;
 
                     if (depth <= _depth)
@@ -188,21 +178,16 @@ SELECT * FROM @results;
         {
             List<TreeNode> tree = new List<TreeNode>();
             Dictionary<int, TreeNode> depthStack = new Dictionary<int, TreeNode>();
+            bool hasIsFile = results.Columns.Contains("isfile");
 
             foreach (DataRow row in results.Rows)
             {
                 string name = row["subdirectory"] != DBNull.Value ? row["subdirectory"].ToString() : "";
                 int depth = row["depth"] != DBNull.Value ? Convert.ToInt32(row["depth"]) : 1;
-                bool isFile = row["isfile"] != DBNull.Value && Convert.ToBoolean(row["isfile"]);
+                bool isFile = hasIsFile && row["isfile"] != DBNull.Value && Convert.ToBoolean(row["isfile"]);
 
                 // Skip items beyond the requested depth
                 if (depth > _depth)
-                {
-                    continue;
-                }
-
-                // Filter out files in C# when _showFiles is disabled
-                if (isFile && !_showFiles)
                 {
                     continue;
                 }
