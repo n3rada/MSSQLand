@@ -113,6 +113,7 @@ namespace MSSQLand.Services
                    m.Contains("Could not open a connection") ||
                    m.Contains("Named Pipes Provider") ||
                    m.Contains("TCP Provider") ||
+                   m.Contains("no login-mapping") ||
                    m.Contains("[53]") ||    // SQL Server not found
                    m.Contains("[17]") ||    // SQL Server does not exist or access denied
                    m.Contains("[2]") ||     // Network timeout
