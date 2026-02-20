@@ -12,19 +12,19 @@ namespace MSSQLand.Actions.FileSystem
 {
     /// <summary>
     /// Display directory tree structure in Linux tree-style format using xp_dirtree.
-    /// 
+    ///
     /// This action uses the undocumented but widely-used xp_dirtree extended procedure
     /// to enumerate directories and files on the SQL Server filesystem. The output is
     /// formatted to match the Linux 'tree' command style.
-    /// 
+    ///
     /// The tree representation uses Unicode box-drawing characters by default:
     /// - ├── for intermediate items
     /// - └── for the last item in a directory
     /// - │   for vertical lines continuing to subdirectories
     /// - Indentation to show hierarchy levels
-    /// 
+    ///
     /// Use --unicode:0 or -u:false flag to fall back to ASCII characters (|, \, |) for legacy terminals
-    /// 
+    ///
     /// Note: Paths containing spaces must be enclosed in quotes.
     /// Examples:
     ///     tree "C:\Program Files" 3
@@ -73,44 +73,19 @@ namespace MSSQLand.Actions.FileSystem
             // Escape single quotes in path
             string escapedPath = path.Replace("'", "''");
 
-            // xp_dirtree parameters:
-            // @path: Directory path
-            // @depth: How many levels deep to traverse (default 0 = all)
-            // @file: 1 = show files, 0 = directories only (default 0)
-            int fileFlag = _showFiles ? 1 : 0;
-
-            // xp_dirtree returns 3 columns (subdirectory, depth, isfile) when @file=1,
-            // but only 2 columns (subdirectory, depth) when @file=0.
-            // Temp table and INSERT must match the actual output schema.
-            // SELECT always aliases a synthetic isfile column when files are excluded,
-            // so downstream code sees a consistent 3-column result regardless of mode.
-            string query = _showFiles
-                ? $@"
-CREATE TABLE #TreeResults (
+            // Always fetch files from xp_dirtree; filter in C# if _showFiles is false.
+            // This avoids branching on the column count (2 vs 3) returned by xp_dirtree.
+            string query = $@"
+DECLARE @results TABLE (
     subdirectory NVARCHAR(512),
     depth INT,
     isfile BIT
 );
 
-INSERT INTO #TreeResults (subdirectory, depth, isfile)
+INSERT INTO @results
 EXEC xp_dirtree '{escapedPath}', {_depth}, 1;
 
-SELECT subdirectory, depth, isfile FROM #TreeResults;
-
-DROP TABLE #TreeResults;
-"
-                : $@"
-CREATE TABLE #TreeResults (
-    subdirectory NVARCHAR(512),
-    depth INT
-);
-
-INSERT INTO #TreeResults (subdirectory, depth)
-EXEC xp_dirtree '{escapedPath}', {_depth}, 0;
-
-SELECT subdirectory, depth, 0 AS isfile FROM #TreeResults;
-
-DROP TABLE #TreeResults;
+SELECT * FROM @results;
 ";
 
             try
@@ -199,12 +174,12 @@ DROP TABLE #TreeResults;
 
         /// <summary>
         /// Organize flat xp_dirtree results into a hierarchical structure.
-        /// 
+        ///
         /// xp_dirtree returns:
         /// - subdirectory: just the name (not full path)
         /// - depth: level from root (1, 2, 3...)
         /// - isfile: 1 for file, 0 for directory
-        /// 
+        ///
         /// We need to track parent-child relationships using depth levels.
         /// </summary>
         /// <param name="results">Flat list of results from xp_dirtree.</param>
@@ -222,6 +197,12 @@ DROP TABLE #TreeResults;
 
                 // Skip items beyond the requested depth
                 if (depth > _depth)
+                {
+                    continue;
+                }
+
+                // Filter out files in C# when _showFiles is disabled
+                if (isFile && !_showFiles)
                 {
                     continue;
                 }
