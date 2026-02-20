@@ -327,6 +327,7 @@ namespace MSSQLand.Actions.Remote
                 return null;
             }
 
+            Logger.NewLine();
             Logger.Success($"Found {totalChains} accessible chain(s)");
 
             // Display tree view
