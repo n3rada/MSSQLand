@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using MSSQLand.Actions.Database;
 using MSSQLand.Models;
@@ -260,6 +261,8 @@ namespace MSSQLand.Actions.Remote
 
             Logger.TaskNested($"Total reachable SQL Server linked servers: {allSqlLinks.Count}");
 
+            Stopwatch totalStopwatch = Stopwatch.StartNew();
+
             // Explore each discovered SQL link using the SAME connection
             foreach (var kvp in allSqlLinks)
             {
@@ -272,6 +275,8 @@ namespace MSSQLand.Actions.Remote
                     Logger.TraceNested($"Server '{remoteServer}' already explored as '{requiredLogin}'. Skipping.");
                     continue;
                 }
+
+                Stopwatch serverStopwatch = Stopwatch.StartNew();
 
                 HashSet<string> visitedInChain = new() { startingHash };
                 List<ServerNode> currentPath = new();
@@ -316,7 +321,12 @@ namespace MSSQLand.Actions.Remote
                     if (sessionHops > 0)
                         RevertChain(databaseContext, sessionHops);
                 }
+
+                serverStopwatch.Stop();
+                Logger.TraceNested($"Explored '{remoteServer}' in {serverStopwatch.Elapsed.TotalSeconds:F2}s");
             }
+
+            totalStopwatch.Stop();
 
             // Count total chains
             int totalChains = CountLeafNodes(_rootNode);
@@ -328,7 +338,7 @@ namespace MSSQLand.Actions.Remote
             }
 
             Logger.NewLine();
-            Logger.Success($"Found {totalChains} accessible chain(s)");
+            Logger.Success($"Found {totalChains} accessible chain(s) in {totalStopwatch.Elapsed.TotalSeconds:F2}s");
 
             // Display tree view
             Logger.NewLine();
