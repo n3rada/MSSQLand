@@ -79,6 +79,35 @@ namespace MSSQLand.Models
         public bool UseRemoteProcedureCall { get; set; } = true;
 
         /// <summary>
+        /// Set of linked server names known to not support RPC.
+        /// Used to build hybrid RPC/OPENQUERY chains where only specific hops use OPENQUERY.
+        /// </summary>
+        private readonly HashSet<string> _nonRpcServers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Returns true if any server in the chain has been marked as non-RPC capable.
+        /// </summary>
+        public bool HasNonRpcServers => _nonRpcServers.Count > 0;
+
+        /// <summary>
+        /// Returns true if all servers in the chain are marked as non-RPC capable.
+        /// </summary>
+        public bool AllServersNonRpc => ServerChain.Length > 0 && ServerNames.All(s => _nonRpcServers.Contains(s));
+
+        /// <summary>
+        /// Marks a specific linked server as not supporting RPC.
+        /// Future queries will use OPENQUERY for this specific hop while maintaining RPC for others.
+        /// </summary>
+        /// <param name="serverName">The linked server name (as it appears in error messages or sys.servers).</param>
+        public void MarkServerAsNonRpc(string serverName)
+        {
+            if (!string.IsNullOrEmpty(serverName))
+            {
+                _nonRpcServers.Add(serverName);
+            }
+        }
+
+        /// <summary>
         /// Initializes an empty linked server chain.
         /// This allows a default empty state where no linked servers exist.
         /// </summary>
@@ -134,6 +163,13 @@ namespace MSSQLand.Models
                     ImpersonationUsers = server.ImpersonationUsers,
                     Database = server.Database
                 }).ToArray();
+            }
+
+            // Preserve RPC state from the original
+            UseRemoteProcedureCall = original.UseRemoteProcedureCall;
+            foreach (var server in original._nonRpcServers)
+            {
+                _nonRpcServers.Add(server);
             }
 
             RecomputeChain();
@@ -619,6 +655,95 @@ namespace MSSQLand.Models
 
                 // Double single quotes to escape them in the SQL string
                 currentQuery = $"EXEC ('{queryBuilder.ToString().Replace("'", "''")}') AT [{server}]";
+            }
+
+            return currentQuery;
+        }
+
+        /// <summary>
+        /// Builds a hybrid chain that uses RPC (EXEC AT) for capable servers
+        /// and OPENQUERY for servers known to lack RPC support.
+        ///
+        /// This preserves identity propagation and impersonation on RPC-capable hops
+        /// while falling back to OPENQUERY only where strictly necessary.
+        ///
+        /// Example with chain [SQL02, SQL01] where SQL01 lacks RPC:
+        ///   EXEC ('EXECUTE AS LOGIN = ''dev''; SELECT * FROM OPENQUERY([SQL01], ''query'')') AT [SQL02]
+        /// </summary>
+        /// <param name="query">The SQL query to execute at the final server.</param>
+        /// <returns>A hybrid RPC/OPENQUERY chain query.</returns>
+        public string BuildHybridChain(string query)
+        {
+            return BuildHybridChainIterative(
+                linkedServers: ComputableServerNames,
+                query: query,
+                linkedImpersonation: ComputableImpersonationUsers,
+                linkedDatabases: ComputableDatabaseNames
+            );
+        }
+
+        /// <summary>
+        /// Iteratively constructs a hybrid chain from innermost server to outermost.
+        /// At each hop, decides between EXEC AT (RPC) and OPENQUERY based on _nonRpcServers.
+        /// The escaping logic (doubling single quotes per nesting level) is identical for both.
+        /// </summary>
+        private string BuildHybridChainIterative(
+            string[] linkedServers,
+            string query,
+            string[][] linkedImpersonation = null,
+            string[] linkedDatabases = null)
+        {
+            string currentQuery = query;
+
+            // Build from innermost server to outermost, skipping the "0" sentinel at index 0
+            for (int i = linkedServers.Length - 1; i > 0; i--)
+            {
+                string server = linkedServers[i];
+                bool useRpc = !_nonRpcServers.Contains(server);
+
+                StringBuilder queryBuilder = new StringBuilder();
+
+                // Add cascading impersonation
+                if (linkedImpersonation != null && linkedImpersonation.Length > 0)
+                {
+                    string[] impersonationUsers = linkedImpersonation[i - 1];
+                    if (impersonationUsers != null && impersonationUsers.Length > 0)
+                    {
+                        if (!useRpc)
+                        {
+                            Logger.Warning($"Impersonation on '{server}' may not propagate correctly via OPENQUERY. Consider enabling RPC.");
+                        }
+                        foreach (var user in impersonationUsers)
+                        {
+                            queryBuilder.Append($"EXECUTE AS LOGIN = '{user}'; ");
+                        }
+                    }
+                }
+
+                // Add database context
+                if (linkedDatabases != null && linkedDatabases.Length > 0)
+                {
+                    string database = linkedDatabases[i - 1];
+                    if (!string.IsNullOrEmpty(database) && database != "master")
+                    {
+                        queryBuilder.Append($"USE [{database}]; ");
+                    }
+                }
+
+                queryBuilder.Append(currentQuery.TrimEnd(';'));
+                queryBuilder.Append(";");
+
+                // Double single quotes for the nesting level
+                string escaped = queryBuilder.ToString().Replace("'", "''");
+
+                if (useRpc)
+                {
+                    currentQuery = $"EXEC ('{escaped}') AT [{server}]";
+                }
+                else
+                {
+                    currentQuery = $"SELECT * FROM OPENQUERY([{server}],'{escaped}')";
+                }
             }
 
             return currentQuery;
