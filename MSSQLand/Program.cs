@@ -175,6 +175,7 @@ namespace MSSQLand
                     {
                         Logger.NewLine();
                         Logger.Warning($"Connected to legacy SQL Server (version {databaseContext.Server.MajorVersion}).");
+                        Logger.NewLine();
                     }
 
                     // Compute effective user (domain users only)
@@ -187,7 +188,7 @@ namespace MSSQLand
 
                         if (!effectiveUser.Equals(userName, StringComparison.OrdinalIgnoreCase))
                         {
-                            Logger.InfoNested($"Effective database user: {effectiveUser}");
+                            Logger.Info($"Effective database user: {effectiveUser}");
                             if (!sourcePrincipal.Equals(systemUser, StringComparison.OrdinalIgnoreCase))
                             {
                                 Logger.InfoNested($"Access granted via: {sourcePrincipal}");
@@ -195,7 +196,7 @@ namespace MSSQLand
                         }
                         else
                         {
-                            Logger.InfoNested($"Domain user '{systemUser}' is directly mapped");
+                            Logger.Info($"Domain user '{systemUser}' is directly mapped");
                         }
                     }
 
