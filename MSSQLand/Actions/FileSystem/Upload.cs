@@ -27,6 +27,7 @@ namespace MSSQLand.Actions.FileSystem
         private string _remotePath = "";
 
         private FileInfo _localFileInfo;
+        private bool _oleAttemptedEnable = false;
 
         public override void ValidateArguments(string[] args)
         {
@@ -65,8 +66,6 @@ namespace MSSQLand.Actions.FileSystem
         public override object Execute(DatabaseContext databaseContext)
         {
 
-            Logger.Info($"Uploading file to SQL Server");
-
             if (string.IsNullOrWhiteSpace(_remotePath))
             {
                 _remotePath = GetDefaultUploadPath(databaseContext);
@@ -75,12 +74,12 @@ namespace MSSQLand.Actions.FileSystem
             {
                 // Path is a directory (ends with \ or has no extension)
                 _remotePath = Path.Combine(_remotePath, _localFileInfo.Name);
-                Logger.InfoNested($"Remote path is a directory, appending filename");
+                Logger.TaskNested($"Remote path is a directory, appending filename");
             }
 
-            Logger.InfoNested($"Local file: {_localFileInfo.FullName}");
-            Logger.InfoNested($"File size: {_localFileInfo.Length:N0} bytes");
-            Logger.InfoNested($"Remote destination: {_remotePath}");
+            Logger.TaskNested($"Local file: {_localFileInfo.FullName}");
+            Logger.TaskNested($"File size: {_localFileInfo.Length:N0} bytes");
+            Logger.TaskNested($"Remote destination: {_remotePath}");
 
             // Read local file content
             byte[] fileContent;
@@ -94,17 +93,23 @@ namespace MSSQLand.Actions.FileSystem
                 return false;
             }
 
-            // Try to enable OLE Automation
-            bool oleAvailable = databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1);
-
-            if (!oleAvailable)
-            {
-                Logger.Error("Cannot enable OLE Automation (no ALTER SETTINGS permission)");
-                return false;
-            }
-
-            Logger.Info("OLE Automation is available, using OLE method");
+            // Optimistic: try upload directly, enable OLE Automation only if needed
             bool success = UploadViaOle(databaseContext, fileContent);
+
+            if (!success && !_oleAttemptedEnable)
+            {
+                _oleAttemptedEnable = true;
+                Logger.Info("OLE Automation may be disabled, attempting to enable it");
+
+                bool oleEnabled = databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1);
+                if (!oleEnabled)
+                {
+                    Logger.Error("Cannot enable OLE Automation (no ALTER SETTINGS permission)");
+                    return false;
+                }
+
+                success = UploadViaOle(databaseContext, fileContent);
+            }
 
             if (!success)
             {
@@ -144,8 +149,6 @@ namespace MSSQLand.Actions.FileSystem
                     Logger.Error($"File was not created at: {_remotePath}");
                     return false;
                 }
-
-                Logger.Success($"File uploaded successfully to: {_remotePath}");
                 return true;
             }
             catch (Exception ex)
@@ -163,8 +166,6 @@ namespace MSSQLand.Actions.FileSystem
         /// <returns>True if upload succeeded; otherwise false.</returns>
         private bool UploadViaOle(DatabaseContext databaseContext, byte[] fileContent)
         {
-            Logger.Info("Uploading file via OLE Automation (ADODB.Stream)");
-
             // For large files, this might fail due to VARBINARY(MAX) limits
             if (fileContent.Length > 2000000000) // ~2GB limit
             {
@@ -243,12 +244,12 @@ EXEC sp_OADestroy @ObjectToken;
             try
             {
                 databaseContext.QueryService.ExecuteNonProcessing(query);
-                Logger.Success("OLE upload command executed successfully");
+                Logger.Success("File uploaded via OLE Automation (ADODB.Stream)");
                 return true;
             }
             catch (Exception ex)
             {
-                Logger.Error($"OLE upload failed: {ex.Message}");
+                Logger.Debug($"OLE upload failed: {ex.Message}");
                 return false;
             }
         }
