@@ -1,5 +1,3 @@
-﻿// MSSQLand/Actions/Database/Databases.cs
-
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
@@ -31,8 +29,10 @@ namespace MSSQLand.Actions.Database
                     d.is_read_only AS [ReadOnly],
                     d.recovery_model_desc AS [Recovery Model],
                     SUSER_SNAME(d.owner_sid) AS Owner,
-                    d.create_date AS [Created]
+                    d.create_date AS [Created],
+                    mf.physical_name AS [MDF Path]
                 FROM sys.databases d
+                LEFT JOIN sys.master_files mf ON d.database_id = mf.database_id AND mf.type = 0
                 ORDER BY HAS_DBACCESS(d.name) DESC, d.create_date DESC;"
             );
 
