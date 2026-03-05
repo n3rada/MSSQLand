@@ -181,11 +181,12 @@ namespace MSSQLand
                     // Compute effective user (domain users only)
                     if (databaseContext.UserService.IsDomainUser)
                     {
+                        Logger.NewLine();
                         databaseContext.UserService.ComputeEffectiveUserAndSource();
 
                         string effectiveUser = databaseContext.UserService.EffectiveUser;
                         string sourcePrincipal = databaseContext.UserService.SourcePrincipal;
-
+                
                         if (!effectiveUser.Equals(userName, StringComparison.OrdinalIgnoreCase))
                         {
                             Logger.Info($"Effective database user: {effectiveUser}");
