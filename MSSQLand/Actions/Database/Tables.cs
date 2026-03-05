@@ -1,4 +1,4 @@
-﻿// MSSQLand/Actions/Database/Tables.cs
+// MSSQLand/Actions/Database/Tables.cs
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
@@ -11,13 +11,10 @@ namespace MSSQLand.Actions.Database
 {
     internal class Tables : BaseAction
     {
-        [ArgumentMetadata(Position = 0, ShortName = "D", LongName = "database", Description = "Database name (uses current database if not specified)")]
-        private string _database = "";
-
-        [ArgumentMetadata(Position = 1, ShortName = "n", LongName = "name", Description = "Filter tables by name pattern (supports wildcards %)")]
+        [ArgumentMetadata(Position = 0, ShortName = "n", LongName = "name", Description = "Filter tables by name pattern (supports wildcards %)")]
         private string _name = "";
 
-        [ArgumentMetadata(Position = 2, ShortName = "C", LongName = "columns", Description = "Show column names for each table")]
+        [ArgumentMetadata(Position = 1, ShortName = "C", LongName = "columns", Description = "Show column names for each table")]
         private bool _showColumns = false;
 
         [ArgumentMetadata(ShortName = "c", LongName = "column", Description = "Filter tables containing a column name pattern (supports wildcards %)")]
@@ -42,15 +39,13 @@ namespace MSSQLand.Actions.Database
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            // Use the execution database if no database is specified
-            string targetDatabase = string.IsNullOrEmpty(_database) 
-                ? databaseContext.QueryService.ExecutionServer.Database 
-                : _database;
+            // Use the execution database from context
+            string targetDatabase = databaseContext.QueryService.ExecutionServer.Database;
 
             // Ensure we have a valid database name
             if (string.IsNullOrEmpty(targetDatabase))
             {
-                throw new InvalidOperationException("Unable to determine target database. Please specify a database name explicitly.");
+                throw new InvalidOperationException("Unable to determine target database. Please specify a database context.");
             }
 
             string filterMsg = !string.IsNullOrEmpty(_name) ? $" (name: {_name})" : "";
@@ -58,12 +53,9 @@ namespace MSSQLand.Actions.Database
             string columnMsg = !string.IsNullOrEmpty(_columnFilter) ? $" with column containing '{_columnFilter}'" : "";
             string rowsMsg = _withRows ? " (rows > 0)" : "";
             string permsMsg = _showPermissions ? " with permissions" : "";
-            Logger.TaskNested($"Retrieving tables from [{targetDatabase}]{filterMsg}{columnsMsg}{columnMsg}{rowsMsg}{permsMsg}{collViewsMsg}");
+            Logger.TaskNested($"Retrieving tables from [{targetDatabase}]{filterMsg}{columnsMsg}{columnMsg}{rowsMsg}{permsMsg}");
 
-            // Use 3-part naming (database.schema.table)
-            string dbPrefix = $"[{targetDatabase.Trim('[', ']')}].";
-
-            // Build WHERE clause with filter (partition filter is inside OUTER APPLY)
+            // Build WHERE clause with filter
             string whereClause = "WHERE t.type IN ('U', 'V')";
             if (!string.IsNullOrEmpty(_name))
             {
@@ -72,13 +64,13 @@ namespace MSSQLand.Actions.Database
 
             if (!string.IsNullOrEmpty(_columnFilter))
             {
-                whereClause += $" AND EXISTS (SELECT 1 FROM {dbPrefix}sys.columns c WHERE c.object_id = t.object_id AND c.name LIKE '%{_columnFilter.Replace("'", "''")}%')";
+                whereClause += $" AND EXISTS (SELECT 1 FROM sys.columns c WHERE c.object_id = t.object_id AND c.name LIKE '%{_columnFilter.Replace("'", "''")}%')";
             }
 
             if (_withRows)
             {
                 // Only filter tables (type='U') with 0 rows; always show views (type='V') since we can't count their rows
-                whereClause += $" AND (t.type = 'V' OR EXISTS (SELECT 1 FROM {dbPrefix}sys.partitions p WHERE p.object_id = t.object_id AND p.index_id IN (0, 1) AND p.rows > 0))";
+                whereClause += $" AND (t.type = 'V' OR EXISTS (SELECT 1 FROM sys.partitions p WHERE p.object_id = t.object_id AND p.index_id IN (0, 1) AND p.rows > 0))";
             }
 
             string query = $@"SELECT
@@ -91,12 +83,12 @@ namespace MSSQLand.Actions.Database
                         ELSE 'N/A'
                     END AS Rows
                 FROM 
-                    {dbPrefix}sys.objects t
+                    sys.objects t
                 JOIN 
-                    {dbPrefix}sys.schemas s ON t.schema_id = s.schema_id
+                    sys.schemas s ON t.schema_id = s.schema_id
                 OUTER APPLY (
                     SELECT SUM(p.rows) AS Rows
-                    FROM {dbPrefix}sys.partitions p
+                    FROM sys.partitions p
                     WHERE p.object_id = t.object_id AND p.index_id IN (0, 1)
                 ) pr
                 {whereClause}
@@ -127,7 +119,7 @@ namespace MSSQLand.Actions.Database
                 string permissionsQuery = $@"SELECT 
     o.object_id,
     p.permission_name 
-FROM {dbPrefix}sys.objects o 
+FROM sys.objects o 
 CROSS APPLY fn_my_permissions(QUOTENAME(SCHEMA_NAME(o.schema_id)) + '.' + QUOTENAME(o.name), 'OBJECT') p 
 WHERE o.object_id IN ({objectIdFilter});";
 
@@ -155,8 +147,8 @@ WHERE o.object_id IN ({objectIdFilter});";
     o.object_id,
     c.name AS column_name,
     TYPE_NAME(c.user_type_id) AS data_type
-FROM {dbPrefix}sys.columns c
-INNER JOIN {dbPrefix}sys.objects o ON c.object_id = o.object_id
+FROM sys.columns c
+INNER JOIN sys.objects o ON c.object_id = o.object_id
 WHERE o.object_id IN ({objectIdFilter})
 ORDER BY o.object_id, c.column_id;";
 
