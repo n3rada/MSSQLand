@@ -30,7 +30,7 @@ Format: `server:port/user@database` or any combination `server/user@database:por
 - `/user` (optional) - User to impersonate on this server ("execute as login")
   - Supports **cascading impersonation**: `/user1/user2/user3` executes `EXECUTE AS LOGIN = 'user1'; EXECUTE AS LOGIN = 'user2'; EXECUTE AS LOGIN = 'user3';`
   - Each `/user` pushes a new impersonation context onto the security stack
-- `@database` (optional) - Database context (defaults to 'master' if not specified)
+- `@database` (optional) - Database context
 
 ```shell
 # Connection test only (no action executed)
