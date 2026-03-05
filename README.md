@@ -39,7 +39,7 @@ MSSQLand.exe localhost -c token
 # Execute specific action
 MSSQLand.exe localhost -c token info
 MSSQLand.exe localhost:1434@db03 -c token info
-MSSQLand.exe server@AdventureWorks -c token tables -n Customer
+MSSQLand.exe LAB-SQL01@AdventureWorks -c token tables -n Customer
 ```
 
 ### 🔗 Linked Servers Chain
