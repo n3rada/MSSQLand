@@ -77,8 +77,10 @@ namespace MSSQLand.Actions.ConfigMgr
                     filterClause += $" AND pr.CommandLine LIKE '%{_commandLine.Replace("'", "''")}%'";
                 }
 
+                string topClause = _limit > 0 ? $"TOP {_limit}" : "";
+
                 string query = $@"
-SELECT TOP {_limit}
+SELECT {topClause}
     pr.PackageID,
     pk.Name AS PackageName,
     pr.ProgramName,
@@ -91,11 +93,11 @@ SELECT TOP {_limit}
     pr.Requirements,
     pr.DependentProgram,
     pr.DriveLetter,
-    CASE 
+    CASE
         WHEN pr.ProgramFlags & 0x00000001 = 0x00000001 THEN 'Yes'
         ELSE 'No'
     END AS AuthorizedDynamicInstall,
-    CASE 
+    CASE
         WHEN pr.ProgramFlags & 0x00001000 = 0x00001000 THEN 'Disabled'
         ELSE 'Enabled'
     END AS Status

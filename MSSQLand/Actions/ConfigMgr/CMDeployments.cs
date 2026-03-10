@@ -80,7 +80,7 @@ namespace MSSQLand.Actions.ConfigMgr
                 Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 string filterClause = "WHERE 1=1";
-                
+
                 if (!string.IsNullOrEmpty(_name))
                 {
                     filterClause += $" AND ds.SoftwareName LIKE '%{_name.Replace("'", "''")}%'";
@@ -101,7 +101,7 @@ namespace MSSQLand.Actions.ConfigMgr
                         "task-sequence" or "tasksequence" or "ts" => 7,
                         _ => int.TryParse(_featureType, out int val) ? val : -1
                     };
-                    
+
                     if (featureTypeValue != -1)
                     {
                         filterClause += $" AND ds.FeatureType = {featureTypeValue}";
@@ -116,7 +116,7 @@ namespace MSSQLand.Actions.ConfigMgr
                         "available" => 2,
                         _ => int.TryParse(_intent, out int val) ? val : -1
                     };
-                    
+
                     if (intentValue != -1)
                     {
                         filterClause += $" AND ds.DeploymentIntent = {intentValue}";
@@ -138,13 +138,15 @@ namespace MSSQLand.Actions.ConfigMgr
                     filterClause += " AND dt.CI_ID IS NOT NULL";
                 }
 
+                string topClause = _limit > 0 ? $"TOP {_limit}" : "";
+
                 string query = $@"
-SELECT TOP {_limit}
-    CASE 
+SELECT {topClause}
+    CASE
         WHEN ds.FeatureType = 2 THEN adv.AdvertisementID
         ELSE CAST(ds.AssignmentID AS VARCHAR)
     END AS DeploymentID,
-    CASE 
+    CASE
         WHEN ds.FeatureType = 2 THEN 'Advertisement'
         ELSE 'Assignment'
     END AS DeploymentKind,
@@ -176,8 +178,8 @@ LEFT JOIN [{db}].dbo.v_Collection c ON ds.CollectionID = c.CollectionID
 LEFT JOIN [{db}].dbo.vAppDeploymentTargetingInfoBase adt ON ds.AssignmentID = adt.AssignmentID
 LEFT JOIN [{db}].dbo.CI_ConfigurationItems dt ON adt.DTCI = dt.CI_ID
 LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON dt.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
-LEFT JOIN [{db}].dbo.v_Advertisement adv ON ds.CollectionID = adv.CollectionID 
-    AND ds.PackageID = adv.PackageID 
+LEFT JOIN [{db}].dbo.v_Advertisement adv ON ds.CollectionID = adv.CollectionID
+    AND ds.PackageID = adv.PackageID
     AND ds.ProgramName = adv.ProgramName
     AND ds.FeatureType = 2
 LEFT JOIN [{db}].dbo.v_CIAssignment assign ON ds.AssignmentID = assign.AssignmentID
@@ -221,7 +223,7 @@ ORDER BY ds.CreationTime DESC;
                 Console.WriteLine(OutputFormatter.ConvertDataTable(result));
 
                 Logger.Success($"Found {result.Rows.Count} deployment(s)");
-                
+
                 // Check if any deployments have DeploymentType information
                 bool hasDeploymentTypes = false;
                 foreach (DataRow row in result.Rows)
@@ -232,7 +234,7 @@ ORDER BY ds.CreationTime DESC;
                         break;
                     }
                 }
-                
+
                 if (hasDeploymentTypes)
                 {
                     Logger.SuccessNested("Use 'cm-dt [DeploymentTypeCI]' to view deployment type details:");

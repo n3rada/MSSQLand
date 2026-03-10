@@ -140,8 +140,10 @@ namespace MSSQLand.Actions.ConfigMgr
                     havingClause += (string.IsNullOrEmpty(havingClause) ? " HAVING" : " AND") + " COUNT(DISTINCT adv.AdvertisementID) > 0";
                 }
 
+                string topClause = _limit > 0 ? $"TOP {_limit}" : "";
+
                 string query = $@"
-SELECT TOP {_limit}
+SELECT {topClause}
     p.PackageID,
     p.Name,
     p.Description,
@@ -162,12 +164,12 @@ FROM [{db}].dbo.v_Package p
 LEFT JOIN [{db}].dbo.v_Program pr ON p.PackageID = pr.PackageID
 LEFT JOIN [{db}].dbo.v_Advertisement adv ON p.PackageID = adv.PackageID
 {whereClause}
-GROUP BY 
-    p.PackageID, p.Name, p.Description, p.PkgSourcePath, 
+GROUP BY
+    p.PackageID, p.Name, p.Description, p.PkgSourcePath,
     p.Manufacturer, p.Version, p.PackageType,
     p.StoredPkgPath, p.SourceVersion, p.SourceDate, p.LastRefreshTime
 {havingClause}
-ORDER BY 
+ORDER BY
     p.PackageType ASC,
     COUNT(DISTINCT adv.AdvertisementID) DESC,
     COUNT(DISTINCT pr.ProgramName) DESC,

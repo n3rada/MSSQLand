@@ -10,11 +10,11 @@ namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
     /// Enumerate ConfigMgr Task Sequences with their properties and referenced content.
-    /// 
+    ///
     /// Task Sequences in ConfigMgr are ordered sets of automated steps used to perform complex IT operations.
     /// They are primarily used for OS deployment (bare-metal, refresh, replace scenarios) but can also
     /// automate software installation, patching, migrations, and configuration management.
-    /// 
+    ///
     /// A typical task sequence can contain hundreds of steps executed in order:
     /// - Boot into WinPE environment (using boot images)
     /// - Partition and format disks
@@ -25,8 +25,8 @@ namespace MSSQLand.Actions.ConfigMgr
     /// - Run PowerShell scripts
     /// - Apply Windows updates
     /// - Restart computer as needed
-    /// 
-    /// Task sequences reference multiple content types (boot images, OS images, driver packages, 
+    ///
+    /// Task sequences reference multiple content types (boot images, OS images, driver packages,
     /// applications, scripts) that are distributed to distribution points and downloaded during execution.
     /// Use 'cm-tasksequence <PackageID>' to view all referenced content for a specific sequence.
     /// </summary>
@@ -92,8 +92,10 @@ namespace MSSQLand.Actions.ConfigMgr
                     filterClause += $" AND ts.Description LIKE '%{_description.Replace("'", "''")}%'";
                 }
 
+                string topClause = _limit > 0 ? $"TOP {_limit}" : "";
+
                 string query = $@"
-SELECT TOP {_limit}
+SELECT {topClause}
     ts.PackageID,
     ts.Name,
     ts.Description,
@@ -110,8 +112,8 @@ SELECT TOP {_limit}
     ts.TS_Type,
     ts.TS_Flags,
     (
-        SELECT COUNT(*) 
-        FROM [{db}].dbo.v_TaskSequenceReferencesInfo ref 
+        SELECT COUNT(*)
+        FROM [{db}].dbo.v_TaskSequenceReferencesInfo ref
         WHERE ref.PackageID = ts.PackageID
     ) AS ReferencedContentCount
 FROM [{db}].dbo.v_TaskSequencePackage ts

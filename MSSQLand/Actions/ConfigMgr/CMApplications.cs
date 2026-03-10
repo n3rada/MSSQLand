@@ -13,7 +13,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// Use this to view application inventory including DisplayName, ModelName, deployment status, and content paths.
     /// Applications are the modern deployment model (since ConfigMgr 2012) with detection rules, dependencies, and supersedence.
     /// For legacy package deployments, use cm-packages instead.
-    /// 
+    ///
     /// Note: Install/uninstall command lines are stored in the SDMPackageXML column (XML format).
     /// Query v_ConfigurationItems.SDMPackageXML to extract deployment type command lines and detection methods.
     /// </summary>
@@ -35,7 +35,7 @@ namespace MSSQLand.Actions.ConfigMgr
                 filterMsg += $" displayname: {_displayName}";
             if (!string.IsNullOrEmpty(_modelName))
                 filterMsg += $" modelname: {_modelName}";
-            
+
             Logger.TaskNested($"Enumerating ConfigMgr applications{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
 
@@ -57,19 +57,21 @@ namespace MSSQLand.Actions.ConfigMgr
                 Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
                 string filterClause = "WHERE ci.CIType_ID = 10";
-                
+
                 if (!string.IsNullOrEmpty(_displayName))
                 {
                     filterClause += $" AND lp.DisplayName LIKE '%{_displayName.Replace("'", "''")}%'";
                 }
-                
+
                 if (!string.IsNullOrEmpty(_modelName))
                 {
                     filterClause += $" AND ci.ModelName LIKE '%{_modelName.Replace("'", "''")}%'";
                 }
 
+                string topClause = _limit > 0 ? $"TOP {_limit}" : "";
+
                 string query = $@"
-SELECT TOP {_limit}
+SELECT {topClause}
     ci.CI_ID,
     COALESCE(lp.DisplayName, ci.ModelName) AS DisplayName,
     ci.ModelName,
