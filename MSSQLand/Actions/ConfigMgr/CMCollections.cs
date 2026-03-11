@@ -59,7 +59,7 @@ namespace MSSQLand.Actions.ConfigMgr
                 try
                 {
                     string whereClause = "WHERE 1=1";
-                    
+
                     // Add CollectionID search
                     if (!string.IsNullOrEmpty(_collectionId))
                     {
@@ -96,7 +96,7 @@ namespace MSSQLand.Actions.ConfigMgr
                         whereClause += " AND MemberCount > 0";
                     }
 
-                    string topClause = _limit > 0 ? $"TOP {_limit}" : "";
+                    string topClause = BuildTopClause(_limit);
 
                     string query = $@"
 SELECT {topClause} *

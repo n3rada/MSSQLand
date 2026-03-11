@@ -16,9 +16,6 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(Position = 1, ShortName = "l", LongName = "limit", Description = "Maximum rows to retrieve (default: 25)")]
         private int _limit = 25;
 
-        [ArgumentMetadata(LongName = "all", Description = "Retrieve all rows without limit")]
-        private bool _all = false;
-
         public override void ValidateArguments(string[] args)
         {
             BindArguments(args);
@@ -36,12 +33,6 @@ namespace MSSQLand.Actions.Database
             catch (ArgumentException ex)
             {
                 throw new ArgumentException($"Invalid table name: {ex.Message}");
-            }
-
-            // If --all is specified, override limit
-            if (_all)
-            {
-                _limit = 0;
             }
 
             if (_limit < 0)

@@ -128,7 +128,9 @@ namespace MSSQLand.Utilities
         public static void ShowActionHelp(string actionName)
         {
             var actions = ActionFactory.GetAvailableActions();
-            var action = actions.FirstOrDefault(a => a.ActionName.Equals(actionName, StringComparison.OrdinalIgnoreCase));
+            var action = actions.FirstOrDefault(a =>
+                a.ActionName.Equals(actionName, StringComparison.OrdinalIgnoreCase) ||
+                (a.Aliases != null && a.Aliases.Any(alias => alias.Equals(actionName, StringComparison.OrdinalIgnoreCase))));
 
             if (action == default)
             {

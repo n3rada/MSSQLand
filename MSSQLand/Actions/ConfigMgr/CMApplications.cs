@@ -68,7 +68,7 @@ namespace MSSQLand.Actions.ConfigMgr
                     filterClause += $" AND ci.ModelName LIKE '%{_modelName.Replace("'", "''")}%'";
                 }
 
-                string topClause = _limit > 0 ? $"TOP {_limit}" : "";
+                string topClause = BuildTopClause(_limit);
 
                 string query = $@"
 SELECT {topClause}

@@ -119,6 +119,9 @@ namespace MSSQLand.Actions
                 }
             }
 
+            // Built-in boolean flag: --all (overrides limit fields)
+            booleanFlags.Add("all");
+
             for (int i = 0; i < args.Length; i++)
             {
                 string arg = args[i];
@@ -334,6 +337,20 @@ namespace MSSQLand.Actions
                 }
                 // else: keep the field's default value
             }
+
+            // Built-in --all flag: if present, zero out all int fields with LongName containing "limit"
+            if (namedArgs.TryGetValue("all", out string allValue) && (bool)ConvertArgumentValue(allValue, typeof(bool)))
+            {
+                foreach (var field in fields)
+                {
+                    var metadata = field.GetCustomAttribute<ArgumentMetadataAttribute>();
+                    if (metadata != null && field.FieldType == typeof(int) &&
+                        !string.IsNullOrEmpty(metadata.LongName) && metadata.LongName.Contains("limit"))
+                    {
+                        field.SetValue(this, 0);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -471,6 +488,21 @@ namespace MSSQLand.Actions
                 })
                 .ToList();
 
+            // Inject built-in --all flag into help when any limit field exists
+            bool hasLimitField = this.GetType()
+                .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
+                .Any(f =>
+                {
+                    var m = f.GetCustomAttribute<ArgumentMetadataAttribute>();
+                    return m != null && f.FieldType == typeof(int) &&
+                           !string.IsNullOrEmpty(m.LongName) && m.LongName.Contains("limit");
+                });
+
+            if (hasLimitField)
+            {
+                fields.Add("all (bool, default: False) [--all] - Retrieve all results without limit");
+            }
+
             return fields;
         }
 
@@ -490,6 +522,15 @@ namespace MSSQLand.Actions
                 "List" => "List",
                 _ => type.Name
             };
+        }
+
+        /// <summary>
+        /// Builds a SQL TOP clause from a limit value.
+        /// Returns "TOP {limit}" when limit > 0, or empty string for unlimited.
+        /// </summary>
+        protected static string BuildTopClause(int limit)
+        {
+            return limit > 0 ? $"TOP {limit}" : "";
         }
     }
 }

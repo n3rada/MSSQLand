@@ -1,32 +1,28 @@
-﻿// MSSQLand/Actions/Execution/Agents.cs
+// MSSQLand/Actions/Agent/JobExec.cs
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
-using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 using System.Threading;
 
-namespace MSSQLand.Actions.Execution
+namespace MSSQLand.Actions.Agent
 {
     /// <summary>
-    /// Executes SQL Server Agent actions (list jobs, execute commands).
+    /// Execute OS commands via SQL Server Agent by creating a temporary job.
+    /// Supports CmdExec, PowerShell, TSQL, and VBScript subsystems.
+    /// Optionally polls for completion and retrieves output from sysjobhistory.
     /// </summary>
-    internal class Agents : BaseAction
+    internal class JobExec : BaseAction
     {
-        private enum ActionMode { Status, Exec }
-
         // Enum values match exactly what sp_add_jobstep expects as @subsystem.
         // Do NOT change casing — SQL Server is case-sensitive on these strings.
         private enum SubSystemMode { CmdExec, PowerShell, TSQL, VBScript }
 
-        [ArgumentMetadata(Position = 0, Description = "Action mode: status or exec (default: status)")]
-        private ActionMode _action = ActionMode.Status;
-
-        [ArgumentMetadata(Position = 1, Description = "Command to execute (required for exec mode)")]
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Command to execute")]
         private string _command = null;
 
-        [ArgumentMetadata(Position = 2, ShortName = "s", LongName = "subsystem", Description = "Subsystem: CmdExec, PowerShell, TSQL, VBScript (default: PowerShell)")]
+        [ArgumentMetadata(Position = 1, ShortName = "s", LongName = "subsystem", Description = "Subsystem: CmdExec, PowerShell, TSQL, VBScript (default: PowerShell)")]
         private SubSystemMode _subSystem = SubSystemMode.PowerShell;
 
         [ArgumentMetadata(ShortName = "w", LongName = "wait", Description = "Wait for job completion and retrieve output (default: false)")]
@@ -39,9 +35,9 @@ namespace MSSQLand.Actions.Execution
         {
             BindArguments(args);
 
-            if (_action == ActionMode.Exec && string.IsNullOrEmpty(_command))
+            if (string.IsNullOrEmpty(_command))
             {
-                throw new ArgumentException("Missing command to execute. Example: agents exec 'whoami'");
+                throw new ArgumentException("Missing command to execute. Example: job-exec 'whoami'");
             }
 
             if (_timeout < 1)
@@ -52,60 +48,7 @@ namespace MSSQLand.Actions.Execution
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Executing {_action} mode");
-
-            if (_action == ActionMode.Status)
-            {
-                return ListAgentJobs(databaseContext);
-            }
-
-            return ExecuteAgentJob(databaseContext);
-        }
-
-        /// <summary>
-        /// Lists SQL Server Agent jobs.
-        /// </summary>
-        private object ListAgentJobs(DatabaseContext databaseContext)
-        {
-            if (!AgentStatus(databaseContext))
-                return null;
-
-            Logger.TaskNested("Retrieving SQL Server Agent Jobs");
-
-            string query = @"
-                SELECT 
-                    j.job_id,
-                    j.name,
-                    j.enabled,
-                    j.date_created,
-                    j.date_modified,
-                    js.step_name AS LastStep,
-                    js.subsystem AS Subsystem
-                FROM msdb.dbo.sysjobs j
-                LEFT JOIN msdb.dbo.sysjobsteps js 
-                    ON j.job_id = js.job_id AND js.step_id = 1
-                ORDER BY j.date_created;";
-
-            DataTable jobsTable = databaseContext.QueryService.ExecuteTable(query);
-
-            if (jobsTable.Rows.Count == 0)
-            {
-                Logger.Info("No SQL Agent jobs found.");
-                return null;
-            }
-
-            Logger.Success($"Found {jobsTable.Rows.Count} SQL Agent job(s)");
-            Console.WriteLine(OutputFormatter.ConvertDataTable(jobsTable));
-
-            return jobsTable;
-        }
-
-        /// <summary>
-        /// Executes a command using SQL Server Agent.
-        /// </summary>
-        private object ExecuteAgentJob(DatabaseContext databaseContext)
-        {
-            if (!AgentStatus(databaseContext))
+            if (!AgentHelper.CheckAgentRunning(databaseContext))
                 return null;
 
             Logger.Info($"Subsystem: {_subSystem}");
@@ -118,15 +61,15 @@ namespace MSSQLand.Actions.Execution
             {
                 // Create job
                 databaseContext.QueryService.ExecuteNonProcessing($@"
-                    EXEC msdb.dbo.sp_add_job 
-                        @job_name = '{jobName}', 
-                        @enabled = 1, 
+                    EXEC msdb.dbo.sp_add_job
+                        @job_name = '{jobName}',
+                        @enabled = 1,
                         @description = 'Routine maintenance task';");
                 Logger.Success($"Job '{jobName}' created");
 
                 // Add job step
                 databaseContext.QueryService.ExecuteNonProcessing($@"
-                    EXEC msdb.dbo.sp_add_jobstep 
+                    EXEC msdb.dbo.sp_add_jobstep
                         @job_name = '{jobName}',
                         @step_name = '{stepName}',
                         @subsystem = '{_subSystem}',
@@ -143,7 +86,7 @@ namespace MSSQLand.Actions.Execution
                 Logger.Info($"Starting job '{jobName}'");
                 databaseContext.QueryService.ExecuteNonProcessing(
                     $"EXEC msdb.dbo.sp_start_job @job_name = '{jobName}';");
-                Logger.Success($"Job started");
+                Logger.Success("Job started");
 
                 // Poll for completion if --wait is set
                 if (_wait)
@@ -185,7 +128,7 @@ namespace MSSQLand.Actions.Execution
 
                 // run_status: 1=Succeeded, 0=Failed, 2=Retry, 3=Cancelled, 4=Running
                 string query = $@"
-                    SELECT TOP 1 
+                    SELECT TOP 1
                         run_status,
                         run_duration,
                         message
@@ -197,7 +140,7 @@ namespace MSSQLand.Actions.Execution
                 DataTable history = databaseContext.QueryService.ExecuteTable(query);
 
                 if (history.Rows.Count == 0)
-                    continue; // Job hasn't written its outcome yet
+                    continue;
 
                 int runStatus = Convert.ToInt32(history.Rows[0]["run_status"]);
                 string message = history.Rows[0]["message"]?.ToString();
@@ -218,7 +161,6 @@ namespace MSSQLand.Actions.Execution
                         Logger.Warning("Job was cancelled");
                         return;
                     default:
-                        // Still running, keep polling
                         continue;
                 }
             }
@@ -238,41 +180,6 @@ namespace MSSQLand.Actions.Execution
                     $"EXEC msdb.dbo.sp_delete_job @job_name = '{jobName}';");
             }
             catch { /* intentionally empty */ }
-        }
-
-        /// <summary>
-        /// Checks if SQL Server Agent is running using sys.dm_exec_sessions.
-        /// </summary>
-        private bool AgentStatus(DatabaseContext databaseContext)
-        {
-            try
-            {
-                string query = @"
-                    SELECT CASE 
-                        WHEN EXISTS (
-                            SELECT 1 FROM sys.dm_exec_sessions 
-                            WHERE program_name LIKE 'SQLAgent%'
-                        ) THEN 'Running' 
-                        ELSE 'Stopped' 
-                    END AS AgentStatus;";
-
-                DataTable result = databaseContext.QueryService.ExecuteTable(query);
-                string status = result.Rows[0]["AgentStatus"].ToString();
-
-                if (status == "Running")
-                {
-                    Logger.Success("SQL Server Agent is running");
-                    return true;
-                }
-
-                Logger.Error("SQL Server Agent is not running");
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Failed to check Agent status: {ex.Message}");
-                return false;
-            }
         }
     }
 }

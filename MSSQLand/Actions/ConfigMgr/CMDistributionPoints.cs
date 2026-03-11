@@ -26,7 +26,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 2, ShortName = "a", LongName = "active", Description = "Show only active DPs (default: false)")]
         private bool _activeOnly = false;
 
-        [ArgumentMetadata(Position = 3, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 100)")]
+        [ArgumentMetadata(Position = 3, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 25)")]
         private int _limit = 25;
 
         public override object Execute(DatabaseContext databaseContext)
@@ -73,7 +73,7 @@ namespace MSSQLand.Actions.ConfigMgr
                     whereClause += " AND IsActive = 1";
                 }
 
-                string topClause = _limit > 0 ? $"TOP {_limit}" : "";
+                string topClause = BuildTopClause(_limit);
 
                 string query = $@"
 SELECT {topClause}

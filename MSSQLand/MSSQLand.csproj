@@ -106,7 +106,13 @@
     <Compile Include="Actions\Domain\AdSid.cs" />
     <Compile Include="Actions\Domain\AdUsers.cs" />
 
-    <Compile Include="Actions\Execution\Agents.cs" />
+    <Compile Include="Actions\Agent\AgentHelper.cs" />
+    <Compile Include="Actions\Agent\JobExec.cs" />
+    <Compile Include="Actions\Agent\JobHistory.cs" />
+    <Compile Include="Actions\Agent\Job.cs" />
+    <Compile Include="Actions\Agent\Jobs.cs" />
+    <Compile Include="Actions\Agent\JobProxies.cs" />
+
     <Compile Include="Actions\Execution\ClrExecution.cs" />
     <Compile Include="Actions\Execution\PowerShell.cs" />
     <Compile Include="Actions\Execution\Query.cs" />

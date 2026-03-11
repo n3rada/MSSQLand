@@ -140,7 +140,7 @@ namespace MSSQLand.Actions.ConfigMgr
                     havingClause += (string.IsNullOrEmpty(havingClause) ? " HAVING" : " AND") + " COUNT(DISTINCT adv.AdvertisementID) > 0";
                 }
 
-                string topClause = _limit > 0 ? $"TOP {_limit}" : "";
+                string topClause = BuildTopClause(_limit);
 
                 string query = $@"
 SELECT {topClause}

@@ -242,7 +242,7 @@ namespace MSSQLand.Actions.ConfigMgr
                     if (_countOnly)
                     {
                         string domainQuery = $@"
-SELECT 
+SELECT
     ISNULL(sys.Resource_Domain_OR_Workgr0, '(No Domain)') AS Domain,
     COUNT(DISTINCT sys.ResourceID) AS DeviceCount
 FROM [{db}].dbo.v_R_System sys
@@ -253,15 +253,15 @@ GROUP BY sys.Resource_Domain_OR_Workgr0
 ORDER BY COUNT(DISTINCT sys.ResourceID) DESC";
 
                         DataTable domainTable = databaseContext.QueryService.ExecuteTable(domainQuery);
-                        
+
                         int totalCount = 0;
                         foreach (DataRow row in domainTable.Rows)
                         {
                             totalCount += Convert.ToInt32(row["DeviceCount"]);
                         }
-                        
+
                         Logger.Success($"Matching devices: {totalCount}");
-                        
+
                         foreach (DataRow row in domainTable.Rows)
                         {
                             string domain = row["Domain"].ToString();
@@ -271,7 +271,7 @@ ORDER BY COUNT(DISTINCT sys.ResourceID) DESC";
                         continue;
                     }
 
-                    string topClause = _limit > 0 ? $"TOP {_limit}" : "";
+                    string topClause = BuildTopClause(_limit);
 
                     string query = $@"
 SELECT DISTINCT {topClause}

@@ -47,13 +47,13 @@ namespace MSSQLand.Actions.ConfigMgr
                 try
                 {
                     string whereClause = "WHERE 1=1";
-                    
+
                     if (!string.IsNullOrEmpty(_filter))
                     {
                         whereClause += $" AND sys.Name0 LIKE '%{_filter.Replace("'", "''")}%'";
                     }
 
-                    string topClause = _limit > 0 ? $"TOP {_limit}" : "";
+                    string topClause = BuildTopClause(_limit);
 
                     string query = $@"
 SELECT {topClause}

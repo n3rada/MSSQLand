@@ -9,6 +9,7 @@ using MSSQLand.Actions.FileSystem;
 using MSSQLand.Actions.Execution;
 using MSSQLand.Actions.Domain;
 using MSSQLand.Actions.Administration;
+using MSSQLand.Actions.Agent;
 #if ENABLE_CM
 using MSSQLand.Actions.ConfigMgr;
 #endif
@@ -75,8 +76,17 @@ namespace MSSQLand.Actions
             { "pwsh", (typeof(PowerShell), "Execute PowerShell scripts.", new[] { "powershell" }) },
             { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a remote PowerShell script from a URL.", null) },
             { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.", null) },
-            { "agents", (typeof(Agents), "Manage and interact with SQL Server Agent jobs.", new[] { "jobs" }) },
             { "run", (typeof(Run), "Execute a file on the SQL Server filesystem using OLE Automation.", null) },
+
+            // ═══════════════════════════════════════════════════════════════════════════════
+            // SQL SERVER AGENT ACTIONS
+            // Mirrors msdb.dbo.sysjobs / sysjobsteps / sysjobhistory / sysproxies table naming.
+            // ═══════════════════════════════════════════════════════════════════════════════
+            { "jobs", (typeof(Agent.Jobs), "Enumerate SQL Server Agent jobs with steps, commands, owner, and category.", new[] { "agents" }) },
+            { "job", (typeof(Agent.Job), "Display detailed information about a specific Agent job including all steps, schedule, and history.", null) },
+            { "job-history", (typeof(Agent.JobHistory), "Display SQL Server Agent job execution history with status and output messages.", null) },
+            { "job-proxies", (typeof(Agent.JobProxies), "Enumerate Agent proxy accounts, mapped credentials, logins, and allowed subsystems.", null) },
+            { "job-exec", (typeof(Agent.JobExec), "Execute OS commands via SQL Server Agent job (CmdExec, PowerShell, TSQL, VBScript subsystems).", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // FILESYSTEM ACTIONS

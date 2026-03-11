@@ -77,7 +77,7 @@ namespace MSSQLand.Actions.ConfigMgr
                     filterClause += $" AND pr.CommandLine LIKE '%{_commandLine.Replace("'", "''")}%'";
                 }
 
-                string topClause = _limit > 0 ? $"TOP {_limit}" : "";
+                string topClause = BuildTopClause(_limit);
 
                 string query = $@"
 SELECT {topClause}

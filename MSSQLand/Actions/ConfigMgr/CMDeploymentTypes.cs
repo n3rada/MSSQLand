@@ -13,13 +13,13 @@ namespace MSSQLand.Actions.ConfigMgr
     /// Display an overview of all ConfigMgr deployment types with searchable technical details.
     /// Shows key metadata including technology type, install commands, content paths, and detection methods.
     /// Supports filtering by technology, content location, install command, and other criteria.
-    /// 
+    ///
     /// Use Case:
     /// When you need to see all deployment types at a glance - what's been recently modified,
     /// what's enabled/disabled, who created what, and basic versioning information. Useful for
     /// auditing, change tracking, finding deployment types by technology or content path, or
     /// identifying deployment types to investigate further with cm-dt.
-    /// 
+    ///
     /// Information Displayed:
     /// - CI_ID (use with cm-dt for detailed analysis)
     /// - Title, localized version, and parent application
@@ -29,7 +29,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// - Detection method type
     /// - Enabled/Expired/Hidden status
     /// - Creation and modification timestamps with authors
-    /// 
+    ///
     /// Filtering:
     /// --tech [value]        Filter by technology (MSI, Script, etc.)
     /// --content [path]      Filter by content location path
@@ -39,7 +39,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// --app [name]          Filter by parent application name
     /// --enabled [true|false]  Filter by enabled status
     /// --limit [number]      Limit results (default: 100)
-    /// 
+    ///
     /// Examples:
     /// cm-dts
     /// cm-dts --tech MSI
@@ -47,7 +47,7 @@ namespace MSSQLand.Actions.ConfigMgr
     /// cm-dts --context System
     /// cm-dts --app "Google Chrome"
     /// cm-dts --enabled true --limit 50
-    /// 
+    ///
     /// Typical Workflow:
     /// 1. Run cm-dts to see all deployment types
     /// 2. Filter by technology or content path to narrow down
@@ -111,11 +111,11 @@ namespace MSSQLand.Actions.ConfigMgr
                 Logger.NewLine();
                 Logger.Info($"ConfigMgr database: {db} (Site Code: {siteCode})");
 
-                string topClause = _limit > 0 ? $"TOP {_limit}" : "";
+                string topClause = BuildTopClause(_limit);
 
                 // Build WHERE clause with SQL-level filters (non-XML fields)
                 string whereClause = "ci.CIType_ID = 21";
-                
+
                 if (!string.IsNullOrEmpty(_enabled))
                 {
                     bool enabledFilter = bool.Parse(_enabled);
@@ -163,10 +163,10 @@ ORDER BY ci.DateLastModified DESC, ci.DateCreated DESC;";
                     if (!string.IsNullOrEmpty(_application))
                     {
                         parentAppCol = results.Columns.Add("ParentApplication", typeof(string));
-                        
+
                         // Fetch parent applications for filtering
                         string parentQuery = $@"
-SELECT 
+SELECT
     rel.ToCI_ID,
     COALESCE(lp.DisplayName, lcp_app.Title) AS ApplicationName
 FROM [{db}].dbo.CI_ConfigurationItemRelations rel
@@ -174,7 +174,7 @@ INNER JOIN [{db}].dbo.CI_ConfigurationItems ci_app ON rel.FromCI_ID = ci_app.CI_
 LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON ci_app.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
 LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp_app ON ci_app.CI_ID = lcp_app.CI_ID AND lcp_app.LocaleID = 1033
 WHERE rel.RelationType = 9";
-                        
+
                         DataTable parentApps = databaseContext.QueryService.ExecuteTable(parentQuery);
                         Dictionary<int, string> parentAppLookup = new Dictionary<int, string>();
                         foreach (DataRow parentRow in parentApps.Rows)
@@ -183,7 +183,7 @@ WHERE rel.RelationType = 9";
                             string appName = parentRow["ApplicationName"]?.ToString() ?? "";
                             parentAppLookup[ciId] = appName;
                         }
-                        
+
                         // Populate ParentApplication column
                         foreach (DataRow row in results.Rows)
                         {
@@ -208,7 +208,7 @@ WHERE rel.RelationType = 9";
                     {
                         string xmlContent = row["SDMPackageDigest"]?.ToString() ?? "";
                         var sdmInfo = CMService.ParseSDMPackageDigest(xmlContent, detailed: false);
-                        
+
                         row["Technology"] = sdmInfo.Technology;
                         row["InstallCommand"] = sdmInfo.InstallCommand;
                         row["ContentLocation"] = sdmInfo.ContentLocation;
