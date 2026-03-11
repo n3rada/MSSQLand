@@ -92,7 +92,7 @@ namespace MSSQLand.Actions.ConfigMgr
             if (!string.IsNullOrEmpty(_enabled)) filterMsg += $" enabled:{_enabled}";
 
             Logger.TaskNested($"Retrieving deployment types{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filters:{filterMsg})")}");
-            Logger.TaskNested($"Limit: {_limit}");
+            Logger.TaskNested(_limit > 0 ? $"Limit: {_limit}" : "Limit: none (--all)");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

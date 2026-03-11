@@ -92,7 +92,7 @@ namespace MSSQLand.Actions.ConfigMgr
             string countMsg = _countOnly ? " (count only)" : "";
 
             Logger.TaskNested($"Enumerating ConfigMgr devices{deviceMsg}{domainMsg}{usernameMsg}{ipMsg}{collectionMsg}{dnMsg}{onlineMsg}{withUsersMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeenMsg}{userSeenMsg}{countMsg}");
-            if (!_countOnly) Logger.TaskNested($"Limit: {_limit}");
+            if (!_countOnly) Logger.TaskNested(_limit > 0 ? $"Limit: {_limit}" : "Limit: none (--all)");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

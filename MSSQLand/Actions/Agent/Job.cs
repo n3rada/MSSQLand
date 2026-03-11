@@ -183,7 +183,7 @@ namespace MSSQLand.Actions.Agent
 
             // ── Recent history ──
             Logger.NewLine();
-            Logger.Info($"Recent History (last {_historyLimit})");
+            Logger.Info(_historyLimit > 0 ? $"Recent History (last {_historyLimit})" : "Recent History (all)");
 
             string historyTopClause = BuildTopClause(_historyLimit);
 
