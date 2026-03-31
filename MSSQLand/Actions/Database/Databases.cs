@@ -18,8 +18,7 @@ namespace MSSQLand.Actions.Database
             Logger.TaskNested("Enumerating databases");
 
             // Try the full query with physical_name first
-            DataTable allDatabases = null;
-
+            DataTable allDatabases;
             try
             {
                 allDatabases = databaseContext.QueryService.ExecuteTable(
@@ -27,6 +26,7 @@ namespace MSSQLand.Actions.Database
                         d.database_id AS dbid,
                         d.name,
                         SUSER_SNAME(d.owner_sid) AS Owner,
+                        CAST(CASE WHEN SUSER_SNAME(d.owner_sid) = 'sa' THEN 1 ELSE 0 END AS BIT) AS OwnerIsSA,
                         d.create_date AS [Created],
                         CAST(HAS_DBACCESS(d.name) AS BIT) AS Accessible,
                         d.is_trustworthy_on AS Trustworthy,
@@ -51,6 +51,7 @@ namespace MSSQLand.Actions.Database
                         d.database_id AS dbid,
                         d.name,
                         SUSER_SNAME(d.owner_sid) AS Owner,
+                        CAST(CASE WHEN SUSER_SNAME(d.owner_sid) = 'sa' THEN 1 ELSE 0 END AS BIT) AS OwnerIsSA,
                         d.create_date AS [Created],
                         CAST(HAS_DBACCESS(d.name) AS BIT) AS Accessible,
                         d.is_trustworthy_on AS Trustworthy,
