@@ -93,7 +93,7 @@ namespace MSSQLand.Actions.Remote
         {
             try
             {
-                Logger.TaskNested("Trying xp_dirtree method...");
+                Logger.TaskNested("Trying xp_dirtree method");
 
                 string query = $"EXEC master..xp_dirtree '{_uncPath}';";
                 databaseContext.QueryService.ExecuteNonProcessing(query);
