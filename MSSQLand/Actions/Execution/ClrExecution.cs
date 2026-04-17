@@ -61,7 +61,7 @@ namespace MSSQLand.Actions.Execution
 
                 if (!usedTrustedAssembly)
                 {
-                    Logger.Info("Trusted assembly registration unavailable, falling back to TRUSTWORTHY");
+                    Logger.Warning("Trusted assembly registration unavailable, falling back to TRUSTWORTHY");
                     // Check if database is already TRUSTWORTHY
                     object trustworthyResult = databaseContext.QueryService.ExecuteScalar(
                         $"SELECT is_trustworthy_on FROM sys.databases WHERE name = DB_NAME();");
@@ -70,7 +70,8 @@ namespace MSSQLand.Actions.Execution
 
                     if (!isTrustworthy)
                     {
-                        Logger.Info("Database is not TRUSTWORTHY. Attempting to enable it");
+                        Logger.Warning("Current database is not TRUSTWORTHY");
+                        Logger.WarningNested("Attempting to enable it);
                         try
                         {
                             databaseContext.QueryService.ExecuteNonProcessing(
