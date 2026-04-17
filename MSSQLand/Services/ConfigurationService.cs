@@ -1,4 +1,4 @@
-﻿using MSSQLand.Models;
+using MSSQLand.Models;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using MSSQLand.Exceptions;
@@ -212,7 +212,7 @@ namespace MSSQLand.Services
 
                 if (checkHash?.Contains("permission was denied") == true)
                 {
-                    Logger.Error("Insufficient privileges to perform this action");
+                    Logger.Debug("Insufficient privileges for sys.trusted_assemblies");
                     return false;
                 }
 
@@ -225,7 +225,7 @@ namespace MSSQLand.Services
 
                     if (deletionQuery?.Contains("permission was denied") == true)
                     {
-                        Logger.Error("Insufficient privileges to remove existing trusted assembly");
+                        Logger.Debug("Insufficient privileges to remove existing trusted assembly");
                         return false;
                     }
 
@@ -246,12 +246,12 @@ namespace MSSQLand.Services
                     return true;
                 }
 
-                Logger.Error("Failed to add hash to sys.trusted_assemblies");
+                Logger.Debug("Failed to add hash to sys.trusted_assemblies");
                 return false;
             }
             catch (Exception ex)
             {
-                Logger.Error($"An error occurred while adding the CLR hash: {ex.Message}");
+                Logger.Debug($"Trusted assembly registration failed: {ex.Message}");
                 return false;
             }
         }
