@@ -102,7 +102,7 @@ namespace MSSQLand.Actions.Database
                 // Display Fixed Server Roles
                 if (fixedServerRoles.Any())
                 {
-                    DataTable fixedServerRolesTable = new DataTable();
+                    DataTable fixedServerRolesTable = new();
                     fixedServerRolesTable.Columns.Add("RoleName", typeof(string));
                     fixedServerRolesTable.Columns.Add("RoleType", typeof(string));
                     fixedServerRolesTable.Columns.Add("CreateDate", typeof(DateTime));
@@ -278,7 +278,7 @@ ORDER BY r.is_fixed_role DESC, r.name;";
             // Display Custom Roles
             if (customRolesData.Any())
             {
-                DataTable customRolesTable = new DataTable();
+                DataTable customRolesTable = new();
                 customRolesTable.Columns.Add("RoleName", typeof(string));
                 customRolesTable.Columns.Add("RoleType", typeof(string));
                 customRolesTable.Columns.Add("CreateDate", typeof(DateTime));
