@@ -47,7 +47,8 @@ namespace MSSQLand.Actions.Database
                 string serverMembersQuery = @"
                     SELECT 
                         r.name AS role_name,
-                        m.name AS member_name
+                        m.name AS member_name,
+                        m.type_desc AS member_type
                     FROM sys.server_principals r
                     INNER JOIN sys.server_role_members srm ON r.principal_id = srm.role_principal_id
                     INNER JOIN sys.server_principals m ON srm.member_principal_id = m.principal_id
@@ -62,12 +63,13 @@ namespace MSSQLand.Actions.Database
                 {
                     string roleName = memberRow["role_name"].ToString();
                     string memberName = memberRow["member_name"].ToString();
+                    string memberType = memberRow["member_type"].ToString();
 
                     if (!serverMembersDict.ContainsKey(roleName))
                     {
                         serverMembersDict[roleName] = new List<string>();
                     }
-                    serverMembersDict[roleName].Add(memberName);
+                    serverMembersDict[roleName].Add($"{memberName} ({memberType})");
                 }
 
                 // Add Members column
@@ -178,28 +180,47 @@ ORDER BY r.is_fixed_role DESC, r.name;";
             string allMembersQuery = @"
                 SELECT 
                     r.name AS role_name,
-                    m.name AS member_name
+                    m.name AS member_name,
+                    m.type_desc AS member_type,
+                    sp.name AS mapped_login
                 FROM sys.database_principals r
                 INNER JOIN sys.database_role_members rm ON r.principal_id = rm.role_principal_id
                 INNER JOIN sys.database_principals m ON rm.member_principal_id = m.principal_id
+                LEFT JOIN sys.server_principals sp ON m.sid = sp.sid
                 WHERE r.type = 'R'
                 ORDER BY r.name, m.name;";
 
             var allMembers = databaseContext.QueryService.ExecuteTable(allMembersQuery);
 
-            // Build a dictionary for O(1) lookup: key = role_name, value = list of member names
+            // Build a dictionary for O(1) lookup: key = role_name, value = list of member descriptions
             var membersDict = new Dictionary<string, List<string>>();
             
             foreach (DataRow memberRow in allMembers.Rows)
             {
                 string roleName = memberRow["role_name"].ToString();
                 string memberName = memberRow["member_name"].ToString();
+                string memberType = memberRow["member_type"].ToString();
+                string mappedLogin = memberRow["mapped_login"]?.ToString();
+
+                string description;
+                if (!string.IsNullOrEmpty(mappedLogin) && mappedLogin != memberName)
+                {
+                    description = $"{memberName} ({memberType} -> {mappedLogin})";
+                }
+                else if (!string.IsNullOrEmpty(mappedLogin))
+                {
+                    description = $"{memberName} ({memberType})";
+                }
+                else
+                {
+                    description = $"{memberName} ({memberType}, no login)";
+                }
 
                 if (!membersDict.ContainsKey(roleName))
                 {
                     membersDict[roleName] = new List<string>();
                 }
-                membersDict[roleName].Add(memberName);
+                membersDict[roleName].Add(description);
             }
 
             // Add Members column
