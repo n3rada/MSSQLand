@@ -1,4 +1,4 @@
-﻿// MSSQLand/Actions/Execution/ClrExecution.cs
+// MSSQLand/Actions/Execution/ClrExecution.cs
 
 using System;
 using System.IO;
@@ -45,20 +45,48 @@ namespace MSSQLand.Actions.Execution
             string dropProcedure = $"DROP PROCEDURE IF EXISTS [{_function}];";
             string dropAssembly = $"DROP ASSEMBLY IF EXISTS [{assemblyName}];";
             string dropClrHash = $"EXEC sp_drop_trusted_assembly 0x{libraryHash};";
+            bool usedTrustedAssembly = false;
+            bool setTrustworthy = false;
 
             Logger.Task("Starting CLR assembly deployment process");
 
             try
             {
-                if (databaseContext.QueryService.ExecutionServer.IsLegacy)
+                // Strategy 1: Try sp_add_trusted_assembly (requires VIEW SERVER SECURITY STATE)
+                // Strategy 2: Fall back to TRUSTWORTHY property (requires db_owner on a trustworthy-eligible database)
+                if (!databaseContext.QueryService.ExecutionServer.IsLegacy)
                 {
-                    Logger.Info("IsLegacy server detected. Enabling TRUSTWORTHY property");
-                    databaseContext.QueryService.ExecuteNonProcessing($"ALTER DATABASE [{databaseContext.QueryService.ExecutionServer.Database}] SET TRUSTWORTHY ON.");
+                    usedTrustedAssembly = databaseContext.ConfigService.RegisterTrustedAssembly(libraryHash, libraryPath);
                 }
 
-                if (!databaseContext.ConfigService.RegisterTrustedAssembly(libraryHash, libraryPath))
+                if (!usedTrustedAssembly)
                 {
-                    return false;
+                    // Check if database is already TRUSTWORTHY
+                    object trustworthyResult = databaseContext.QueryService.ExecuteScalar(
+                        $"SELECT is_trustworthy_on FROM sys.databases WHERE name = DB_NAME();");
+
+                    bool isTrustworthy = trustworthyResult != null && Convert.ToBoolean(trustworthyResult);
+
+                    if (!isTrustworthy)
+                    {
+                        Logger.Info("Database is not TRUSTWORTHY. Attempting to enable it");
+                        try
+                        {
+                            databaseContext.QueryService.ExecuteNonProcessing(
+                                $"ALTER DATABASE [{databaseContext.QueryService.ExecutionServer.Database}] SET TRUSTWORTHY ON;");
+                            setTrustworthy = true;
+                            Logger.Success("TRUSTWORTHY enabled on current database");
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error($"Failed to enable TRUSTWORTHY: {ex.Message}");
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        Logger.Info("Database is already TRUSTWORTHY, using it for CLR deployment");
+                    }
                 }
 
                 // Drop existing procedure and assembly if they exist
@@ -109,13 +137,17 @@ namespace MSSQLand.Actions.Execution
                 Logger.Task("Performing cleanup");
                 databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
                 databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
-                databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
 
-                if (databaseContext.QueryService.ExecutionServer.IsLegacy)
+                if (usedTrustedAssembly)
+                {
+                    databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
+                }
+
+                if (setTrustworthy)
                 {
                     Logger.Info("Resetting TRUSTWORTHY property");
                     databaseContext.QueryService.ExecuteNonProcessing(
-                        $"ALTER DATABASE [{databaseContext.QueryService.ExecutionServer.Database}] SET TRUSTWORTHY OFF.");
+                        $"ALTER DATABASE [{databaseContext.QueryService.ExecutionServer.Database}] SET TRUSTWORTHY OFF;");
                 }
             }
         }
