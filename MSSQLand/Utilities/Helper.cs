@@ -1,11 +1,10 @@
-﻿// MSSQLand/Utilities/Helper.cs
+// MSSQLand/Utilities/Helper.cs
 
 using System;
 using System.Data;
 using System.Linq;
 using System.Collections.Generic;
 using MSSQLand.Actions;
-using MSSQLand.Utilities.Formatters;
 
 namespace MSSQLand.Utilities
 {
@@ -81,8 +80,13 @@ namespace MSSQLand.Utilities
             Console.WriteLine("Usage: <host> -c <cred> [options] <action> [action-args]\n");
 
             Console.WriteLine("Positional arguments:");
-            Console.WriteLine("\t<host>                 Target SQL Server (server:port/user@database)");
-            Console.WriteLine("\t<action>               Action to execute\n");
+            Console.WriteLine("\t<host>                 Target SQL Server");
+            Console.WriteLine("\t                         server[:port][/user][@database]");
+            Console.WriteLine("\t                         :port     - Port number (default: 1433)");
+            Console.WriteLine("\t                         /user     - Impersonate login (EXECUTE AS LOGIN)");
+            Console.WriteLine("\t                                     Cascading: /user1/user2/user3");
+            Console.WriteLine("\t                         @database - Database context");
+            Console.WriteLine("\t<action>               Action to execute (omit for connection test only)\n");
 
             Console.WriteLine("Authentication (required):");
             Console.WriteLine("\t-c, --credentials      Credential type: probe, token, local, windows, domain, entraid");
@@ -91,7 +95,12 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t-d, --domain           Domain (if required by credential type)\n");
 
             Console.WriteLine("Routing:");
-            Console.WriteLine("\t-l, --links            Linked server chain semicolon-separated (e.g. srv1/l02;srv2;srv3/viewer@clients)\n");
+            Console.WriteLine("\t-l, --links            Linked server chain (semicolon-separated)");
+            Console.WriteLine("\t                         -l SQL01;SQL02/user;SQL03@database");
+            Console.WriteLine("\t                         /user     - Impersonate login on that hop");
+            Console.WriteLine("\t                                     Cascading: /user1/user2");
+            Console.WriteLine("\t                         @database - Database context on that hop");
+            Console.WriteLine("\t                         [name]    - Bracket server names containing ; or @\n");
 
             Console.WriteLine("Connection options:");
             Console.WriteLine("\t--timeout              Connection timeout in seconds");
