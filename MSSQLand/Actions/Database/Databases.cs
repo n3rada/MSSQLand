@@ -5,6 +5,7 @@ using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
+using System.Linq;
 
 namespace MSSQLand.Actions.Database
 {
@@ -24,10 +25,10 @@ namespace MSSQLand.Actions.Database
                 allDatabases = databaseContext.QueryService.ExecuteTable(
                     @"SELECT
                         d.database_id AS dbid,
+                        d.create_date AS [Created],
                         d.name,
                         SUSER_SNAME(d.owner_sid) AS Owner,
                         CAST(IS_SRVROLEMEMBER('sysadmin', SUSER_SNAME(d.owner_sid)) AS BIT) AS OwnerIsSysadmin,
-                        d.create_date AS [Created],
                         CAST(HAS_DBACCESS(d.name) AS BIT) AS Accessible,
                         d.is_trustworthy_on AS Trustworthy,
                         d.state_desc AS [State],
@@ -49,10 +50,10 @@ namespace MSSQLand.Actions.Database
                 allDatabases = databaseContext.QueryService.ExecuteTable(
                     @"SELECT
                         d.database_id AS dbid,
+                        d.create_date AS [Created],
                         d.name,
                         SUSER_SNAME(d.owner_sid) AS Owner,
                         CAST(IS_SRVROLEMEMBER('sysadmin', SUSER_SNAME(d.owner_sid)) AS BIT) AS OwnerIsSysadmin,
-                        d.create_date AS [Created],
                         CAST(HAS_DBACCESS(d.name) AS BIT) AS Accessible,
                         d.is_trustworthy_on AS Trustworthy,
                         d.state_desc AS [State],
@@ -64,8 +65,58 @@ namespace MSSQLand.Actions.Database
                 );
             }
 
+            // Check db_owner role membership for each accessible database
+            // IS_MEMBER is context-dependent and must be evaluated per-database
+            allDatabases.Columns.Add("db_owner", typeof(bool));
+            allDatabases.Columns["db_owner"].SetOrdinal(allDatabases.Columns["OwnerIsSysadmin"].Ordinal + 1);
+
+            foreach (DataRow row in allDatabases.Rows)
+            {
+                bool isAccessible = row["Accessible"] != DBNull.Value && Convert.ToBoolean(row["Accessible"]);
+                if (isAccessible)
+                {
+                    try
+                    {
+                        string dbName = row["name"].ToString().Replace("]", "]]");
+                        object result = databaseContext.QueryService.ExecuteScalar(
+                            $"EXECUTE('USE [{dbName}]; SELECT CAST(IS_MEMBER(''db_owner'') AS BIT);')"
+                        );
+
+                        row["db_owner"] = result != null && result != DBNull.Value && Convert.ToBoolean(result);
+                    }
+                    catch
+                    {
+                        row["db_owner"] = false;
+                    }
+                }
+                else
+                {
+                    row["db_owner"] = false;
+                }
+            }
+
             Console.WriteLine(OutputFormatter.ConvertDataTable(allDatabases));
             Logger.Success($"Retrieved {allDatabases.Rows.Count} database(s).");
+
+            // Flag trustworthy databases owned by sysadmin where current user has db_owner
+            // This combination enables privilege escalation via EXECUTE AS OWNER
+            var exploitable = allDatabases.AsEnumerable().Where(row =>
+                row["Trustworthy"] != DBNull.Value && Convert.ToBoolean(row["Trustworthy"]) &&
+                row["OwnerIsSysadmin"] != DBNull.Value && Convert.ToBoolean(row["OwnerIsSysadmin"]) &&
+                row["db_owner"] != DBNull.Value && Convert.ToBoolean(row["db_owner"])
+            ).ToList();
+
+            if (exploitable.Any())
+            {
+                Logger.NewLine();
+                foreach (var row in exploitable)
+                {
+                    Logger.Warning($"Database '{row["name"]}' is TRUSTWORTHY with sysadmin owner '{row["Owner"]}' and current user has db_owner role");
+                    Logger.WarningNested($"privilege escalation possible via EXECUTE AS OWNER");
+                    Logger.NewLine();
+                }
+            }
+
             return allDatabases;
         }
     }
