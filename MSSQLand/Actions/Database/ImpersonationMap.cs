@@ -104,7 +104,7 @@ ORDER BY sp.name;";
                 }
                 catch (Exception ex)
                 {
-                    Logger.Warning($"Failed to impersonate '{loginToImpersonate}': {ex.Message}");
+                    Logger.Debug($"Could not explore deeper chains from '{loginToImpersonate}': {ex.Message}");
                 }
                 finally
                 {
