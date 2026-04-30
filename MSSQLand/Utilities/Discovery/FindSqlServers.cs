@@ -1,4 +1,4 @@
-﻿using MSSQLand.Services;
+using MSSQLand.Services;
 using MSSQLand.Utilities.Formatters;
 using System;
 using System.Collections.Generic;
@@ -255,6 +255,7 @@ namespace MSSQLand.Utilities.Discovery
 
             foreach (var domainGroup in serversByDomain)
             {
+                Logger.NewLine();
                 Logger.Info($"Domain: {domainGroup.Key} ({domainGroup.Count()})");
 
                 DataTable resultTable = new();
