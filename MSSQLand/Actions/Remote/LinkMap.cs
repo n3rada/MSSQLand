@@ -1,4 +1,4 @@
-﻿// MSSQLand/Actions/Remote/LinkMap.cs
+// MSSQLand/Actions/Remote/LinkMap.cs
 
 using System;
 using System.Collections.Generic;
@@ -25,7 +25,7 @@ namespace MSSQLand.Actions.Remote
         /// </summary>
         private static readonly HashSet<string> ElevatedRoles = new(StringComparer.OrdinalIgnoreCase)
         {
-            "securityadmin",  // Can grant permissions — near-sysadmin
+            "securityadmin",  // Can grant permissions: near-sysadmin
             "serveradmin",    // Can change server configuration
             "setupadmin",     // Can add/remove linked servers
             "processadmin",   // Can kill processes
@@ -74,6 +74,11 @@ namespace MSSQLand.Actions.Remote
             public List<string> ServerRoles { get; set; } = new();
             public List<string> NonSqlLinks { get; set; } = new();
             public List<ServerNode> Children { get; set; } = new();
+            /// <summary>
+            /// Privilege escalation paths discovered via impersonation at this server.
+            /// Each path is a chain of impersonation steps ending in a privileged user (sysadmin/elevated).
+            /// </summary>
+            public List<List<ImpersonationStep>> EscalationPaths { get; set; } = new();
 
             /// <summary>
             /// True if the user has any elevated (security-relevant) server roles beyond sysadmin.
@@ -122,6 +127,14 @@ namespace MSSQLand.Actions.Remote
         [ArgumentMetadata(Position = 0, Description = "Maximum recursion depth (default: 5, max: 15)")]
         private int _limit = 5;
 
+        /// <summary>
+        /// Impersonation users applied on the starting server before exploration begins.
+        /// Captured from databaseContext.Server.ImpersonationUsers at the start of Execute().
+        /// Included in the host argument of generated commands.
+        /// </summary>
+        [ExcludeFromArguments]
+        private string[] _startingImpersonation = Array.Empty<string>();
+
         public override void ValidateArguments(string[] args)
         {
             BindArguments(args);
@@ -135,6 +148,9 @@ namespace MSSQLand.Actions.Remote
         public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Maximum recursion depth: {_limit}");
+
+            // Capture the initial impersonation so commands reflect the full execution context
+            _startingImpersonation = databaseContext.Server.ImpersonationUsers ?? Array.Empty<string>();
 
             // Get initial linked servers from the starting context
             DataTable allLinkedServers;
@@ -222,8 +238,11 @@ namespace MSSQLand.Actions.Remote
             );
 
             // Build complete map of reachable SQL links across all transitive impersonation chains.
-            // Key: (server name, local login) — same server with different login mappings are separate entries.
-            var reachableChains = GetReachableLoginChains(databaseContext);
+            // Key: (server name, local login): same server with different login mappings are separate entries.
+            // Skip impersonation discovery if already sysadmin: we can already see all linked servers.
+            var reachableChains = _rootNode.IsSysadmin
+                ? new List<List<string>>()
+                : GetReachableLoginChains(databaseContext);
             var allSqlLinks = new Dictionary<(string server, string localLogin), (DataRow row, List<string> chain)>();
 
             // Current user's links (already filtered to SQL above)
@@ -239,6 +258,10 @@ namespace MSSQLand.Actions.Remote
             // Additional links visible from each transitive impersonation chain
             foreach (var chain in reachableChains)
             {
+                // Skip chains ending at system accounts: they add no unique linked server info and cause errors
+                if (IsSystemAccount(chain[chain.Count - 1]))
+                    continue;
+
                 if (!TryApplyImpersonationChain(databaseContext, chain))
                     continue;
                 try
@@ -256,9 +279,36 @@ namespace MSSQLand.Actions.Remote
                             allSqlLinks[key] = (row, chain);
                     }
                 }
+                catch (Exception ex)
+                {
+                    Logger.Debug($"Failed to query linked servers via chain [{string.Join(" -> ", chain)}]: {ex.Message}");
+                }
                 finally
                 {
                     RevertChain(databaseContext, chain.Count);
+                }
+            }
+
+            // For servers visible to the current user (chain=null) that have no specific local login,
+            // also create entries for each reachable impersonation chain so the exploration loop
+            // tries connecting through the linked server while impersonated.
+            // This handles the case where the current user can SEE the linked server metadata
+            // but can't CONNECT (no login mapping), while an impersonated user CAN connect.
+            var existingKeys = allSqlLinks.Keys.ToList();
+            foreach (var chain in reachableChains)
+            {
+                if (IsSystemAccount(chain[chain.Count - 1]))
+                    continue;
+
+                string chainEndLogin = chain[chain.Count - 1];
+                foreach (var key in existingKeys)
+                {
+                    if (allSqlLinks[key].chain != null)
+                        continue; // Already has a chain, skip
+
+                    var chainKey = (key.server, chainEndLogin.ToUpperInvariant());
+                    if (!allSqlLinks.ContainsKey(chainKey))
+                        allSqlLinks[chainKey] = (allSqlLinks[key].row, chain);
                 }
             }
 
@@ -276,6 +326,16 @@ namespace MSSQLand.Actions.Remote
                 if (_globallyExploredContexts.Contains($"{remoteServer}|{requiredLogin}".ToUpperInvariant()))
                 {
                     Logger.TraceNested($"Server '{remoteServer}' already explored as '{requiredLogin}'. Skipping.");
+                    continue;
+                }
+
+                // Skip self-mapping entries (empty Local Login) when no impersonation chain is available.
+                // An empty Local Login means local_principal_id=0 ("use current credentials"), but if
+                // the remote server has no login for the current user the connection will fail.
+                // Chain-based entries derived from this row (keyed by chain-end login) are unaffected.
+                if (string.IsNullOrEmpty(requiredLogin) && chainToReach == null)
+                {
+                    Logger.TraceNested($"Skipping '{remoteServer}': no explicit local login mapping and no impersonation chain available.");
                     continue;
                 }
 
@@ -333,15 +393,20 @@ namespace MSSQLand.Actions.Remote
 
             // Count total chains
             int totalChains = CountLeafNodes(_rootNode);
+            int totalEscalations = CountEscalationPaths(_rootNode);
 
-            if (totalChains == 0)
+            if (totalChains == 0 && totalEscalations == 0)
             {
                 Logger.Warning("No accessible linked server chains found.");
                 return null;
             }
 
             Logger.NewLine();
-            Logger.Success($"Found {totalChains} accessible chain(s) in {totalStopwatch.Elapsed.TotalSeconds:F2}s");
+            string summary = $"Found {totalChains} accessible chain(s)";
+            if (totalEscalations > 0)
+                summary += $" and {totalEscalations} privilege escalation path(s)";
+            summary += $" in {totalStopwatch.Elapsed.TotalSeconds:F2}s";
+            Logger.Success(summary);
 
             // Display tree view
             Logger.NewLine();
@@ -370,7 +435,7 @@ namespace MSSQLand.Actions.Remote
                 return;
             }
 
-            // Push this server onto the linked chain — popped in finally
+            // Push this server onto the linked chain: popped in finally
             databaseContext.QueryService.LinkedServers.AddToChain(targetServer);
 
             try
@@ -378,7 +443,7 @@ namespace MSSQLand.Actions.Remote
                 // Clear stale caches since we changed execution context
                 databaseContext.UserService.ClearCaches();
 
-                // Silently probe connectivity — avoids noisy error output for inaccessible servers
+                // Silently probe connectivity: avoids noisy error output for inaccessible servers
                 string actualServerName = targetServer;
                 string mappedUser, remoteLoggedInUser;
                 try
@@ -443,8 +508,11 @@ namespace MSSQLand.Actions.Remote
                 _globallyExploredContexts.Add($"{targetServer}|{remoteLoggedInUser}".ToUpperInvariant());
 
                 // Build complete map of reachable links via all transitive impersonation chains.
-                // Key: (server name, local login) — same server with different login mappings are separate entries.
-                var remoteReachableChains = GetReachableLoginChains(databaseContext);
+                // Key: (server name, local login): same server with different login mappings are separate entries.
+                // Skip impersonation discovery if already sysadmin: we can already see all linked servers.
+                var remoteReachableChains = isSysadmin
+                    ? new List<List<string>>()
+                    : GetReachableLoginChains(databaseContext);
                 Logger.TraceNested($"Reachable login chains on '{targetServer}': {remoteReachableChains.Count}");
 
                 var allLinkedServersOnThisServer = new Dictionary<(string server, string localLogin), (DataRow row, List<string> chain)>();
@@ -470,10 +538,27 @@ namespace MSSQLand.Actions.Remote
                 // Additional links visible from each transitive impersonation chain
                 foreach (var chain in remoteReachableChains)
                 {
+                    // Skip chains ending at system accounts: they add no unique linked server info and cause errors
+                    if (IsSystemAccount(chain[chain.Count - 1]))
+                        continue;
+
                     if (!TryApplyImpersonationChain(databaseContext, chain))
                         continue;
                     try
                     {
+                        // Check if end of chain reaches a privileged context
+                        bool chainEndIsSysadmin = databaseContext.UserService.IsAdmin();
+                        List<string> chainEndRoles = chainEndIsSysadmin
+                            ? new List<string> { "sysadmin" }
+                            : GetUserServerRoles(databaseContext);
+
+                        if (chainEndIsSysadmin || chainEndRoles.Exists(r => ElevatedRoles.Contains(r)))
+                        {
+                            var steps = chain.Select(login => new ImpersonationStep { Login = login, Roles = new List<string>() }).ToList();
+                            steps[steps.Count - 1].Roles = chainEndRoles;
+                            currentNode.EscalationPaths.Add(steps);
+                        }
+
                         DataTable chainLinks = Links.GetLinkedServers(databaseContext);
                         foreach (DataRow row in chainLinks.Rows)
                         {
@@ -484,9 +569,33 @@ namespace MSSQLand.Actions.Remote
                                 allLinkedServersOnThisServer[key] = (row, chain);
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        Logger.Debug($"Failed to query linked servers via chain [{string.Join(" -> ", chain)}]: {ex.Message}");
+                    }
                     finally
                     {
                         RevertChain(databaseContext, chain.Count);
+                    }
+                }
+
+                // For servers visible to the landing user (chain=null), also create entries for
+                // each reachable chain so the loop tries connecting while impersonated.
+                var existingRemoteKeys = allLinkedServersOnThisServer.Keys.ToList();
+                foreach (var chain in remoteReachableChains)
+                {
+                    if (IsSystemAccount(chain[chain.Count - 1]))
+                        continue;
+
+                    string chainEnd = chain[chain.Count - 1];
+                    foreach (var key in existingRemoteKeys)
+                    {
+                        if (allLinkedServersOnThisServer[key].chain != null)
+                            continue;
+
+                        var chainKey = (key.server, chainEnd.ToUpperInvariant());
+                        if (!allLinkedServersOnThisServer.ContainsKey(chainKey))
+                            allLinkedServersOnThisServer[chainKey] = (allLinkedServersOnThisServer[key].row, chain);
                     }
                 }
 
@@ -503,7 +612,11 @@ namespace MSSQLand.Actions.Remote
                     string localLogin = row["Local Login"] == DBNull.Value ? "" : row["Local Login"].ToString();
 
                     if (provider.StartsWith("SQLNCLI") || provider.StartsWith("MSOLEDBSQL"))
-                        remoteSqlLinks.Add((serverLink, localLogin, row, chain));
+                    {
+                        // Skip entries where the local login is a system account
+                        if (!IsSystemAccount(localLogin))
+                            remoteSqlLinks.Add((serverLink, localLogin, row, chain));
+                    }
                     else
                         remoteOtherLinks.Add($"{serverLink} ({provider})");
                 }
@@ -522,7 +635,7 @@ namespace MSSQLand.Actions.Remote
                 {
                     // Skip if already explored with the same user context
                     string remoteLogin = nextLocalLogin;
-                    // If we don't know the remote login yet, we can't pre-filter — explore and let the hash check handle it
+                    // If we don't know the remote login yet, we can't pre-filter: explore and let the hash check handle it
                     if (!string.IsNullOrEmpty(remoteLogin) && _globallyExploredContexts.Contains($"{nextServer}|{remoteLogin}".ToUpperInvariant()))
                     {
                         Logger.TraceNested($"Server '{nextServer}' already explored as '{remoteLogin}'. Skipping.");
@@ -542,6 +655,19 @@ namespace MSSQLand.Actions.Remote
                             continue;
                         }
                         impersonationHops = chainToReach.Count;
+
+                        // If the linked server mapping requires a specific local login that's not
+                        // the end of our chain, also impersonate it to use the correct mapping.
+                        string chainEndLogin = chainToReach[chainToReach.Count - 1];
+                        if (!string.IsNullOrEmpty(nextLocalLogin)
+                            && !nextLocalLogin.Equals(chainEndLogin, StringComparison.OrdinalIgnoreCase)
+                            && !nextLocalLogin.Equals(remoteLoggedInUser, StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (TryApplyImpersonationChain(databaseContext, new List<string> { nextLocalLogin }))
+                            {
+                                impersonationHops++;
+                            }
+                        }
                     }
                     else if (!string.IsNullOrEmpty(nextLocalLogin) && !nextLocalLogin.Equals(remoteLoggedInUser, StringComparison.OrdinalIgnoreCase))
                     {
@@ -558,14 +684,33 @@ namespace MSSQLand.Actions.Remote
                     try
                     {
                         // Determine the impersonation chain used on this server to reach the next link
-                        List<string> nextImpersonationLogins = chainToReach ?? (!string.IsNullOrEmpty(nextLocalLogin) && !nextLocalLogin.Equals(remoteLoggedInUser, StringComparison.OrdinalIgnoreCase)
-                            ? new List<string> { nextLocalLogin }
-                            : new List<string>());
+                        List<string> nextImpersonationLogins;
+                        if (chainToReach != null && chainToReach.Count > 0)
+                        {
+                            nextImpersonationLogins = new List<string>(chainToReach);
+                            // If we additionally impersonated the local login, include it
+                            string chainEndLogin = chainToReach[chainToReach.Count - 1];
+                            if (!string.IsNullOrEmpty(nextLocalLogin)
+                                && !nextLocalLogin.Equals(chainEndLogin, StringComparison.OrdinalIgnoreCase)
+                                && !nextLocalLogin.Equals(remoteLoggedInUser, StringComparison.OrdinalIgnoreCase)
+                                && impersonationHops > chainToReach.Count)
+                            {
+                                nextImpersonationLogins.Add(nextLocalLogin);
+                            }
+                        }
+                        else if (!string.IsNullOrEmpty(nextLocalLogin) && !nextLocalLogin.Equals(remoteLoggedInUser, StringComparison.OrdinalIgnoreCase))
+                        {
+                            nextImpersonationLogins = new List<string> { nextLocalLogin };
+                        }
+                        else
+                        {
+                            nextImpersonationLogins = new List<string>();
+                        }
 
                         // Build impersonation steps with roles (chain is already applied at this point)
                         List<ImpersonationStep> nextImpersonation = BuildImpersonationSteps(databaseContext, nextImpersonationLogins);
 
-                        // Recurse — ExploreLinkedServer will AddToChain/RemoveLastFromChain internally
+                        // Recurse: ExploreLinkedServer will AddToChain/RemoveLastFromChain internally
                         ExploreLinkedServer(databaseContext, nextServer, currentNode, newPath, branchVisited, nextImpersonation, currentDepth + 1);
                     }
                     finally
@@ -604,6 +749,11 @@ namespace MSSQLand.Actions.Remote
                     if (result == null || result.Rows.Count == 0)
                         return chains;
 
+                    // Only keep the shortest chain to each unique end login.
+                    // For linked server discovery, we only care about what login we end up as,
+                    // not the intermediate path: same end login sees the same linked servers.
+                    var shortestByEndLogin = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
                     foreach (DataRow row in result.Rows)
                     {
                         var chain = new List<string>();
@@ -620,8 +770,13 @@ namespace MSSQLand.Actions.Remote
                             chain.Add(endLogin);
 
                         if (chain.Count > 0)
-                            chains.Add(chain);
+                        {
+                            if (!shortestByEndLogin.TryGetValue(endLogin, out var existing) || chain.Count < existing.Count)
+                                shortestByEndLogin[endLogin] = chain;
+                        }
                     }
+
+                    chains.AddRange(shortestByEndLogin.Values);
                 }
             }
             catch (Exception ex)
@@ -669,7 +824,7 @@ namespace MSSQLand.Actions.Remote
         /// Builds ImpersonationStep list with roles for each login in the chain.
         /// The impersonation chain must already be applied (via TryApplyImpersonationChain)
         /// so we can query roles at the final state. For efficiency, we query roles once
-        /// at the end of the chain rather than at each step — the last user's roles are most relevant.
+        /// at the end of the chain rather than at each step: the last user's roles are most relevant.
         /// For intermediate users, we apply step-by-step and query roles at each step.
         /// </summary>
         private static List<ImpersonationStep> BuildImpersonationSteps(DatabaseContext databaseContext, List<string> logins)
@@ -713,6 +868,19 @@ namespace MSSQLand.Actions.Remote
             foreach (var child in node.Children)
             {
                 count += CountLeafNodes(child);
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Counts all privilege escalation paths across the entire tree.
+        /// </summary>
+        private int CountEscalationPaths(ServerNode node)
+        {
+            int count = node.EscalationPaths.Count;
+            foreach (var child in node.Children)
+            {
+                count += CountEscalationPaths(child);
             }
             return count;
         }
@@ -805,13 +973,15 @@ namespace MSSQLand.Actions.Remote
 
                 for (int i = 0; i < node.Children.Count; i++)
                 {
-                    bool childIsLast = (i == node.Children.Count - 1);
+                    bool childIsLast = (i == node.Children.Count - 1) && node.EscalationPaths.Count == 0;
                     DisplayTreeNode(node.Children[i], serverChildIndent, childIsLast, currentPath);
                 }
+
+                RenderEscalationPaths(node, serverChildIndent);
             }
             else
             {
-                // No impersonation — render directly
+                // No impersonation: render directly
                 string connector = isLast ? "╚══ " : "╠══ ";
                 string childIndent = indent + (isLast ? "    " : "║   ");
 
@@ -824,9 +994,30 @@ namespace MSSQLand.Actions.Remote
 
                 for (int i = 0; i < node.Children.Count; i++)
                 {
-                    bool childIsLast = (i == node.Children.Count - 1);
+                    bool childIsLast = (i == node.Children.Count - 1) && node.EscalationPaths.Count == 0;
                     DisplayTreeNode(node.Children[i], childIndent, childIsLast, currentPath);
                 }
+
+                RenderEscalationPaths(node, childIndent);
+            }
+        }
+
+        /// <summary>
+        /// Renders privilege escalation paths discovered at a server node.
+        /// Shows impersonation chains that lead to sysadmin or elevated roles.
+        /// </summary>
+        private static void RenderEscalationPaths(ServerNode node, string indent)
+        {
+            if (node.EscalationPaths.Count == 0) return;
+
+            for (int p = 0; p < node.EscalationPaths.Count; p++)
+            {
+                var path = node.EscalationPaths[p];
+                bool isLast = (p == node.EscalationPaths.Count - 1);
+                string connector = isLast ? "└── " : "├── ";
+
+                string chainDisplay = string.Join(" → ", path.Select(s => s.Login + s.PrivilegeMarker));
+                Console.WriteLine($"{indent}{connector}{chainDisplay}");
             }
         }
 
@@ -847,6 +1038,14 @@ namespace MSSQLand.Actions.Remote
                 if (chain.Count == 0) continue;
                 var row = BuildChainRow(chain);
                 result.Rows.Add(row);
+
+                // Add escalation path rows for the last node in this chain
+                var lastNode = chain[chain.Count - 1];
+                foreach (var escalation in lastNode.EscalationPaths)
+                {
+                    var escRow = BuildEscalationRow(chain, escalation);
+                    result.Rows.Add(escRow);
+                }
             }
 
             if (result.Rows.Count > 0)
@@ -898,12 +1097,13 @@ namespace MSSQLand.Actions.Remote
             LinkedServers linkedServers = new LinkedServers(serverList.ToArray());
             string chainArg = linkedServers.GetChainArguments();
 
-            // Build host argument with starting server impersonation
+            // Build host argument: starting impersonation + any chain[0] impersonation on the root server
             string hostArg = Misc.BracketIdentifier(_rootNode.Alias);
+            var hostImpersonation = new List<string>(_startingImpersonation);
             if (chain.Count > 0 && chain[0].ImpersonationChain.Count > 0)
-            {
-                hostArg += "/" + string.Join("/", chain[0].ImpersonationChain.ConvertAll(s => s.Login));
-            }
+                hostImpersonation.AddRange(chain[0].ImpersonationChain.ConvertAll(s => s.Login));
+            if (hostImpersonation.Count > 0)
+                hostArg += "/" + string.Join("/", hostImpersonation);
 
             // Full command
             string command = $"\"{hostArg}\" -l \"{chainArg}\"";
@@ -927,6 +1127,74 @@ namespace MSSQLand.Actions.Remote
                 privilege = string.Join(", ", lastNode.ServerRoles.FindAll(r => ElevatedRoles.Contains(r)));
             else
                 privilege = "";
+
+            return new object[] { endpoint, login, mappedTo, privilege, command };
+        }
+
+        /// <summary>
+        /// Builds a DataRow array for a privilege escalation path at the end of a chain.
+        /// The command includes the linked server path with escalation impersonation on the final server.
+        /// </summary>
+        private object[] BuildEscalationRow(List<ServerNode> chain, List<ImpersonationStep> escalation)
+        {
+            var lastNode = chain[chain.Count - 1];
+
+            // Build linked server list: same as BuildChainRow but with escalation on the last server
+            var serverList = new List<Server>();
+            for (int i = 0; i < chain.Count; i++)
+            {
+                var node = chain[i];
+
+                if (i > 0 && node.ImpersonationChain.Count > 0)
+                {
+                    serverList[serverList.Count - 1].ImpersonationUsers = node.ImpersonationChain.ConvertAll(s => s.Login).ToArray();
+                }
+
+                serverList.Add(new Server
+                {
+                    Hostname = node.Alias,
+                    ImpersonationUsers = null,
+                    Database = null
+                });
+            }
+
+            // Add escalation impersonation on the last server in the chain
+            serverList[serverList.Count - 1].ImpersonationUsers = escalation.ConvertAll(s => s.Login).ToArray();
+
+            LinkedServers linkedServers = new LinkedServers(serverList.ToArray());
+            string chainArg = linkedServers.GetChainArguments();
+
+            // Build host argument: starting impersonation + any chain[0] impersonation on the root server
+            string hostArg = Misc.BracketIdentifier(_rootNode.Alias);
+            var hostImpersonation = new List<string>(_startingImpersonation);
+            if (chain.Count > 0 && chain[0].ImpersonationChain.Count > 0)
+                hostImpersonation.AddRange(chain[0].ImpersonationChain.ConvertAll(s => s.Login));
+            if (hostImpersonation.Count > 0)
+                hostArg += "/" + string.Join("/", hostImpersonation);
+
+            // Full command
+            string command = $"\"{hostArg}\" -l \"{chainArg}\"";
+
+            // Endpoint is same server but with escalated login
+            string endpoint = lastNode.Alias;
+            if (!lastNode.Alias.Equals(lastNode.ActualName, StringComparison.OrdinalIgnoreCase))
+            {
+                endpoint = $"{lastNode.Alias} [{lastNode.ActualName}]";
+            }
+
+            // Login is the end of the escalation chain
+            var lastStep = escalation[escalation.Count - 1];
+            string login = lastStep.Login;
+            string mappedTo = "";
+
+            // Privilege level from the escalation endpoint
+            string privilege;
+            if (lastStep.IsSysadmin)
+                privilege = "sysadmin";
+            else if (lastStep.Roles.Exists(r => ElevatedRoles.Contains(r)))
+                privilege = string.Join(", ", lastStep.Roles.FindAll(r => ElevatedRoles.Contains(r)));
+            else
+                privilege = string.Join(", ", lastStep.Roles);
 
             return new object[] { endpoint, login, mappedTo, privilege, command };
         }
@@ -970,6 +1238,17 @@ ORDER BY name;";
                                 $"{isSysadmin}";
 
             return Misc.ComputeSHA256(stateString);
+        }
+
+        /// <summary>
+        /// Returns true if the login is a Windows system account (NT AUTHORITY\, NT SERVICE\, etc.)
+        /// that provides no unique linked server mapping information and often causes database access errors.
+        /// </summary>
+        private static bool IsSystemAccount(string login)
+        {
+            return !string.IsNullOrEmpty(login) &&
+                   (login.StartsWith("NT ", StringComparison.OrdinalIgnoreCase) ||
+                    login.StartsWith("NT\\", StringComparison.OrdinalIgnoreCase));
         }
     }
 }
