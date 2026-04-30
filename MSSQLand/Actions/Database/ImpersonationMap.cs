@@ -20,7 +20,17 @@ FROM sys.server_principals sp
 WHERE HAS_PERMS_BY_NAME(sp.name, 'LOGIN', 'IMPERSONATE') = 1
     AND sp.type_desc IN ('SQL_LOGIN', 'WINDOWS_LOGIN')
     AND sp.name NOT LIKE '##%'
-ORDER BY sp.name;";
+UNION
+SELECT target.name
+FROM sys.server_permissions perm
+INNER JOIN sys.server_principals target ON perm.major_id = target.principal_id
+WHERE perm.class_desc = 'LOGIN'
+  AND perm.permission_name = 'IMPERSONATE'
+  AND perm.state IN ('G', 'W')
+  AND target.type_desc IN ('SQL_LOGIN', 'WINDOWS_LOGIN')
+  AND target.name NOT LIKE '##%'
+  AND perm.grantee_principal_id IN (SELECT principal_id FROM sys.login_token)
+ORDER BY name;";
 
         public override object Execute(DatabaseContext databaseContext)
         {
@@ -100,7 +110,11 @@ ORDER BY sp.name;";
                     Logger.Debug($"Impersonating '{loginToImpersonate}' to explore deeper chains");
                     databaseContext.UserService.ImpersonateUser(loginToImpersonate);
 
-                    BuildImpersonationMap(databaseContext, startingLogin, newPath, allChains, newVisited, depth + 1);
+                    // If this user is sysadmin, no need to recurse — they can already impersonate anyone
+                    if (!databaseContext.UserService.IsAdmin())
+                    {
+                        BuildImpersonationMap(databaseContext, startingLogin, newPath, allChains, newVisited, depth + 1);
+                    }
                 }
                 catch (Exception ex)
                 {
