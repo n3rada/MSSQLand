@@ -1,4 +1,4 @@
-﻿// MSSQLand/Services/Authentication/Credentials/BaseCredentials.cs
+// MSSQLand/Services/Authentication/Credentials/BaseCredentials.cs
 
 using System;
 using System.Data.SqlClient;
@@ -85,9 +85,20 @@ namespace MSSQLand.Services.Credentials
                 connectionString += $";Workstation ID={WorkstationId}";
 
 
-            // Add database if provided
-            if (!string.IsNullOrEmpty(Server.Database))
-                connectionString += $";Database={Server.Database}";
+            // Add database if provided.
+            // If impersonation is required but no database was explicitly specified, default to
+            // master so that EXECUTE AS LOGIN succeeds regardless of the connecting login's
+            // default database (the impersonated login may not have access to that database).
+            string effectiveDatabase = Server.Database;
+            if (string.IsNullOrEmpty(effectiveDatabase)
+                && Server.ImpersonationUsers != null
+                && Server.ImpersonationUsers.Length > 0)
+            {
+                effectiveDatabase = "master";
+            }
+
+            if (!string.IsNullOrEmpty(effectiveDatabase))
+                connectionString += $";Database={effectiveDatabase}";
 
             // Apply optional connection string overrides (only when different from ADO.NET defaults)
             // Add Encrypt if explicitly set (default varies by .NET version)
