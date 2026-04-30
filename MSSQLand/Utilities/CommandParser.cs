@@ -1,4 +1,4 @@
-﻿// MSSQLand/Utilities/CommandParser.cs
+// MSSQLand/Utilities/CommandParser.cs
 
 using System;
 using System.Collections.Generic;
@@ -43,14 +43,14 @@ namespace MSSQLand.Utilities
                 arg.StartsWith($"--{longName}=", StringComparison.OrdinalIgnoreCase) ||
                 arg.Equals($"--{longName}", StringComparison.OrdinalIgnoreCase))
                 return true;
-            
+
             // Check short form: -s:value, -s=value, or -s (for space-separated)
-            if (shortName != null && 
+            if (shortName != null &&
                 (arg.StartsWith($"-{shortName}", StringComparison.OrdinalIgnoreCase) ||
                  arg.StartsWith($"-{shortName}=", StringComparison.OrdinalIgnoreCase) ||
                  arg.Equals($"-{shortName}", StringComparison.OrdinalIgnoreCase)))
                 return true;
-            
+
             return false;
         }
 
@@ -61,7 +61,7 @@ namespace MSSQLand.Utilities
         private static string ExtractFlagValue(string arg, string[] args, ref int currentIndex)
         {
             int separatorIndex = arg.IndexOfAny(new[] { ':', '=' });
-            
+
             // Has inline separator
             if (separatorIndex > 0)
             {
@@ -71,14 +71,14 @@ namespace MSSQLand.Utilities
                 }
                 return arg.Substring(separatorIndex + 1);
             }
-            
+
             // Space-separated value: next argument should be the value
             if (currentIndex + 1 < args.Length && !IsFlag(args[currentIndex + 1]))
             {
                 currentIndex++;
                 return args[currentIndex];
             }
-            
+
             throw new ArgumentException($"Flag {arg} requires a value. Use: {arg}:value, {arg}=value, or {arg} value");
         }
 
@@ -144,7 +144,7 @@ namespace MSSQLand.Utilities
             string hostArg = null;
             string actionName = null;
             List<string> actionArgs = new List<string>();
-            
+
             int currentIndex = 0;
             bool actionFound = false;
 
@@ -175,7 +175,7 @@ namespace MSSQLand.Utilities
                 {
                     string adDomain = null;
                     bool useGlobalCatalog = false;
-                    
+
                     // Parse optional arguments
                     for (int i = 1; i < args.Length; i++)
                     {
@@ -188,7 +188,7 @@ namespace MSSQLand.Utilities
                             adDomain = args[i];
                         }
                     }
-                    
+
                     // If no domain specified, try to get the current domain or forest root
                     if (string.IsNullOrEmpty(adDomain))
                     {
@@ -210,8 +210,29 @@ namespace MSSQLand.Utilities
                             throw new ArgumentException("FindSqlServers requires a domain argument.");
                         }
                     }
-                    
+
                     FindSqlServers.Execute(adDomain, useGlobalCatalog);
+                    return (ParseResultType.UtilityMode, null);
+                }
+
+                if (args[0] == "-broadcast" || args[0] == "--broadcast")
+                {
+                    int timeoutMs = 3000;
+
+                    // Parse optional arguments
+                    for (int i = 1; i < args.Length; i++)
+                    {
+                        if (args[i] == "--timeout" || args[i] == "-t")
+                        {
+                            if (i + 1 < args.Length && int.TryParse(args[i + 1], out int t) && t > 0)
+                            {
+                                timeoutMs = t * 1000;
+                                i++;
+                            }
+                        }
+                    }
+
+                    SqlBrowser.Broadcast(timeoutMs);
                     return (ParseResultType.UtilityMode, null);
                 }
 
@@ -245,7 +266,7 @@ namespace MSSQLand.Utilities
                         {
                             formatValue = args[++i];
                         }
-                        
+
                         if (!string.IsNullOrEmpty(formatValue))
                         {
                             try
@@ -279,7 +300,7 @@ namespace MSSQLand.Utilities
 
                 hostArg = args[currentIndex++];
                 parsedArgs.Host = Server.ParseServer(hostArg);
-                
+
                 // DNS resolution is deferred to SqlConnection for normal auth
                 // Only resolve for utility modes that need the IP address upfront
                 IPAddress resolvedIp = null;
@@ -288,7 +309,7 @@ namespace MSSQLand.Utilities
                 if (currentIndex < args.Length)
                 {
                     string nextArg = args[currentIndex];
-                    
+
                     if (nextArg == "-browse" || nextArg == "--browse" || nextArg == "-browser" || nextArg == "--browser")
                     {
                         // Resolve DNS for utility mode
@@ -305,13 +326,13 @@ namespace MSSQLand.Utilities
                             }
                         }
 
-                        Logger.Info($"Querying SQL Browser service on {hostArg} (UDP 1434)");                        
+                        Logger.Info($"Querying SQL Browser service on {hostArg} (UDP 1434)");
                         var instances = SqlBrowser.Query(resolvedIp, hostArg);
                         SqlBrowser.LogInstances(hostArg, instances);
-                        
+
                         return (ParseResultType.UtilityMode, null);
                     }
-                    
+
                     if (nextArg == "-portscan" || nextArg == "--portscan")
                     {
                         // Resolve DNS for utility mode
@@ -331,7 +352,7 @@ namespace MSSQLand.Utilities
                         // Check for port specification or flags
                         int[] customPorts = null;
                         bool scanAll = false;
-                        
+
                         if (currentIndex + 1 < args.Length)
                         {
                             string nextVal = args[currentIndex + 1];
@@ -351,7 +372,7 @@ namespace MSSQLand.Utilities
                                 }
                             }
                         }
-                        
+
                         if (customPorts != null)
                         {
                             Logger.Info($"Scanning {hostArg} for SQL Server on {customPorts.Length} port(s)");
@@ -367,10 +388,10 @@ namespace MSSQLand.Utilities
                             else
                             {
                                 Logger.InfoNested("Stop on first hit (use --all to find all)");
-                            }                            
+                            }
                             PortScanner.Scan(resolvedIp, hostArg, stopOnFirst: !scanAll);
                         }
-                        
+
                         return (ParseResultType.UtilityMode, null);
                     }
                 }
@@ -399,7 +420,7 @@ namespace MSSQLand.Utilities
                         actionName = arg;
                         actionFound = true;
                         currentIndex++;
-                        
+
                         // Check for action-specific help anywhere in remaining arguments
                         for (int i = currentIndex; i < args.Length; i++)
                         {
@@ -419,13 +440,13 @@ namespace MSSQLand.Utilities
                         int separatorIndex = arg.IndexOfAny(new[] { ':', '=' });
                         bool hasInlineValue = separatorIndex > 0 && separatorIndex < arg.Length - 1;
                         bool hasNextValue = currentIndex + 1 < args.Length && !IsFlag(args[currentIndex + 1]);
-                        
+
                         if (!hasInlineValue && !hasNextValue)
                         {
                             Helper.ShowCredentialTypes();
                             return (ParseResultType.ShowHelp, null);
                         }
-                        
+
                         parsedArgs.CredentialType = ExtractFlagValue(arg, args, ref currentIndex);
                     }
                     else if (IsGlobalArgument(arg, "links", "l"))
@@ -548,7 +569,7 @@ namespace MSSQLand.Utilities
                 {
                     parsedArgs.PacketSize = packetSize.Value;
                 }
-                
+
                 // Assign connection string boolean overrides
                 parsedArgs.EnableEncryption = enableEncryption;
                 parsedArgs.TrustServerCertificate = trustServerCertificate;
@@ -592,20 +613,20 @@ namespace MSSQLand.Utilities
                     {
                         // Try to find actions that start with the given name
                         var matches = ActionFactory.GetActionsByPrefix(ex.ActionName);
-                        
+
                         if (matches.Count > 0)
                         {
                             Logger.Error($"Action '{ex.ActionName}' not found. Did you mean one of these?");
-                            
+
                             DataTable matchTable = new();
                             matchTable.Columns.Add("Action", typeof(string));
                             matchTable.Columns.Add("Description", typeof(string));
-                            
+
                             foreach (var match in matches)
                             {
                                 matchTable.Rows.Add(match.ActionName, match.Description);
                             }
-                            
+
                             Console.WriteLine(OutputFormatter.ConvertDataTable(matchTable));
                         }
                         else
@@ -613,7 +634,7 @@ namespace MSSQLand.Utilities
                             Logger.Error($"Action '{ex.ActionName}' not found.");
                             Logger.ErrorNested("Use -h actions to see all available actions.");
                         }
-                        
+
                         return (ParseResultType.InvalidInput, null);
                     }
                 }
@@ -639,16 +660,16 @@ namespace MSSQLand.Utilities
                 hostname.Equals("::1"))
             {
                 Logger.Trace($"Using loopback address: {hostname}");
-                return hostname.Equals("::1") 
-                    ? IPAddress.IPv6Loopback 
+                return hostname.Equals("::1")
+                    ? IPAddress.IPv6Loopback
                     : IPAddress.Loopback;
             }
 
             // Resolve hostname to IP
             var addresses = Misc.ValidateDnsResolution(hostname, throwOnFailure: true);
-            
+
             // Prefer IPv4
-            var resolvedIp = addresses?.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) 
+            var resolvedIp = addresses?.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
                            ?? addresses?.First();
 
             Logger.Trace($"Resolved {hostname} to {resolvedIp}");
@@ -664,7 +685,7 @@ namespace MSSQLand.Utilities
 
             // Check if credential type exists using CredentialsFactory
             if (!CredentialsFactory.IsValidCredentialType(credentialType))
-            {   
+            {
                 DataTable credentialsTable = new();
                 credentialsTable.Columns.Add("Type", typeof(string));
                 credentialsTable.Columns.Add("Description", typeof(string));
@@ -677,14 +698,14 @@ namespace MSSQLand.Utilities
                     string requiredArgsDisplay = credential.RequiredArguments.Count > 0
                         ? string.Join(", ", credential.RequiredArguments)
                         : "None";
-                    
+
                     string optionalArgsDisplay = credential.OptionalArguments.Count > 0
                         ? string.Join(", ", credential.OptionalArguments)
                         : "-";
-                    
+
                     credentialsTable.Rows.Add(credential.Name, credential.Description, requiredArgsDisplay, optionalArgsDisplay);
                 }
-                
+
                 Console.WriteLine(OutputFormatter.ConvertDataTable(credentialsTable));
 
                 throw new InvalidCredentialException(credentialType, $"Unknown credential type '{credentialType}'.");
