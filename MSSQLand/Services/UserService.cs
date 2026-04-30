@@ -268,15 +268,36 @@ ORDER BY dp.principal_id;";
                 return;
             }
 
+            const string impersonateQuery = "EXECUTE AS LOGIN = @User;";
             try
             {
-                const string query = "EXECUTE AS LOGIN = @User;";
-                using var command = new SqlCommand(query, _queryService.Connection);
+                using var command = new SqlCommand(impersonateQuery, _queryService.Connection);
                 command.Parameters.AddWithValue("@User", user);
-
                 command.ExecuteNonQuery();
                 _adminStatusCache.Clear();
                 Logger.Debug($"Impersonated user {user} for current connection");
+            }
+            catch (SqlException ex) when (ex.Number == 916)
+            {
+                // Error 916: "The server principal is not able to access the database under the
+                // current security context." The connecting login's default database (e.g. Tickets)
+                // is not accessible to the impersonation target. Switch to master and retry.
+                Logger.Debug($"Switching to master before impersonating '{user}' (current DB inaccessible: {ex.Message})");
+                try
+                {
+                    using (var useMaster = new SqlCommand("USE master;", _queryService.Connection))
+                        useMaster.ExecuteNonQuery();
+
+                    using var command = new SqlCommand(impersonateQuery, _queryService.Connection);
+                    command.Parameters.AddWithValue("@User", user);
+                    command.ExecuteNonQuery();
+                    _adminStatusCache.Clear();
+                    Logger.Debug($"Impersonated user {user} for current connection (via master)");
+                }
+                catch (Exception retryEx)
+                {
+                    throw new ImpersonationFailedException(user, $"Failed to impersonate user '{user}': {retryEx.Message}", retryEx);
+                }
             }
             catch (Exception ex)
             {
