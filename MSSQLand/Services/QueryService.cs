@@ -1,4 +1,4 @@
-﻿// MSSQLand/Services/QueryService.cs
+// MSSQLand/Services/QueryService.cs
 
 using MSSQLand.Models;
 using MSSQLand.Utilities;
@@ -311,7 +311,8 @@ SELECT @result AS Result, @error AS Error;";
                     // Only log the error the first time for each server
                     if (_reportedUnreachableServers.Add(failedServer))
                     {
-                        Logger.Error($"Cannot reach linked server '{failedServer}'.");
+                        Logger.NewLine();
+                        Logger.Error($"Cannot reach linked server '{failedServer}'");
                     }
 
                     throw; // Don't retry connection failures
