@@ -71,7 +71,7 @@ namespace MSSQLand.Actions.Execution
                     if (!isTrustworthy)
                     {
                         Logger.Warning("Current database is not TRUSTWORTHY");
-                        Logger.WarningNested("Attempting to enable it);
+                        Logger.WarningNested("Attempting to enable it");
                         try
                         {
                             databaseContext.QueryService.ExecuteNonProcessing(
