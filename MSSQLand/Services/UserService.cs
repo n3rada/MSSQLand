@@ -1,4 +1,4 @@
-﻿// MSSQLand/Services/UserService.cs
+// MSSQLand/Services/UserService.cs
 
 using MSSQLand.Utilities;
 using MSSQLand.Exceptions;
@@ -264,6 +264,7 @@ ORDER BY dp.principal_id;";
             if (!_queryService.LinkedServers.IsEmpty)
             {
                 PushLinkedImpersonation(user);
+                _adminStatusCache.Clear();
                 return;
             }
 
@@ -274,6 +275,7 @@ ORDER BY dp.principal_id;";
                 command.Parameters.AddWithValue("@User", user);
 
                 command.ExecuteNonQuery();
+                _adminStatusCache.Clear();
                 Logger.Debug($"Impersonated user {user} for current connection");
             }
             catch (Exception ex)
@@ -310,6 +312,7 @@ ORDER BY dp.principal_id;";
             if (!_queryService.LinkedServers.IsEmpty)
             {
                 PopLinkedImpersonation();
+                _adminStatusCache.Clear();
                 return;
             }
 
@@ -317,6 +320,7 @@ ORDER BY dp.principal_id;";
             using var command = new SqlCommand(query, _queryService.Connection);
             command.ExecuteNonQuery();
 
+            _adminStatusCache.Clear();
             Logger.Debug("Reverted impersonation");
         }
 
