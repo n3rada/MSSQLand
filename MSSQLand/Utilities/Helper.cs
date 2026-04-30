@@ -118,6 +118,7 @@ namespace MSSQLand.Utilities
 
             Console.WriteLine("Discovery (no authentication required):");
             Console.WriteLine("\t-findsql [domain]      Find SQL Servers via LDAP query (add --gc for Global Catalog)");
+            Console.WriteLine("\t-broadcast             Broadcast for SQL Servers on local network (UDP 1434)");
             Console.WriteLine("\t<host> -browse         Query SQL Browser service (UDP 1434)");
             Console.WriteLine("\t<host> -portscan       Scan for SQL Server ports with TDS validation\n");
 
