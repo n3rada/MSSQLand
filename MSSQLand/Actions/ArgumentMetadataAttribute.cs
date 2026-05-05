@@ -36,5 +36,12 @@ namespace MSSQLand.Actions
         /// Description of what this argument does.
         /// </summary>
         public string Description { get; set; }
+
+        /// <summary>
+        /// When true, consumes all remaining positional arguments from Position onward,
+        /// joining them with a space. Useful for free-form arguments like shell commands.
+        /// "What is left over." From Latin remanere (to remain/stay behind)
+        /// </summary>
+        public bool IsRemainder { get; set; } = false;
     }
 }
