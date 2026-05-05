@@ -96,7 +96,7 @@ namespace MSSQLand.Actions.Agent
                 else
                 {
                     Logger.Warning("Asynchronous execution");
-                    Logger.NestedWarning("Use --wait to poll for completion and retrieve output from sysjobhistory");
+                    Logger.WarningNested("Use --wait to poll for completion and retrieve output from sysjobhistory");
                 }
 
                 // Cleanup
