@@ -280,8 +280,14 @@ namespace MSSQLand
                     {
                         stopwatch.Stop();
                         DateTime endTime = DateTime.UtcNow;
+                        TimeSpan elapsed = stopwatch.Elapsed;
+                        string durationStr = elapsed.TotalHours >= 1
+                            ? $"{(int)elapsed.TotalHours}h {elapsed.Minutes}m {elapsed.Seconds}s"
+                            : elapsed.TotalMinutes >= 1
+                                ? $"{elapsed.Minutes}m {elapsed.Seconds}s"
+                                : $"{elapsed.TotalSeconds:F2}s";
                         Logger.NewLine();
-                        Logger.Banner($"End at {endTime:yyyy-MM-dd HH:mm:ss:fffff} UTC\nTotal duration: {stopwatch.Elapsed.TotalSeconds:F2} seconds", totalWidth: bannerWidth);
+                        Logger.Banner($"End at {endTime:yyyy-MM-dd HH:mm:ss:fffff} UTC\nTotal duration: {durationStr}", totalWidth: bannerWidth);
                     }
                 }
             }
