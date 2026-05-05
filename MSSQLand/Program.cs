@@ -197,7 +197,7 @@ namespace MSSQLand
                         }
                         else if (!sourcePrincipal.Equals(systemUser, StringComparison.OrdinalIgnoreCase))
                         {
-                            Logger.Info($"Domain user is mapped via Domain Group '{sourcePrincipal}'");
+                            Logger.InfoNested($"Domain user is mapped via Domain Group '{sourcePrincipal}'");
                         }
                         else
                         {
