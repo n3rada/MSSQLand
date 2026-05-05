@@ -19,10 +19,10 @@ namespace MSSQLand.Actions.Agent
         // Do NOT change casing — SQL Server is case-sensitive on these strings.
         private enum SubSystemMode { CmdExec, PowerShell, TSQL, VBScript }
 
-        [ArgumentMetadata(Position = 0, Required = true, Description = "Command to execute")]
+        [ArgumentMetadata(Position = 0, Required = true, Remainder = true, Description = "Command to execute")]
         private string _command = null;
 
-        [ArgumentMetadata(Position = 1, ShortName = "s", LongName = "subsystem", Description = "Subsystem: CmdExec, PowerShell, TSQL, VBScript (default: PowerShell)")]
+        [ArgumentMetadata(ShortName = "s", LongName = "subsystem", Description = "Subsystem: CmdExec, PowerShell, TSQL, VBScript (default: PowerShell)")]
         private SubSystemMode _subSystem = SubSystemMode.PowerShell;
 
         [ArgumentMetadata(ShortName = "w", LongName = "wait", Description = "Wait for job completion and retrieve output (default: false)")]
@@ -37,7 +37,7 @@ namespace MSSQLand.Actions.Agent
 
             if (string.IsNullOrEmpty(_command))
             {
-                throw new ArgumentException("Missing command to execute. Example: job-exec 'whoami'");
+                throw new ArgumentException("Missing command to execute. Example: job-exec whoami --subsystem CmdExec");
             }
 
             if (_timeout < 1)
@@ -95,7 +95,8 @@ namespace MSSQLand.Actions.Agent
                 }
                 else
                 {
-                    Logger.Warning("Asynchronous execution — use --wait to poll for completion and retrieve output");
+                    Logger.Warning("Asynchronous execution");
+                    Logger.NestedWarning("Use --wait to poll for completion and retrieve output from sysjobhistory");
                 }
 
                 // Cleanup
@@ -169,7 +170,7 @@ namespace MSSQLand.Actions.Agent
         }
 
         /// <summary>
-        /// Best-effort job cleanup. Silently ignores errors —
+        /// Best-effort job cleanup. Silently ignores errors.
         /// the job may have already been deleted or never fully created.
         /// </summary>
         private void CleanupJob(DatabaseContext databaseContext, string jobName)
