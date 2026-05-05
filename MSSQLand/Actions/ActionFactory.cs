@@ -73,7 +73,7 @@ namespace MSSQLand.Actions
             // EXECUTION ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
             { "exec", (typeof(XpCmd), "Execute OS commands via SQL extended procedures (default) or OLE Automation (--ole for stealth).", null) },
-            { "pwsh", (typeof(PowerShell), "Execute PowerShell scripts.", new[] { "powershell" }) },
+            { "powershell", (typeof(PowerShell), "Execute PowerShell scripts.", new[] { "pwsh" }) },
             { "pwshdl", (typeof(RemotePowerShellExecutor), "Download and execute a remote PowerShell script from a URL.", null) },
             { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.", null) },
             { "run", (typeof(Run), "Execute a file on the SQL Server filesystem using OLE Automation.", null) },
