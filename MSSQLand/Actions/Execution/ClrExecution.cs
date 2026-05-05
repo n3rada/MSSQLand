@@ -3,7 +3,6 @@
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
-using System.Runtime.InteropServices;
 
 namespace MSSQLand.Actions.Execution
 {
