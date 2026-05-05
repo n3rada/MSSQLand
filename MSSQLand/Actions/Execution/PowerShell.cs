@@ -1,4 +1,4 @@
-﻿// MSSQLand/Actions/Execution/PowerShell.cs
+// MSSQLand/Actions/Execution/PowerShell.cs
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
@@ -9,7 +9,7 @@ namespace MSSQLand.Actions.Execution
 {
     internal class PowerShell : XpCmd
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "PowerShell script or command to execute")]
+        [ArgumentMetadata(Position = 0, Required = true, IsRemainder = true, Description = "PowerShell script or command to execute")]
         private string _script = "";
 
         /// <summary>
@@ -27,7 +27,7 @@ namespace MSSQLand.Actions.Execution
             string powerShellCommand = $"powershell.exe -noni -NoLogo -e {base64EncodedScript}";
 
             // Set the crafted PowerShell command as the _command in the parent class
-            base.ValidateArguments(new string[] { powerShellCommand });
+            _command = powerShellCommand;
 
             // Call the parent's Execute method to execute the command
             return base.Execute(databaseContext);
