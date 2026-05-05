@@ -44,6 +44,7 @@ namespace MSSQLand.Actions
             { "permissions", (typeof(Permissions), "Enumerate user and role permissions.", null) },
             { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.", new[] { "impersonation", "imp" }) },
             { "impersonate-chains", (typeof(ImpersonationMap), "Map impersonation chains to discover reachable logins through delegation paths.", new[] { "impchains", "impmap" }) },
+            { "oledb", (typeof(OleDbProvidersInfo), "Enumerate OLE DB providers and their registry configuration.", new[] { "ole-providers" }) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // DATABASE ACTIONS - OPERATIONS
