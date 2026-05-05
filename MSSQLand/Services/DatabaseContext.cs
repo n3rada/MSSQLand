@@ -85,6 +85,14 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
+        /// Computes a state hash representing the current execution context.
+        /// Encodes server hostname, mapped user, system user and privilege level into a SHA-256 string.
+        /// Used by actions (e.g. LinkMap) for loop detection across explored (server, identity) pairs.
+        /// </summary>
+        public string ComputeStateHash()
+            => Server.ComputeExplorationHash(Server.Hostname, UserService.MappedUser, UserService.SystemUser, UserService.IsAdmin());
+
+        /// <summary>
         /// Releases resources used by this DatabaseContext.
         /// </summary>
         public void Dispose()

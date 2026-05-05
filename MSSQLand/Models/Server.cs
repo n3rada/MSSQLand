@@ -139,6 +139,20 @@ namespace MSSQLand.Models
         }
 
         /// <summary>
+        /// Computes a state hash for loop detection during linked server exploration.
+        /// Encodes the execution context (server + user identity + privilege level) into a SHA-256 string.
+        /// Static overload for contexts where no Server instance is available.
+        /// </summary>
+        public static string ComputeExplorationHash(string hostname, string mappedUser, string systemUser, bool isSysadmin)
+        {
+            string stateString = $"{hostname?.ToUpperInvariant() ?? ""}|" +
+                                 $"{mappedUser?.ToUpperInvariant() ?? ""}|" +
+                                 $"{systemUser?.ToUpperInvariant() ?? ""}|" +
+                                 $"{isSysadmin}";
+            return Misc.ComputeSHA256(stateString);
+        }
+
+        /// <summary>
         /// Creates a copy of this Server instance.
         /// </summary>
         public Server Copy()

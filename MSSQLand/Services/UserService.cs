@@ -56,6 +56,17 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
+        /// Returns true if the login is a Windows system account (NT AUTHORITY\, NT SERVICE\, etc.).
+        /// These accounts add no unique linked server mapping information and often cause database access errors.
+        /// </summary>
+        public static bool IsSystemAccount(string login)
+        {
+            return !string.IsNullOrEmpty(login) &&
+                   (login.StartsWith("NT ", StringComparison.OrdinalIgnoreCase) ||
+                    login.StartsWith("NT\\", StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
         /// Clears cached admin and domain user status.
         /// Call this when the execution context changes (e.g., after modifying the linked server chain).
         /// </summary>
@@ -212,6 +223,49 @@ ORDER BY sp.principal_id;");
 
             // Username has domain format - it's a Windows user
             return true;
+        }
+
+        /// <summary>
+        /// Returns all server roles (fixed and custom) the current user is a member of.
+        /// Excludes the public role and internal placeholder roles (##...##).
+        ///
+        /// Side effect: populates the admin-status cache based on whether the result contains
+        /// 'sysadmin'. This means a subsequent <see cref="IsAdmin"/> call against the same
+        /// execution context becomes a cache hit, eliminating a redundant round-trip when
+        /// callers need both pieces of information (a common pattern during link-map
+        /// exploration with deep EXEC AT nesting).
+        /// </summary>
+        public List<string> GetServerRoles()
+        {
+            const string query = @"
+SELECT name
+FROM sys.server_principals
+WHERE type = 'R'
+  AND name != 'public'
+  AND name NOT LIKE '##%##'
+  AND ISNULL(IS_SRVROLEMEMBER(name), 0) = 1
+ORDER BY name;";
+
+            var roles = new List<string>();
+            try
+            {
+                var rolesTable = _queryService.ExecuteTable(query);
+                foreach (System.Data.DataRow row in rolesTable.Rows)
+                {
+                    roles.Add(row["name"].ToString());
+                }
+
+                // Populate admin cache from the same result: sysadmin appears in this list
+                // iff the user is a member of the sysadmin role.
+                bool isSysadmin = roles.Exists(r => r.Equals("sysadmin", StringComparison.OrdinalIgnoreCase));
+                _adminStatusCache[_queryService.ExecutionServer.Hostname] = isSysadmin;
+            }
+            catch
+            {
+                // Role query failed, return empty list. Do NOT populate the admin cache:
+                // the failure is unrelated to admin status and IsAdmin should retry on its own.
+            }
+            return roles;
         }
 
         /// <summary>

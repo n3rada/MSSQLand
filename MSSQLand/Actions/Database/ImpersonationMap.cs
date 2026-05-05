@@ -92,6 +92,17 @@ ORDER BY name;";
                 var newPath = new List<string>(currentPath) { loginToImpersonate };
                 allChains.Add((startingLogin, new List<string>(newPath)));
 
+                // Windows system accounts (NT AUTHORITY\*, NT SERVICE\*) are recorded as
+                // chain endpoints (the IMPERSONATE permission is itself a discoverable fact),
+                // but we do NOT recurse through them: linked-server mappings reject them as
+                // callers (see LinkMap.GetReachableLoginChains), so any deeper chain found
+                // here would be unusable for pivoting and the round-trip is wasted.
+                if (UserService.IsSystemAccount(loginToImpersonate))
+                {
+                    Logger.Trace($"Recorded system account '{loginToImpersonate}' as endpoint; not recursing");
+                    continue;
+                }
+
                 var newVisited = new HashSet<string>(visited, StringComparer.OrdinalIgnoreCase) { loginToImpersonate };
 
                 // Impersonate and recurse to find deeper chains
