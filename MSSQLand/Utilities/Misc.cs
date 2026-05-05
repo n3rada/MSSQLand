@@ -120,14 +120,13 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
-        /// Decodes a Base64-encoded string and decompresses it using GZip.
+        /// Decompresses a GZip-compressed byte array.
         /// </summary>
-        /// <param name="encoded">The Base64-encoded, GZip-compressed data.</param>
+        /// <param name="compressed">The GZip-compressed byte array.</param>
         /// <returns>The decompressed byte array.</returns>
-        public static byte[] DecodeAndDecompress(string encoded)
+        public static byte[] GzipDecompress(byte[] compressed)
         {
-            byte[] compressedBytes = Convert.FromBase64String(encoded);
-            using var inputStream = new MemoryStream(compressedBytes);
+            using var inputStream = new MemoryStream(compressed);
             using var gzipStream = new GZipStream(inputStream, CompressionMode.Decompress);
             using var outputStream = new MemoryStream();
             gzipStream.CopyTo(outputStream);
@@ -351,7 +350,7 @@ namespace MSSQLand.Utilities
                 using var stringWriter = new StringWriter();
                 using var xmlWriter = XmlWriter.Create(stringWriter, settings);
                 doc.Save(xmlWriter);
-                
+
                 // Decode HTML entities in the final formatted output for better readability
                 // XmlWriter encodes entities for valid XML, but we want human-readable output
                 string formatted = stringWriter.ToString();
@@ -369,7 +368,7 @@ namespace MSSQLand.Utilities
         /// <summary>
         /// Wraps SQL Server identifier in brackets if it contains separator characters.
         /// Only brackets if the name contains delimiters used in our syntax: : / @ ;
-        /// 
+        ///
         /// This is used for linked server chains where hostnames may contain these
         /// characters and need protection from being interpreted as delimiters.
         /// </summary>
