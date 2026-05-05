@@ -103,19 +103,24 @@ namespace MSSQLand.Actions
 
             // Build lookup of boolean fields from ArgumentMetadata
             var booleanFlags = new HashSet<string>(StringComparer.Ordinal);
+            int remainderPosition = -1;
             var fields = GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
             foreach (var field in fields)
             {
+                var metadata = field.GetCustomAttribute<ArgumentMetadataAttribute>();
+                if (metadata == null) continue;
+
                 if (field.FieldType == typeof(bool))
                 {
-                    var metadata = field.GetCustomAttribute<ArgumentMetadataAttribute>();
-                    if (metadata != null)
-                    {
-                        if (!string.IsNullOrEmpty(metadata.ShortName))
-                            booleanFlags.Add(metadata.ShortName);
-                        if (!string.IsNullOrEmpty(metadata.LongName))
-                            booleanFlags.Add(metadata.LongName);
-                    }
+                    if (!string.IsNullOrEmpty(metadata.ShortName))
+                        booleanFlags.Add(metadata.ShortName);
+                    if (!string.IsNullOrEmpty(metadata.LongName))
+                        booleanFlags.Add(metadata.LongName);
+                }
+
+                if (metadata.Remainder && metadata.Position >= 0)
+                {
+                    remainderPosition = metadata.Position;
                 }
             }
 
@@ -125,6 +130,15 @@ namespace MSSQLand.Actions
             for (int i = 0; i < args.Length; i++)
             {
                 string arg = args[i];
+
+                // Once we've reached the remainder position, everything is positional
+                // (including tokens that look like flags, e.g. "-2")
+                if (remainderPosition >= 0 && positional.Count >= remainderPosition)
+                {
+                    positional.Add(arg);
+                    Logger.TraceNested($"Parsed positional arg (remainder): {arg}");
+                    continue;
+                }
 
                 // Check if it's a flag (starts with - or --)
                 if (arg.StartsWith("-"))
