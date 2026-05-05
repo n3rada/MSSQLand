@@ -501,6 +501,18 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
+        /// Converts a string to Base64 encoding using UTF-16 (Unicode) encoding.
+        /// PowerShell's -EncodedCommand flag expects UTF-16 LE Base64.
+        /// </summary>
+        /// <param name="input">The input string to encode.</param>
+        /// <returns>The Base64-encoded string.</returns>
+        public static string ConvertToBase64(string input)
+        {
+            byte[] inputBytes = Encoding.Unicode.GetBytes(input);
+            return Convert.ToBase64String(inputBytes);
+        }
+
+        /// <summary>
         /// Returns null if the string is empty or whitespace, otherwise returns the trimmed string.
         /// </summary>
         private static string NullIfEmpty(string value)

