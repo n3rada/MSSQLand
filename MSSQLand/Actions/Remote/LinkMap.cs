@@ -211,15 +211,19 @@ namespace MSSQLand.Actions.Remote
                 return null;
             }
 
-            // Separate SQL Server links (chainable) from others (queryable only)
+            // Separate SQL Server links (chainable) from others (queryable only).
+            // Track "No visibility" rows separately so we can report them and try impersonation.
             var sqlServerLinks = new List<DataRow>();
             var otherLinks = new List<DataRow>();
+            var noVisibilityLinks = new List<DataRow>();
 
             foreach (DataRow row in allLinkedServers.Rows)
             {
-                // Skip rows where we have no visibility into linked_logins — nothing actionable
                 if (GetRowString(row, "Access") == "No visibility")
+                {
+                    noVisibilityLinks.Add(row);
                     continue;
+                }
 
                 string provider = row["Provider"].ToString();
                 if (provider.StartsWith("SQLNCLI") || provider.StartsWith("MSOLEDBSQL"))
@@ -229,6 +233,15 @@ namespace MSSQLand.Actions.Remote
                 else
                 {
                     otherLinks.Add(row);
+                }
+            }
+
+            if (noVisibilityLinks.Count > 0)
+            {
+                Logger.Trace($"Linked servers with no visibility into linked_logins (current user): {noVisibilityLinks.Count}");
+                foreach (DataRow row in noVisibilityLinks)
+                {
+                    Logger.TraceNested($"{row["Link"]} ({row["Provider"]}) - will retry under impersonation");
                 }
             }
 
@@ -281,10 +294,15 @@ namespace MSSQLand.Actions.Remote
                 }
             }
 
-            if (sqlServerLinks.Count == 0)
+            if (sqlServerLinks.Count == 0 && noVisibilityLinks.Count == 0)
             {
                 Logger.Warning("No SQL Server linked servers to explore.");
                 return null;
+            }
+
+            if (sqlServerLinks.Count == 0 && noVisibilityLinks.Count > 0)
+            {
+                Logger.Warning($"Current user has no visibility into any linked server mappings. Will attempt impersonation to gain visibility.");
             }
 
             // Mark starting server+user as explored
@@ -296,9 +314,25 @@ namespace MSSQLand.Actions.Remote
             // Build complete map of reachable SQL links across all transitive impersonation chains.
             // Key: (server name, local login): same server with different login mappings are separate entries.
             // Skip impersonation discovery if already sysadmin: we can already see all linked servers.
+            // Force impersonation discovery when current user has zero direct visibility (all rows were
+            // "No visibility") — an impersonable user may see what we cannot.
+            bool forceImpersonationDiscovery = sqlServerLinks.Count == 0 && noVisibilityLinks.Count > 0;
             var reachableChains = _rootNode.IsSysadmin
                 ? new List<List<string>>()
                 : GetReachableLoginChains(databaseContext);
+
+            if (reachableChains.Count > 0)
+            {
+                Logger.Trace($"Reachable login chains from current user: {reachableChains.Count}");
+                foreach (var chain in reachableChains)
+                    Logger.TraceNested($"[{string.Join(" -> ", chain)}]");
+            }
+            else if (forceImpersonationDiscovery)
+            {
+                Logger.Warning("No impersonable logins found. Cannot gain visibility into linked server mappings.");
+                return null;
+            }
+
             var allSqlLinks = new Dictionary<(string server, string localLogin), (DataRow row, List<string> chain)>();
 
             // Current user's links (already filtered to SQL above)
@@ -323,8 +357,13 @@ namespace MSSQLand.Actions.Remote
                 try
                 {
                     DataTable chainLinks = Links.GetLinkedServers(databaseContext);
+                    int gained = 0;
                     foreach (DataRow row in chainLinks.Rows)
                     {
+                        // Skip rows where the impersonated user also has no visibility
+                        if (GetRowString(row, "Access") == "No visibility")
+                            continue;
+
                         string provider = row["Provider"].ToString();
                         if (!provider.StartsWith("SQLNCLI") && !provider.StartsWith("MSOLEDBSQL"))
                             continue;
@@ -332,8 +371,13 @@ namespace MSSQLand.Actions.Remote
                         string localLogin = GetRowString(row, "Local Login");
                         var key = (link.ToUpperInvariant(), localLogin.ToUpperInvariant());
                         if (!allSqlLinks.ContainsKey(key))
+                        {
                             allSqlLinks[key] = (row, chain);
+                            gained++;
+                        }
                     }
+                    if (gained > 0)
+                        Logger.TraceNested($"Gained visibility into {gained} link mapping(s) via [{string.Join(" -> ", chain)}]");
                 }
                 catch (Exception ex)
                 {
