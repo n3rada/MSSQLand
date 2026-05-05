@@ -1,4 +1,4 @@
-﻿// MSSQLand/Actions/BaseAction.cs
+// MSSQLand/Actions/BaseAction.cs
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
@@ -313,7 +313,14 @@ namespace MSSQLand.Actions
                 // Fall back to positional argument
                 if (value == null && metadata.Position >= 0)
                 {
-                    value = GetPositionalArgument(positionalArgs, metadata.Position);
+                    if (metadata.IsRemainder && metadata.Position < positionalArgs.Count)
+                    {
+                        value = string.Join(" ", positionalArgs.Skip(metadata.Position));
+                    }
+                    else
+                    {
+                        value = GetPositionalArgument(positionalArgs, metadata.Position);
+                    }
                 }
 
                 // If value found, convert and set; otherwise check if required
