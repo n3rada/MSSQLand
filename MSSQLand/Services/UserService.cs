@@ -152,39 +152,29 @@ namespace MSSQLand.Services
         {
             try
             {
-                // If there's a direct mapping (MappedUser != SystemUser), use it
-                if (!MappedUser.Equals(SystemUser, StringComparison.OrdinalIgnoreCase))
+                this.EffectiveUser = MappedUser;
+
+                // Check if SYSTEM_USER has a direct Windows login (type 'U') in sys.server_principals.
+                // This is a single indexed lookup — cheap for the common case.
+                object type = _queryService.ExecuteScalar(
+                    "SELECT type FROM sys.server_principals WHERE name = SYSTEM_USER;");
+
+                if (type?.ToString() == "U")
                 {
-                    this.EffectiveUser = MappedUser;
                     this.SourcePrincipal = SystemUser;
                     return;
                 }
 
-                // Query user_token to find effective database user and login_token for source
-                string sql = @"
-SELECT TOP 1
-    dp.name AS effective_user,
-    lt.name AS source_principal
-FROM sys.user_token ut
-JOIN sys.database_principals dp ON dp.sid = ut.sid
-LEFT JOIN sys.login_token lt ON lt.sid = ut.sid
-WHERE ut.name <> 'public'
-AND ut.type NOT IN ('ROLE', 'SERVER ROLE')
-AND dp.principal_id > 0
-ORDER BY dp.principal_id;";
+                // No direct login — access granted via an AD group.
+                // Find the group in sys.login_token joined to sys.server_principals.
+                object group = _queryService.ExecuteScalar(@"
+SELECT TOP 1 sp.name
+FROM sys.login_token lt
+INNER JOIN sys.server_principals sp ON sp.sid = lt.sid
+WHERE lt.type = 'WINDOWS GROUP' AND sp.type = 'G'
+ORDER BY sp.principal_id;");
 
-                var dt = _queryService.ExecuteTable(sql);
-
-                if (dt.Rows.Count == 0)
-                {
-                    this.EffectiveUser = MappedUser;
-                    this.SourcePrincipal = SystemUser;
-                    return;
-                }
-
-                var row = dt.Rows[0];
-                this.EffectiveUser = row["effective_user"]?.ToString() ?? MappedUser;
-                this.SourcePrincipal = row["source_principal"]?.ToString() ?? this.EffectiveUser;
+                this.SourcePrincipal = group?.ToString() ?? SystemUser;
             }
             catch (Exception ex)
             {

@@ -186,7 +186,7 @@ namespace MSSQLand
 
                         string effectiveUser = databaseContext.UserService.EffectiveUser;
                         string sourcePrincipal = databaseContext.UserService.SourcePrincipal;
-                
+
                         if (!effectiveUser.Equals(userName, StringComparison.OrdinalIgnoreCase))
                         {
                             Logger.Info($"Effective database user: {effectiveUser}");
@@ -195,9 +195,13 @@ namespace MSSQLand
                                 Logger.InfoNested($"Access granted via: {sourcePrincipal}");
                             }
                         }
+                        else if (!sourcePrincipal.Equals(systemUser, StringComparison.OrdinalIgnoreCase))
+                        {
+                            Logger.Info($"Domain user is mapped via Domain Group '{sourcePrincipal}'");
+                        }
                         else
                         {
-                            Logger.Info($"Domain user '{systemUser}' is directly mapped");
+                            Logger.InfoNested($"Domain user is directly mapped");
                         }
                     }
 
