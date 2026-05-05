@@ -546,5 +546,76 @@ namespace MSSQLand.Utilities
                 ? $"[{database.Trim('[', ']')}]..[{table.Trim('[', ']')}]"
                 : $"[{database.Trim('[', ']')}].[{schema.Trim('[', ']')}].[{table.Trim('[', ']')}]";
         }
+
+        /// <summary>
+        /// Reads a .NET assembly (.dll) from the local filesystem, computes its SHA-512 hash,
+        /// and converts its binary content into a SQL-compatible hexadecimal string.
+        /// </summary>
+        /// <param name="dll">Full path to the DLL on disk.</param>
+        /// <returns>
+        /// A string array where <c>[0]</c> is the SHA-512 hash (lowercase hex) for use with
+        /// <c>sp_add_trusted_assembly</c>, and <c>[1]</c> is the DLL content (uppercase hex)
+        /// for use with <c>CREATE ASSEMBLY FROM 0x...</c>.
+        /// Returns an array of two empty strings on failure.
+        /// </returns>
+        /// <summary>
+        /// Computes the SHA-512 hash and SQL-compatible hex string from raw assembly bytes.
+        /// </summary>
+        /// <returns>
+        /// <c>[0]</c> = SHA-512 hash (lowercase hex), <c>[1]</c> = DLL content (uppercase hex).
+        /// </returns>
+        public static string[] ConvertDllToSqlBytes(byte[] dllBytes)
+        {
+            byte[] hashBytes;
+            using (SHA512 sha512 = SHA512.Create())
+            {
+                hashBytes = sha512.ComputeHash(dllBytes);
+            }
+
+            char[] hashChars = new char[hashBytes.Length * 2];
+            char[] dllHexChars = new char[dllBytes.Length * 2];
+
+            for (int i = 0; i < hashBytes.Length; i++)
+            {
+                byte b = hashBytes[i];
+                hashChars[i * 2]     = GetHexChar((b >> 4) & 0xF, false);
+                hashChars[i * 2 + 1] = GetHexChar(b & 0xF, false);
+            }
+
+            for (int i = 0; i < dllBytes.Length; i++)
+            {
+                byte b = dllBytes[i];
+                dllHexChars[i * 2]     = GetHexChar((b >> 4) & 0xF, true);
+                dllHexChars[i * 2 + 1] = GetHexChar(b & 0xF, true);
+            }
+
+            return new[] { new string(hashChars), new string(dllHexChars) };
+        }
+
+        /// <summary>
+        /// Reads a .NET assembly (.dll) from the local filesystem, computes its SHA-512 hash,
+        /// and converts its binary content into a SQL-compatible hexadecimal string.
+        /// </summary>
+        /// <param name="dll">Full path to the DLL on disk.</param>
+        /// <returns>
+        /// <c>[0]</c> = SHA-512 hash (lowercase hex), <c>[1]</c> = DLL content (uppercase hex).
+        /// Returns an array of two empty strings on failure.
+        /// </returns>
+        public static string[] ConvertDllToSqlBytes(string dll)
+        {
+            try
+            {
+                FileInfo fileInfo = new(dll);
+                Logger.Info($"{dll} is {fileInfo.Length} bytes.");
+
+                byte[] dllBytes = File.ReadAllBytes(dll);
+                return ConvertDllToSqlBytes(dllBytes);
+            }
+            catch (FileNotFoundException)
+            {
+                Logger.Error($"Unable to load {dll}");
+                return new[] { string.Empty, string.Empty };
+            }
+        }
     }
 }

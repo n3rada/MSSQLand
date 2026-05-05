@@ -3,10 +3,7 @@
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
-using System.IO;
-using System.Net;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 
 namespace MSSQLand.Actions.Execution
 {
@@ -22,7 +19,7 @@ namespace MSSQLand.Actions.Execution
     /// </summary>
     internal class ClrExecution : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "DLL URI (local path or HTTP/S URL)")]
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Local path to the DLL")]
         private string _dllURI = string.Empty;
 
         [ArgumentMetadata(Position = 1, Required = true, Description = "Class name containing the function to execute")]
@@ -37,7 +34,7 @@ namespace MSSQLand.Actions.Execution
         public override object Execute(DatabaseContext databaseContext)
         {
             // Step 1: Get the SHA-512 hash for the DLL and its bytes.
-            string[] library = ConvertDLLToSQLBytes(_dllURI);
+            string[] library = Misc.ConvertDllToSqlBytes(_dllURI);
 
             if (library.Length != 2 || string.IsNullOrEmpty(library[0]) || string.IsNullOrEmpty(library[1]))
             {
@@ -168,163 +165,6 @@ namespace MSSQLand.Actions.Execution
                         $"ALTER DATABASE [{databaseContext.QueryService.ExecutionServer.Database}] SET TRUSTWORTHY OFF;");
                 }
             }
-        }
-
-
-        /// <summary>
-        /// Reads a .NET assembly (.dll) from the local filesystem, computes its SHA-512 hash,
-        /// and converts its binary content into a SQL-compatible hexadecimal string format.
-        ///
-        /// This method uses the <c>File.ReadAllBytes</c> method to read the entire file content into memory.
-        /// For very large DLLs, consider using a streaming approach to avoid high memory usage.
-        ///
-        /// This method returns:
-        /// <list type="number">
-        ///   <item>
-        ///     <description>
-        ///     <b>SHA-512 hash (lowercase hex)</b>: Used with <c>sp_add_trusted_assembly</c>.
-        ///     Format: 128-character lowercase hexadecimal string.
-        ///     </description>
-        ///   </item>
-        ///   <item>
-        ///     <description>
-        ///     <b>DLL bytes (uppercase hex)</b>: Used with <c>CREATE ASSEMBLY FROM 0x...</c>.
-        ///     Format: 2 characters per byte, uppercase hexadecimal string.
-        ///     </description>
-        ///   </item>
-        /// </list>
-        ///
-        /// </summary>
-        /// <param name="dll">Full path to the DLL on disk.</param>
-        /// <returns>
-        /// A string array with:
-        /// <c>[0]</c> = SHA-512 hash (lowercase hex), <c>[1]</c> = DLL content (uppercase hex).
-        /// </returns>
-        private static string[] ConvertDLLToSQLBytesFile(string dll)
-        {
-            string[] dllArr = new string[2];
-
-            try
-            {
-                FileInfo fileInfo = new(dll);
-                Logger.Info($"{dll} is {fileInfo.Length} bytes.");
-
-                // Read all DLL bytes first
-                byte[] dllBytes = File.ReadAllBytes(dll);
-
-                // Compute SHA-512 hash of the file
-                byte[] hashBytes;
-                using (SHA512 sha512 = SHA512.Create())
-                using (FileStream fileStream = File.OpenRead(dll))
-                {
-                    hashBytes = sha512.ComputeHash(fileStream);
-                }
-
-                // Allocate character arrays for hex strings
-                char[] hashChars = new char[hashBytes.Length * 2];       // Lowercase hex
-                char[] dllHexChars = new char[dllBytes.Length * 2];      // Uppercase hex
-
-                // Fill hash hex chars
-                for (int i = 0; i < hashBytes.Length; i++)
-                {
-                    byte b = hashBytes[i];
-                    hashChars[i * 2] = Misc.GetHexChar((b >> 4) & 0xF, false);
-                    hashChars[i * 2 + 1] = Misc.GetHexChar(b & 0xF, false);
-                }
-
-                // Fill DLL hex chars
-                for (int i = 0; i < dllBytes.Length; i++)
-                {
-                    byte b = dllBytes[i];
-                    dllHexChars[i * 2] = Misc.GetHexChar((b >> 4) & 0xF, true);
-                    dllHexChars[i * 2 + 1] = Misc.GetHexChar(b & 0xF, true);
-                }
-
-                // Assign results
-                dllArr[0] = new string(hashChars);     // lowercase hash
-                dllArr[1] = new string(dllHexChars);   // uppercase bytes
-            }
-            catch (FileNotFoundException)
-            {
-                Logger.Error($"Unable to load {dll}");
-                dllArr[0] = string.Empty;
-                dllArr[1] = string.Empty;
-            }
-
-            return dllArr;
-        }
-
-
-        /// <summary>
-        /// Downloads a .NET assembly from a remote HTTP/S location and converts it
-        /// to SQL-compatible byte format for storage in a stored procedure.
-        /// </summary>
-        /// <param name="dll">The URL of the DLL to download.</param>
-        /// <returns>An array containing the SHA-512 hash and SQL-compatible byte string.</returns>
-        private static string[] ConvertDLLToSQLBytesWeb(string dll)
-        {
-            try
-            {
-                // Ensure a valid URL is provided
-                if (string.IsNullOrWhiteSpace(dll) || (!dll.StartsWith("http://") && !dll.StartsWith("https://")))
-                {
-                    throw new ArgumentException($"Invalid DLL URL: {dll}");
-                }
-
-                Logger.Info($"Downloading DLL from {dll}");
-
-                // Set up secure protocols for downloading the DLL
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
-
-                // Download the DLL content
-                byte[] dllBytes;
-                using (var client = new WebClient())
-                {
-                    dllBytes = client.DownloadData(dll);
-                }
-
-                Logger.Info($"DLL downloaded successfully, size: {dllBytes.Length} bytes");
-
-                // Compute the SHA-512 hash
-                string dllHash;
-                using (var sha512 = SHA512.Create())
-                {
-                    dllHash = BitConverter.ToString(sha512.ComputeHash(dllBytes)).Replace("-", "").ToLower();
-                }
-
-                Logger.Info($"SHA-512 hash computed: {dllHash}");
-
-                // Convert the DLL bytes to a SQL-compatible hexadecimal string
-                string dllHexString = BitConverter.ToString(dllBytes).Replace("-", "").ToUpper();
-
-                return new[] { dllHash, dllHexString };
-            }
-            catch (WebException ex)
-            {
-                Logger.Error($"Failed to download DLL from {dll}. Web exception: {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"An error occurred while processing the DLL: {ex.Message}");
-            }
-
-            // Return empty values in case of failure
-            return new[] { string.Empty, string.Empty };
-        }
-
-        /// <summary>
-        /// This method determines if the .NET assembly resides locally
-        /// on disk, or remotely on a web server.
-        /// </summary>
-        /// <param name="dll"></param>
-        /// <returns></returns>
-        private static string[] ConvertDLLToSQLBytes(string dll)
-        {
-            string[] dllArr = dll.ToLower().Contains("http://") || dll.ToLower().Contains("https://")
-            ? ConvertDLLToSQLBytesWeb(dll)
-            : ConvertDLLToSQLBytesFile(dll);
-
-            return dllArr;
         }
     }
 }
