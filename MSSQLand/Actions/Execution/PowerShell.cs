@@ -19,7 +19,7 @@ namespace MSSQLand.Actions.Execution
         {
             Logger.TaskNested($"Executing PowerShell script: {_script}");
 
-            _command = $"powershell.exe -NonI -NoPro -encodedComm {Misc.ConvertToBase64(_script)}";
+            _command = $"powershell.exe -NonI -NoPro -of Text -encodedComm {Misc.ConvertToBase64(_script)}";
 
             return base.Execute(databaseContext);
         }
