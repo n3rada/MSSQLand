@@ -7,7 +7,7 @@ namespace MSSQLand.Actions.Execution
 {
     internal class Ole : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, IsRemainder = true, Description = "Operating system command to execute")]
+        [ArgumentMetadata(Position = 0, Required = true, Remainder = true, Description = "Operating system command to execute")]
         private string _command = "";
 
         /// <summary>

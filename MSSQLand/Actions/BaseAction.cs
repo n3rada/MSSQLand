@@ -313,7 +313,7 @@ namespace MSSQLand.Actions
                 // Fall back to positional argument
                 if (value == null && metadata.Position >= 0)
                 {
-                    if (metadata.IsRemainder && metadata.Position < positionalArgs.Count)
+                    if (metadata.Remainder && metadata.Position < positionalArgs.Count)
                     {
                         value = string.Join(" ", positionalArgs.Skip(metadata.Position));
                     }

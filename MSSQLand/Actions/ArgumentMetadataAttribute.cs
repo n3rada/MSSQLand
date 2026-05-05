@@ -42,6 +42,6 @@ namespace MSSQLand.Actions
         /// joining them with a space. Useful for free-form arguments like shell commands.
         /// "What is left over." From Latin remanere (to remain/stay behind)
         /// </summary>
-        public bool IsRemainder { get; set; } = false;
+        public bool Remainder { get; set; } = false;
     }
 }
