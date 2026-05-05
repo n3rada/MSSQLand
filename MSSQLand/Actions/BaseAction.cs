@@ -28,16 +28,6 @@ namespace MSSQLand.Actions
     /// If no custom validation is needed, you don't need to override ValidateArguments().
     /// The base class will call BindArguments() automatically.
     ///
-    /// CUSTOM VALIDATION:
-    /// ------------------
-    /// Override ValidateArguments() only when additional validation is required:
-    ///
-    ///    public override void ValidateArguments(string[] args)
-    ///    {
-    ///        BindArguments(args);  // Always call first
-    ///        if (_limit &lt; 0) throw new ArgumentException("Limit must be positive");
-    ///    }
-    ///
     /// MANUAL PARSING (for complex cases):
     /// -----------------------------------
     /// Use ParseActionArguments(), GetNamedArgument(), GetPositionalArgument()
