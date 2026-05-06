@@ -87,26 +87,56 @@ Chain multiple SQL servers using the `-l` flag with **semicolon (`;`) as the sep
 
 ## 🔍 Discovery
 
-These modes require no authentication and work before you have credentials:
+These modes require no authentication and work before you have credentials.
+
+### Browsing Service
+
+The [SQL Server Browser service](https://learn.microsoft.com/en-us/sql/tools/configuration-manager/sql-server-browser-service) listens on **UDP 1434** and responds to discovery requests with the list of SQL Server instances running on a host, including their names, versions, and TCP ports. This is useful when the target is running named instances on dynamic ports, no need to guess or scan.
 
 ```shell
-# Find SQL Servers in Active Directory via LDAP
-MSSQLand.exe --findsql
-MSSQLand.exe --findsql pgd.lab
-MSSQLand.exe --findsql pgd.lab --gc      # Forest-wide search via Global Catalog
+# Query the SQL Browser service on a specific host (UDP 1434)
+MSSQLand.exe LAB-SQL03 --browse
+```
 
+### LDAP Queries
+
+Active Directory exposes SQL Server registrations through [Service Principal Names (SPNs)](https://learn.microsoft.com/en-us/sql/database-engine/configure-windows/register-a-service-principal-name-for-kerberos-connections) stored on computer and service accounts. MSSQLand queries AD via LDAP for `MSSQLSvc/*` SPNs to enumerate SQL Server instances across the domain, or the entire forest via the [Global Catalog](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/planning-global-catalog-server-placement).
+
+```shell
+# Find SQL Servers in Active Directory via LDAP (current domain)
+MSSQLand.exe --findsql
+
+# Target a specific domain
+MSSQLand.exe --findsql pgd.lab
+
+# Forest-wide search via Global Catalog (port 3268)
+MSSQLand.exe --findsql pgd.lab --gc
+```
+
+Discovery is multi-layered. See [FindSqlServers.cs](MSSQLand/Utilities/Discovery/FindSqlServers.cs) for more details.
+
+### Broadcast
+
+SQL Server Browser also responds to [UDP broadcast packets](https://learn.microsoft.com/en-us/sql/tools/configuration-manager/sql-server-browser-service#using-sql-server-browser) on **UDP 1434**, allowing discovery of all SQL Server instances advertising themselves on the local subnet.
+
+```shell
 # Broadcast discovery on the local network (UDP 1434)
 MSSQLand.exe --broadcast
 MSSQLand.exe --broadcast --timeout 5
+```
 
-# Query the SQL Browser service on a specific host (UDP 1434)
-MSSQLand.exe LAB-SQL03 --browse
+> [!TIP]
+> This is particularly useful when a SQL Server is running on a machine that is **not domain-joined** and therefore won't appear in any LDAP or SPN query. Think standalone servers, developer machines, or rogue instances spun up on an internal VLAN.
 
-# Scan a host for SQL Server ports (TDS validation)
+### Port Scan
+
+Validates open ports against live SQL Server instances using [TDS protocol](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/b46a581a-39de-4745-b076-ec4dbb7d13ec) handshakes (not just TCP SYN). A port is only reported if it responds to a TDS pre-login packet.
+
+```shell
 MSSQLand.exe LAB-SQL03 --portscan
-MSSQLand.exe LAB-SQL03 --portscan --all          # Find all instances (full ephemeral range)
-MSSQLand.exe LAB-SQL03 --portscan 65184          # Single port
-MSSQLand.exe LAB-SQL03 --portscan 65180-65190    # Port range
+MSSQLand.exe LAB-SQL03 --portscan --all           # Find all instances (full ephemeral range)
+MSSQLand.exe LAB-SQL03 --portscan 65184           # Single port
+MSSQLand.exe LAB-SQL03 --portscan 65180-65190     # Port range
 MSSQLand.exe LAB-SQL03 --portscan 1433,5000,65184 # Comma-separated list
 ```
 

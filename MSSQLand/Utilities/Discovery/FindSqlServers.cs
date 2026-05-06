@@ -12,8 +12,7 @@ namespace MSSQLand.Utilities.Discovery
     /// Enumerates SQL Servers in Active Directory via LDAP.
     /// Discovers servers by MSSQLSvc SPNs (e.g., MSSQLSvc/hostname:port) and computers with "SQL" in name, description, or OU.
     /// <code>
-    /// # PowerShell equivalent:
-    /// ([adsisearcher]::new([adsi]"GC://corp.local", "(servicePrincipalName=MSSQLSvc*)")).FindAll() | % { $_.Properties.GetEnumerator() | % { "$($_.Name) = $($_.Value -join ', ')" } }
+    /// $s = [adsisearcher]::new([adsi]"GC://pgd.lab", "(servicePrincipalName=MSSQLSvc*)"); $s.PropertiesToLoad.AddRange(@("cn","dnshostname","samaccountname","objectsid","serviceprincipalname","lastLogonTimestamp","description","distinguishedName")); $s.FindAll() | % { $_.Properties.GetEnumerator() | % { $v = if ($_.Name -eq 'objectsid') { [System.Security.Principal.SecurityIdentifier]::new($_.Value[0], 0) } elseif ($_.Name -eq 'lastlogontimestamp') { [DateTime]::FromFileTime($_.Value[0]).ToString('yyyy-MM-dd HH:mm') } else { $_.Value -join ', ' }; "$($_.Name) = $v" }; "" }
     /// </code>
     /// </summary>
     public static class FindSqlServers
