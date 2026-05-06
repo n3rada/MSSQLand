@@ -24,12 +24,15 @@ namespace MSSQLand.Actions.Execution
         /// <param name="databaseContext">The ConnectionManager for executing the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
+            Logger.TaskNested($"Executing against {databaseContext.QueryService.ExecutionServer.Hostname}: {_query}");
+
+            Logger.NewLine();
+
             if (_executeAll)
             {
                 return ExecuteAcrossAllDatabases(databaseContext);
             }
 
-            Logger.TaskNested($"Executing against {databaseContext.QueryService.ExecutionServer.Hostname}: {_query}");
             DataTable result = ExecuteOn(databaseContext, _query);
 
             Logger.Success("Query executed successfully.");
@@ -124,7 +127,6 @@ namespace MSSQLand.Actions.Execution
             DataTable resultTable = databaseContext.QueryService.ExecuteTable(foreachQuery);
 
             Logger.Success($"Query executed successfully via sp_MSforeachdb.");
-            Logger.SuccessNested($"Total rows returned: {resultTable.Rows.Count}");
 
             if (resultTable == null || resultTable.Rows.Count == 0)
             {
@@ -133,6 +135,9 @@ namespace MSSQLand.Actions.Execution
             }
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
+
+            Logger.SuccessNested($"Total rows returned: {resultTable.Rows.Count}");
+
             return resultTable;
         }
 
