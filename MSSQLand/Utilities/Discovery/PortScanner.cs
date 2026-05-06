@@ -520,7 +520,9 @@ namespace MSSQLand.Utilities.Discovery
                 }
                 if (stoppedEarly)
                 {
-                    Logger.InfoNested($"Stopped early after finding {results.Count} port(s) - use --all to continue full scan");
+                    Logger.NewLine();
+                    Logger.Warning($"Stopped early after finding {results.Count} port(s)");
+                    Logger.WarningNested("Use --all for full scan");
                 }
             }
         }
