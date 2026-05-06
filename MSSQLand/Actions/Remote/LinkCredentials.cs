@@ -48,7 +48,6 @@ namespace MSSQLand.Actions.Remote
             Console.WriteLine(OutputFormatter.ConvertDataTable(mappings));
 
             // Attempt credential extraction using various methods
-            Logger.NewLine();
             Logger.Task("Attempting credential extraction");
 
             // Method 1: Direct decryption (requires service master key access)
@@ -169,10 +168,9 @@ AND ll.remote_name IS NOT NULL;";
                     Logger.InfoNested($"Found {result.Rows.Count} stored credential(s) with encrypted passwords:");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(result));
 
-                    Logger.NewLine();
-                    Logger.InfoNested("Decryption options:");
-                    Logger.InfoNested("  • DAC (Dedicated Admin Connection) on port 1434");
-                    Logger.InfoNested("  • Extract Service Master Key from SQL Server host");
+                    Logger.InfoNested("Decryption options");
+                    Logger.InfoNested("DAC (Dedicated Admin Connection) on port 1434");
+                    Logger.InfoNested("Extract Service Master Key from SQL Server host");
                 }
                 else
                 {
