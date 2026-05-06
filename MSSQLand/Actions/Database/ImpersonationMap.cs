@@ -19,8 +19,7 @@ SELECT sp.name
 FROM sys.server_principals sp
 WHERE HAS_PERMS_BY_NAME(sp.name, 'LOGIN', 'IMPERSONATE') = 1
     AND sp.type_desc IN ('SQL_LOGIN', 'WINDOWS_LOGIN')
-    AND sp.name NOT LIKE '##%'
-ORDER BY name;";
+    AND sp.name NOT LIKE '##%';";
 
         public override object Execute(DatabaseContext databaseContext)
         {
