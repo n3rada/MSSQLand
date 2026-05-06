@@ -26,7 +26,7 @@ namespace MSSQLand.Actions
             // DATABASE ACTIONS - BASIC INFO & AUTHENTICATION
             // ═══════════════════════════════════════════════════════════════════════════════
             { "info", (typeof(Info), "Retrieve detailed information about the SQL Server instance.", null) },
-            { "whoami", (typeof(Whoami), "Display current user context, roles, and accessible databases.", null) },
+            { "whoami", (typeof(Whoami), "Display current user context, roles, and accessible databases.", new[] { "id", "groups" }) },
             { "authtoken", (typeof(AuthToken), "Display all groups from the Windows authentication token (AD, BUILTIN, NT AUTHORITY, etc.).", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════

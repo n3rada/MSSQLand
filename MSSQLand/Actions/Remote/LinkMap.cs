@@ -273,7 +273,8 @@ namespace MSSQLand.Actions.Remote
             // Create root node representing the starting server.
             // Note: GetServerRoles is called first so it populates the admin-status cache;
             // IsAdmin then resolves from cache, avoiding a separate round-trip.
-            List<string> rootRoles = databaseContext.UserService.GetServerRoles();
+            var (fixedRootRoles, customRootRoles) = databaseContext.UserService.GetServerRoles();
+            List<string> rootRoles = fixedRootRoles.Concat(customRootRoles).ToList();
             _rootNode = new ServerNode
             {
                 Alias = databaseContext.Server.Hostname,
@@ -624,7 +625,8 @@ namespace MSSQLand.Actions.Remote
                 {
                     // Fetch roles first so the admin-status cache is populated as a side effect;
                     // the subsequent IsAdmin() then resolves from cache without a round-trip.
-                    nodeRoles = databaseContext.UserService.GetServerRoles();
+                    var (fixedNodeRoles, customNodeRoles) = databaseContext.UserService.GetServerRoles();
+                    nodeRoles = fixedNodeRoles.Concat(customNodeRoles).ToList();
                     isSysadmin = databaseContext.UserService.IsAdmin();
                     _contextRoleCache[contextKey] = (nodeRoles, isSysadmin);
                 }
@@ -714,7 +716,8 @@ namespace MSSQLand.Actions.Remote
                         // GetServerRoles populates the admin-status cache, so the IsAdmin call
                         // immediately after is free. This collapses what used to be two
                         // round-trips per chain (IsAdmin + GetServerRoles) into one.
-                        List<string> chainEndRoles = databaseContext.UserService.GetServerRoles();
+                        var (fixedChainEndRoles, customChainEndRoles) = databaseContext.UserService.GetServerRoles();
+                        List<string> chainEndRoles = fixedChainEndRoles.Concat(customChainEndRoles).ToList();
                         bool chainEndIsSysadmin = databaseContext.UserService.IsAdmin();
 
                         // Record as an escalation path only when the chain end carries

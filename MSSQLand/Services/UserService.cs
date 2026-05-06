@@ -5,7 +5,7 @@ using MSSQLand.Exceptions;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data.SqlClient;
+using System.Data.Common;
 using System.Linq;
 
 namespace MSSQLand.Services
@@ -226,7 +226,7 @@ ORDER BY sp.principal_id;");
         }
 
         /// <summary>
-        /// Returns all server roles (fixed and custom) the current user is a member of.
+        /// Returns the current user's server role memberships split into fixed and custom roles.
         /// Excludes the public role and internal placeholder roles (##...##).
         ///
         /// Side effect: populates the admin-status cache based on whether the result contains
@@ -235,37 +235,39 @@ ORDER BY sp.principal_id;");
         /// callers need both pieces of information (a common pattern during link-map
         /// exploration with deep EXEC AT nesting).
         /// </summary>
-        public List<string> GetServerRoles()
+        public (List<string> Fixed, List<string> Custom) GetServerRoles()
         {
             const string query = @"
-SELECT name
+SELECT name, is_fixed_role
 FROM sys.server_principals
 WHERE type = 'R'
   AND name != 'public'
   AND name NOT LIKE '##%##'
   AND ISNULL(IS_SRVROLEMEMBER(name), 0) = 1
-ORDER BY name;";
+ORDER BY is_fixed_role DESC, name;";
 
-            var roles = new List<string>();
+            var fixedRoles = new List<string>();
+            var customRoles = new List<string>();
             try
             {
                 var rolesTable = _queryService.ExecuteTable(query);
                 foreach (System.Data.DataRow row in rolesTable.Rows)
                 {
-                    roles.Add(row["name"].ToString());
+                    string name = row["name"].ToString();
+                    if (Convert.ToBoolean(row["is_fixed_role"]))
+                        fixedRoles.Add(name);
+                    else
+                        customRoles.Add(name);
                 }
 
-                // Populate admin cache from the same result: sysadmin appears in this list
-                // iff the user is a member of the sysadmin role.
-                bool isSysadmin = roles.Exists(r => r.Equals("sysadmin", StringComparison.OrdinalIgnoreCase));
+                bool isSysadmin = fixedRoles.Exists(r => r.Equals("sysadmin", StringComparison.OrdinalIgnoreCase));
                 _adminStatusCache[_queryService.ExecutionServer.Hostname] = isSysadmin;
             }
             catch
             {
-                // Role query failed, return empty list. Do NOT populate the admin cache:
-                // the failure is unrelated to admin status and IsAdmin should retry on its own.
+                // Role query failed — do NOT populate the admin cache.
             }
-            return roles;
+            return (fixedRoles, customRoles);
         }
 
         /// <summary>
@@ -312,28 +314,28 @@ ORDER BY name;";
                 return;
             }
 
-            const string impersonateQuery = "EXECUTE AS LOGIN = @User;";
+            string impersonateQuery = $"EXECUTE AS LOGIN = N'{user.Replace("'", "''")}';";
             try
             {
-                using var command = new SqlCommand(impersonateQuery, _queryService.Connection);
-                command.Parameters.AddWithValue("@User", user);
+                using var command = _queryService.Connection.CreateCommand();
+                command.CommandText = impersonateQuery;
                 command.ExecuteNonQuery();
                 _adminStatusCache.Clear();
                 Logger.Debug($"Impersonated user {user} for current connection");
             }
-            catch (SqlException ex) when (ex.Number == 916)
+            catch (Exception ex) when (ex.Message.Contains("916") || (ex is System.Data.SqlClient.SqlException sqlex && sqlex.Number == 916))
             {
-                // Error 916: "The server principal is not able to access the database under the
-                // current security context." The connecting login's default database (e.g. Tickets)
-                // is not accessible to the impersonation target. Switch to master and retry.
                 Logger.Debug($"Switching to master before impersonating '{user}' (current DB inaccessible: {ex.Message})");
                 try
                 {
-                    using (var useMaster = new SqlCommand("USE master;", _queryService.Connection))
+                    using (var useMaster = _queryService.Connection.CreateCommand())
+                    {
+                        useMaster.CommandText = "USE master;";
                         useMaster.ExecuteNonQuery();
+                    }
 
-                    using var command = new SqlCommand(impersonateQuery, _queryService.Connection);
-                    command.Parameters.AddWithValue("@User", user);
+                    using var command = _queryService.Connection.CreateCommand();
+                    command.CommandText = impersonateQuery;
                     command.ExecuteNonQuery();
                     _adminStatusCache.Clear();
                     Logger.Debug($"Impersonated user {user} for current connection (via master)");
@@ -381,8 +383,8 @@ ORDER BY name;";
                 return;
             }
 
-            const string query = "REVERT;";
-            using var command = new SqlCommand(query, _queryService.Connection);
+            using var command = _queryService.Connection.CreateCommand();
+            command.CommandText = "REVERT;";
             command.ExecuteNonQuery();
 
             _adminStatusCache.Clear();

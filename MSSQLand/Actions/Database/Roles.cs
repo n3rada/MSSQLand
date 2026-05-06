@@ -12,11 +12,11 @@ namespace MSSQLand.Actions.Database
 {
     /// <summary>
     /// Enumerates database-level roles and their members in the current database.
-    /// 
+    ///
     /// Displays:
     /// - Fixed database roles (db_owner, db_datareader, db_datawriter, etc.) and their members
     /// - Custom database roles and their members
-    /// 
+    ///
     /// This provides a role-centric view showing which users belong to each database role.
     /// For server-level logins and instance-wide privileges, use the 'users' action instead.
     /// </summary>
@@ -29,7 +29,7 @@ namespace MSSQLand.Actions.Database
             // ========== SERVER-LEVEL ROLES ==========
 
             string serverRolesQuery = @"
-                SELECT 
+                SELECT
                     r.name AS RoleName,
                     r.is_fixed_role AS IsFixedRole,
                     r.type_desc AS RoleType,
@@ -41,11 +41,15 @@ namespace MSSQLand.Actions.Database
 
             var allServerRoles = databaseContext.QueryService.ExecuteTable(serverRolesQuery);
 
+            // Fetch the current user's server roles once for IsMember annotation
+            var (fixedUserRoles, customUserRoles) = databaseContext.UserService.GetServerRoles();
+            var userServerRoles = new HashSet<string>(fixedUserRoles.Concat(customUserRoles), StringComparer.OrdinalIgnoreCase);
+
             if (allServerRoles.Rows.Count > 0)
             {
                 // Get all server role members in a single query
                 string serverMembersQuery = @"
-                    SELECT 
+                    SELECT
                         r.name AS role_name,
                         m.name AS member_name,
                         m.type_desc AS member_type
@@ -104,6 +108,7 @@ namespace MSSQLand.Actions.Database
                 {
                     DataTable fixedServerRolesTable = new();
                     fixedServerRolesTable.Columns.Add("RoleName", typeof(string));
+                    fixedServerRolesTable.Columns.Add("IsMember", typeof(bool));
                     fixedServerRolesTable.Columns.Add("RoleType", typeof(string));
                     fixedServerRolesTable.Columns.Add("CreateDate", typeof(DateTime));
                     fixedServerRolesTable.Columns.Add("ModifyDate", typeof(DateTime));
@@ -111,8 +116,10 @@ namespace MSSQLand.Actions.Database
 
                     foreach (var row in fixedServerRoles)
                     {
+                        string roleName = row["RoleName"].ToString();
                         fixedServerRolesTable.Rows.Add(
-                            row["RoleName"],
+                            roleName,
+                            userServerRoles.Contains(roleName),
                             row["RoleType"],
                             row["CreateDate"],
                             row["ModifyDate"],
@@ -129,6 +136,7 @@ namespace MSSQLand.Actions.Database
                 {
                     DataTable customServerRolesTable = new DataTable();
                     customServerRolesTable.Columns.Add("RoleName", typeof(string));
+                    customServerRolesTable.Columns.Add("IsMember", typeof(bool));
                     customServerRolesTable.Columns.Add("RoleType", typeof(string));
                     customServerRolesTable.Columns.Add("CreateDate", typeof(DateTime));
                     customServerRolesTable.Columns.Add("ModifyDate", typeof(DateTime));
@@ -136,8 +144,10 @@ namespace MSSQLand.Actions.Database
 
                     foreach (var row in customServerRoles)
                     {
+                        string roleName = row["RoleName"].ToString();
                         customServerRolesTable.Rows.Add(
-                            row["RoleName"],
+                            roleName,
+                            userServerRoles.Contains(roleName),
                             row["RoleType"],
                             row["CreateDate"],
                             row["ModifyDate"],
@@ -156,7 +166,7 @@ namespace MSSQLand.Actions.Database
             // Fixed roles: db_owner, db_datareader, db_datawriter, db_securityadmin, etc.
             // Custom roles: user-defined roles created with CREATE ROLE
             string query = @"
-SELECT 
+SELECT
     r.name AS RoleName,
     r.is_fixed_role AS IsFixedRole,
     r.type_desc AS RoleType,
@@ -167,7 +177,7 @@ WHERE r.type = 'R'
 ORDER BY r.is_fixed_role DESC, r.name;";
 
             var allRoles = databaseContext.QueryService.ExecuteTable(query);
-            
+
             if (allRoles.Rows.Count == 0)
             {
                 Logger.Warning("No database roles found in current database.");
@@ -178,7 +188,7 @@ ORDER BY r.is_fixed_role DESC, r.name;";
             // This retrieves direct role memberships from sys.database_role_members
             // Note: Does not include indirect memberships (e.g., via AD groups)
             string allMembersQuery = @"
-                SELECT 
+                SELECT
                     r.name AS role_name,
                     m.name AS member_name,
                     m.type_desc AS member_type,
@@ -194,7 +204,7 @@ ORDER BY r.is_fixed_role DESC, r.name;";
 
             // Build a dictionary for O(1) lookup: key = role_name, value = list of member descriptions
             var membersDict = new Dictionary<string, List<string>>();
-            
+
             foreach (DataRow memberRow in allMembers.Rows)
             {
                 string roleName = memberRow["role_name"].ToString();
@@ -259,7 +269,7 @@ ORDER BY r.is_fixed_role DESC, r.name;";
                 fixedRolesTable.Columns.Add("CreateDate", typeof(DateTime));
                 fixedRolesTable.Columns.Add("ModifyDate", typeof(DateTime));
                 fixedRolesTable.Columns.Add("Members", typeof(string));
-                
+
                 foreach (var row in fixedRolesData)
                 {
                     fixedRolesTable.Rows.Add(
@@ -284,7 +294,7 @@ ORDER BY r.is_fixed_role DESC, r.name;";
                 customRolesTable.Columns.Add("CreateDate", typeof(DateTime));
                 customRolesTable.Columns.Add("ModifyDate", typeof(DateTime));
                 customRolesTable.Columns.Add("Members", typeof(string));
-                
+
                 foreach (var row in customRolesData)
                 {
                     customRolesTable.Rows.Add(
