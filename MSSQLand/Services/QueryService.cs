@@ -145,7 +145,8 @@ namespace MSSQLand.Services
             string m = ex.Message;
 
             // Check for OLE DB provider errors (linked server specific)
-            if (m.Contains("OLE DB provider") && m.Contains("for linked server"))
+            // Exclude ADSI/OLE DB query preparation errors — those are query failures, not connection failures
+            if (m.Contains("OLE DB provider") && m.Contains("for linked server") && !m.Contains("while preparing the query"))
                 return true;
 
             // Check for connection error patterns and error numbers in message
