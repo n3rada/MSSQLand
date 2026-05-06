@@ -82,6 +82,13 @@ namespace MSSQLand.Models
 
         public bool IsAzureSQL { get; set; } = false;
 
+        /// <summary>
+        /// Whether to connect using a Dedicated Admin Connection (DAC).
+        /// Prefixes the Data Source with "admin:" in the connection string.
+        /// Requires remote admin connections = 1 for remote use.
+        /// </summary>
+        public bool IsDac { get; set; } = false;
+
         public int Port { get; set; } = 1433; // Default SQL Server port
 
         /// <summary>
@@ -135,7 +142,8 @@ namespace MSSQLand.Models
             if (UsesNamedPipe)
                 return NamedPipe;
 
-            return Port == 1433 ? Hostname : $"{Hostname},{Port}";
+            string prefix = IsDac ? "admin:" : "";
+            return Port == 1433 ? $"{prefix}{Hostname}" : $"{prefix}{Hostname},{Port}";
         }
 
         /// <summary>
@@ -165,6 +173,7 @@ namespace MSSQLand.Models
                 MajorVersion = this.MajorVersion,
                 IsLegacy = this.IsLegacy,
                 IsAzureSQL = this.IsAzureSQL,
+                IsDac = this.IsDac,
                 Port = this.Port,
                 NamedPipe = this.NamedPipe,
                 Database = this.Database,
@@ -218,6 +227,15 @@ namespace MSSQLand.Models
             Server server = new();
             string remaining = serverInput;
             char firstDelimiter = '\0';
+
+            // Check for DAC prefix: admin:hostname
+            if (remaining.StartsWith("admin:", StringComparison.OrdinalIgnoreCase))
+            {
+                server.IsDac = true;
+                remaining = remaining.Substring(6);
+                if (string.IsNullOrWhiteSpace(remaining))
+                    throw new ArgumentException("Server hostname cannot be empty after 'admin:' prefix.");
+            }
 
             // Check for named pipe format: \\hostname\pipe\... or np:\\hostname\pipe\...
             if (remaining.StartsWith(@"\\") || remaining.StartsWith("np:", StringComparison.OrdinalIgnoreCase))

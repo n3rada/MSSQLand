@@ -143,6 +143,10 @@ namespace MSSQLand
                     SqlConnection connection = authService.Connection;
                     Logger.Success($"Connection opened successfully");
                     Logger.SuccessNested($"Server: {connection.DataSource}");
+                    if (authService.Server.IsDac)
+                    {
+                        Logger.SuccessNested("Connection type: DAC (Dedicated Admin Connection)");
+                    }
                     Logger.SuccessNested($"Database: {connection.Database}");
                     Logger.SuccessNested($"Server Version: {connection.ServerVersion}");
                     Logger.SuccessNested($"Client Workstation ID: {connection.WorkstationId}");
