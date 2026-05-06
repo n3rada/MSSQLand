@@ -39,17 +39,21 @@ namespace MSSQLand.Utilities
         private static bool IsGlobalArgument(string arg, string longName, string shortName = null)
         {
             // Check long form: --longname:value, --longname=value, or --longname (for space-separated)
-            if (arg.StartsWith($"--{longName}", StringComparison.OrdinalIgnoreCase) ||
-                arg.StartsWith($"--{longName}=", StringComparison.OrdinalIgnoreCase) ||
-                arg.Equals($"--{longName}", StringComparison.OrdinalIgnoreCase))
+            string longFlag = $"--{longName}";
+            if (arg.Equals(longFlag, StringComparison.OrdinalIgnoreCase) ||
+                arg.StartsWith($"{longFlag}:", StringComparison.OrdinalIgnoreCase) ||
+                arg.StartsWith($"{longFlag}=", StringComparison.OrdinalIgnoreCase))
                 return true;
 
             // Check short form: -s:value, -s=value, or -s (for space-separated)
-            if (shortName != null &&
-                (arg.StartsWith($"-{shortName}", StringComparison.OrdinalIgnoreCase) ||
-                 arg.StartsWith($"-{shortName}=", StringComparison.OrdinalIgnoreCase) ||
-                 arg.Equals($"-{shortName}", StringComparison.OrdinalIgnoreCase)))
-                return true;
+            if (shortName != null)
+            {
+                string shortFlag = $"-{shortName}";
+                if (arg.Equals(shortFlag, StringComparison.OrdinalIgnoreCase) ||
+                    arg.StartsWith($"{shortFlag}:", StringComparison.OrdinalIgnoreCase) ||
+                    arg.StartsWith($"{shortFlag}=", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
 
             return false;
         }
@@ -171,7 +175,7 @@ namespace MSSQLand.Utilities
                     return (ParseResultType.ShowHelp, null);
                 }
 
-                if (args[0] == "-findsql" || args[0] == "--findsql")
+                if (args[0] == "--findsql")
                 {
                     string adDomain = null;
                     bool useGlobalCatalog = false;
@@ -179,7 +183,7 @@ namespace MSSQLand.Utilities
                     // Parse optional arguments
                     for (int i = 1; i < args.Length; i++)
                     {
-                        if (args[i] == "--global-catalog" || args[i] == "-gc" || args[i] == "--gc")
+                        if (args[i] == "--global-catalog" || args[i] == "--gc")
                         {
                             useGlobalCatalog = true;
                         }
@@ -215,7 +219,7 @@ namespace MSSQLand.Utilities
                     return (ParseResultType.UtilityMode, null);
                 }
 
-                if (args[0] == "-broadcast" || args[0] == "--broadcast")
+                if (args[0] == "--broadcast")
                 {
                     int timeoutMs = 3000;
 
@@ -310,7 +314,7 @@ namespace MSSQLand.Utilities
                 {
                     string nextArg = args[currentIndex];
 
-                    if (nextArg == "-browse" || nextArg == "--browse" || nextArg == "-browser" || nextArg == "--browser")
+                    if (nextArg == "--browse" || nextArg == "--browser")
                     {
                         // Resolve DNS for utility mode
                         if (!parsedArgs.Host.UsesNamedPipe)
@@ -333,7 +337,7 @@ namespace MSSQLand.Utilities
                         return (ParseResultType.UtilityMode, null);
                     }
 
-                    if (nextArg == "-portscan" || nextArg == "--portscan")
+                    if (nextArg == "--portscan")
                     {
                         // Resolve DNS for utility mode
                         if (!parsedArgs.Host.UsesNamedPipe)
@@ -431,6 +435,13 @@ namespace MSSQLand.Utilities
                             }
                         }
                         break;
+                    }
+
+                    if (arg.Equals("--probe", StringComparison.OrdinalIgnoreCase))
+                    {
+                        parsedArgs.CredentialType = "probe";
+                        currentIndex++;
+                        continue;
                     }
 
                     // Parse global flags

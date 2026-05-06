@@ -16,6 +16,7 @@ MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikiped
 
 ```shell
 MSSQLand.exe <host> -c <cred> [options] <action> [action-options]
+MSSQLand.exe <host> --probe
 ```
 
 > [!NOTE]
@@ -33,7 +34,10 @@ Format: `server:port/user@database` or any combination `server/user@database:por
 - `@database` (optional) - Database context
 
 ```shell
-# Connection test only (no action executed)
+# Connectivity probe — checks if server is alive without authenticating
+MSSQLand.exe localhost --probe
+
+# Connection test only (no action executed, authenticates and exits)
 MSSQLand.exe localhost -c token
 
 # Execute specific action
@@ -80,6 +84,31 @@ Chain multiple SQL servers using the `-l` flag with **semicolon (`;`) as the sep
 
 > [!NOTE]
 > Port specification (`:port`) only applies to the initial host connection. Linked server chains (`-l`) use the linked server names as configured in `sys.servers`, not `hostname:port` combinations.
+
+## 🔍 Discovery
+
+These modes require no authentication and work before you have credentials:
+
+```shell
+# Find SQL Servers in Active Directory via LDAP
+MSSQLand.exe --findsql
+MSSQLand.exe --findsql pgd.lab
+MSSQLand.exe --findsql pgd.lab --gc      # Forest-wide search via Global Catalog
+
+# Broadcast discovery on the local network (UDP 1434)
+MSSQLand.exe --broadcast
+MSSQLand.exe --broadcast --timeout 5
+
+# Query the SQL Browser service on a specific host (UDP 1434)
+MSSQLand.exe LAB-SQL03 --browse
+
+# Scan a host for SQL Server ports (TDS validation)
+MSSQLand.exe LAB-SQL03 --portscan
+MSSQLand.exe LAB-SQL03 --portscan --all          # Find all instances (full ephemeral range)
+MSSQLand.exe LAB-SQL03 --portscan 65184          # Single port
+MSSQLand.exe LAB-SQL03 --portscan 65180-65190    # Port range
+MSSQLand.exe LAB-SQL03 --portscan 1433,5000,65184 # Comma-separated list
+```
 
 ## 🫤 Help
 

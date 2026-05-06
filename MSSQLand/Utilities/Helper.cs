@@ -90,6 +90,7 @@ namespace MSSQLand.Utilities
 
             Console.WriteLine("Authentication (required):");
             Console.WriteLine("\t-c, --credentials      Credential type: probe, token, local, windows, domain, entraid");
+            Console.WriteLine("\t    --probe             Shorthand for -c probe (no credentials, connectivity check only)");
             Console.WriteLine("\t-u, --username         Username (if required by credential type)");
             Console.WriteLine("\t-p, --password         Password (if required by credential type)");
             Console.WriteLine("\t-d, --domain           Domain (if required by credential type)\n");
@@ -117,10 +118,10 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t--trace                Enable trace logging\n");
 
             Console.WriteLine("Discovery (no authentication required):");
-            Console.WriteLine("\t-findsql [domain]      Find SQL Servers via LDAP query (add --gc for Global Catalog)");
-            Console.WriteLine("\t-broadcast             Broadcast for SQL Servers on local network (UDP 1434)");
-            Console.WriteLine("\t<host> -browse         Query SQL Browser service (UDP 1434)");
-            Console.WriteLine("\t<host> -portscan       Scan for SQL Server ports with TDS validation\n");
+            Console.WriteLine("\t--findsql [domain]     Find SQL Servers via LDAP query (add --gc for Global Catalog)");
+            Console.WriteLine("\t--broadcast            Broadcast for SQL Servers on local network (UDP 1434)");
+            Console.WriteLine("\t<host> --browse        Query SQL Browser service (UDP 1434)");
+            Console.WriteLine("\t<host> --portscan      Scan for SQL Server ports with TDS validation\n");
 
             Console.WriteLine("Getting help:");
             Console.WriteLine("\t-h actions             List all available actions");
