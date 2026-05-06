@@ -506,6 +506,7 @@ namespace MSSQLand.Utilities.Discovery
             stopwatch.Stop();
             Logger.NewLine();
             Logger.Info($"Total scan time: {stopwatch.Elapsed.TotalSeconds:F1}s");
+            Logger.NewLine();
 
             if (results.Count == 0)
             {
