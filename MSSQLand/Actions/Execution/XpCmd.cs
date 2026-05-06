@@ -4,7 +4,6 @@ using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.SqlClient;
 
 namespace MSSQLand.Actions.Execution
