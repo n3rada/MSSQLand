@@ -101,6 +101,37 @@ namespace MSSQLand.Services
             _databaseContext.QueryService.ExecuteNonProcessing($"EXEC sp_dropserver @server = '{serverName}';");
         }
 
+        /// <summary>
+        /// Executes an LDAP query via OPENQUERY against the first available ADSI linked server.
+        /// </summary>
+        /// <param name="ldapPath">LDAP path, e.g. LDAP://DOMAIN.</param>
+        /// <param name="filter">LDAP filter, e.g. objectClass='user'.</param>
+        /// <param name="attributes">Columns to SELECT, e.g. "cn, sAMAccountName".</param>
+        /// <param name="serverName">ADSI linked server name. If null, the first available one is used.</param>
+        /// <returns>DataTable of results, or null if no server or no rows.</returns>
+        public DataTable OpenQuery(string ldapPath, string filter, string attributes = "*", string serverName = null)
+        {
+            if (serverName == null)
+            {
+                List<string> adsiServers = ListAdsiServers();
+
+                if (adsiServers.Count == 0)
+                {
+                    Logger.Warning("No ADSI linked servers found in sys.servers.");
+                    return null;
+                }
+
+                serverName = adsiServers[0];
+            }
+
+            Logger.TaskNested($"Using ADSI linked server: {serverName}");
+
+            string query = $"SELECT * FROM OPENQUERY({serverName}, 'SELECT {attributes} FROM ''{ldapPath}'' WHERE {filter}');";
+
+            DataTable result = _databaseContext.QueryService.ExecuteTable(query);
+            return result.Rows.Count == 0 ? null : result;
+        }
+
 
         public Task<DataTable> ListenForRequest()
         {

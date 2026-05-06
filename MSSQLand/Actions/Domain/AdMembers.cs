@@ -5,6 +5,7 @@ using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
+using System.Linq;
 
 namespace MSSQLand.Actions.Domain
 {
@@ -13,6 +14,7 @@ namespace MSSQLand.Actions.Domain
     /// </summary>
     internal class AdMembers : BaseAction
     {
+
         [ArgumentMetadata(Position = 0, Required = true, Description = "AD group name")]
         private string _groupName = "";
 
@@ -23,30 +25,6 @@ namespace MSSQLand.Actions.Domain
         {
             BindArguments(args);
 
-            if (string.IsNullOrWhiteSpace(_groupName))
-            {
-                throw new ArgumentException("Group name is required");
-            }
-
-            // Back-compat: allow positional "openquery" as second argument
-            if (args != null && args.Length > 1)
-            {
-                if (args.Length > 2)
-                {
-                    throw new ArgumentException("Too many arguments. Usage: ad-members <DOMAIN\\Group> [openquery]");
-                }
-
-                if (args[1].Trim().Equals("openquery", StringComparison.OrdinalIgnoreCase))
-                {
-                    _useOpenQuery = true;
-                }
-                else
-                {
-                    throw new ArgumentException("Invalid argument. Use 'openquery' as the optional second argument.");
-                }
-            }
-
-            // Ensure the group name contains a backslash (domain separator)
             if (!_groupName.Contains("\\"))
             {
                 throw new ArgumentException("Group name must be in format: DOMAIN\\GroupName");
@@ -68,7 +46,7 @@ namespace MSSQLand.Actions.Domain
             // If xp_logininfo fails and openquery flag is set, try OPENQUERY with ADSI
             if (_useOpenQuery)
             {
-                Logger.Info("Attempting OPENQUERY method with ADSI...");
+                Logger.TaskNested("Attempting OPENQUERY method with ADSI");
                 result = TryOpenQueryAdsi(databaseContext);
 
                 if (result != null)
@@ -89,7 +67,7 @@ namespace MSSQLand.Actions.Domain
         {
             try
             {
-                Logger.Info("Trying xp_logininfo method...");
+                Logger.TaskNested("Trying xp_logininfo method");
 
                 // Check if xp_logininfo is available
                 var xprocCheck = databaseContext.QueryService.ExecuteTable(
@@ -102,6 +80,8 @@ namespace MSSQLand.Actions.Domain
                     return null;
                 }
 
+                Logger.NewLine();
+
                 // Query group members using xp_logininfo
                 string query = $"EXEC xp_logininfo @acctname = '{_groupName}', @option = 'members';";
                 DataTable membersTable = databaseContext.QueryService.ExecuteTable(query);
@@ -112,11 +92,11 @@ namespace MSSQLand.Actions.Domain
                     return null;
                 }
 
-                Logger.NewLine();
-                Logger.Success($"Found {membersTable.Rows.Count} member(s) using xp_logininfo");
-
                 // Display the results
                 Console.WriteLine(OutputFormatter.ConvertDataTable(membersTable));
+
+                Logger.Success($"Found {membersTable.Rows.Count} member(s) using xp_logininfo");
+
 
                 return membersTable;
             }
@@ -135,7 +115,6 @@ namespace MSSQLand.Actions.Domain
         {
             try
             {
-                // Extract domain and group name
                 string[] parts = _groupName.Split('\\');
                 if (parts.Length != 2)
                 {
@@ -145,36 +124,29 @@ namespace MSSQLand.Actions.Domain
 
                 string domain = parts[0];
                 string groupName = parts[1];
+                string dcPath = string.Join(",", domain.Split('.').Select(c => $"DC={c}"));
 
-                // Build LDAP query
-                string query = $@"
-                    SELECT *
-                    FROM OPENQUERY(
-                        ADSI,
-                        'SELECT cn, sAMAccountName, distinguishedName
-                         FROM ''LDAP://{domain}''
-                         WHERE objectClass = ''user''
-                         AND memberOf = ''CN={groupName},CN=Users,DC={domain.Replace(".", ",DC=")}'''
-                    );";
+                AdsiService adsiService = new AdsiService(databaseContext);
+                DataTable membersTable = adsiService.OpenQuery(
+                    ldapPath: $"LDAP://{domain}",
+                    filter: $"objectClass=''user'' AND memberOf=''CN={groupName},CN=Users,{dcPath}''",
+                    attributes: "cn, sAMAccountName, distinguishedName"
+                );
 
-                DataTable membersTable = databaseContext.QueryService.ExecuteTable(query);
-
-                if (membersTable.Rows.Count == 0)
+                if (membersTable == null)
                 {
                     Logger.Warning($"No members found using OPENQUERY method.");
                     return null;
                 }
 
-                Logger.NewLine();
-                Logger.Success($"Found {membersTable.Rows.Count} member(s) using OPENQUERY/ADSI");
                 Console.WriteLine(OutputFormatter.ConvertDataTable(membersTable));
+                Logger.Success($"Found {membersTable.Rows.Count} member(s) using OPENQUERY/ADSI");
 
                 return membersTable;
             }
             catch (Exception ex)
             {
                 Logger.Warning($"OPENQUERY/ADSI method failed: {ex.Message}");
-
                 return null;
             }
         }
