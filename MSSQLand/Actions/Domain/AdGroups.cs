@@ -31,10 +31,10 @@ namespace MSSQLand.Actions.Domain
 
                 var groupNames = new List<string>();
 
+                Logger.NewLine();
                 // Query all AD groups from server principals and check membership with IS_MEMBER
-                Logger.Info("Checking Active Directory group memberships via IS_MEMBER");
-                Logger.InfoNested("Only showing AD domain groups that exist as SQL Server principals");
-                Logger.InfoNested("For all Windows token groups (BUILTIN, NT AUTHORITY, etc.), use 'authtoken' action");
+                Logger.Warning("Only showing AD domain groups that exist as SQL Server principals");
+                Logger.WarningNested("For all Windows token groups (BUILTIN, NT AUTHORITY, etc.), use 'authtoken' action");
 
                 string groupsQuery = @"
                     SELECT name
