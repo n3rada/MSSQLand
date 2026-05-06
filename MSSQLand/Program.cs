@@ -155,25 +155,36 @@ namespace MSSQLand
                     Logger.NewLine();
 
                     DatabaseContext databaseContext = new(authService);
-
-                    string userName, systemUser;
-                    (userName, systemUser) = databaseContext.UserService.GetInfo();
-                    databaseContext.Server.MappedUser = userName;
-                    databaseContext.Server.SystemUser = systemUser;
+                    // UserService.SystemUser/MappedUser hold the pre-impersonation identity
+                    // (set by GetInfo() inside the DatabaseContext constructor, before impersonation runs)
 
                     Logger.Info($"Logged in on {databaseContext.Server.Hostname}");
+                    Logger.InfoNested($"Login: {databaseContext.UserService.SystemUser}");
+                    Logger.InfoNested($"Mapped to user: {databaseContext.UserService.MappedUser}");
 
-                    // Show impersonation chain if any occurred on the initial host
                     string[] impersonationUsers = databaseContext.Server.ImpersonationUsers;
 
+                    string userName, systemUser;
                     if (impersonationUsers != null && impersonationUsers.Length > 0)
                     {
                         string chain = string.Join(" → ", impersonationUsers);
-                        Logger.InfoNested($"Impersonation chain: {chain}");
+
+                        // Refresh identity to reflect the post-impersonation context
+                        (userName, systemUser) = databaseContext.UserService.GetInfo();
+
+                        Logger.NewLine();
+                        Logger.Info($"Impersonation chain: {chain}");
+                        Logger.InfoNested($"Login: {systemUser}");
+                        Logger.InfoNested($"Mapped to user: {userName}");
+                    }
+                    else
+                    {
+                        userName = databaseContext.UserService.MappedUser;
+                        systemUser = databaseContext.UserService.SystemUser;
                     }
 
-                    Logger.InfoNested($"Login: {systemUser}");
-                    Logger.InfoNested($"Mapped to user: {userName}");
+                    databaseContext.Server.MappedUser = userName;
+                    databaseContext.Server.SystemUser = systemUser;
 
                     if (!databaseContext.Server.IsAzureSQL && databaseContext.Server.IsLegacy)
                     {
@@ -228,8 +239,7 @@ namespace MSSQLand
 
                         (userName, systemUser) = databaseContext.UserService.GetInfo();
 
-                        Logger.Info($"Logged in on {databaseContext.QueryService.ExecutionServer.Hostname}");
-                        Logger.InfoNested($"Login: {systemUser}");
+                        Logger.Info($"Logged in on {databaseContext.QueryService.ExecutionServer.Hostname} as {systemUser}");
                         Logger.InfoNested($"Mapped to user: {userName}");
                         Logger.InfoNested($"Execution database: {databaseContext.QueryService.ExecutionServer.Database}");
 

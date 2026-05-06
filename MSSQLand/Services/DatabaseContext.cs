@@ -28,6 +28,9 @@ namespace MSSQLand.Services
             ConfigService = new ConfigurationService(QueryService, Server);
             UserService = new UserService(QueryService);
 
+            // Call GetInfo() before impersonation so UserService.SystemUser/MappedUser hold the original identity
+            UserService.GetInfo();
+
             if (HandleImpersonation() == false)
             {
                 throw new Exception("Failed to handle impersonation. Exiting.");
