@@ -131,6 +131,16 @@ namespace MSSQLand.Actions.Remote
         private readonly HashSet<string> _failedLinkAttempts = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
+        /// Cache of (server, login) -> server roles + sysadmin flag captured the first time
+        /// that context was successfully landed on. Lets re-entries skip the GetServerRoles
+        /// round-trip and reuse the same role list when populating the leaf node in the tree.
+        /// Keyed by <see cref="ContextKey"/>.
+        /// </summary>
+        [ExcludeFromArguments]
+        private readonly Dictionary<string, (List<string> Roles, bool IsSysadmin)> _contextRoleCache
+            = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
         /// Builds the canonical key for the global "already explored" set: (server, login).
         /// </summary>
         private static string ContextKey(string server, string login)
@@ -596,10 +606,29 @@ namespace MSSQLand.Actions.Remote
 
                 Logger.TraceNested($"Logged in to server '{targetServer}' (actual: {actualServerName}) as: '{remoteLoggedInUser}' [{mappedUser}]");
 
-                // Fetch roles first so the admin-status cache is populated as a side effect;
-                // the subsequent IsAdmin() then resolves from cache without a round-trip.
-                List<string> nodeRoles = databaseContext.UserService.GetServerRoles();
-                bool isSysadmin = databaseContext.UserService.IsAdmin();
+                // Early re-entry check: if we have already fully explored (server, login) via a
+                // different chain, reuse cached roles to build a leaf node without paying for
+                // GetServerRoles, GetReachableLoginChains, or link discovery again.
+                string contextKey = ContextKey(targetServer, remoteLoggedInUser);
+                bool alreadyExplored = _globallyExploredContexts.Contains(contextKey);
+
+                List<string> nodeRoles;
+                bool isSysadmin;
+                if (alreadyExplored && _contextRoleCache.TryGetValue(contextKey, out var cachedRoles))
+                {
+                    nodeRoles = cachedRoles.Roles;
+                    isSysadmin = cachedRoles.IsSysadmin;
+                    Logger.TraceNested($"Reusing cached roles for '{targetServer}' as '{remoteLoggedInUser}' (subtree already mapped).");
+                }
+                else
+                {
+                    // Fetch roles first so the admin-status cache is populated as a side effect;
+                    // the subsequent IsAdmin() then resolves from cache without a round-trip.
+                    nodeRoles = databaseContext.UserService.GetServerRoles();
+                    isSysadmin = databaseContext.UserService.IsAdmin();
+                    _contextRoleCache[contextKey] = (nodeRoles, isSysadmin);
+                }
+
                 string stateHash = Server.ComputeExplorationHash(targetServer, mappedUser, remoteLoggedInUser, isSysadmin);
 
                 // Check for loop in THIS chain path only
@@ -630,13 +659,12 @@ namespace MSSQLand.Actions.Remote
                 var newPath = new List<ServerNode>(currentPath) { currentNode };
                 _allChains.Add(newPath);
 
-                // Mark this server+user as globally explored.
-                // HashSet.Add returns false when the element was already present, meaning we have
-                // already fully mapped this (server, user) pair via a different chain path.
-                // Skip re-exploration: the subtree was already built on the first visit.
-                // The node above has been added to the tree as a leaf for this alternate path.
-                if (!_globallyExploredContexts.Add(ContextKey(targetServer, remoteLoggedInUser)))
+                // If we've already mapped this (server, user) subtree via a different chain path,
+                // the leaf above documents this alternate route; skip re-discovery.
+                if (alreadyExplored)
                     return;
+
+                _globallyExploredContexts.Add(contextKey);
 
                 // Build complete map of reachable links via all transitive impersonation chains.
                 // Key: (server name, local login): same server with different login mappings are separate entries.
