@@ -22,9 +22,11 @@ namespace MSSQLand.Services
         {
             AuthService = authService;
             Server = AuthService.Server;
-            QueryService = new QueryService(AuthService.Connection);
-            // Replace ExecutionServer with authenticated Server (hostname from @@SERVERNAME, version set)
-            QueryService.ExecutionServer = Server;
+            QueryService = new QueryService(AuthService.Connection)
+            {
+                // Replace ExecutionServer with authenticated Server (hostname from @@SERVERNAME, version set)
+                ExecutionServer = Server
+            };
             ConfigService = new ConfigurationService(QueryService, Server);
             UserService = new UserService(QueryService);
 
