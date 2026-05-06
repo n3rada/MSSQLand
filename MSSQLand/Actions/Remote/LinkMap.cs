@@ -175,8 +175,8 @@ namespace MSSQLand.Actions.Remote
         [ExcludeFromArguments]
         private readonly List<List<ServerNode>> _allChains = new();
 
-        [ArgumentMetadata(Position = 0, Description = "Maximum recursion depth (default: 5, max: 15)")]
-        private int _limit = 5;
+        [ArgumentMetadata(Position = 0, Description = "Maximum recursion depth (default: 7, max: 15)")]
+        private int _limit = 7;
 
         /// <summary>
         /// Impersonation users applied on the starting server before exploration begins.
