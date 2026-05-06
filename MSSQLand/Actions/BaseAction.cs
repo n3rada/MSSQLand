@@ -34,6 +34,23 @@ namespace MSSQLand.Actions
     /// when auto-binding is insufficient (e.g., FQTN parsing, joined arguments).
     /// </summary>
 
+    /// <summary>
+    /// Structured descriptor for a single action argument, used for formatted help output.
+    /// </summary>
+    public struct ArgumentDescriptor
+    {
+        public string FieldName;
+        public string TypeName;
+        public int Position;     // -1 if named-only
+        public string ShortName; // without dash, e.g. "l"
+        public string LongName;  // without dashes, e.g. "limit"
+        public bool Required;
+        public object DefaultValue;
+        public string Description;
+        public bool IsFlag;      // true when field type is bool
+        public bool Remainder;
+    }
+
     [AttributeUsage(AttributeTargets.Field)]
     public abstract class BaseAction : Attribute
     {
@@ -515,6 +532,71 @@ namespace MSSQLand.Actions
             }
 
             return fields;
+        }
+
+        /// <summary>
+        /// Returns structured argument descriptors for help formatting.
+        /// </summary>
+        public virtual List<ArgumentDescriptor> GetArgumentDescriptors()
+        {
+            var result = new List<ArgumentDescriptor>();
+
+            var fields = GetType()
+                .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
+                .Where(f => !Attribute.IsDefined(f, typeof(ExcludeFromArgumentsAttribute)))
+                .OrderBy(f =>
+                {
+                    var m = f.GetCustomAttribute<ArgumentMetadataAttribute>();
+                    return m?.Position >= 0 ? m.Position : int.MaxValue;
+                });
+
+            foreach (var field in fields)
+            {
+                var metadata = field.GetCustomAttribute<ArgumentMetadataAttribute>();
+                string typeName = field.FieldType.IsEnum
+                    ? $"enum [{string.Join("|", Enum.GetNames(field.FieldType).Select(v => v.ToLower()))}]"
+                    : SimplifyType(field.FieldType);
+
+                result.Add(new ArgumentDescriptor
+                {
+                    FieldName    = field.Name.TrimStart('_'),
+                    TypeName     = typeName,
+                    Position     = metadata?.Position ?? -1,
+                    ShortName    = metadata?.ShortName,
+                    LongName     = metadata?.LongName,
+                    Required     = metadata?.Required ?? false,
+                    DefaultValue = field.GetValue(this),
+                    Description  = metadata?.Description,
+                    IsFlag       = field.FieldType == typeof(bool),
+                    Remainder    = metadata?.Remainder ?? false
+                });
+            }
+
+            // Inject --all flag when any --limit field exists
+            bool hasLimitField = GetType()
+                .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
+                .Any(f =>
+                {
+                    var m = f.GetCustomAttribute<ArgumentMetadataAttribute>();
+                    return m != null && f.FieldType == typeof(int) &&
+                           !string.IsNullOrEmpty(m.LongName) && m.LongName.Contains("limit");
+                });
+
+            if (hasLimitField)
+            {
+                result.Add(new ArgumentDescriptor
+                {
+                    FieldName    = "all",
+                    TypeName     = "bool",
+                    Position     = -1,
+                    LongName     = "all",
+                    IsFlag       = true,
+                    DefaultValue = false,
+                    Description  = "Retrieve all results without limit"
+                });
+            }
+
+            return result;
         }
 
         /// <summary>

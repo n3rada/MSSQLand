@@ -42,16 +42,30 @@ namespace MSSQLand.Utilities
         public static void ShowAllActions()
         {
             var actions = ActionFactory.GetAvailableActions();
-            var groupedActions = new Dictionary<string, List<string>>();
+            var groupedActions = new Dictionary<string, List<(string ActionName, string Description, string[] Aliases)>>();
 
             foreach (var action in actions)
             {
                 if (!groupedActions.ContainsKey(action.Category))
                 {
-                    groupedActions[action.Category] = new List<string>();
+                    groupedActions[action.Category] = new List<(string, string, string[])>();
                 }
-                groupedActions[action.Category].Add(action.ActionName);
+                groupedActions[action.Category].Add((action.ActionName, action.Description, action.Aliases));
             }
+
+            // Compute alignment width from the longest name+aliases label
+            int maxWidth = 0;
+            foreach (var group in groupedActions.Values)
+            {
+                foreach (var (name, _, aliases) in group)
+                {
+                    string label = aliases != null && aliases.Length > 0
+                        ? $"{name}, {string.Join(", ", aliases)}"
+                        : name;
+                    if (label.Length > maxWidth) maxWidth = label.Length;
+                }
+            }
+            int columnWidth = maxWidth + 4;
 
             Console.WriteLine("Available Actions\n");
 
@@ -59,12 +73,12 @@ namespace MSSQLand.Utilities
             {
                 Console.WriteLine($"  [{group.Key}]");
 
-                // Display max 6 actions per line
-                var actionsList = group.Value.OrderBy(a => a).ToList();
-                for (int i = 0; i < actionsList.Count; i += 6)
+                foreach (var (name, description, aliases) in group.Value.OrderBy(a => a.ActionName))
                 {
-                    var chunk = actionsList.Skip(i).Take(6);
-                    Console.WriteLine("\t" + string.Join(", ", chunk));
+                    string label = aliases != null && aliases.Length > 0
+                        ? $"{name}, {string.Join(", ", aliases)}"
+                        : name;
+                    Console.WriteLine($"    {label.PadRight(columnWidth)}{description}");
                 }
                 Console.WriteLine();
             }
@@ -133,7 +147,7 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
-        /// Displays help for a specific action.
+        /// Displays help for a specific action in argparse style.
         /// </summary>
         /// <param name="actionName">The name of the action to display help for.</param>
         public static void ShowActionHelp(string actionName)
@@ -150,28 +164,80 @@ namespace MSSQLand.Utilities
                 return;
             }
 
-            Console.WriteLine($"\nAction: {action.ActionName}");
-            if (action.Aliases != null && action.Aliases.Length > 0)
-            {
-                Console.WriteLine($"Aliases: {string.Join(", ", action.Aliases)}");
-            }
-            Console.WriteLine($"Description: {action.Description}");
-            Console.WriteLine();
+            Type actionType = ActionFactory.GetActionType(action.ActionName);
+            BaseAction actionInstance = (BaseAction)Activator.CreateInstance(actionType);
+            var descriptors = actionInstance.GetArgumentDescriptors();
 
-            if (action.Arguments != null && action.Arguments.Any())
+            var positional = descriptors.Where(d => d.Position >= 0).OrderBy(d => d.Position).ToList();
+            var optional   = descriptors.Where(d => d.Position < 0).ToList();
+
+            // Build usage synopsis
+            var usageParts = new List<string> { action.ActionName };
+            foreach (var d in positional)
+                usageParts.Add(d.Required ? $"<{d.FieldName}>" : $"[{d.FieldName}]");
+            foreach (var d in optional)
             {
-                Console.WriteLine("Arguments");
-                foreach (var arg in action.Arguments)
+                string flag = d.LongName != null ? $"--{d.LongName}" : $"--{d.FieldName}";
+                usageParts.Add(d.IsFlag ? $"[{flag}]" : $"[{flag} <{d.TypeName}>]");
+            }
+
+            Console.WriteLine($"\nusage: <host> -c <cred> [options] {string.Join(" ", usageParts)}\n");
+            Console.WriteLine($"  {action.Description}");
+            if (action.Aliases != null && action.Aliases.Length > 0)
+                Console.WriteLine($"  Aliases: {string.Join(", ", action.Aliases)}");
+
+            if (!descriptors.Any())
+            {
+                Console.WriteLine();
+                return;
+            }
+
+            // Compute column width for alignment
+            int colWidth = positional.Select(d => $"  <{d.FieldName}>".Length)
+                .Concat(optional.Select(d => $"  {ActionArgLabel(d)}".Length))
+                .DefaultIfEmpty(0).Max() + 3;
+
+            if (positional.Any())
+            {
+                Console.WriteLine("\npositional arguments:");
+                foreach (var d in positional)
                 {
-                    Console.WriteLine($"\t> {arg}");
+                    string left = $"  <{d.FieldName}>";
+                    Console.WriteLine($"{left.PadRight(colWidth)}{ActionArgDescription(d)}");
                 }
             }
-            else
+
+            if (optional.Any())
             {
-                Console.WriteLine("No additional arguments required.");
+                Console.WriteLine("\noptional arguments:");
+                foreach (var d in optional)
+                {
+                    string left = $"  {ActionArgLabel(d)}";
+                    Console.WriteLine($"{left.PadRight(colWidth)}{ActionArgDescription(d)}");
+                }
             }
 
             Console.WriteLine();
+        }
+
+        private static string ActionArgLabel(ArgumentDescriptor d)
+        {
+            string flag      = d.LongName  != null ? $"--{d.LongName}"  : $"--{d.FieldName}";
+            string shortFlag = d.ShortName != null ? $"-{d.ShortName}, " : string.Empty;
+            return d.IsFlag
+                ? $"{shortFlag}{flag}"
+                : $"{shortFlag}{flag} <{d.TypeName}>";
+        }
+
+        private static string ActionArgDescription(ArgumentDescriptor d)
+        {
+            string desc = d.Description ?? string.Empty;
+            if (d.Required)
+                return string.IsNullOrEmpty(desc) ? "(required)" : $"{desc} (required)";
+            // Suppress showing default: False for plain bool flags
+            if (d.DefaultValue != null && !(d.IsFlag && d.DefaultValue is bool b && !b))
+                return string.IsNullOrEmpty(desc) ? $"(default: {d.DefaultValue})" : $"{desc} (default: {d.DefaultValue})";
+            return desc;
         }
 
         /// <summary>
