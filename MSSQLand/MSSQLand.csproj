@@ -127,7 +127,9 @@
     <Compile Include="Actions\FileSystem\Upload.cs" />
 
     <Compile Include="Actions\Remote\AdsiCredentialExtractor.cs" />
-    <Compile Include="Actions\Remote\AdsiManager.cs" />
+    <Compile Include="Actions\Remote\Adsi.cs" />
+    <Compile Include="Actions\Remote\AdsiAdd.cs" />
+    <Compile Include="Actions\Remote\AdsiDel.cs" />
     <Compile Include="Actions\Remote\AdsiQuery.cs" />
     <Compile Include="Actions\Remote\DataAccess.cs" />
     <Compile Include="Actions\Remote\ExternalCredentials.cs" />
