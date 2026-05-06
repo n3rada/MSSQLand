@@ -7,7 +7,7 @@ Land gracefully in your target Microsoft SQL Server (MS SQL) DBMS, as if arrivin
 MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikipedia.org/wiki/Microsoft_SQL_Server) database management system (DBMS) during your red team activities or any security audit. Designed to run inside the target environment directly through your beacons (e.g., using assembly execution), it allows you to pave your way across multiple linked servers and impersonate whoever you can along the way, emerging from the last hop with any desired action.
 
 > [!TIP]
-> MSSQLand is built using `.NET Framework 4.8`, with assembly execution in mind, using current context. If you need to connect using Kerberos ticket or NT/LM hashes, go with [mssqlclient-ng](https://github.com/n3rada/mssqlclient-ng), the `Python3` version built with external access from Unix in mind.
+> MSSQLand is built using `.NET Framework 4.8`, with assembly execution in mind, using current context. If you need to connect using NT/LM hashes or a Kerberos ticket, see [Pass-the-Hash](#-pass-the-hash).
 
 > [!NOTE]
 > Do not forget the basics. During a security assessment, it is sometimes easier to use [SQL Server Management Studio (SSMS)](https://learn.microsoft.com/en-us/ssms/).
@@ -109,6 +109,17 @@ MSSQLand.exe LAB-SQL03 --portscan 65184          # Single port
 MSSQLand.exe LAB-SQL03 --portscan 65180-65190    # Port range
 MSSQLand.exe LAB-SQL03 --portscan 1433,5000,65184 # Comma-separated list
 ```
+
+## 🔑 Pass-the-Hash
+
+MSSQLand runs as a .NET assembly inside a beacon and always authenticates using the **current execution context** (`-c token`). When you have a hash, the right approach is to forge a token at the beacon level first and then run MSSQLand normally. `System.Data.SqlClient` inherits that token transparently, and no custom TDS implementation is required.
+
+Implementing NTLMv2 from scratch inside MSSQLand would mean:
+- Replacing `System.Data.SqlClient` with a hand-rolled TDS 7.x stack (~2000 lines of socket, TLS, and NTLM code).
+- Maintaining that implementation against SQL Server version quirks, TLS policy changes, and token-stream edge cases.
+- Gaining no functional advantage over the token approach in the vast majority of engagements
+
+If you need to authenticate with a Kerberos ticket or NT/LM hashes from an external position, [mssqlclient-ng](https://github.com/n3rada/mssqlclient-ng) is the right tool. This is a Python 3 client built for Unix-side access, trivially paired with a SOCKS5 proxy established from your beacon.
 
 ## 🫤 Help
 
