@@ -98,16 +98,19 @@ ORDER BY srv.name, prin.name;";
                 // It will only work if running in the SQL Server service context
                 // or if the SMK is accessible
                 string query = @"
+OPEN MASTER KEY DECRYPTION BY SERVICE MASTER KEY;
 SELECT
     srv.name AS [LinkedServer],
-    ll.remote_name AS [RemoteLogin],
+    ll.name AS [RemoteLogin],
     CONVERT(VARCHAR(MAX),
-        DECRYPTBYKEY(ll.pwdhash)
+        DECRYPTBYMASTERKEY(ll.pwdhash)
     ) AS [Password]
 FROM master.sys.syslnklgns ll
 INNER JOIN master.sys.servers srv
     ON ll.srvid = srv.server_id
-WHERE ll.pwdhash IS NOT NULL;";
+WHERE ll.pwdhash IS NOT NULL
+AND srv.is_linked = 1;
+CLOSE MASTER KEY;";
 
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
 
@@ -136,7 +139,15 @@ WHERE ll.pwdhash IS NOT NULL;";
             }
             catch (Exception ex)
             {
-                Logger.WarningNested($"Direct decryption failed: {ex.Message}");
+                if (ex.Message.Contains("syslnklgns"))
+                {
+                    Logger.WarningNested("sys.syslnklgns is only accessible via a DAC (Dedicated Admin Connection).");
+                    Logger.InfoNested("Reconnect using the admin: prefix, e.g. admin:LAB-SQL01 on port 1434.");
+                }
+                else
+                {
+                    Logger.WarningNested($"Direct decryption failed: {ex.Message}");
+                }
             }
         }
 
@@ -152,14 +163,14 @@ WHERE ll.pwdhash IS NOT NULL;";
 SELECT
     srv.name AS [LinkedServer],
     srv.provider AS [Provider],
-    ll.remote_name AS [RemoteLogin],
+    ll.name AS [RemoteLogin],
     CONVERT(VARCHAR(MAX), ll.pwdhash, 1) AS [EncryptedPasswordHash],
     LEN(ll.pwdhash) AS [HashLength]
 FROM master.sys.syslnklgns ll
 INNER JOIN master.sys.servers srv
     ON ll.srvid = srv.server_id
 WHERE ll.pwdhash IS NOT NULL
-AND ll.remote_name IS NOT NULL;";
+AND srv.is_linked = 1;";
 
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
 
@@ -179,7 +190,15 @@ AND ll.remote_name IS NOT NULL;";
             }
             catch (Exception ex)
             {
-                Logger.WarningNested($"Could not retrieve encrypted credentials: {ex.Message}");
+                if (ex.Message.Contains("syslnklgns"))
+                {
+                    Logger.WarningNested("sys.syslnklgns is only accessible via a DAC (Dedicated Admin Connection).");
+                    Logger.InfoNested("Reconnect using the admin: prefix.");
+                }
+                else
+                {
+                    Logger.WarningNested($"Could not retrieve encrypted credentials: {ex.Message}");
+                }
             }
         }
     }
