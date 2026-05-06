@@ -133,7 +133,6 @@
     <Compile Include="Actions\Remote\ExternalCredentials.cs" />
     <Compile Include="Actions\Remote\ExternalSources.cs" />
     <Compile Include="Actions\Remote\ExternalTables.cs" />
-    <Compile Include="Actions\Remote\LinkCredentials.cs" />
     <Compile Include="Actions\Remote\LinkMap.cs" />
     <Compile Include="Actions\Remote\Links.cs" />
     <Compile Include="Actions\Remote\RemoteProcedureCall.cs" />
