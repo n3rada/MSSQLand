@@ -115,7 +115,7 @@ MSSQLand.exe LAB-SQL03 --portscan 1433,5000,65184 # Comma-separated list
 MSSQLand runs as a .NET assembly inside a beacon and always authenticates using the **current execution context** (`-c token`). When you have a hash, the right approach is to forge a token at the beacon level first and then run MSSQLand normally. `System.Data.SqlClient` inherits that token transparently, and no custom TDS implementation is required.
 
 Implementing NTLMv2 from scratch inside MSSQLand would mean:
-- Replacing `System.Data.SqlClient` with a hand-rolled TDS 7.x stack (~2000 lines of socket, TLS, and NTLM code).
+- Replacing `System.Data.SqlClient` with a hand-rolled TDS 7.x stack (too much lines of socket, TLS, and NTLM code).
 - Maintaining that implementation against SQL Server version quirks, TLS policy changes, and token-stream edge cases.
 - Gaining no functional advantage over the token approach in the vast majority of engagements
 
