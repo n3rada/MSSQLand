@@ -148,7 +148,7 @@ WHERE HAS_PERMS_BY_NAME(sp.name, 'LOGIN', 'IMPERSONATE') = 1
             result.Columns.Add("Middle Logins", typeof(string));
             result.Columns.Add("End Login", typeof(string));
 
-            foreach (var (startingLogin, path) in chains.OrderBy(c => c.Path.Count).ThenBy(c => string.Join(" -> ", c.Path)))
+            foreach (var (startingLogin, path) in chains.OrderByDescending(c => c.Path.Count).ThenBy(c => string.Join(" -> ", c.Path)))
             {
                 string endLogin = path.Last();
                 string middleLogins = path.Count > 1
