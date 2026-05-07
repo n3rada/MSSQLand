@@ -78,7 +78,6 @@ namespace MSSQLand.Actions.Remote
                 SELECT
                     srv.modify_date AS [Last Modified],
                     srv.name AS [Link],
-                    srv.product AS [Product],
                     srv.provider AS [Provider],
                     srv.data_source AS [Data Source],
                     prin.name AS [Local Login],
