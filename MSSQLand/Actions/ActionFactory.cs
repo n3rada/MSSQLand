@@ -69,6 +69,11 @@ namespace MSSQLand.Actions
             { "ad-groups", (typeof(AdGroups), "Retrieve Active Directory domain groups with SQL Server principals that the user is a member of.", null) },
             { "ad-members", (typeof(AdMembers), "Retrieve members of an Active Directory group.", null) },
             { "ad-users", (typeof(AdUsers), "Enumerate domain users by RID cycling using SUSER_SNAME().", new[] { "rid-brute" }) },
+            { "adsi-add", (typeof(AdsiAdd), "Create an ADSI linked server (auto-generates name if omitted).", null) },
+            { "adsi-del", (typeof(AdsiDel), "Delete an ADSI linked server by name.", new[] { "adsi-delete", "adsi-drop" }) },
+            { "adsi-query", (typeof(AdsiQuery), "Query Active Directory via an ADSI linked server.", new[] { "ldap" }) },
+            { "adsi-creds", (typeof(AdsiCredentialExtractor), "Extract SQL login passwords via LDAP simple bind interception using a local CLR listener. Requires CONTROL SERVER or sysadmin.", null) },
+            { "adsi-redirect", (typeof(AdsiRedirect), "Redirect an ADSI linked server LDAP query to an attacker-controlled listener to capture cleartext credentials. No privileges required.", null) },
 
             // ═══════════════════════════════════════════════════════════════════════════════
             // EXECUTION ACTIONS
@@ -107,11 +112,7 @@ namespace MSSQLand.Actions
             { "ext-sources", (typeof(ExternalSources), "Enumerate External Data Sources (Azure SQL Database, Synapse, PolyBase).", null) },
             { "ext-creds", (typeof(ExternalCredentials), "Enumerate database-scoped credentials used by External Data Sources.", null) },
             { "ext-tables", (typeof(ExternalTables), "Enumerate external tables and their remote data locations.", null) },
-            { "adsi", (typeof(Adsi), "Enumerate ADSI linked servers.", null) },
-            { "adsi-add", (typeof(AdsiAdd), "Create an ADSI linked server (auto-generates name if omitted).", null) },
-            { "adsi-del", (typeof(AdsiDel), "Delete an ADSI linked server by name.", new[] { "adsi-delete", "adsi-drop" }) },
-            { "adsi-query", (typeof(AdsiQuery), "Query Active Directory via ADSI using fully qualified domain name (auto-creates temp server if needed).", new[] { "ldap" }) },
-            { "adsi-creds", (typeof(AdsiCredentialExtractor), "Extract SQL login passwords via LDAP simple bind interception (useful through linked server chains or for ADSI servers with mapped credentials).", null) },
+
             { "unc", (typeof(UncProbe), "Force SMB authentication to a specified UNC path to capture Net-NTLMv2 challenge/response.", new[] { "coerce", "smb", "ntlm" }) },
 
 #if ENABLE_CM

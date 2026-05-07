@@ -27,15 +27,20 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
-        /// Lists all ADSI linked servers.
+        /// Returns full information about all ADSI linked servers.
         /// </summary>
-        /// <returns>A list of ADSI server names. Empty if none found.</returns>
-        public List<string> ListAdsiServers()
+        public DataTable ListAdsiServers()
         {
-            string query = "SELECT srvname FROM master.dbo.sysservers WHERE providername = 'ADsDSOObject'";
-            DataTable result = _databaseContext.QueryService.ExecuteTable(query);
+            string query = "SELECT srvname, datasource, dataaccess, rpc, rpcout, connecttimeout, querytimeout, schemadate FROM master.dbo.sysservers WHERE providername = 'ADsDSOObject'";
+            return _databaseContext.QueryService.ExecuteTable(query);
+        }
 
-            return result.AsEnumerable()
+        /// <summary>
+        /// Returns the names of all ADSI linked servers.
+        /// </summary>
+        public List<string> GetAdsiServerNames()
+        {
+            return ListAdsiServers().AsEnumerable()
                          .Select(row => row.Field<string>("srvname"))
                          .ToList();
         }
@@ -47,7 +52,7 @@ namespace MSSQLand.Services
         /// <returns>True if the server exists and is an ADSI provider; otherwise, false.</returns>
         public bool AdsiServerExists(string serverName)
         {
-            return ListAdsiServers().Contains(serverName, StringComparer.OrdinalIgnoreCase);
+            return GetAdsiServerNames().Contains(serverName, StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -74,6 +79,18 @@ namespace MSSQLand.Services
             try
             {
                 _databaseContext.QueryService.ExecuteNonProcessing(query);
+
+                // Enable AllowInProcess for ADsDSOObject — required for OPENQUERY execution
+                _databaseContext.QueryService.ExecuteNonProcessing(
+                    "EXEC master.dbo.sp_MSset_oledb_prop N'ADsDSOObject', N'AllowInProcess', 1");
+
+                // Use the SQL Server service account's Windows identity for LDAP binds
+                _databaseContext.QueryService.ExecuteNonProcessing(
+                    $"EXEC sp_addlinkedsrvlogin @rmtsrvname = '{serverName}', @useself = N'true'");
+
+                // Enable data access — required before OPENQUERY will work
+                _databaseContext.ConfigService.SetServerOption(serverName, "data access", "true");
+
                 return true;
             }
             catch (Exception ex)
@@ -102,6 +119,20 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
+        /// Executes a raw LDAP query (ADsDSOObject SQL dialect) via OPENQUERY against the specified ADSI linked server.
+        /// Handles single-quote escaping for the one-hop OPENQUERY wrapper.
+        /// </summary>
+        /// <param name="ldapQuery">Full LDAP query, e.g. "SELECT cn FROM 'LDAP://DC=x,DC=y' WHERE objectClass='user'".</param>
+        /// <param name="serverName">ADSI linked server name.</param>
+        /// <returns>DataTable of results.</returns>
+        public DataTable ExecuteRawLdapQuery(string ldapQuery, string serverName)
+        {
+            string escapedQuery = ldapQuery.Replace("'", "''");
+            string sql = $"SELECT * FROM OPENQUERY([{serverName}], '{escapedQuery}')";
+            return _databaseContext.QueryService.ExecuteTable(sql);
+        }
+
+        /// <summary>
         /// Executes an LDAP query via OPENQUERY against the first available ADSI linked server.
         /// </summary>
         /// <param name="ldapPath">LDAP path, e.g. LDAP://DOMAIN.</param>
@@ -113,7 +144,7 @@ namespace MSSQLand.Services
         {
             if (serverName == null)
             {
-                List<string> adsiServers = ListAdsiServers();
+                List<string> adsiServers = GetAdsiServerNames();
 
                 if (adsiServers.Count == 0)
                 {
@@ -126,10 +157,26 @@ namespace MSSQLand.Services
 
             Logger.TaskNested($"Using ADSI linked server: {serverName}");
 
-            string query = $"SELECT * FROM OPENQUERY({serverName}, 'SELECT {attributes} FROM ''{ldapPath}'' WHERE {filter}');";
+            string query = $"SELECT * FROM OPENQUERY([{serverName}], 'SELECT {attributes} FROM ''<{ldapPath}>'' WHERE {filter}');";
 
-            DataTable result = _databaseContext.QueryService.ExecuteTable(query);
-            return result.Rows.Count == 0 ? null : result;
+            try
+            {
+                DataTable result = _databaseContext.QueryService.ExecuteTable(query);
+                return result.Rows.Count == 0 ? null : result;
+            }
+            catch (SqlException ex)
+            {
+                foreach (SqlError error in ex.Errors)
+                {
+                    Logger.Warning($"[{error.Number}] {error.Message}");
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning(ex.Message);
+                return null;
+            }
         }
 
 

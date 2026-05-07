@@ -3,14 +3,14 @@
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 
-namespace MSSQLand.Actions.Remote
+namespace MSSQLand.Actions.Domain
 {
     internal class AdsiAdd : BaseAction
     {
         [ArgumentMetadata(Position = 0, Description = "Linked server name (auto-generated if omitted)")]
         private string _serverName = null;
 
-        [ArgumentMetadata(Position = 1, Description = "Data source for the ADSI linked server (default: localhost)")]
+        [ArgumentMetadata(Position = 1, ShortName = "ds", LongName = "data-source", Description = "Data source for the ADSI linked server (default: localhost)")]
         private string _dataSource = "localhost";
 
         public override void ValidateArguments(string[] args)
@@ -42,7 +42,7 @@ namespace MSSQLand.Actions.Remote
             }
 
             Logger.Success($"ADSI linked server '{serverName}' created successfully");
-            Logger.InfoNested($"Data source: {_dataSource}");
+            Logger.SuccessNested($"Data source: {_dataSource}");
 
             return true;
         }

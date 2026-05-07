@@ -4,7 +4,7 @@ using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
 
-namespace MSSQLand.Actions.Remote
+namespace MSSQLand.Actions.Domain
 {
     internal class AdsiDel : BaseAction
     {

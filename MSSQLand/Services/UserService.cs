@@ -24,6 +24,11 @@ namespace MSSQLand.Services
         /// </summary>
         private readonly ConcurrentDictionary<string, bool> _isDomainUserCache = new();
 
+        /// <summary>
+        /// Dictionary to cache server-level permission checks, keyed by "hostname:permission".
+        /// </summary>
+        private readonly ConcurrentDictionary<string, bool> _permissionCache = new(StringComparer.OrdinalIgnoreCase);
+
         public string MappedUser { get; private set; }
         public string SystemUser { get; private set; }
         public string EffectiveUser { get; private set; }
@@ -74,6 +79,7 @@ namespace MSSQLand.Services
         {
             _adminStatusCache.Clear();
             _isDomainUserCache.Clear();
+            _permissionCache.Clear();
         }
 
         public bool IsAdmin()
@@ -98,6 +104,33 @@ namespace MSSQLand.Services
             _adminStatusCache[_queryService.ExecutionServer.Hostname] = adminStatus;
 
             return adminStatus;
+        }
+
+        /// <summary>
+        /// Checks whether the current login holds a specific server-level permission.
+        /// Results are cached per execution server to avoid redundant round-trips.
+        /// </summary>
+        /// <param name="permission">Server-level permission name (e.g. "CONTROL SERVER", "ALTER ANY LOGIN").</param>
+        /// <returns>True if the current login has the permission; otherwise false.</returns>
+        public bool HasPermission(string permission)
+        {
+            string cacheKey = $"{_queryService.ExecutionServer.Hostname}:{permission}";
+            if (_permissionCache.TryGetValue(cacheKey, out bool cached))
+                return cached;
+
+            bool result = false;
+            try
+            {
+                result = Convert.ToInt32(_queryService.ExecuteScalar(
+                    $"SELECT HAS_PERMS_BY_NAME(NULL, NULL, '{permission.Replace("'", "''")}')")) == 1;
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Error checking permission '{permission}': {ex.Message}");
+            }
+
+            _permissionCache[cacheKey] = result;
+            return result;
         }
 
         /// <summary>

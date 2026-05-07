@@ -106,6 +106,11 @@
     <Compile Include="Actions\Domain\AdMembers.cs" />
     <Compile Include="Actions\Domain\AdSid.cs" />
     <Compile Include="Actions\Domain\AdUsers.cs" />
+    <Compile Include="Actions\Domain\AdsiAdd.cs" />
+    <Compile Include="Actions\Domain\AdsiDel.cs" />
+    <Compile Include="Actions\Domain\AdsiQuery.cs" />
+    <Compile Include="Actions\Domain\AdsiCredentialExtractor.cs" />
+    <Compile Include="Actions\Domain\AdsiRedirect.cs" />
 
     <Compile Include="Actions\Agent\AgentHelper.cs" />
     <Compile Include="Actions\Agent\JobExec.cs" />
@@ -126,11 +131,6 @@
     <Compile Include="Actions\FileSystem\RemoveFile.cs" />
     <Compile Include="Actions\FileSystem\Upload.cs" />
 
-    <Compile Include="Actions\Remote\AdsiCredentialExtractor.cs" />
-    <Compile Include="Actions\Remote\Adsi.cs" />
-    <Compile Include="Actions\Remote\AdsiAdd.cs" />
-    <Compile Include="Actions\Remote\AdsiDel.cs" />
-    <Compile Include="Actions\Remote\AdsiQuery.cs" />
     <Compile Include="Actions\Remote\DataAccess.cs" />
     <Compile Include="Actions\Remote\ExternalCredentials.cs" />
     <Compile Include="Actions\Remote\ExternalSources.cs" />
