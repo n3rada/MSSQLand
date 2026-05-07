@@ -163,11 +163,12 @@ namespace MSSQLand
                     Logger.InfoNested($"Mapped to user: {databaseContext.UserService.MappedUser}");
 
                     // Domain user check must happen here, before impersonation's GetInfo()
-                    // overwrites SystemUser with the impersonated identity
+                    // overwrites SystemUser with the impersonated identity.
+                    // ComputeEffectiveUserAndSource() was already called in DatabaseContext constructor
+                    // before impersonation was applied, so the values are correct.
                     if (databaseContext.UserService.IsDomainUser)
                     {
                         Logger.NewLine();
-                        databaseContext.UserService.ComputeEffectiveUserAndSource();
 
                         string effectiveUser = databaseContext.UserService.EffectiveUser;
                         string sourcePrincipal = databaseContext.UserService.SourcePrincipal;

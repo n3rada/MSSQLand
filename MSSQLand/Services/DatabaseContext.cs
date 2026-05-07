@@ -33,6 +33,13 @@ namespace MSSQLand.Services
             // Call GetInfo() before impersonation so UserService.SystemUser/MappedUser hold the original identity
             UserService.GetInfo();
 
+            // Compute domain group mapping now, while the connection is still in the original context.
+            // sys.login_token is not available after EXECUTE AS, so this must run before HandleImpersonation().
+            if (UserService.IsDomainUser)
+            {
+                UserService.ComputeEffectiveUserAndSource();
+            }
+
             if (HandleImpersonation() == false)
             {
                 throw new Exception("Failed to handle impersonation. Exiting.");
