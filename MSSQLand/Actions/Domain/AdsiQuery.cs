@@ -1,4 +1,4 @@
-// MSSQLand/Actions/Remote/AdsiQuery.cs
+// MSSQLand/Actions/Domain/AdsiQuery.cs
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;

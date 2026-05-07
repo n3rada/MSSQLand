@@ -1,4 +1,4 @@
-// MSSQLand/Actions/Remote/AdsiCredentialExtractor.cs
+// MSSQLand/Actions/Domain/AdsiCredentialExtractor.cs
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
@@ -14,19 +14,19 @@ namespace MSSQLand.Actions.Domain
     ///
     /// How it works:
     ///   Deploys a CLR assembly that starts a local LDAP listener, then redirects an ADSI OPENQUERY
-    ///   to localhost. SQL Server performs an LDAP simple bind � sending credentials in cleartext.
+    ///   to localhost. SQL Server performs an LDAP simple bind: sending credentials in cleartext.
     ///
-    /// Scenario A � Existing ADSI server with explicit linked login (e.g. PGD\svc-ldap):
+    /// Scenario A: Existing ADSI server with explicit linked login (e.g. PGD\svc-ldap):
     ///   The bind uses the configured linked login, not your own credentials.
     ///   Captured password belongs to that domain account.
     ///   dotnet MSSQLand.exe SQL01 -c local -u analyst -p "..." adsi-creds
     ///
-    /// Scenario B � Existing ADSI server with useself=TRUE (no linked login):
+    /// Scenario B: Existing ADSI server with useself=TRUE (no linked login):
     ///   The bind uses the current SQL context's password.
     ///   Only interesting when you landed via a linked server as an unknown SQL login (e.g. sa).
     ///   dotnet MSSQLand.exe SQL01 -c local -u analyst -p "..." -l SQL02 adsi-creds
     ///
-    /// Scenario C � No existing ADSI server, opt-in temporary server (--temp):
+    /// Scenario C: No existing ADSI server, opt-in temporary server (--temp):
     ///   Creates a useself=TRUE server, captures the current SQL context's password, then drops it.
     ///   Same value as B but without a pre-existing ADSI server. Noisier (creates sys.servers entry).
     ///   dotnet MSSQLand.exe SQL01 -c local -u analyst -p "..." -l SQL02 adsi-creds --temp
@@ -202,7 +202,7 @@ namespace MSSQLand.Actions.Domain
                 Logger.TaskNested("Executing LDAP solicitation");
 
                 // For a temporary server using @useself='true', impersonated users won't have
-                // a login mapping on the newly created server � bail out early.
+                // a login mapping on the newly created server: bail out early.
                 // Existing servers have their own configured login, so impersonation doesn't matter.
                 if (!_useExistingServer)
                 {

@@ -1,4 +1,4 @@
-// MSSQLand/Actions/Remote/AdsiRedirect.cs
+// MSSQLand/Actions/Domain/AdsiRedirect.cs
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
