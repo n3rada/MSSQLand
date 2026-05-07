@@ -8,7 +8,7 @@ namespace MSSQLand.Actions.Remote
     internal class RemoteProcedureCall : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Toggle = true, Description = "Action: enable/disable (or aliases: +/-, on/off, 1/0, true/false, add/del)")]
-        private bool _enable;
+        private bool _enable = false;
 
         [ArgumentMetadata(Position = 1, Required = true, Description = "Linked server name")]
         private string _linkedServerName = "";
