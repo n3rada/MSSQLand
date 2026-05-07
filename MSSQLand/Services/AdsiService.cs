@@ -107,9 +107,9 @@ namespace MSSQLand.Services
         /// <param name="serverName">Outputs the generated linked server name.</param>
         /// <param name="dataSource">ADSI data source (default: localhost).</param>
         /// <returns>True if created successfully; otherwise false.</returns>
-        public bool CreateAdsiLinkedServer(out string serverName, string dataSource = "localhost")
+        public bool CreateAdsiLinkedServer(out string serverName, string dataSource = "adsdatasource")
         {
-            serverName = $"SQLSRV_{Misc.GetRandomIdentifier(6)}";
+            serverName = $"ADSI_{Misc.GetRandomIdentifier(6)}";
             return CreateAdsiLinkedServer(serverName, dataSource);
         }
 

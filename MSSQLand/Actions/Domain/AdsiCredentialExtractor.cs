@@ -117,24 +117,10 @@ namespace MSSQLand.Actions.Domain
             AdsiService adsiService = new(databaseContext);
 
             // Try to create the ADSI server
-            if (!adsiService.CreateAdsiLinkedServer(out _targetServer))
+            if (!adsiService.CreateAdsiLinkedServer(out _targetServer, "localhost"))
             {
-                // If creation failed, try to clean up and retry once
-                Logger.Warning("Initial creation failed. Attempting cleanup and retry...");
-                try
-                {
-                    adsiService.DropLinkedServer(_targetServer);
-                }
-                catch
-                {
-                    // Ignore cleanup errors
-                }
-
-                if (!adsiService.CreateAdsiLinkedServer(out _targetServer))
-                {
-                    Logger.Error("Failed to create temporary ADSI server.");
-                    return null;
-                }
+                Logger.Error("Failed to create temporary ADSI server.");
+                return null;
             }
 
             Logger.TaskNested($"Server name: {_targetServer}");

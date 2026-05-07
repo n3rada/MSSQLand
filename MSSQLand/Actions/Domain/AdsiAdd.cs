@@ -10,8 +10,8 @@ namespace MSSQLand.Actions.Domain
         [ArgumentMetadata(Position = 0, Description = "Linked server name (auto-generated if omitted)")]
         private string _serverName = null;
 
-        [ArgumentMetadata(Position = 1, ShortName = "ds", LongName = "data-source", Description = "Data source for the ADSI linked server (default: localhost)")]
-        private string _dataSource = "localhost";
+        [ArgumentMetadata(Position = 1, ShortName = "ds", LongName = "data-source", Description = "Data source for the ADSI linked server (default: adsdatasource)")]
+        private string _dataSource = "adsdatasource";
 
         public override void ValidateArguments(string[] args)
         {
