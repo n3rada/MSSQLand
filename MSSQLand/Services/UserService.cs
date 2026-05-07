@@ -168,8 +168,8 @@ namespace MSSQLand.Services
             {
                 if (reader.Read())
                 {
-                    mappedUser = reader["U"]?.ToString() ?? "Unknown";
-                    systemUser = reader["S"]?.ToString() ?? "Unknown";
+                    mappedUser = reader["U"]?.ToString() ?? "";
+                    systemUser = reader["S"]?.ToString() ?? "";
                 }
             } // DataReader is closed here
 
