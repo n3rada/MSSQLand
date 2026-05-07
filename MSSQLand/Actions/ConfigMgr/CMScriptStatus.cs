@@ -20,11 +20,6 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 0, ShortName = "t", LongName = "taskid", Description = "Task ID to check", Required = true)]
         private string _taskId = "";
 
-        public override void ValidateArguments(string[] args)
-        {
-            BindArguments(args);
-        }
-
         public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Checking status for Task ID: {_taskId}");
@@ -47,7 +42,7 @@ namespace MSSQLand.Actions.ConfigMgr
                 try
                 {
                     string statusQuery = $@"
-SELECT 
+SELECT
     ses.TaskID,
     ses.ScriptExecutionState,
     ses.ScriptExitCode,

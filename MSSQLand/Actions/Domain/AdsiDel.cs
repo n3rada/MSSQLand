@@ -11,11 +11,6 @@ namespace MSSQLand.Actions.Domain
         [ArgumentMetadata(Position = 0, Required = true, Description = "Name of the ADSI linked server to delete")]
         private string _serverName = "";
 
-        public override void ValidateArguments(string[] args)
-        {
-            BindArguments(args);
-        }
-
         public override object Execute(DatabaseContext databaseContext)
         {
             AdsiService adsiService = new(databaseContext);

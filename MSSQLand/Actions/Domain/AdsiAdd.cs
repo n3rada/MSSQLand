@@ -13,11 +13,6 @@ namespace MSSQLand.Actions.Domain
         [ArgumentMetadata(Position = 1, ShortName = "ds", LongName = "data-source", Description = "Data source for the ADSI linked server (default: adsdatasource)")]
         private string _dataSource = "adsdatasource";
 
-        public override void ValidateArguments(string[] args)
-        {
-            BindArguments(args);
-        }
-
         public override object Execute(DatabaseContext databaseContext)
         {
             AdsiService adsiService = new(databaseContext);

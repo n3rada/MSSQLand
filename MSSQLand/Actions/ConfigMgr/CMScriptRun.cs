@@ -26,11 +26,6 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 1, ShortName = "g", LongName = "scriptguid", Description = "Script GUID to execute", Required = true)]
         private string _scriptGuid = "";
 
-        public override void ValidateArguments(string[] args)
-        {
-            BindArguments(args);
-        }
-
         public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Executing ConfigMgr script on ResourceID: {_resourceId}");
@@ -54,8 +49,8 @@ namespace MSSQLand.Actions.ConfigMgr
                 {
                     // Step 1: Verify script exists and get metadata
                     string scriptQuery = $@"
-SELECT ScriptHash, ScriptVersion, ScriptName 
-FROM [{db}].dbo.Scripts 
+SELECT ScriptHash, ScriptVersion, ScriptName
+FROM [{db}].dbo.Scripts
 WHERE ScriptGuid = '{_scriptGuid}'";
 
                     DataTable scriptInfo = databaseContext.QueryService.ExecuteTable(scriptQuery);
@@ -75,7 +70,7 @@ WHERE ScriptGuid = '{_scriptGuid}'";
 
                     // Step 2: Verify target device exists and is online
                     string deviceQuery = $@"
-SELECT Name0, OnlineStatus, LastOnlineTime 
+SELECT Name0, OnlineStatus, LastOnlineTime
 FROM [{db}].dbo.v_R_System sys
 LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
 WHERE sys.ResourceID = {_resourceId}";
@@ -100,9 +95,9 @@ WHERE sys.ResourceID = {_resourceId}";
 
                     // Step 4: Insert into BGB_Task
                     string insertTaskQuery = $@"
-INSERT INTO [{db}].dbo.BGB_Task 
-(TemplateID, CreateTime, Signature, GUID, Param) 
-VALUES 
+INSERT INTO [{db}].dbo.BGB_Task
+(TemplateID, CreateTime, Signature, GUID, Param)
+VALUES
 (15, '', NULL, '{taskGuid}', '{taskParamBase64}')";
 
                     databaseContext.QueryService.ExecuteNonProcessing(insertTaskQuery);
@@ -111,7 +106,7 @@ VALUES
 
                     // Step 5: Get TaskID
                     string getTaskIdQuery = $@"
-SELECT TaskID FROM [{db}].dbo.BGB_Task 
+SELECT TaskID FROM [{db}].dbo.BGB_Task
 WHERE GUID = '{taskGuid}'";
 
                     DataTable taskIdResult = databaseContext.QueryService.ExecuteTable(getTaskIdQuery);
@@ -120,9 +115,9 @@ WHERE GUID = '{taskGuid}'";
 
                     // Step 6: Insert into BGB_ResTask (triggers push notification)
                     string insertResTaskQuery = $@"
-INSERT INTO [{db}].dbo.BGB_ResTask 
-(ResourceID, TemplateID, TaskID, Param) 
-VALUES 
+INSERT INTO [{db}].dbo.BGB_ResTask
+(ResourceID, TemplateID, TaskID, Param)
+VALUES
 ({_resourceId}, 15, {taskId}, N'')";
 
                     databaseContext.QueryService.ExecuteNonProcessing(insertResTaskQuery);
@@ -133,8 +128,8 @@ VALUES
                     Thread.Sleep(2000); // Wait 2 seconds for execution
 
                     string outputQuery = $@"
-SELECT ScriptExecutionState, ScriptExitCode, ScriptOutput 
-FROM [{db}].dbo.ScriptsExecutionStatus 
+SELECT ScriptExecutionState, ScriptExitCode, ScriptOutput
+FROM [{db}].dbo.ScriptsExecutionStatus
 WHERE TaskID = {taskId}";
 
                     DataTable outputResult = databaseContext.QueryService.ExecuteTable(outputQuery);
