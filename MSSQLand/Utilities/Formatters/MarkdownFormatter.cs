@@ -106,7 +106,7 @@ namespace MSSQLand.Utilities.Formatters
                         object value = reader.GetValue(i);
                         string cellValue = value is byte[] byteArray
                             ? ByteArrayToHexString(byteArray)
-                            : Misc.SanitizeToUtf8(value?.ToString() ?? "");
+                            : EncodingHelper.SanitizeToUtf8(value?.ToString() ?? "");
 
                         row[i] = cellValue;
                         columnWidths[i] = Math.Max(columnWidths[i], cellValue.Length);
@@ -188,7 +188,7 @@ namespace MSSQLand.Utilities.Formatters
                     object value = row[i];
                     string cellValue = value is byte[] byteArray
                         ? ByteArrayToHexString(byteArray)
-                        : Misc.SanitizeToUtf8(value?.ToString() ?? "");
+                        : EncodingHelper.SanitizeToUtf8(value?.ToString() ?? "");
 
                     columnWidths[i] = Math.Max(columnWidths[i], cellValue.Length);
                 }
@@ -214,7 +214,7 @@ namespace MSSQLand.Utilities.Formatters
                     object value = row[i];
                     string cellValue = value is byte[] byteArray
                         ? ByteArrayToHexString(byteArray)
-                        : Misc.SanitizeToUtf8(value?.ToString() ?? "");
+                        : EncodingHelper.SanitizeToUtf8(value?.ToString() ?? "");
 
                     sqlStringBuilder.Append("| ").Append(cellValue.PadRight(columnWidths[i])).Append(" ");
                 }

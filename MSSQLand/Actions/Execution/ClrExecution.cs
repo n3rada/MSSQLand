@@ -33,7 +33,7 @@ namespace MSSQLand.Actions.Execution
         public override object Execute(DatabaseContext databaseContext)
         {
             // Step 1: Get the SHA-512 hash for the DLL and its bytes.
-            string[] library = Misc.ConvertDllToSqlBytes(_dllURI);
+            string[] library = ByteHelper.ConvertDllToSqlBytes(_dllURI);
 
             if (library.Length != 2 || string.IsNullOrEmpty(library[0]) || string.IsNullOrEmpty(library[1]))
             {

@@ -157,7 +157,7 @@ namespace MSSQLand.Models
                                  $"{mappedUser?.ToUpperInvariant() ?? ""}|" +
                                  $"{systemUser?.ToUpperInvariant() ?? ""}|" +
                                  $"{isSysadmin}";
-            return Misc.ComputeSHA256(stateString);
+            return ByteHelper.ComputeSHA256(stateString);
         }
 
         /// <summary>

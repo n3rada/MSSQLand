@@ -38,7 +38,7 @@ namespace MSSQLand.Actions.Database
             // Validate FQTN can be parsed and has at least schema.table
             try
             {
-                var (_, schema, table) = Misc.ParseQualifiedTableName(_fqtn);
+                var (_, schema, table) = SqlHelper.ParseQualifiedTableName(_fqtn);
                 
                 // For permissions, we require at least schema.table
                 if (string.IsNullOrEmpty(schema) || string.IsNullOrEmpty(table))
@@ -78,7 +78,7 @@ namespace MSSQLand.Actions.Database
             }
 
             // Parse the FQTN
-            var (database, schema, table) = Misc.ParseQualifiedTableName(_fqtn);
+            var (database, schema, table) = SqlHelper.ParseQualifiedTableName(_fqtn);
 
             // Use the execution database if no database is specified
             if (string.IsNullOrEmpty(database))

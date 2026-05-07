@@ -174,7 +174,7 @@ namespace MSSQLand.Actions.FileSystem
             }
 
             // Convert bytes to hex string for SQL
-            string hexContent = Misc.BytesToHexString(fileContent);
+            string hexContent = ByteHelper.BytesToHexString(fileContent);
 
             // Escape single quotes in remote path
             string escapedRemotePath = _remotePath.Replace("'", "''");

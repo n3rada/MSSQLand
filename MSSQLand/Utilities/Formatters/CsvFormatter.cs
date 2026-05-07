@@ -29,7 +29,7 @@ namespace MSSQLand.Utilities.Formatters
                 return "";
             }
 
-            string sanitized = Misc.SanitizeToUtf8(value);
+            string sanitized = EncodingHelper.SanitizeToUtf8(value);
             if (sanitized.Contains(Separator) || sanitized.Contains('"') || sanitized.Contains('\n') || sanitized.Contains('\r'))
             {
                 return $"\"{sanitized.Replace("\"", "\"\"")}\"";

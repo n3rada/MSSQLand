@@ -420,12 +420,12 @@ ORDER BY ds.Document_ID DESC;";
                         Logger.NewLine();
                         Logger.Info("Policy Platform Document Body (WMI/MOF format)");
                         Logger.InfoNested("This is the compiled policy sent to clients and stored in root\\ccm\\CIModels");
-                        Console.WriteLine(Misc.BeautifyXml(policyXml));
+                        Console.WriteLine(EncodingHelper.BeautifyXml(policyXml));
 
                         Logger.NewLine();
                         Logger.Info("SDM Package Digest (System Definition Model)");
                         Logger.InfoNested("This is the ConfigMgr console representation used for policy compilation");
-                        Console.WriteLine(Misc.BeautifyXml(sdmXml));
+                        Console.WriteLine(EncodingHelper.BeautifyXml(sdmXml));
                     }
                     else
                     {

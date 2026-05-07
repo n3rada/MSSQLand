@@ -76,7 +76,7 @@ namespace MSSQLand.Actions.Database
             {
                 try
                 {
-                    var (database, schema, table) = Misc.ParseQualifiedTableName(_target);
+                    var (database, schema, table) = SqlHelper.ParseQualifiedTableName(_target);
 
                     if (!string.IsNullOrEmpty(database) && !string.IsNullOrEmpty(schema) && !string.IsNullOrEmpty(table))
                     {
@@ -132,7 +132,7 @@ namespace MSSQLand.Actions.Database
             if (!string.IsNullOrEmpty(_targetTable))
             {
                 string dbName = _limitDatabase ?? databaseContext.QueryService.ExecutionServer.Database;
-                Logger.TaskNested($"Looking inside {Misc.BuildQualifiedTableName(dbName, _targetSchema, _targetTable)}");
+                Logger.TaskNested($"Looking inside {SqlHelper.BuildQualifiedTableName(dbName, _targetSchema, _targetTable)}");
                 var (headerMatches, rowMatches, _) = SearchDatabase(databaseContext, dbName, _targetSchema, _targetTable);
 
                 Logger.Success($"Search completed");
@@ -362,7 +362,7 @@ namespace MSSQLand.Actions.Database
                 // Search for the keyword in column name
                 if (column.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    headerMatches.Rows.Add(Misc.BuildQualifiedTableName(database, schema, table), column, position);
+                    headerMatches.Rows.Add(SqlHelper.BuildQualifiedTableName(database, schema, table), column, position);
                 }
             }
 
@@ -416,7 +416,7 @@ namespace MSSQLand.Actions.Database
                 // Get ALL matching rows without limit
                 string searchQuery = $@"
                     SELECT *
-                    FROM {Misc.BuildQualifiedTableName(database, schema, table)}
+                    FROM {SqlHelper.BuildQualifiedTableName(database, schema, table)}
                     WHERE {whereClause};";
 
                 try
@@ -429,7 +429,7 @@ namespace MSSQLand.Actions.Database
                     {
                         rowMatchCount += resultTable.Rows.Count;
                         Logger.NewLine();
-                        Logger.Success($"Found {resultTable.Rows.Count} row(s) containing '{_keyword}' in {Misc.BuildQualifiedTableName(database, schema, table)}");
+                        Logger.Success($"Found {resultTable.Rows.Count} row(s) containing '{_keyword}' in {SqlHelper.BuildQualifiedTableName(database, schema, table)}");
                         Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
                     }
                 }

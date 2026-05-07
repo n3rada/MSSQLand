@@ -178,7 +178,7 @@ namespace MSSQLand.Actions.Domain
                 return null;
             }
 
-            adsiService.Port = Misc.GetRandomUnusedPort();
+            adsiService.Port = NetworkHelper.GetRandomUnusedPort();
 
             try
             {

@@ -34,7 +34,7 @@ namespace MSSQLand.Actions.ConfigMgr
             // Auto-generate stealth name if not provided
             if (string.IsNullOrWhiteSpace(_scriptName))
             {
-                _scriptName = $"CMDeploy0{Misc.GetRandomNumber(0, 10)}";
+                _scriptName = $"CMDeploy0{ByteHelper.GetRandomNumber(0, 10)}";
             }
 
             // Auto-generate GUID if not provided
@@ -87,7 +87,7 @@ namespace MSSQLand.Actions.ConfigMgr
                     string scriptHex = BitConverter.ToString(scriptBytes).Replace("-", "");
 
                     // Calculate SHA256 hash
-                    string scriptHash = Misc.ComputeSHA256(scriptBytes);
+                    string scriptHash = ByteHelper.ComputeSHA256(scriptBytes);
 
                     string insertQuery = $@"
 INSERT INTO [{db}].dbo.Scripts 

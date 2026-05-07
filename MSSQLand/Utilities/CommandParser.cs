@@ -588,7 +588,7 @@ namespace MSSQLand.Utilities
                 // Parse embedded domain from username (DOMAIN\user or user@domain)
                 if (!string.IsNullOrEmpty(username))
                 {
-                    var (parsedUsername, embeddedDomain) = Misc.ParseUsernameWithDomain(username);
+                    var (parsedUsername, embeddedDomain) = NetworkHelper.ParseUsernameWithDomain(username);
                     if (embeddedDomain != null)
                     {
                         if (!string.IsNullOrEmpty(domain))
@@ -677,7 +677,7 @@ namespace MSSQLand.Utilities
             }
 
             // Resolve hostname to IP
-            var addresses = Misc.ValidateDnsResolution(hostname, throwOnFailure: true);
+            var addresses = NetworkHelper.ValidateDnsResolution(hostname, throwOnFailure: true);
 
             // Prefer IPv4
             var resolvedIp = addresses?.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)

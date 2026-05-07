@@ -26,7 +26,7 @@ namespace MSSQLand.Actions.Execution
                 return null;
             }
 
-            string objVar = Misc.GetRandomIdentifier(6);
+            string objVar = ByteHelper.GetRandomIdentifier(6);
 
             // Escape single quotes in command
             string escapedCommand = _command.Replace("'", "''");

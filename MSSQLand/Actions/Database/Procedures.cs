@@ -73,7 +73,7 @@ namespace MSSQLand.Actions.Database
 
             try
             {
-                var (database, schema, procedure) = Misc.ParseQualifiedTableName(procedureName);
+                var (database, schema, procedure) = SqlHelper.ParseQualifiedTableName(procedureName);
 
                 // We require schema.procedure (2 parts), not database.schema.procedure (3 parts)
                 if (!string.IsNullOrEmpty(database))
@@ -235,7 +235,7 @@ namespace MSSQLand.Actions.Database
         private DataTable ExecuteProcedure(DatabaseContext databaseContext, string procedureName, string procedureArgs)
         {
             // Parse schema.procedure using the FQTN parser
-            var (_, schema, procedure) = Misc.ParseQualifiedTableName(procedureName);
+            var (_, schema, procedure) = SqlHelper.ParseQualifiedTableName(procedureName);
 
             Logger.Task($"Executing [{databaseContext.QueryService.ExecutionServer.Database}].[{schema}].[{procedure}]");
             if (!string.IsNullOrEmpty(procedureArgs))
@@ -265,7 +265,7 @@ namespace MSSQLand.Actions.Database
         private object ReadProcedureDefinition(DatabaseContext databaseContext, string procedureName)
         {
             // Parse schema.procedure using the FQTN parser
-            var (_, schema, procedure) = Misc.ParseQualifiedTableName(procedureName);
+            var (_, schema, procedure) = SqlHelper.ParseQualifiedTableName(procedureName);
 
             Logger.TaskNested($"Retrieving definition of [{databaseContext.QueryService.ExecutionServer.Database}].[{schema}].[{procedure}]");
 

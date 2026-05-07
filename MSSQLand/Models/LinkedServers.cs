@@ -212,7 +212,7 @@ namespace MSSQLand.Models
                 string database = ServerChain[i].Database;
 
                 // Bracket the hostname if it contains ANY delimiter character
-                serverName = Misc.BracketIdentifier(serverName);
+                serverName = SqlHelper.BracketIdentifier(serverName);
 
                 StringBuilder part = new StringBuilder(serverName);
 

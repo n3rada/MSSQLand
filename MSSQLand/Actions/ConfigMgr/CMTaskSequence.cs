@@ -133,7 +133,7 @@ WHERE ts.PkgID = '{_packageId.Replace("'", "''")}'
                 // Set SequenceSize for the single row (DataTable always has 1 row here)
                 byte[] seqData = tsRow["Sequence"] as byte[];
                 tsRow["SequenceSize"] = (seqData != null && seqData.Length > 0) 
-                    ? Misc.FormatByteSize(seqData.Length) 
+                    ? ByteHelper.FormatByteSize(seqData.Length) 
                     : "Empty";
                 
                 tsResult.Columns.Remove("Sequence");
@@ -328,7 +328,7 @@ ORDER BY ds.DeploymentTime DESC;";
             // Safety check: compressed data > 10MB is suspicious
             if (compressedData.Length > 10 * 1024 * 1024)
             {
-                throw new InvalidDataException($"Sequence data too large ({Misc.FormatByteSize(compressedData.Length, false)}) - possible corruption");
+                throw new InvalidDataException($"Sequence data too large ({ByteHelper.FormatByteSize(compressedData.Length, false)}) - possible corruption");
             }
 
             // First 4 bytes = uncompressed length (little-endian)
@@ -340,7 +340,7 @@ ORDER BY ds.DeploymentTime DESC;";
                 throw new InvalidDataException($"Invalid uncompressed length header: {uncompressedLength}");
             }
 
-            Logger.Trace($"Sequence: {Misc.FormatByteSize(compressedData.Length, false)} compressed, {Misc.FormatByteSize(uncompressedLength, false)} uncompressed");
+            Logger.Trace($"Sequence: {ByteHelper.FormatByteSize(compressedData.Length, false)} compressed, {ByteHelper.FormatByteSize(uncompressedLength, false)} uncompressed");
 
             try
             {

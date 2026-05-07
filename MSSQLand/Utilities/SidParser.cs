@@ -46,7 +46,7 @@ namespace MSSQLand.Utilities
                             ? maybeSid.Substring(2) 
                             : maybeSid;
                         
-                        var bytes = Misc.HexStringToBytes(hex);
+                        var bytes = ByteHelper.HexStringToBytes(hex);
                         var sid = new SecurityIdentifier(bytes, 0);
                         return sid.Value;
                     }

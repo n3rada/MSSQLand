@@ -1301,7 +1301,7 @@ namespace MSSQLand.Actions.Remote
             string chainArg = linkedServers.GetChainArguments();
 
             // Build host argument: starting impersonation + any chain[0] impersonation on the root server
-            string hostArg = Misc.BracketIdentifier(_rootNode.Alias);
+            string hostArg = SqlHelper.BracketIdentifier(_rootNode.Alias);
             var hostImpersonation = new List<string>(_startingImpersonation);
             if (chain.Count > 0 && chain[0].ImpersonationChain.Count > 0)
                 hostImpersonation.AddRange(chain[0].ImpersonationChain.ConvertAll(s => s.Login));
@@ -1368,7 +1368,7 @@ namespace MSSQLand.Actions.Remote
             string chainArg = linkedServers.GetChainArguments();
 
             // Build host argument: starting impersonation + any chain[0] impersonation on the root server
-            string hostArg = Misc.BracketIdentifier(_rootNode.Alias);
+            string hostArg = SqlHelper.BracketIdentifier(_rootNode.Alias);
             var hostImpersonation = new List<string>(_startingImpersonation);
             if (chain.Count > 0 && chain[0].ImpersonationChain.Count > 0)
                 hostImpersonation.AddRange(chain[0].ImpersonationChain.ConvertAll(s => s.Login));

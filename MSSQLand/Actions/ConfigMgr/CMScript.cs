@@ -116,8 +116,8 @@ namespace MSSQLand.Actions.ConfigMgr
                 byte[] scriptBlob = row.Field<byte[]>("Script") ?? Array.Empty<byte>();
                 if (scriptBlob.Length > 0)
                 {
-                    var (encoding, bomLength) = Misc.DetectEncoding(scriptBlob);
-                    string decodedScript = Misc.DecodeText(scriptBlob, encoding, bomLength);
+                    var (encoding, bomLength) = EncodingHelper.DetectEncoding(scriptBlob);
+                    string decodedScript = EncodingHelper.DecodeText(scriptBlob, encoding, bomLength);
                     Console.WriteLine(decodedScript);
                 }
                 else

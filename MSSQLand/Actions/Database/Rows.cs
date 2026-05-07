@@ -28,7 +28,7 @@ namespace MSSQLand.Actions.Database
             // Validate the FQTN can be parsed
             try
             {
-                Misc.ParseQualifiedTableName(_fqtn);
+                SqlHelper.ParseQualifiedTableName(_fqtn);
             }
             catch (ArgumentException ex)
             {
@@ -44,7 +44,7 @@ namespace MSSQLand.Actions.Database
         public override object Execute(DatabaseContext databaseContext)
         {
             // Parse the FQTN
-            var (database, schema, table) = Misc.ParseQualifiedTableName(_fqtn);
+            var (database, schema, table) = SqlHelper.ParseQualifiedTableName(_fqtn);
 
             // Use execution database if none specified
             if (string.IsNullOrEmpty(database))
@@ -59,7 +59,7 @@ namespace MSSQLand.Actions.Database
             }
 
             // Build the qualified table name for the query
-            string targetTable = Misc.BuildQualifiedTableName(database, schema, table);
+            string targetTable = SqlHelper.BuildQualifiedTableName(database, schema, table);
 
             // Get approximate row count from sys.partitions (fast metadata lookup)
             string schemaFilter = string.IsNullOrEmpty(schema) ? "dbo" : schema;
