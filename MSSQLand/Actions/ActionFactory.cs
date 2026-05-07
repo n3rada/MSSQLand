@@ -66,7 +66,6 @@ namespace MSSQLand.Actions
             // ═══════════════════════════════════════════════════════════════════════════════
             { "ad-domain", (typeof(AdDomain), "Retrieve the domain SID using DEFAULT_DOMAIN() and SUSER_SID().", null) },
             { "ad-sid", (typeof(AdSid), "Retrieve the current user's SID using SUSER_SID().", null) },
-            { "ad-groups", (typeof(AdGroups), "Retrieve Active Directory domain groups with SQL Server principals that the user is a member of.", null) },
             { "ad-members", (typeof(AdMembers), "Retrieve members of an Active Directory group.", null) },
             { "ad-users", (typeof(AdUsers), "Enumerate domain users by RID cycling using SUSER_SNAME().", new[] { "rid-brute" }) },
             { "adsi-add", (typeof(AdsiAdd), "Create an ADSI linked server (auto-generates name if omitted).", null) },
