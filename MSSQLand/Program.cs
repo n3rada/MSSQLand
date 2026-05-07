@@ -162,6 +162,36 @@ namespace MSSQLand
                     Logger.InfoNested($"Login: {databaseContext.UserService.SystemUser}");
                     Logger.InfoNested($"Mapped to user: {databaseContext.UserService.MappedUser}");
 
+                    // Domain user check must happen here, before impersonation's GetInfo()
+                    // overwrites SystemUser with the impersonated identity
+                    if (databaseContext.UserService.IsDomainUser)
+                    {
+                        Logger.NewLine();
+                        databaseContext.UserService.ComputeEffectiveUserAndSource();
+
+                        string effectiveUser = databaseContext.UserService.EffectiveUser;
+                        string sourcePrincipal = databaseContext.UserService.SourcePrincipal;
+                        string initialSystemUser = databaseContext.UserService.SystemUser;
+                        string initialMappedUser = databaseContext.UserService.MappedUser;
+
+                        if (!effectiveUser.Equals(initialMappedUser, StringComparison.OrdinalIgnoreCase))
+                        {
+                            Logger.Info($"Effective database user: {effectiveUser}");
+                            if (!sourcePrincipal.Equals(initialSystemUser, StringComparison.OrdinalIgnoreCase))
+                            {
+                                Logger.InfoNested($"Access granted via: {sourcePrincipal}");
+                            }
+                        }
+                        else if (!sourcePrincipal.Equals(initialSystemUser, StringComparison.OrdinalIgnoreCase))
+                        {
+                            Logger.Info($"Domain user is mapped via Domain Group '{sourcePrincipal}'");
+                        }
+                        else
+                        {
+                            Logger.Info($"Domain user is directly mapped");
+                        }
+                    }
+
                     string[] impersonationUsers = databaseContext.Server.ImpersonationUsers;
 
                     string userName, systemUser;
@@ -191,33 +221,6 @@ namespace MSSQLand
                         Logger.NewLine();
                         Logger.Warning($"Connected to legacy SQL Server (version {databaseContext.Server.MajorVersion}).");
                         Logger.NewLine();
-                    }
-
-                    // Compute effective user (domain users only)
-                    if (databaseContext.UserService.IsDomainUser)
-                    {
-                        Logger.NewLine();
-                        databaseContext.UserService.ComputeEffectiveUserAndSource();
-
-                        string effectiveUser = databaseContext.UserService.EffectiveUser;
-                        string sourcePrincipal = databaseContext.UserService.SourcePrincipal;
-
-                        if (!effectiveUser.Equals(userName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            Logger.Info($"Effective database user: {effectiveUser}");
-                            if (!sourcePrincipal.Equals(systemUser, StringComparison.OrdinalIgnoreCase))
-                            {
-                                Logger.InfoNested($"Access granted via: {sourcePrincipal}");
-                            }
-                        }
-                        else if (!sourcePrincipal.Equals(systemUser, StringComparison.OrdinalIgnoreCase))
-                        {
-                            Logger.Info($"Domain user is mapped via Domain Group '{sourcePrincipal}'");
-                        }
-                        else
-                        {
-                            Logger.Info($"Domain user is directly mapped");
-                        }
                     }
 
                     // Handle linked servers
