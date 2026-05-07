@@ -2,7 +2,6 @@
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
-using System;
 
 namespace MSSQLand.Actions.Remote
 {
@@ -12,36 +11,11 @@ namespace MSSQLand.Actions.Remote
     /// </summary>
     internal class DataAccess : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "Action: enable/disable (or aliases: +/-, on/off, 1/0, true/false, add/del)")]
+        [ArgumentMetadata(Position = 0, Required = true, Toggle = true, Description = "Action: enable/disable (or aliases: +/-, on/off, 1/0, true/false, add/del)")]
         private bool _enable;
 
         [ArgumentMetadata(Position = 1, Required = true, Description = "Linked server name")]
         private string _linkedServerName = "";
-
-        public override void ValidateArguments(string[] args)
-        {
-            if (args == null || args.Length == 0)
-            {
-                throw new ArgumentException("Data access action requires two arguments: action and linked server name.");
-            }
-
-            if (args.Length != 2)
-            {
-                throw new ArgumentException("Data access action requires exactly two arguments: action and linked server name.");
-            }
-
-            if (!TryParseToggleAction(args[0], out bool enable, out string error))
-            {
-                throw new ArgumentException(error);
-            }
-
-            _enable = enable;
-
-            var normalizedArgs = (string[])args.Clone();
-            normalizedArgs[0] = enable ? "true" : "false";
-
-            BindArguments(normalizedArgs);
-        }
 
         public override object Execute(DatabaseContext databaseContext)
         {

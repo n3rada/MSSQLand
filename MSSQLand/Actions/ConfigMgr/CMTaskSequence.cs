@@ -14,10 +14,10 @@ namespace MSSQLand.Actions.ConfigMgr
 {
     /// <summary>
     /// Display detailed information about a specific ConfigMgr Task Sequence including all referenced content.
-    /// 
-    /// PackageID uniquely identifies a task sequence (1:1 relationship). Task sequences are packages 
+    ///
+    /// PackageID uniquely identifies a task sequence (1:1 relationship). Task sequences are packages
     /// and each has a unique PackageID (e.g., PSC00001) that serves as the primary key.
-    /// 
+    ///
     /// Shows packages, drivers, applications, OS images, and boot images used in the task sequence.
     /// Use this to analyze what content is deployed by a specific task sequence.
     /// </summary>
@@ -49,7 +49,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
                 // Get task sequence details (including Sequence XML)
                 string tsQuery = $@"
-SELECT 
+SELECT
     ts.PkgID AS PackageID,
     ts.Name,
     ts.Description,
@@ -67,8 +67,8 @@ SELECT
     ts.TS_Flags,
     ts.Sequence,
     (
-        SELECT COUNT(*) 
-        FROM [{db}].dbo.v_TaskSequenceReferencesInfo ref 
+        SELECT COUNT(*)
+        FROM [{db}].dbo.v_TaskSequenceReferencesInfo ref
         WHERE ref.PackageID = ts.PkgID
     ) AS ReferencedContentCount
 FROM [{db}].dbo.vSMS_TaskSequencePackage ts
@@ -87,11 +87,11 @@ WHERE ts.PkgID = '{_packageId.Replace("'", "''")}'
                 DataRow tsRow = tsResult.Rows[0];
                 string name = tsRow["Name"].ToString();
                 string description = tsRow["Description"].ToString();
-                
+
                 // Sequence is stored as compressed binary (varbinary), need to decompress
                 byte[] sequenceBinary = tsRow["Sequence"] as byte[];
                 string sequenceXml = "";
-                
+
                 if (sequenceBinary != null && sequenceBinary.Length > 0)
                 {
                     try
@@ -103,7 +103,7 @@ WHERE ts.PkgID = '{_packageId.Replace("'", "''")}'
                         Logger.Warning($"Failed to decompress sequence data: {ex.Message}");
                     }
                 }
-                
+
                 int refCount = tsRow["ReferencedContentCount"] != DBNull.Value ? Convert.ToInt32(tsRow["ReferencedContentCount"]) : 0;
 
                 Logger.NewLine();
@@ -124,18 +124,18 @@ WHERE ts.PkgID = '{_packageId.Replace("'", "''")}'
 
                 Logger.NewLine();
                 Logger.Info("Task Sequence Properties");
-                
+
                 // Add SequenceSize column and remove raw binary Sequence column
                 DataColumn sizeColumn = tsResult.Columns.Add("SequenceSize", typeof(string));
                 int sequenceIndex = tsResult.Columns["Sequence"].Ordinal;
                 sizeColumn.SetOrdinal(sequenceIndex);
-                
+
                 // Set SequenceSize for the single row (DataTable always has 1 row here)
                 byte[] seqData = tsRow["Sequence"] as byte[];
-                tsRow["SequenceSize"] = (seqData != null && seqData.Length > 0) 
-                    ? ByteHelper.FormatByteSize(seqData.Length) 
+                tsRow["SequenceSize"] = (seqData != null && seqData.Length > 0)
+                    ? ByteHelper.FormatByteSize(seqData.Length)
                     : "Empty";
-                
+
                 tsResult.Columns.Remove("Sequence");
                 Console.WriteLine(OutputFormatter.ConvertDataTable(tsResult));
 
@@ -146,7 +146,7 @@ WHERE ts.PkgID = '{_packageId.Replace("'", "''")}'
                     Logger.Info($"Referenced Content ({refCount} item(s))");
 
                     string refQuery = $@"
-SELECT 
+SELECT
     ref.ReferencePackageID,
     ref.ReferencePackageType AS ReferencePackageTypeRaw,
     ref.ReferenceName AS ContentName,
@@ -159,7 +159,7 @@ ORDER BY ref.ReferencePackageType, ref.ReferenceName;
 ";
 
                     DataTable refResult = databaseContext.QueryService.ExecuteTable(refQuery);
-                    
+
                     // Add decoded ContentType column and remove raw numeric column
                     DataColumn decodedTypeColumn = refResult.Columns.Add("ContentType", typeof(string));
                     int packageTypeRawIndex = refResult.Columns["ReferencePackageTypeRaw"].Ordinal;
@@ -179,7 +179,7 @@ ORDER BY ref.ReferencePackageType, ref.ReferenceName;
                     Logger.NewLine();
                     Logger.Info("Content Summary by Type");
                     string summaryQuery = $@"
-SELECT 
+SELECT
     ref.ReferencePackageType AS ReferencePackageTypeRaw,
     COUNT(*) AS Count
 FROM [{db}].dbo.v_TaskSequenceReferencesInfo ref
@@ -189,7 +189,7 @@ ORDER BY COUNT(*) DESC;
 ";
 
                     DataTable summaryResult = databaseContext.QueryService.ExecuteTable(summaryQuery);
-                    
+
                     // Add decoded ContentType column and remove raw numeric column
                     DataColumn decodedSummaryTypeColumn = summaryResult.Columns.Add("ContentType", typeof(string));
                     int summaryPackageTypeRawIndex = summaryResult.Columns["ReferencePackageTypeRaw"].Ordinal;
@@ -215,7 +215,7 @@ ORDER BY COUNT(*) DESC;
                 Logger.Info("Task Sequence Deployments");
 
                 string deploymentsQuery = $@"
-SELECT 
+SELECT
     adv.AdvertisementID,
     adv.AdvertisementName,
     adv.CollectionID,
@@ -223,15 +223,15 @@ SELECT
     c.MemberCount,
     adv.PresentTime,
     adv.ExpirationTime,
-    CASE 
+    CASE
         WHEN adv.AdvertFlags & 0x00000020 = 0x00000020 THEN 'Required'
         ELSE 'Available'
     END AS DeploymentType,
-    CASE 
+    CASE
         WHEN adv.AdvertFlags & 0x00000400 = 0x00000400 THEN 'Yes'
         ELSE 'No'
     END AS AllowUsersToRunIndependently,
-    CASE 
+    CASE
         WHEN adv.AdvertFlags & 0x00008000 = 0x00008000 THEN 'Yes'
         ELSE 'No'
     END AS RerunBehavior
@@ -241,12 +241,12 @@ WHERE adv.PackageID = '{_packageId.Replace("'", "''")}'
 ORDER BY adv.PresentTime DESC;";
 
                 DataTable deploymentsResult = databaseContext.QueryService.ExecuteTable(deploymentsQuery);
-                
+
                 if (deploymentsResult.Rows.Count > 0)
                 {
                     Console.WriteLine(OutputFormatter.ConvertDataTable(deploymentsResult));
                     Logger.Success($"Task sequence deployed to {deploymentsResult.Rows.Count} collection(s)");
-                    
+
                     // Show total potential reach
                     int totalMembers = 0;
                     foreach (DataRow row in deploymentsResult.Rows)
@@ -267,7 +267,7 @@ ORDER BY adv.PresentTime DESC;";
                 Logger.Info("Deployment Status Summary");
 
                 string statusQuery = $@"
-SELECT 
+SELECT
     ds.SoftwareName,
     ds.CollectionID,
     c.Name AS CollectionName,
@@ -285,7 +285,7 @@ WHERE ds.PackageID = '{_packageId.Replace("'", "''")}'
 ORDER BY ds.DeploymentTime DESC;";
 
                 DataTable statusResult = databaseContext.QueryService.ExecuteTable(statusQuery);
-                
+
                 if (statusResult.Rows.Count > 0)
                 {
                     // Add decoded DeploymentIntent column and remove raw numeric column
@@ -333,7 +333,7 @@ ORDER BY ds.DeploymentTime DESC;";
 
             // First 4 bytes = uncompressed length (little-endian)
             int uncompressedLength = BitConverter.ToInt32(compressedData, 0);
-            
+
             // Sanity check: uncompressed size should be reasonable (< 100MB)
             if (uncompressedLength < 0 || uncompressedLength > 100 * 1024 * 1024)
             {
@@ -376,7 +376,7 @@ ORDER BY ds.DeploymentTime DESC;";
 
                 // Task sequence steps are in /sequence/group or /sequence/step nodes
                 XmlNodeList steps = doc.SelectNodes("//sequence//*[@type]");
-                
+
                 if (steps == null || steps.Count == 0)
                 {
                     Logger.Warning("No steps found in task sequence");
@@ -418,7 +418,7 @@ ORDER BY ds.DeploymentTime DESC;";
 
                 // Decode common step types
                 string decodedType = DecodeStepType(type);
-                
+
                 // Extract relevant details based on step type
                 string details = ExtractStepDetails(node, type);
 

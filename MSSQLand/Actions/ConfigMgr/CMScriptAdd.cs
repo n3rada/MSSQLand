@@ -90,9 +90,9 @@ namespace MSSQLand.Actions.ConfigMgr
                     string scriptHash = ByteHelper.ComputeSHA256(scriptBytes);
 
                     string insertQuery = $@"
-INSERT INTO [{db}].dbo.Scripts 
-(ScriptGuid, ScriptVersion, ScriptName, Script, ScriptType, Approver, ApprovalState, Feature, Author, LastUpdateTime, ScriptHash, Comment, ScriptDescription) 
-VALUES 
+INSERT INTO [{db}].dbo.Scripts
+(ScriptGuid, ScriptVersion, ScriptName, Script, ScriptType, Approver, ApprovalState, Feature, Author, LastUpdateTime, ScriptHash, Comment, ScriptDescription)
+VALUES
 ('{_scriptGuid}', 1, '{_scriptName.Replace("'", "''")}', 0x{scriptHex}, 0, 'CM', 3, 1, 'CM', '', '{scriptHash}', '', '')";
 
                     databaseContext.QueryService.ExecuteNonProcessing(insertQuery);

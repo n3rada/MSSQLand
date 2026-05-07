@@ -12,7 +12,7 @@ namespace MSSQLand.Actions
     public class ArgumentMetadataAttribute : Attribute
     {
         /// <summary>
-        /// The position of this argument when passed positionally (0-based). 
+        /// The position of this argument when passed positionally (0-based).
         /// -1 means it's not positional.
         /// </summary>
         public int Position { get; set; } = -1;
@@ -43,5 +43,11 @@ namespace MSSQLand.Actions
         /// "What is left over." From Latin remanere (to remain/stay behind)
         /// </summary>
         public bool Remainder { get; set; } = false;
+
+        /// <summary>
+        /// When true, the argument accepts toggle aliases (+/-,  on/off, 1/0, true/false, enable/disable, add/del)
+        /// in addition to standard bool literals. Applies only to bool fields.
+        /// </summary>
+        public bool Toggle { get; set; } = false;
     }
 }

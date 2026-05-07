@@ -34,7 +34,7 @@ namespace MSSQLand.Utilities
                 {
                     // Handle string-based SID formats
                     string maybeSid = rawSidObj.ToString();
-                    
+
                     if (maybeSid.StartsWith("S-", StringComparison.OrdinalIgnoreCase))
                     {
                         return maybeSid;
@@ -42,10 +42,10 @@ namespace MSSQLand.Utilities
                     else
                     {
                         // Try parsing hex format (0x...)
-                        string hex = maybeSid.StartsWith("0x", StringComparison.OrdinalIgnoreCase) 
-                            ? maybeSid.Substring(2) 
+                        string hex = maybeSid.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+                            ? maybeSid.Substring(2)
                             : maybeSid;
-                        
+
                         var bytes = ByteHelper.HexStringToBytes(hex);
                         var sid = new SecurityIdentifier(bytes, 0);
                         return sid.Value;

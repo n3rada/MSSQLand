@@ -63,15 +63,15 @@ namespace MSSQLand.Actions.ConfigMgr
 
                 Logger.NewLine();
                 Logger.Info($"{scriptName} ({scriptGuid})");
-                
+
                 if (!string.IsNullOrEmpty(description))
                 {
                     Logger.InfoNested($"Description: {description}");
                 }
-                
+
                 Logger.InfoNested($"Author: {author}");
                 Logger.InfoNested($"Version: {scriptVersion}");
-                
+
                 string approvalStateStr = approvalState switch
                 {
                     0 => "Waiting",
@@ -80,12 +80,12 @@ namespace MSSQLand.Actions.ConfigMgr
                     _ => approvalState.ToString()
                 };
                 Logger.InfoNested($"Approval State: {approvalStateStr}");
-                
+
                 if (!string.IsNullOrEmpty(approver))
                 {
                     Logger.InfoNested($"Approver: {approver}");
                 }
-                
+
                 if (lastUpdate != DateTime.MinValue)
                 {
                     Logger.InfoNested($"Last Updated: {lastUpdate:yyyy-MM-dd HH:mm:ss}");

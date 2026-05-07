@@ -12,15 +12,15 @@ namespace MSSQLand.Actions.ConfigMgr
     /// <summary>
     /// Display detailed technical information about a ConfigMgr deployment type.
     /// Shows detection method, install commands, requirements, content location, and full policy XML.
-    /// 
+    ///
     /// Use Case:
     /// When you need to understand exactly how an application deployment type works - what detection
     /// method is used, what command line is executed, what requirements must be met, and what the
     /// client-side policy looks like. Essential for troubleshooting detection issues, understanding
     /// deployment behavior, or preparing to modify/hijack deployment types.
-    /// 
+    ///
     /// Input: Deployment Type CI_ID (get from cm-trace, cm-applications, or database queries)
-    /// 
+    ///
     /// Information Displayed:
     /// - Deployment type metadata (CI_ID, CI_UniqueID, title, version, enabled/expired status)
     /// - Technology type (Script, MSI, App-V, AppX, etc.)
@@ -32,17 +32,17 @@ namespace MSSQLand.Actions.ConfigMgr
     /// - Exit codes (success, reboot, error handling)
     /// - Full Policy Platform XML (what the client receives in WMI)
     /// - Full SDM Package Digest XML (System Definition Model)
-    /// 
+    ///
     /// XML Documents Explained:
     /// - Policy Platform (CI_DocumentStore.Body): The compiled policy sent to clients, stored in
     ///   root\ccm\CIModels WMI namespace. This is what AppDiscovery.log and AppEnforce.log use.
     /// - SDM Package Digest (CI_ConfigurationItems.SDMPackageDigest): The System Definition Model
     ///   representation of the deployment type, used by the ConfigMgr console and policy compilation.
-    /// 
+    ///
     /// Examples:
     /// cm-dt 16891057
     /// cm-dt 16891057 --xml   (includes full XML output)
-    /// 
+    ///
     /// Typical Workflow:
     /// 1. Run cm-trace with GUID from log to get CI_ID
     /// 2. Run cm-dt with CI_ID to see technical details
@@ -132,7 +132,7 @@ WHERE ci.CI_ID = {_ciId} AND ci.CIType_ID = 21;";
 
                 Logger.SuccessNested($"Created: {Convert.ToDateTime(dt["DateCreated"]):yyyy-MM-dd HH:mm:ss} UTC by {dt["CreatedBy"]}");
                 Logger.SuccessNested($"Last Modified: {Convert.ToDateTime(dt["DateLastModified"]):yyyy-MM-dd HH:mm:ss} UTC by {dt["LastModifiedBy"]}");
-                
+
                 if (dt["SourceSite"] != DBNull.Value && !string.IsNullOrWhiteSpace(dt["SourceSite"].ToString()))
                 {
                     Logger.SuccessNested($"Source Site: {dt["SourceSite"]}");
@@ -183,8 +183,8 @@ WHERE ci.CI_ID = {_ciId} AND ci.CIType_ID = 21;";
 
                 if (!string.IsNullOrEmpty(sdmInfo.FileName))
                 {
-                    string sizeInfo = !string.IsNullOrEmpty(sdmInfo.FileSize) 
-                        ? $" ({long.Parse(sdmInfo.FileSize):N0} bytes)" 
+                    string sizeInfo = !string.IsNullOrEmpty(sdmInfo.FileSize)
+                        ? $" ({long.Parse(sdmInfo.FileSize):N0} bytes)"
                         : "";
                     Logger.InfoNested($"File: {sdmInfo.FileName}{sizeInfo}");
                 }
@@ -215,7 +215,7 @@ WHERE ci.CI_ID = {_ciId} AND ci.CIType_ID = 21;";
                 Logger.Info("Parent Application");
 
                 string parentQuery = $@"
-SELECT 
+SELECT
     ci.CI_ID,
     ci.CI_UniqueID,
     COALESCE(lp.DisplayName, lcp.Title) AS ApplicationName
@@ -260,11 +260,11 @@ WHERE rel.ToCI_ID = {_ciId} AND rel.RelationType = 9;";
                         {
                             // Parse enhanced detection settings
                             XmlNodeList settingNodes = doc.SelectNodes("//p1:EnhancedDetectionMethod//dc:*", nsManager);
-                            
+
                             foreach (XmlNode settingNode in settingNodes)
                             {
                                 string settingType = settingNode.LocalName;
-                                
+
                                 switch (settingType)
                                 {
                                     case "File":
@@ -319,14 +319,14 @@ WHERE rel.ToCI_ID = {_ciId} AND rel.RelationType = 9;";
                     nsManager.AddNamespace("rules", "http://schemas.microsoft.com/SystemsCenterConfigurationManager/2009/06/14/Rules");
 
                     XmlNodeList ruleNodes = doc.SelectNodes("//p1:Requirements/rules:Rule", nsManager);
-                    
+
                     if (ruleNodes.Count > 0)
                     {
                         foreach (XmlNode ruleNode in ruleNodes)
                         {
                             string displayName = ruleNode.SelectSingleNode("rules:Annotation/rules:DisplayName/@Text", nsManager)?.Value;
                             string operatorType = ruleNode.SelectSingleNode("rules:Expression/rules:Operator", nsManager)?.InnerText;
-                            
+
                             if (!string.IsNullOrEmpty(displayName))
                             {
                                 Logger.InfoNested($"\t{displayName} (Operator: {operatorType})");
@@ -360,7 +360,7 @@ WHERE rel.ToCI_ID = {_ciId} AND rel.RelationType = 9;";
                     nsManager.AddNamespace("p1", "http://schemas.microsoft.com/SystemCenterConfigurationManager/2009/AppMgmtDigest");
 
                     XmlNodeList exitCodeNodes = doc.SelectNodes("//p1:ExitCode", nsManager);
-                    
+
                     if (exitCodeNodes.Count > 0)
                     {
                         foreach (XmlNode exitCodeNode in exitCodeNodes)
@@ -381,7 +381,7 @@ WHERE rel.ToCI_ID = {_ciId} AND rel.RelationType = 9;";
                 Logger.Info("Policy Document Information");
 
                 string docQuery = $@"
-SELECT TOP 1 
+SELECT TOP 1
     ds.Document_ID,
     ds.DocumentIdentifier,
     ds.DocumentType,
@@ -406,7 +406,7 @@ ORDER BY ds.Document_ID DESC;";
                         3 => "Policy Platform (DCM Application/Deployment Type)",
                         _ => $"Unknown ({docType})"
                     };
-                    
+
                     Logger.InfoNested($"Document ID: {docRow["Document_ID"]}");
                     Logger.InfoNested($"Document Identifier: {docRow["DocumentIdentifier"]}");
                     Logger.InfoNested($"Document Type: {docTypeName}");

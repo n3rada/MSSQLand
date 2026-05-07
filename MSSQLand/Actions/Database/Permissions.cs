@@ -11,12 +11,12 @@ namespace MSSQLand.Actions.Database
 {
     /// <summary>
     /// Enumerate user and role permissions at server, database, and object levels.
-    /// 
+    ///
     /// Usage:
     /// - No arguments: Show current user's server, database, and database access permissions
     /// - schema.table: Show permissions on a specific table in the current database
     /// - database.schema.table: Show permissions on a specific table in a specific database
-    /// 
+    ///
     /// Uses fn_my_permissions to check what the current user can do.
     /// Schema defaults to the user's default schema if not explicitly specified.
     /// </summary>
@@ -39,7 +39,7 @@ namespace MSSQLand.Actions.Database
             try
             {
                 var (_, schema, table) = SqlHelper.ParseQualifiedTableName(_fqtn);
-                
+
                 // For permissions, we require at least schema.table
                 if (string.IsNullOrEmpty(schema) || string.IsNullOrEmpty(table))
                 {
@@ -101,7 +101,7 @@ namespace MSSQLand.Actions.Database
             {useStatement}
             SELECT DISTINCT
                 permission_name AS [Permission]
-            FROM 
+            FROM
                 fn_my_permissions('{targetTable}', 'OBJECT');
             ";
 
@@ -139,7 +139,7 @@ namespace MSSQLand.Actions.Database
             if (permission == "ALTER ANY LOGIN") return 2;
             if (permission == "ALTER ANY DATABASE") return 3;
             if (permission == "CREATE ANY DATABASE") return 4;
-            
+
             // Administrative permissions
             if (permission == "CONTROL") return 10;
             if (permission == "TAKE OWNERSHIP") return 11;
@@ -147,33 +147,33 @@ namespace MSSQLand.Actions.Database
             if (permission == "ALTER ANY USER") return 13;
             if (permission == "ALTER ANY ROLE") return 14;
             if (permission == "ALTER ANY SCHEMA") return 15;
-            
+
             // Code execution permissions
             if (permission == "EXECUTE") return 20;
             if (permission == "ALTER") return 21;
             if (permission == "CREATE PROCEDURE") return 22;
             if (permission == "CREATE FUNCTION") return 23;
             if (permission == "CREATE ASSEMBLY") return 24;
-            
+
             // Data modification permissions
             if (permission == "INSERT") return 30;
             if (permission == "UPDATE") return 31;
             if (permission == "DELETE") return 32;
-            
+
             // Data access permissions
             if (permission == "SELECT") return 40;
             if (permission == "REFERENCES") return 41;
-            
+
             // View/metadata permissions
             if (permission == "VIEW DEFINITION") return 50;
             if (permission == "VIEW ANY DATABASE") return 51;
             if (permission == "VIEW SERVER STATE") return 52;
             if (permission == "VIEW DATABASE STATE") return 53;
-            
+
             // Connection permissions (least critical)
             if (permission == "CONNECT") return 60;
             if (permission == "CONNECT SQL") return 61;
-            
+
             // Default for unknown permissions
             return 100;
         }

@@ -349,7 +349,20 @@ namespace MSSQLand.Actions
                 {
                     try
                     {
-                        object convertedValue = ConvertArgumentValue(value, field.FieldType);
+                        object convertedValue;
+                        if (metadata.Toggle && field.FieldType == typeof(bool))
+                        {
+                            if (!TryParseToggleAction(value, out bool toggled, out string toggleError))
+                            {
+                                string argName = metadata.LongName ?? metadata.ShortName ?? field.Name.TrimStart('_');
+                                throw new ArgumentException($"Invalid toggle value for '{argName}': {toggleError}");
+                            }
+                            convertedValue = toggled;
+                        }
+                        else
+                        {
+                            convertedValue = ConvertArgumentValue(value, field.FieldType);
+                        }
                         field.SetValue(this, convertedValue);
                     }
                     catch (Exception ex)
