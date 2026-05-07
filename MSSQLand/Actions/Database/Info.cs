@@ -48,6 +48,7 @@ namespace MSSQLand.Actions.Database
                 {
                     { "Host Name", "SELECT SERVERPROPERTY('MachineName');" },
                     { "SQL Service Process ID", "SELECT SERVERPROPERTY('ProcessId');" },
+                    { "SQL Service Account", "SELECT TOP 1 service_account FROM sys.dm_server_services WHERE servicename NOT LIKE '%Agent%' AND servicename LIKE 'SQL Server%';" },
                     { "Instance Data Path", "SELECT SERVERPROPERTY('InstanceDefaultDataPath');" },
                     { "Instance Log Path", "SELECT SERVERPROPERTY('InstanceDefaultLogPath');" },
                     { "Operating System Version", "SELECT TOP(1) windows_release + ISNULL(' ' + windows_service_pack_level, '') FROM master.sys.dm_os_windows_info;" },
