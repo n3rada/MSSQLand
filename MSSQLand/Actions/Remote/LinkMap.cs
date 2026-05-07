@@ -1376,7 +1376,7 @@ namespace MSSQLand.Actions.Remote
                 hostArg += "/" + string.Join("/", hostImpersonation);
 
             // Full command
-            string command = $"\"{hostArg}\" -l \"{chainArg}\"";
+            string command = $"{hostArg} -l {chainArg}";
 
             // Endpoint is same server but with escalated login
             string endpoint = lastNode.Alias;
