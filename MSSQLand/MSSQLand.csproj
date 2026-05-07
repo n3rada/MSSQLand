@@ -77,6 +77,7 @@
     <Compile Include="Actions\BaseAction.cs" />
     <Compile Include="Actions\ExcludeFromArgumentsAttribute.cs" />
 
+    <Compile Include="Actions\Administration\Audit.cs" />
     <Compile Include="Actions\Administration\Config.cs" />
     <Compile Include="Actions\Administration\UserAdd.cs" />
     <Compile Include="Actions\Administration\Kill.cs" />

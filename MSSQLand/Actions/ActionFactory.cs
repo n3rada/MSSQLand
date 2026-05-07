@@ -57,6 +57,7 @@ namespace MSSQLand.Actions
             // ADMINISTRATION ACTIONS
             // ═══════════════════════════════════════════════════════════════════════════════
             { "config", (typeof(Config), "List security-sensitive configuration options or set their values using sp_configure.", new[] { "settings" }) },
+            { "audit", (typeof(Audit), "Enumerate SQL Server audit objects, event groups, log destinations, and ON_FAILURE behavior.", new[] { "audits", "audit-status" }) },
             { "user-add", (typeof(UserAdd), "Create a SQL login with specified server role privileges (default: sysadmin).", null) },
             { "sessions", (typeof(Sessions), "Display active SQL Server sessions with login and connection information.", new[] { "who" }) },
             { "kill", (typeof(Kill), "Terminate SQL Server sessions by session ID or kill all running sessions.", null) },
