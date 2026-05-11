@@ -65,31 +65,39 @@ namespace MSSQLand.Actions.Database
                 );
             }
 
-            // Check db_owner role membership for each accessible database
-            // IS_MEMBER is context-dependent and must be evaluated per-database
+            // Check db_owner role membership for all accessible databases in one roundtrip
+            // IS_MEMBER is context-dependent so we build dynamic SQL with USE per-database
+            // EXECUTE() wraps the batch so USE statements don't change the outer context
             allDatabases.Columns.Add("db_owner", typeof(bool));
             allDatabases.Columns["db_owner"].SetOrdinal(allDatabases.Columns["OwnerIsSysadmin"].Ordinal + 1);
 
-            foreach (DataRow row in allDatabases.Rows)
+            try
             {
-                bool isAccessible = row["Accessible"] != DBNull.Value && Convert.ToBoolean(row["Accessible"]);
-                if (isAccessible)
-                {
-                    try
-                    {
-                        string dbName = row["name"].ToString().Replace("]", "]]");
-                        object result = databaseContext.QueryService.ExecuteScalar(
-                            $"EXECUTE('USE [{dbName}]; SELECT CAST(IS_MEMBER(''db_owner'') AS BIT);')"
-                        );
+                DataTable ownerResults = databaseContext.QueryService.ExecuteTable(
+                    @"DECLARE @sql NVARCHAR(MAX) = N'';
+SELECT @sql = @sql +
+    N'USE [' + REPLACE(name, ']', ']]') + N']; INSERT INTO #db_owner_check VALUES(''' + REPLACE(name, '''', '''''') + N''', CAST(IS_MEMBER(''db_owner'') AS BIT)); '
+FROM sys.databases WHERE HAS_DBACCESS(name) = 1;
+CREATE TABLE #db_owner_check (db_name NVARCHAR(256), is_db_owner BIT);
+EXECUTE(@sql);
+SELECT db_name, is_db_owner FROM #db_owner_check;
+DROP TABLE #db_owner_check;"
+                );
 
-                        row["db_owner"] = result != null && result != DBNull.Value && Convert.ToBoolean(result);
-                    }
-                    catch
-                    {
-                        row["db_owner"] = false;
-                    }
+                var ownerMap = ownerResults.AsEnumerable().ToDictionary(
+                    r => r["db_name"].ToString(),
+                    r => r["is_db_owner"] != DBNull.Value && Convert.ToBoolean(r["is_db_owner"])
+                );
+
+                foreach (DataRow row in allDatabases.Rows)
+                {
+                    string dbName = row["name"].ToString();
+                    row["db_owner"] = ownerMap.ContainsKey(dbName) && ownerMap[dbName];
                 }
-                else
+            }
+            catch
+            {
+                foreach (DataRow row in allDatabases.Rows)
                 {
                     row["db_owner"] = false;
                 }
