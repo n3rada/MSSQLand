@@ -41,6 +41,10 @@ For comparison, [GraphSpy PR #18](https://github.com/RedByte1337/GraphSpy/pull/1
 
 ## MSSQLand
 
-Rather than let this work go to waste, I built MSSQLand from scratch: an OOP-driven, modular, and community-friendly alternative. Unlike SQLRecon, which required deep refactoring to make simple modifications, MSSQLand was designed with extensibility in mind from day one.
+Rather than let this work go to waste, I built MSSQLand from scratch. Beyond the contribution handling, SQLRecon had architectural limitations that made it unsuitable for real-world chaining scenarios.
+
+Impersonation (`/i`) and linked servers (`/l`) are mutually exclusive — the code explicitly blocks combining them. In practice, this means you cannot impersonate a user on the initial server and then traverse linked servers, which is exactly the most common scenario. There is no cascading impersonation either: `/i` accepts a single username and prepends a single `EXECUTE AS LOGIN`. No per-hop impersonation exists in linked server chains — the chain is a flat list of server names with no associated security context. And every module duplicates the same four-way `switch` statement (`standard`/`impersonation`/`linked`/`chained`), making any new context combination a cross-cutting change across the entire codebase.
+
+MSSQLand was designed from the ground up with a unified context model. Impersonation, linked server traversal, and database context are properties of each server in the chain, not mutually exclusive modes. The server notation `server/user1/user2@database` naturally expresses cascading impersonation at any hop, and the query service transparently wraps queries with the correct `EXECUTE AS` and `OPENQUERY`/`EXEC AT` nesting regardless of chain depth.
 
 Here, no one will be erased from Git history.
