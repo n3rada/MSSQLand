@@ -89,7 +89,7 @@ Chain multiple SQL servers using the `-l` flag with **semicolon (`;`) as the sep
 
 These modes require no authentication and work before you have credentials.
 
-### Browsing Service
+### 📡 Browsing Service
 
 The [SQL Server Browser service](https://learn.microsoft.com/en-us/sql/tools/configuration-manager/sql-server-browser-service) listens on **UDP 1434** and responds to discovery requests with the list of SQL Server instances running on a host, including their names, versions, and TCP ports. This is useful when the target is running named instances on dynamic ports, no need to guess or scan.
 
@@ -98,7 +98,7 @@ The [SQL Server Browser service](https://learn.microsoft.com/en-us/sql/tools/con
 MSSQLand.exe LAB-SQL03 --browse
 ```
 
-### LDAP Queries
+### 📂 LDAP Queries
 
 Active Directory exposes SQL Server registrations through [Service Principal Names (SPNs)](https://learn.microsoft.com/en-us/sql/database-engine/configure-windows/register-a-service-principal-name-for-kerberos-connections) stored on computer and service accounts. MSSQLand queries AD via LDAP for `MSSQLSvc/*` SPNs to enumerate SQL Server instances across the domain, or the entire forest via the [Global Catalog](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/planning-global-catalog-server-placement).
 
@@ -115,7 +115,7 @@ MSSQLand.exe --findsql pgd.lab --gc
 
 Discovery is multi-layered. See [FindSqlServers.cs](MSSQLand/Utilities/Discovery/FindSqlServers.cs) for more details.
 
-### Broadcast
+### 📢 Broadcast
 
 SQL Server Browser also responds to [UDP broadcast packets](https://learn.microsoft.com/en-us/sql/tools/configuration-manager/sql-server-browser-service#using-sql-server-browser) on **UDP 1434**, allowing discovery of all SQL Server instances advertising themselves on the local subnet.
 
@@ -128,7 +128,7 @@ MSSQLand.exe --broadcast --timeout 5
 > [!TIP]
 > This is particularly useful when a SQL Server is running on a machine that is **not domain-joined** and therefore won't appear in any LDAP or SPN query. Think standalone servers, developer machines, or rogue instances spun up on an internal VLAN.
 
-### Port Scan
+### 🔌 Port Scan
 
 Validates open ports against live SQL Server instances using [TDS protocol](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/b46a581a-39de-4745-b076-ec4dbb7d13ec) handshakes (not just TCP SYN). A port is only reported if it responds to a TDS pre-login packet.
 
@@ -151,7 +151,17 @@ Implementing NTLMv2 from scratch inside MSSQLand would mean:
 
 If you need to authenticate with a Kerberos ticket or NT/LM hashes from an external position, [mssqlclient-ng](https://github.com/n3rada/mssqlclient-ng) is the right tool. This is a Python 3 client built for Unix-side access, trivially paired with a SOCKS5 proxy established from your beacon.
 
-## 🫤 Help
+## 🌉 Port Forwarding with Linux
+
+If you're running MSSQLand on your Windows host but need to access a SQL Server target through a Linux environment (Hyper-V VM, VMware, or WSL), you can easily forward the connection using `socat`:
+
+```bash
+sudo socat TCP4-LISTEN:1433,fork,reuseaddr TCP:10.10.11.90:1433
+```
+
+This command listens on port 1433 on your Linux machine and forwards all traffic to the target SQL Server at `10.10.11.90:1433`. You can then connect MSSQLand to your Linux VM's IP from your Windows host.
+
+## ❓ Help
 
 - `-h` or `--help` - Show all available actions
 - `-h search_term` - Filter actions (e.g., `-h adsi` shows all ADSI-related actions)
@@ -199,6 +209,7 @@ Acceptable environments include:
 Misuse of this project may result in legal action.
 
 ## ⚖️ Legal Notice
+
 Any unauthorized use of this tool in real-world environments or against systems without explicit permission from the system owner is strictly prohibited and may violate legal and ethical standards. The creators and contributors of this tool are not responsible for any misuse or damage caused.
 
 Use responsibly and ethically. Always respect the law and obtain proper authorization.
