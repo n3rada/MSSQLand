@@ -60,7 +60,7 @@ namespace MSSQLand.Models
         }
 
         /// <summary>8-character hex prefix of <see cref="GetStateHash"/>, suitable for filenames.</summary>
-        public string ShortHash => GetStateHash()[..8];
+        public string ShortHash => GetStateHash().Substring(0, 8);
 
         /// <inheritdoc/>
         public override bool Equals(object obj)
@@ -74,11 +74,17 @@ namespace MSSQLand.Models
 
         /// <inheritdoc/>
         public override int GetHashCode()
-            => System.HashCode.Combine(
-                Hostname.ToUpperInvariant(),
-                MappedUser.ToUpperInvariant(),
-                SystemUser.ToUpperInvariant(),
-                IsSysadmin);
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + (Hostname?.ToUpperInvariant()?.GetHashCode() ?? 0);
+                hash = hash * 31 + (MappedUser?.ToUpperInvariant()?.GetHashCode() ?? 0);
+                hash = hash * 31 + (SystemUser?.ToUpperInvariant()?.GetHashCode() ?? 0);
+                hash = hash * 31 + IsSysadmin.GetHashCode();
+                return hash;
+            }
+        }
 
         /// <inheritdoc/>
         public override string ToString()

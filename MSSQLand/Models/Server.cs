@@ -99,6 +99,12 @@ namespace MSSQLand.Models
 
         public string Database { get; set; } = null;
 
+        /// <summary>The system login user (SYSTEM_USER), populated after connection.</summary>
+        public string SystemUser { get; set; }
+
+        /// <summary>The mapped database user (USER_NAME()), populated after connection.</summary>
+        public string MappedUser { get; set; }
+
         /// <summary>
         /// The users to impersonate on this server (optional).
         /// Supports cascading impersonation: ["user1", "user2"] means EXECUTE AS LOGIN = 'user1'; EXECUTE AS LOGIN = 'user2';
