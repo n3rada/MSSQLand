@@ -18,8 +18,8 @@ namespace MSSQLand.Actions.Execution
     /// </summary>
     internal class ClrExecution : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "Local path to the DLL")]
-        private string _dllURI = string.Empty;
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Path to the DLL (local or HTTP/S)")]
+        private string _dllPath = string.Empty;
 
         [ArgumentMetadata(Position = 1, Required = true, Description = "Class name containing the function to execute")]
         private string _className = string.Empty;
@@ -33,7 +33,7 @@ namespace MSSQLand.Actions.Execution
         public override object Execute(DatabaseContext databaseContext)
         {
             // Step 1: Get the SHA-512 hash for the DLL and its bytes.
-            string[] library = ByteHelper.ConvertDllToSqlBytes(_dllURI);
+            string[] library = ByteHelper.ConvertDllToSqlBytes(_dllPath);
 
             if (library.Length != 2 || string.IsNullOrEmpty(library[0]) || string.IsNullOrEmpty(library[1]))
             {
