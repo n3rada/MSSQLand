@@ -19,7 +19,7 @@ namespace MSSQLand.Actions.Execution
     /// </summary>
     internal class ClrExecution : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = true, Description = "Path to the DLL (local or HTTP/S)")]
+        [ArgumentMetadata(Position = 0, Required = true, Description = "Path to the DLL")]
         private string _dllPath = string.Empty;
 
         [ArgumentMetadata(Position = 1, Required = true, Description = "Class name containing the function to execute")]
@@ -194,7 +194,7 @@ namespace MSSQLand.Actions.Execution
         {
             Match match = Regex.Match(
                 errorMessage,
-                @"already registered under the name ['\"]([^'\"]+)['\"]",
+                @"already registered under the name ['""']([^'""']+)['""']",
                 RegexOptions.IgnoreCase);
             return match.Success ? match.Groups[1].Value : string.Empty;
         }
