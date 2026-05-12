@@ -3,6 +3,7 @@
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 using System;
+using System.Text.RegularExpressions;
 
 namespace MSSQLand.Actions.Execution
 {
@@ -108,10 +109,28 @@ namespace MSSQLand.Actions.Execution
                 databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
                 databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
 
-                // Step 3: Create the assembly from the DLL bytes
+                // Step 3: Create the assembly from the DLL bytes, retrying once on MVID conflict
                 Logger.Task("Creating the assembly from DLL bytes");
-                databaseContext.QueryService.ExecuteNonProcessing(
-                    $"CREATE ASSEMBLY [{assemblyName}] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;");
+                try
+                {
+                    databaseContext.QueryService.ExecuteNonProcessing(
+                        $"CREATE ASSEMBLY [{assemblyName}] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;");
+                }
+                catch (Exception createErr)
+                {
+                    string conflicting = ExtractMvidConflictName(createErr.Message);
+                    if (!string.IsNullOrEmpty(conflicting))
+                    {
+                        Logger.Warning($"Dropping conflicting leftover assembly '{conflicting}' (MVID collision)");
+                        databaseContext.QueryService.ExecuteNonProcessing($"DROP ASSEMBLY IF EXISTS [{conflicting}];");
+                        databaseContext.QueryService.ExecuteNonProcessing(
+                            $"CREATE ASSEMBLY [{assemblyName}] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;");
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
 
                 if (!databaseContext.ConfigService.CheckAssembly(assemblyName))
                 {
@@ -164,6 +183,20 @@ namespace MSSQLand.Actions.Execution
                         $"ALTER DATABASE [{databaseContext.QueryService.ExecutionServer.Database}] SET TRUSTWORTHY OFF;");
                 }
             }
+        }
+
+        /// <summary>
+        /// Extract the conflicting assembly name from an MVID collision error.
+        /// SQL Server message: "CREATE ASSEMBLY failed ... identical to an assembly
+        /// that is already registered under the name 'X'."
+        /// </summary>
+        private static string ExtractMvidConflictName(string errorMessage)
+        {
+            Match match = Regex.Match(
+                errorMessage,
+                @"already registered under the name ['\"]([^'\"]+)['\"]",
+                RegexOptions.IgnoreCase);
+            return match.Success ? match.Groups[1].Value : string.Empty;
         }
     }
 }
