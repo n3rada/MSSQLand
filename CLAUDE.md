@@ -123,11 +123,15 @@ Aliases are optional (`null` if none). The key is the CLI name (lowercase).
 
 ### 3. Add to .csproj
 
-Open [`MSSQLand/MSSQLand.csproj`](MSSQLand/MSSQLand.csproj) and add a `<Compile>` entry:
+**Every new `.cs` file must be added to [`MSSQLand/MSSQLand.csproj`](MSSQLand/MSSQLand.csproj) — the project uses an explicit `<Compile>` manifest, not globbing. Files not listed here are silently ignored by the build.**
+
+Add a `<Compile>` entry in the appropriate `<ItemGroup>`:
 
 ```xml
 <Compile Include="Actions\<Category>\MyAction.cs" />
 ```
+
+This applies to all new files: actions, models, services, utilities, exceptions — anything under `MSSQLand/`.
 
 ConfigMgr actions must be wrapped:
 ```xml
