@@ -317,7 +317,8 @@ ORDER BY is_fixed_role DESC, name;";
                 return true;
             }
 
-            string query = $"SELECT 1 FROM master.sys.server_permissions a INNER JOIN master.sys.server_principals b ON a.grantor_principal_id = b.principal_id WHERE a.permission_name = 'IMPERSONATE' AND b.name = '{user}';";
+            string safeUser = user.Replace("'", "''");
+            string query = $"SELECT 1 FROM master.sys.server_permissions a INNER JOIN master.sys.server_principals b ON a.grantor_principal_id = b.principal_id WHERE a.permission_name = 'IMPERSONATE' AND b.name = '{safeUser}';";
 
             try
             {
