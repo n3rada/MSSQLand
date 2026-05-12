@@ -1221,13 +1221,11 @@ namespace MSSQLand.Actions.Remote
         }
 
         /// <summary>
-        /// Builds a DataRow array for a single chain, showing the real MSSQLand command.
+        /// Builds LinkedServers and host argument from a chain of ServerNodes.
+        /// Shared by BuildChainRow and BuildEscalationRow.
         /// </summary>
-        private object[] BuildChainRow(List<ServerNode> chain, int hops)
+        private (LinkedServers linkedServers, string hostArg) BuildChainContext(List<ServerNode> chain)
         {
-            var lastNode = chain[chain.Count - 1];
-
-            // Build linked server list for -l argument
             var serverList = new List<Server>();
             for (int i = 0; i < chain.Count; i++)
             {
@@ -1247,9 +1245,7 @@ namespace MSSQLand.Actions.Remote
             }
 
             LinkedServers linkedServers = new LinkedServers(serverList.ToArray());
-            string chainArg = linkedServers.GetChainArguments();
 
-            // Build host argument: starting impersonation + any chain[0] impersonation on the root server
             string hostArg = SqlHelper.BracketIdentifier(_rootNode.Alias);
             var hostImpersonation = new List<string>(_startingImpersonation);
             if (chain.Count > 0 && chain[0].ImpersonationChain.Count > 0)
@@ -1257,8 +1253,18 @@ namespace MSSQLand.Actions.Remote
             if (hostImpersonation.Count > 0)
                 hostArg += "/" + string.Join("/", hostImpersonation);
 
-            // Full command
-            string command = $"\"{hostArg}\" -l \"{chainArg}\"";
+            return (linkedServers, hostArg);
+        }
+
+        /// <summary>
+        /// Builds a DataRow array for a single chain, showing the real MSSQLand command.
+        /// </summary>
+        private object[] BuildChainRow(List<ServerNode> chain, int hops)
+        {
+            var lastNode = chain[chain.Count - 1];
+
+            var (linkedServers, hostArg) = BuildChainContext(chain);
+            string command = $"\"{hostArg}\" -l \"{linkedServers.GetChainArguments()}\"";
 
             // Endpoint display
             string endpoint = lastNode.Alias;
@@ -1291,41 +1297,11 @@ namespace MSSQLand.Actions.Remote
         {
             var lastNode = chain[chain.Count - 1];
 
-            // Build linked server list: same as BuildChainRow but with escalation on the last server
-            var serverList = new List<Server>();
-            for (int i = 0; i < chain.Count; i++)
-            {
-                var node = chain[i];
-
-                if (i > 0 && node.ImpersonationChain.Count > 0)
-                {
-                    serverList[serverList.Count - 1].ImpersonationUsers = node.ImpersonationChain.ConvertAll(s => s.Login).ToArray();
-                }
-
-                serverList.Add(new Server
-                {
-                    Hostname = node.Alias,
-                    ImpersonationUsers = null,
-                    Database = null
-                });
-            }
+            var (linkedServers, hostArg) = BuildChainContext(chain);
 
             // Add escalation impersonation on the last server in the chain
-            serverList[serverList.Count - 1].ImpersonationUsers = escalation.ConvertAll(s => s.Login).ToArray();
-
-            LinkedServers linkedServers = new LinkedServers(serverList.ToArray());
-            string chainArg = linkedServers.GetChainArguments();
-
-            // Build host argument: starting impersonation + any chain[0] impersonation on the root server
-            string hostArg = SqlHelper.BracketIdentifier(_rootNode.Alias);
-            var hostImpersonation = new List<string>(_startingImpersonation);
-            if (chain.Count > 0 && chain[0].ImpersonationChain.Count > 0)
-                hostImpersonation.AddRange(chain[0].ImpersonationChain.ConvertAll(s => s.Login));
-            if (hostImpersonation.Count > 0)
-                hostArg += "/" + string.Join("/", hostImpersonation);
-
-            // Full command
-            string command = $"{hostArg} -l {chainArg}";
+            linkedServers.ServerChain[linkedServers.ServerChain.Length - 1].ImpersonationUsers = escalation.ConvertAll(s => s.Login).ToArray();
+            string command = $"{hostArg} -l {linkedServers.GetChainArguments()}";
 
             // Endpoint is same server but with escalated login
             string endpoint = lastNode.Alias;
