@@ -34,7 +34,7 @@ MSSQLand/
 │   ├── FileSystem/
 │   └── Remote/
 ├── Services/       # DatabaseContext, QueryService, UserService, AuthenticationService, ConfigurationService
-├── Models/         # Server, LinkedServers
+├── Models/         # Server (connection config), LinkedServers (chain model), ServerExecutionState (runtime identity hash for loop detection)
 ├── Utilities/      # Logger, Formatters, ByteHelper, SqlHelper, NetworkHelper, EncodingHelper, SidParser, Discovery/
 └── Exceptions/     # Custom exception types
 ```

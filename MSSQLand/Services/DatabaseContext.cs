@@ -102,7 +102,7 @@ namespace MSSQLand.Services
         /// Used by actions (e.g. LinkMap) for loop detection across explored (server, identity) pairs.
         /// </summary>
         public string ComputeStateHash()
-            => Server.ComputeExplorationHash(Server.Hostname, UserService.MappedUser, UserService.SystemUser, UserService.IsAdmin());
+            => new ServerExecutionState(Server.Hostname, UserService.MappedUser, UserService.SystemUser, UserService.IsAdmin()).GetStateHash();
 
         /// <summary>
         /// Releases resources used by this DatabaseContext.

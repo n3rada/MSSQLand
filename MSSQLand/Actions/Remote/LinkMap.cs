@@ -273,8 +273,8 @@ namespace MSSQLand.Actions.Remote
             {
                 Alias = databaseContext.Server.Hostname,
                 ActualName = databaseContext.Server.Hostname,
-                LoggedInUser = databaseContext.Server.SystemUser,
-                MappedUser = databaseContext.Server.MappedUser,
+                LoggedInUser = databaseContext.UserService.SystemUser,
+                MappedUser = databaseContext.UserService.MappedUser,
                 IsSysadmin = databaseContext.UserService.IsAdmin(),
                 ServerRoles = rootRoles
             };
@@ -291,7 +291,7 @@ namespace MSSQLand.Actions.Remote
             }
 
             // Mark starting server+user as explored
-            _globallyExploredContexts.Add(ContextKey(databaseContext.Server.Hostname, databaseContext.Server.SystemUser));
+            _globallyExploredContexts.Add(ContextKey(databaseContext.Server.Hostname, databaseContext.UserService.SystemUser));
 
             // Compute starting server's state hash for loop detection
             string startingHash = databaseContext.ComputeStateHash();
@@ -422,7 +422,7 @@ namespace MSSQLand.Actions.Remote
                 // Negative cache: skip if this exact link from the root has already failed for this caller
                 string rootCallerLogin = chainToReach != null && chainToReach.Count > 0
                     ? chainToReach[chainToReach.Count - 1]
-                    : (!string.IsNullOrEmpty(requiredLogin) ? requiredLogin : databaseContext.Server.SystemUser);
+                    : (!string.IsNullOrEmpty(requiredLogin) ? requiredLogin : databaseContext.UserService.SystemUser);
                 if (_failedLinkAttempts.Contains(LinkAttemptKey(_rootNode.Alias, remoteServer, rootCallerLogin)))
                 {
                     Logger.TraceNested($"Skipping '{remoteServer}': previous attempt from '{_rootNode.Alias}' as '{rootCallerLogin}' was rejected.");
@@ -456,7 +456,7 @@ namespace MSSQLand.Actions.Remote
                     }
                     sessionHops = chainToReach.Count;
                 }
-                else if (!string.IsNullOrEmpty(requiredLogin) && !requiredLogin.Equals(databaseContext.Server.SystemUser, StringComparison.OrdinalIgnoreCase))
+                else if (!string.IsNullOrEmpty(requiredLogin) && !requiredLogin.Equals(databaseContext.UserService.SystemUser, StringComparison.OrdinalIgnoreCase))
                 {
                     if (!TryApplyImpersonationChain(databaseContext, new List<string> { requiredLogin }))
                     {
@@ -469,7 +469,7 @@ namespace MSSQLand.Actions.Remote
                 try
                 {
                     // Determine the impersonation chain used on the starting server to reach this link
-                    List<string> startingImpersonationLogins = chainToReach ?? (!string.IsNullOrEmpty(requiredLogin) && !requiredLogin.Equals(databaseContext.Server.SystemUser, StringComparison.OrdinalIgnoreCase)
+                    List<string> startingImpersonationLogins = chainToReach ?? (!string.IsNullOrEmpty(requiredLogin) && !requiredLogin.Equals(databaseContext.UserService.SystemUser, StringComparison.OrdinalIgnoreCase)
                         ? new List<string> { requiredLogin }
                         : new List<string>());
 
@@ -605,7 +605,7 @@ namespace MSSQLand.Actions.Remote
                     _contextRoleCache[contextKey] = (nodeRoles, isSysadmin);
                 }
 
-                string stateHash = Server.ComputeExplorationHash(targetServer, mappedUser, remoteLoggedInUser, isSysadmin);
+                string stateHash = new ServerExecutionState(targetServer, mappedUser, remoteLoggedInUser, isSysadmin).GetStateHash();
 
                 // Check for loop in THIS chain path only
                 if (visitedInChain.Contains(stateHash))

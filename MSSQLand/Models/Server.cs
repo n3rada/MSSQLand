@@ -106,16 +106,6 @@ namespace MSSQLand.Models
         public string[] ImpersonationUsers { get; set; }
 
         /// <summary>
-        /// The mapped database user (runtime state, populated by UserService).
-        /// </summary>
-        public string MappedUser { get; set; }
-
-        /// <summary>
-        /// The system login user (runtime state, populated by UserService).
-        /// </summary>
-        public string SystemUser { get; set; }
-
-        /// <summary>
         /// The linked server alias as registered in sys.servers.
         /// Used for query routing in linked server chains.
         /// May differ from Hostname (e.g., alias "REPORTING_DB" -> actual server "SQL-REPORT-01").
@@ -147,20 +137,6 @@ namespace MSSQLand.Models
         }
 
         /// <summary>
-        /// Computes a state hash for loop detection during linked server exploration.
-        /// Encodes the execution context (server + user identity + privilege level) into a SHA-256 string.
-        /// Static overload for contexts where no Server instance is available.
-        /// </summary>
-        public static string ComputeExplorationHash(string hostname, string mappedUser, string systemUser, bool isSysadmin)
-        {
-            string stateString = $"{hostname?.ToUpperInvariant() ?? ""}|" +
-                                 $"{mappedUser?.ToUpperInvariant() ?? ""}|" +
-                                 $"{systemUser?.ToUpperInvariant() ?? ""}|" +
-                                 $"{isSysadmin}";
-            return ByteHelper.ComputeSHA256(stateString);
-        }
-
-        /// <summary>
         /// Creates a copy of this Server instance.
         /// </summary>
         public Server Copy()
@@ -178,8 +154,6 @@ namespace MSSQLand.Models
                 NamedPipe = this.NamedPipe,
                 Database = this.Database,
                 ImpersonationUsers = this.ImpersonationUsers,
-                MappedUser = this.MappedUser,
-                SystemUser = this.SystemUser,
                 LinkedServerAlias = this.LinkedServerAlias
             };
         }
