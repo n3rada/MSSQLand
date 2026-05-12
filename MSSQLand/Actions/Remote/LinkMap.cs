@@ -72,7 +72,6 @@ namespace MSSQLand.Actions.Remote
             public List<ImpersonationStep> ImpersonationChain { get; set; } = new();
             public bool IsSysadmin { get; set; }
             public List<string> ServerRoles { get; set; } = new();
-            public List<string> NonSqlLinks { get; set; } = new();
             public List<ServerNode> Children { get; set; } = new();
             /// <summary>
             /// Privilege escalation paths discovered via impersonation at this server.
@@ -224,7 +223,6 @@ namespace MSSQLand.Actions.Remote
             // Separate SQL Server links (chainable) from others (queryable only).
             // Track "No visibility" rows separately so we can report them and try impersonation.
             var sqlServerLinks = new List<DataRow>();
-            var otherLinks = new List<DataRow>();
             var noVisibilityLinks = new List<DataRow>();
 
             foreach (DataRow row in allLinkedServers.Rows)
@@ -239,10 +237,6 @@ namespace MSSQLand.Actions.Remote
                 if (provider.StartsWith("SQLNCLI") || provider.StartsWith("MSOLEDBSQL"))
                 {
                     sqlServerLinks.Add(row);
-                }
-                else
-                {
-                    otherLinks.Add(row);
                 }
             }
 
@@ -284,26 +278,6 @@ namespace MSSQLand.Actions.Remote
                 IsSysadmin = databaseContext.UserService.IsAdmin(),
                 ServerRoles = rootRoles
             };
-
-            // Add non-SQL linked servers at initial server
-            foreach (DataRow row in otherLinks)
-            {
-                string name = row["Link"].ToString();
-                string provider = row["Provider"].ToString();
-                _rootNode.NonSqlLinks.Add($"{name} ({provider})");
-            }
-
-            if (otherLinks.Count > 0)
-            {
-                Logger.Trace($"Other linked servers (queryable via OPENQUERY):");
-                foreach (DataRow row in otherLinks)
-                {
-                    string name = row["Link"].ToString();
-                    string provider = row["Provider"].ToString();
-                    string product = row["Product"].ToString();
-                    Logger.TraceNested($"{name} ({provider}) - {product}");
-                }
-            }
 
             if (sqlServerLinks.Count == 0 && noVisibilityLinks.Count == 0)
             {
@@ -777,7 +751,6 @@ namespace MSSQLand.Actions.Remote
 
                 // Classify discovered links
                 var remoteSqlLinks = new List<(string server, string login, DataRow row, List<string> chain)>();
-                var remoteOtherLinks = new List<string>();
 
                 foreach (var kvp in allLinkedServersOnThisServer)
                 {
@@ -793,15 +766,6 @@ namespace MSSQLand.Actions.Remote
                         if (!UserService.IsSystemAccount(localLogin))
                             remoteSqlLinks.Add((serverLink, localLogin, row, chain));
                     }
-                    else
-                        remoteOtherLinks.Add($"{serverLink} ({provider})");
-                }
-
-                // Store non-SQL linked servers
-                if (remoteOtherLinks.Count > 0)
-                {
-                    foreach (string link in remoteOtherLinks)
-                        currentNode.NonSqlLinks.Add($"[OPENQUERY] {link}");
                 }
 
                 Logger.TraceNested($"Exploring SQL Server links on '{targetServer}' (found {remoteSqlLinks.Count})");
@@ -1079,11 +1043,6 @@ namespace MSSQLand.Actions.Remote
             // Root node - show privilege marker
             Console.WriteLine($"{_rootNode.Alias} ({_rootNode.LoggedInUser} [{_rootNode.MappedUser}]){_rootNode.PrivilegeMarker}");
 
-            if (_rootNode.NonSqlLinks.Count > 0)
-            {
-                Console.WriteLine($"    └── [OPENQUERY] {string.Join(", ", _rootNode.NonSqlLinks)}");
-            }
-
             List<string> currentPath = new();
             for (int i = 0; i < _rootNode.Children.Count; i++)
             {
@@ -1149,11 +1108,6 @@ namespace MSSQLand.Actions.Remote
                 string serverChildIndent = currentIndent + "    ";
                 Console.WriteLine($"{currentIndent}╚══ {displayName} ({node.LoggedInUser} [{node.MappedUser}]){node.PrivilegeMarker}");
 
-                if (node.NonSqlLinks.Count > 0)
-                {
-                    Console.WriteLine($"{serverChildIndent}└── [OPENQUERY] {string.Join(", ", node.NonSqlLinks)}");
-                }
-
                 for (int i = 0; i < node.Children.Count; i++)
                 {
                     bool childIsLast = (i == node.Children.Count - 1) && node.EscalationPaths.Count == 0;
@@ -1169,11 +1123,6 @@ namespace MSSQLand.Actions.Remote
                 string childIndent = indent + (isLast ? "    " : "║   ");
 
                 Console.WriteLine($"{indent}{connector}{displayName} ({node.LoggedInUser} [{node.MappedUser}]){node.PrivilegeMarker}");
-
-                if (node.NonSqlLinks.Count > 0)
-                {
-                    Console.WriteLine($"{childIndent}└── [OPENQUERY] {string.Join(", ", node.NonSqlLinks)}");
-                }
 
                 for (int i = 0; i < node.Children.Count; i++)
                 {
