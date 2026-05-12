@@ -86,7 +86,7 @@ namespace MSSQLand.Actions
 
             // ── REMOTE DATA ACCESS ACTIONS
             { "links", (typeof(Links), "Enumerate linked servers and their configuration.", new[] { "linkedservers" }) },
-            { "linkmap", (typeof(LinkMap), "Recursively map linked server chains as a tree with loop detection. Highlights sysadmin endpoints.", new[] { "linksmap" }) },
+            { "linkmap", (typeof(LinkMap), "Recursively map linked server chains as a tree with loop detection. Highlights sysadmin endpoints.", new[] { "linksmap", "chains", "tunnel" }) },
             { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.", null) },
             { "data", (typeof(DataAccess), "Enable or disable data access (OPENQUERY) on linked servers.", null) },
             { "ext-sources", (typeof(ExternalSources), "Enumerate External Data Sources (Azure SQL Database, Synapse, PolyBase).", null) },
