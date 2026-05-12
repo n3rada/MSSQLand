@@ -13,7 +13,7 @@ namespace MSSQLand.Models
     /// to maintain clean separation of concerns:
     ///   Server = static config, ServerExecutionState = runtime state.
     /// </summary>
-    public class ServerExecutionState
+    public class ServerExecutionState : System.IEquatable<ServerExecutionState>
     {
         /// <summary>The hostname or IP address of the server.</summary>
         public string Hostname { get; }
@@ -63,14 +63,17 @@ namespace MSSQLand.Models
         public string ShortHash => GetStateHash().Substring(0, 8);
 
         /// <inheritdoc/>
-        public override bool Equals(object obj)
+        public bool Equals(ServerExecutionState other)
         {
-            if (obj is not ServerExecutionState other) return false;
+            if (other is null) return false;
             return string.Equals(Hostname, other.Hostname, System.StringComparison.OrdinalIgnoreCase)
                 && string.Equals(MappedUser, other.MappedUser, System.StringComparison.OrdinalIgnoreCase)
                 && string.Equals(SystemUser, other.SystemUser, System.StringComparison.OrdinalIgnoreCase)
                 && IsSysadmin == other.IsSysadmin;
         }
+
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => Equals(obj as ServerExecutionState);
 
         /// <inheritdoc/>
         public override int GetHashCode()
