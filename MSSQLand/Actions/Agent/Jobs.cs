@@ -20,7 +20,7 @@ namespace MSSQLand.Actions.Agent
         [ArgumentMetadata(ShortName = "c", LongName = "commands", Description = "Show full command text instead of command length")]
         private bool _showCommands = false;
 
-        [ArgumentMetadata(ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 25)")]
+        [ArgumentMetadata(ShortName = "l", LongName = "limit", Description = "Limit number of results")]
         private int _limit = 25;
 
         public override object Execute(DatabaseContext databaseContext)

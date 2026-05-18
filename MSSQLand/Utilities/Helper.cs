@@ -247,8 +247,10 @@ namespace MSSQLand.Utilities
             string desc = d.Description ?? string.Empty;
             if (d.Required)
                 return string.IsNullOrEmpty(desc) ? "(required)" : $"{desc} (required)";
-            // Suppress showing default: False for plain bool flags
-            if (d.DefaultValue != null && !(d.IsFlag && d.DefaultValue is bool b && !b))
+            // Suppress default: False for plain bool flags and default: "" for empty strings
+            bool isEmptyStringDefault = d.DefaultValue is string s && s == string.Empty;
+            bool isFalseBoolDefault   = d.IsFlag && d.DefaultValue is bool b && !b;
+            if (d.DefaultValue != null && !isEmptyStringDefault && !isFalseBoolDefault)
                 return string.IsNullOrEmpty(desc) ? $"(default: {d.DefaultValue})" : $"{desc} (default: {d.DefaultValue})";
             return desc;
         }
