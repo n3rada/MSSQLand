@@ -120,6 +120,7 @@
 
     <Compile Include="Actions\Execution\ClrExecution.cs" />
     <Compile Include="Actions\Execution\ClrInspect.cs" />
+    <Compile Include="Actions\Execution\ClrList.cs" />
     <Compile Include="Actions\Execution\Ole.cs" />
     <Compile Include="Actions\Execution\PowerShell.cs" />
     <Compile Include="Actions\Execution\Query.cs" />

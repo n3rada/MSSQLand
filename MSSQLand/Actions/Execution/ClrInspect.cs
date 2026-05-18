@@ -18,7 +18,7 @@ namespace MSSQLand.Actions.Execution
     internal class ClrInspect : BaseAction
     {
         [ArgumentMetadata(Position = 0, Required = true, Description = "Assembly name to inspect")]
-        private string _assemblyName;
+        private string _assemblyName = string.Empty;
 
         public override object Execute(DatabaseContext databaseContext)
         {
