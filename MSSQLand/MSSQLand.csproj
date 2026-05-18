@@ -23,8 +23,6 @@
     <Install>false</Install>
     <UpdateEnabled>false</UpdateEnabled>
     <SignManifests>false</SignManifests>
-    <!-- Configuration Manager Feature Toggle: Set to false to exclude CM actions -->
-    <EnableCM Condition="'$(EnableCM)' == ''">true</EnableCM>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -32,8 +30,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <DefineConstants Condition="'$(EnableCM)' == 'true'">DEBUG;TRACE;ENABLE_CM</DefineConstants>
-    <DefineConstants Condition="'$(EnableCM)' != 'true'">DEBUG;TRACE</DefineConstants>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
     <OutputPath>bin\Debug\</OutputPath>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -53,7 +50,6 @@
     <PathMap>$(MSBuildProjectDirectory)=.</PathMap>
     <OutputPath>bin\Release\</OutputPath>
     <WarningLevel>4</WarningLevel>
-    <DefineConstants Condition="'$(EnableCM)' == 'true'">ENABLE_CM</DefineConstants>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <PublicSign>false</PublicSign>
   </PropertyGroup>
@@ -141,34 +137,34 @@
     <Compile Include="Actions\Remote\RemoteProcedureCall.cs" />
     <Compile Include="Actions\Remote\UncProbe.cs" />
 
-    <Compile Include="Actions\ConfigMgr\CMInfo.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMLogTrace.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMDeploymentType.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMDeploymentTypes.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMServers.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMCollections.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMCollection.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMDevices.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMDevice.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMHealth.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMScripts.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMScript.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMScriptAdd.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMScriptDelete.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMScriptRun.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMScriptStatus.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMRbacAdd.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMAccounts.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMAadApps.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMDeployments.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMDeployment.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMPackages.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMPackage.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMPrograms.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMTaskSequences.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMTaskSequence.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMApplications.cs" Condition="'$(EnableCM)' == 'true'" />
-    <Compile Include="Actions\ConfigMgr\CMDistributionPoints.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Actions\ConfigMgr\CMInfo.cs" />
+    <Compile Include="Actions\ConfigMgr\CMLogTrace.cs" />
+    <Compile Include="Actions\ConfigMgr\CMDeploymentType.cs" />
+    <Compile Include="Actions\ConfigMgr\CMDeploymentTypes.cs" />
+    <Compile Include="Actions\ConfigMgr\CMServers.cs" />
+    <Compile Include="Actions\ConfigMgr\CMCollections.cs" />
+    <Compile Include="Actions\ConfigMgr\CMCollection.cs" />
+    <Compile Include="Actions\ConfigMgr\CMDevices.cs" />
+    <Compile Include="Actions\ConfigMgr\CMDevice.cs" />
+    <Compile Include="Actions\ConfigMgr\CMHealth.cs" />
+    <Compile Include="Actions\ConfigMgr\CMScripts.cs" />
+    <Compile Include="Actions\ConfigMgr\CMScript.cs" />
+    <Compile Include="Actions\ConfigMgr\CMScriptAdd.cs" />
+    <Compile Include="Actions\ConfigMgr\CMScriptDelete.cs" />
+    <Compile Include="Actions\ConfigMgr\CMScriptRun.cs" />
+    <Compile Include="Actions\ConfigMgr\CMScriptStatus.cs" />
+    <Compile Include="Actions\ConfigMgr\CMRbacAdd.cs" />
+    <Compile Include="Actions\ConfigMgr\CMAccounts.cs" />
+    <Compile Include="Actions\ConfigMgr\CMAadApps.cs" />
+    <Compile Include="Actions\ConfigMgr\CMDeployments.cs" />
+    <Compile Include="Actions\ConfigMgr\CMDeployment.cs" />
+    <Compile Include="Actions\ConfigMgr\CMPackages.cs" />
+    <Compile Include="Actions\ConfigMgr\CMPackage.cs" />
+    <Compile Include="Actions\ConfigMgr\CMPrograms.cs" />
+    <Compile Include="Actions\ConfigMgr\CMTaskSequences.cs" />
+    <Compile Include="Actions\ConfigMgr\CMTaskSequence.cs" />
+    <Compile Include="Actions\ConfigMgr\CMApplications.cs" />
+    <Compile Include="Actions\ConfigMgr\CMDistributionPoints.cs" />
 
     <Compile Include="Exceptions\ActionNotFoundException.cs" />
     <Compile Include="Exceptions\AuthenticationFailedException.cs" />
@@ -188,7 +184,7 @@
     <Compile Include="Services\ConfigurationService.cs" />
     <Compile Include="Services\DatabaseContext.cs" />
     <Compile Include="Services\QueryService.cs" />
-    <Compile Include="Services\CMService.cs" Condition="'$(EnableCM)' == 'true'" />
+    <Compile Include="Services\CMService.cs" />
     <Compile Include="Services\UserService.cs" />
 
     <Compile Include="Services\Authentication\AuthenticationService.cs" />
