@@ -16,7 +16,7 @@ namespace MSSQLand.Actions.Agent
     internal class JobExec : BaseAction
     {
         // Enum values match exactly what sp_add_jobstep expects as @subsystem.
-        // Do NOT change casing — SQL Server is case-sensitive on these strings.
+        // Do NOT change casing; SQL Server is case-sensitive on these strings.
         private enum SubSystemMode { CmdExec, PowerShell, TSQL, VBScript }
 
         [ArgumentMetadata(Position = 0, Required = true, Remainder = true, Description = "Command to execute")]

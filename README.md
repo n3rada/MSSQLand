@@ -34,7 +34,7 @@ Format: `server:port/user@database` or any combination `server/user@database:por
 - `@database` (optional) - Database context
 
 ```shell
-# Connectivity probe — checks if server is alive without authenticating
+# Connectivity probe: checks if server is alive without authenticating
 MSSQLand.exe localhost --probe
 
 # Connection test only (no action executed, authenticates and exits)

@@ -20,12 +20,12 @@ namespace MSSQLand.Actions
         private static readonly Dictionary<string, (Type ActionClass, string Description, string[] Aliases)> ActionMetadata =
         new()
         {
-            // ── DATABASE ACTIONS - BASIC INFO & AUTHENTICATION
+            // DATABASE ACTIONS - BASIC INFO & AUTHENTICATION
             { "info", (typeof(Info), "Retrieve detailed information about the SQL Server instance.", null) },
             { "whoami", (typeof(Whoami), "Display current user context, roles, and accessible databases.", new[] { "id", "groups" }) },
             { "authtoken", (typeof(AuthToken), "Display all groups from the Windows authentication token (AD, BUILTIN, NT AUTHORITY, etc.).", null) },
 
-            // ── DATABASE ACTIONS - ENUMERATION
+            // DATABASE ACTIONS - ENUMERATION
             { "databases", (typeof(Databases), "List all available databases.", null) },
             { "tables", (typeof(Tables), "List all tables in a specified database.", null) },
             { "rows", (typeof(Rows), "Retrieve and display rows from a specified table.", null) },
@@ -40,19 +40,19 @@ namespace MSSQLand.Actions
             { "impersonate-chains", (typeof(ImpersonationMap), "Map impersonation chains to discover reachable logins through delegation paths.", new[] { "impchains", "impmap" }) },
             { "oledb", (typeof(OleDbProvidersInfo), "Enumerate OLE DB providers and their registry configuration.", new[] { "ole-providers" }) },
 
-            // ── DATABASE ACTIONS - OPERATIONS
+            // DATABASE ACTIONS - OPERATIONS
             { "search", (typeof(Search), "Search for keywords in column names and data across databases.", new[] { "find" }) },
             { "query", (typeof(Query), "Execute a custom T-SQL query. Use --all to execute across all accessible databases.", new[] { "sql" }) },
             { "requests", (typeof(Requests), "Display currently executing SQL requests with query text and wait information.", null) },
 
-            // ── ADMINISTRATION ACTIONS
+            // ADMINISTRATION ACTIONS
             { "config", (typeof(Config), "List security-sensitive configuration options or set their values using sp_configure.", new[] { "settings" }) },
             { "audit", (typeof(Audit), "Enumerate SQL Server audit objects, event groups, log destinations, and ON_FAILURE behavior.", new[] { "audits", "audit-status" }) },
             { "user-add", (typeof(UserAdd), "Create a SQL login with specified server role privileges (default: sysadmin).", null) },
             { "sessions", (typeof(Sessions), "Display active SQL Server sessions with login and connection information.", new[] { "who" }) },
             { "kill", (typeof(Kill), "Terminate SQL Server sessions by session ID or kill all running sessions.", null) },
 
-            // ── DOMAIN ACTIONS
+            // DOMAIN ACTIONS
             { "ad-domain", (typeof(AdDomain), "Retrieve the domain SID using DEFAULT_DOMAIN() and SUSER_SID().", null) },
             { "ad-sid", (typeof(AdSid), "Retrieve the current user's SID using SUSER_SID().", null) },
             { "ad-users", (typeof(AdUsers), "Enumerate domain users by RID cycling using SUSER_SNAME().", new[] { "rid-brute" }) },
@@ -62,7 +62,7 @@ namespace MSSQLand.Actions
             { "adsi-creds", (typeof(AdsiCredentialExtractor), "Extract SQL login passwords via LDAP simple bind interception using a local CLR listener. Requires CONTROL SERVER or sysadmin.", null) },
             { "adsi-redirect", (typeof(AdsiRedirect), "Redirect an ADSI linked server LDAP query to an attacker-controlled listener to capture cleartext credentials. No privileges required.", null) },
 
-            // ── EXECUTION ACTIONS
+            // EXECUTION ACTIONS
             { "exec", (typeof(XpCmd), "Execute OS commands via xp_cmdshell.", null) },
             { "ole", (typeof(Ole), "Execute OS commands via OLE Automation (fire-and-forget, no output).", new[] { "oamethod" }) },
             { "powershell", (typeof(PowerShell), "Execute PowerShell scripts.", new[] { "pwsh" }) },
@@ -71,20 +71,20 @@ namespace MSSQLand.Actions
             { "clr-inspect", (typeof(ClrInspect), "Show exported procedures and metadata for a named CLR assembly.", new[] { "assembly" }) },
             { "run", (typeof(Run), "Execute a file on the SQL Server filesystem using OLE Automation.", null) },
 
-            // ── SQL SERVER AGENT ACTIONS (sysjobs / sysjobsteps / sysjobhistory / sysproxies) ──
+            // SQL SERVER AGENT ACTIONS (sysjobs / sysjobsteps / sysjobhistory / sysproxies)
             { "jobs", (typeof(Agent.Jobs), "Enumerate SQL Server Agent jobs with steps, commands, owner, and category.", new[] { "agents" }) },
             { "job", (typeof(Agent.Job), "Display detailed information about a specific Agent job including all steps, schedule, and history.", null) },
             { "job-history", (typeof(Agent.JobHistory), "Display SQL Server Agent job execution history with status and output messages.", null) },
             { "job-proxies", (typeof(Agent.JobProxies), "Enumerate Agent proxy accounts, mapped credentials, logins, and allowed subsystems.", null) },
             { "job-exec", (typeof(Agent.JobExec), "Execute OS commands via SQL Server Agent job (CmdExec, PowerShell, TSQL, VBScript subsystems).", null) },
 
-            // ── FILESYSTEM ACTIONS
+            // FILESYSTEM ACTIONS
             { "read", (typeof(FileRead), "Read file contents from the server's file system.", new[] { "cat" }) },
             { "tree", (typeof(Tree), "Display directory tree structure in Linux tree-style format.", null) },
             { "upload", (typeof(Upload), "Upload a local file to the SQL Server filesystem.", null) },
             { "rm", (typeof(RemoveFile), "Delete a file on the SQL Server filesystem.", new[] { "del", "delete" }) },
 
-            // ── REMOTE DATA ACCESS ACTIONS
+            // REMOTE DATA ACCESS ACTIONS
             { "links", (typeof(Links), "Enumerate linked servers and their configuration.", new[] { "linkedservers" }) },
             { "linkmap", (typeof(LinkMap), "Recursively map linked server chains as a tree with loop detection. Highlights sysadmin endpoints.", new[] { "linksmap", "chains", "tunnel" }) },
             { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.", null) },
@@ -95,7 +95,7 @@ namespace MSSQLand.Actions
 
             { "unc", (typeof(UncProbe), "Force SMB authentication to a specified UNC path to capture Net-NTLMv2 challenge/response.", new[] { "coerce", "smb", "ntlm" }) },
 
-            // ── CONFIGURATION MANAGER ACTIONS (ConfigMgr / SCCM / MECM)
+            // CONFIGURATION MANAGER ACTIONS (ConfigMgr / SCCM / MECM)
             { "cm-info", (typeof(CMInfo), "Display ConfigMgr site information (site code, version, build, database server, management points) for infrastructure mapping.", null) },
             { "cm-servers", (typeof(CMServers), "Enumerate ConfigMgr site servers, management points, and distribution points in the hierarchy for infrastructure mapping.", null) },
             { "cm-collections", (typeof(CMCollections), "Enumerate device and user collections with member counts for targeted deployment attacks.", null) },

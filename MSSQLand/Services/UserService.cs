@@ -199,7 +199,7 @@ namespace MSSQLand.Services
                 this.EffectiveUser = MappedUser;
 
                 // Check if SYSTEM_USER has a direct Windows login (type 'U') in sys.server_principals.
-                // This is a single indexed lookup — cheap for the common case.
+                // This is a single indexed lookup, cheap for the common case.
                 object type = _queryService.ExecuteScalar(
                     "SELECT type FROM sys.server_principals WHERE name = SYSTEM_USER;");
 
@@ -209,7 +209,7 @@ namespace MSSQLand.Services
                     return;
                 }
 
-                // No direct login — access granted via an AD group.
+                // No direct login; access granted via an AD group.
                 // Find the group in sys.login_token joined to sys.server_principals.
                 object group = _queryService.ExecuteScalar(@"
 SELECT TOP 1 sp.name
@@ -298,7 +298,7 @@ ORDER BY is_fixed_role DESC, name;";
             }
             catch
             {
-                // Role query failed — do NOT populate the admin cache.
+                // Role query failed; do NOT populate the admin cache.
             }
             return (fixedRoles, customRoles);
         }

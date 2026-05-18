@@ -38,7 +38,7 @@ namespace MSSQLand.Actions.Domain
         public override object Execute(DatabaseContext databaseContext)
         {
             Logger.TaskNested($"Enumerating domain users via RID cycling (max RID: {_maxRid})");
-            
+
             var results = new List<Dictionary<string, object>>();
 
             try
@@ -46,9 +46,9 @@ namespace MSSQLand.Actions.Domain
                 // Use AdDomain action to get domain SID information
                 var AdDomainAction = new AdDomain();
                 AdDomainAction.ValidateArguments(new string[0]);
-                
+
                 var domainInfo = AdDomainAction.Execute(databaseContext) as Dictionary<string, string>;
-                
+
                 if (domainInfo == null)
                 {
                     Logger.Error("Failed to retrieve domain SID. Cannot proceed with RID cycling.");
@@ -57,7 +57,7 @@ namespace MSSQLand.Actions.Domain
 
                 string domain = domainInfo["Domain"];
                 string AdDomainPrefix = domainInfo["Domain SID"];
-                
+
                 Logger.TaskNested($"Target domain: {domain}");
                 Logger.TaskNested($"Domain SID prefix: {AdDomainPrefix}");
 
@@ -67,7 +67,7 @@ namespace MSSQLand.Actions.Domain
                 {
                     int sidsToCheck = Math.Min(BatchSize, _maxRid - start + 1);
                     if (sidsToCheck == 0) break;
-                    
+
                     // Build semicolon-separated SELECT statements
                     var queries = new List<string>();
                     for (int i = 0; i < sidsToCheck; i++)
@@ -75,9 +75,9 @@ namespace MSSQLand.Actions.Domain
                         int rid = start + i;
                         queries.Add($"SELECT SUSER_SNAME(SID_BINARY(N'{AdDomainPrefix}-{rid}'))");
                     }
-                    
+
                     string sql = string.Join("; ", queries);
-                    
+
                     try
                     {
                         // Execute returns SqlDataReader which can handle multiple result sets
@@ -139,7 +139,7 @@ namespace MSSQLand.Actions.Domain
                         Logger.Info("Bash associative array format");
                         Console.WriteLine();
                         Console.WriteLine("declare -A rid_users=(");
-                        
+
                         foreach (var entry in results)
                         {
                             string rid = entry["RID"].ToString();
@@ -148,7 +148,7 @@ namespace MSSQLand.Actions.Domain
                             username = username.Replace("'", "'\\''");
                             Console.WriteLine($"  [{rid}]='{username}'");
                         }
-                        
+
                         Console.WriteLine(")");
                     }
                     else if (_format == OutputFormat.Python)
@@ -157,7 +157,7 @@ namespace MSSQLand.Actions.Domain
                         Logger.Info("Python dictionary format");
                         Console.WriteLine();
                         Console.WriteLine("rid_users = {");
-                        
+
                         int count = 0;
                         foreach (var entry in results)
                         {
@@ -165,11 +165,11 @@ namespace MSSQLand.Actions.Domain
                             string username = entry["Username"].ToString();
                             // Escape backslashes and single quotes for Python strings
                             username = username.Replace("\\", "\\\\").Replace("'", "\\'");
-                            
+
                             string comma = (++count < results.Count) ? "," : "";
                             Console.WriteLine($"    {rid}: '{username}'{comma}");
                         }
-                        
+
                         Console.WriteLine("}");
                     }
                     else if (_format == OutputFormat.Table)

@@ -49,7 +49,7 @@ Follow [GitHub’s guide on signing commits](https://docs.github.com/en/authenti
 
 ## Handling of Pull Requests
 
-Contributions are preserved transparently in Git history. No fear to have here—no one will copy-paste your code without adhering to the collaborative ethos of open-source.
+Contributions are preserved transparently in Git history. No fear to have here; no one will copy-paste your code without adhering to the collaborative ethos of open-source.
 
 If the code needs changes, it will be merged into a specific branch to preserve the contributor's effort while allowing for refactoring and thorough review.
 

@@ -32,7 +32,7 @@ Prefer composing objects over deep inheritance hierarchies. [`DatabaseContext`](
 
 ### Command Pattern
 
-Each action is a command object: [BaseAction](MSSQLand/Actions/BaseAction.cs) defines `ValidateArguments()` to configure the command and `Execute()` to run it. The [ActionFactory](MSSQLand/Actions/ActionFactory.cs) instantiates the right command from user input, [`Program.cs`](MSSQLand/Program.cs) validates it, then executes it — decoupling invocation from execution.
+Each action is a command object: [BaseAction](MSSQLand/Actions/BaseAction.cs) defines `ValidateArguments()` to configure the command and `Execute()` to run it. The [ActionFactory](MSSQLand/Actions/ActionFactory.cs) instantiates the right command from user input, [`Program.cs`](MSSQLand/Program.cs) validates it, then executes it, decoupling invocation from execution.
 
 ### Strategy Pattern
 
@@ -138,9 +138,9 @@ A core design decision in MSSQLand is that **impersonation, linked server traver
 
 ### Connection Lifecycle
 
-MSSQLand uses `System.Data.SqlClient.SqlConnection`, which represents a [unique session](https://learn.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqlconnection) to SQL Server. A single `SqlConnection` is opened at startup and reused for the entire execution — every `SqlCommand` created from it runs within the same server-side session.
+MSSQLand uses `System.Data.SqlClient.SqlConnection`, which represents a [unique session](https://learn.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqlconnection) to SQL Server. A single `SqlConnection` is opened at startup and reused for the entire execution; every `SqlCommand` created from it runs within the same server-side session.
 
-SQL Server maintains an **execution context stack** per session. When [`EXECUTE AS LOGIN`](https://learn.microsoft.com/en-us/sql/t-sql/statements/execute-as-transact-sql) is issued, it pushes a new security context onto this stack. From that point on, all permission checks use the impersonated principal's security tokens instead of the original caller's. The context persists until `REVERT` is called, another `EXECUTE AS` is issued, or the session ends. Multiple `EXECUTE AS` calls stack — each one nests deeper.
+SQL Server maintains an **execution context stack** per session. When [`EXECUTE AS LOGIN`](https://learn.microsoft.com/en-us/sql/t-sql/statements/execute-as-transact-sql) is issued, it pushes a new security context onto this stack. From that point on, all permission checks use the impersonated principal's security tokens instead of the original caller's. The context persists until `REVERT` is called, another `EXECUTE AS` is issued, or the session ends. Multiple `EXECUTE AS` calls stack, each one nesting deeper.
 
 Because MSSQLand shares a single `SqlConnection` across all services and actions, an `EXECUTE AS LOGIN` issued during connection setup permanently changes who every subsequent query runs as. This is why the ordering inside [`DatabaseContext`](MSSQLand/Services/DatabaseContext.cs) is critical:
 
@@ -161,19 +161,19 @@ sequenceDiagram
     DC->>QS: new QueryService(connection)
     DC->>US: new UserService(queryService)
 
-    Note over DC,SQL: Step 1 — Capture original identity
+    Note over DC,SQL: Step 1: Capture original identity
     DC->>US: GetInfo()
     US->>SQL: SELECT SYSTEM_USER, USER_NAME()
     SQL-->>US: SystemUser, MappedUser
 
-    Note over DC,SQL: Step 2 — Domain check (before impersonation)
+    Note over DC,SQL: Step 2: Domain check (before impersonation)
     alt IsDomainUser
         DC->>US: ComputeEffectiveUserAndSource()
         US->>SQL: SELECT ... FROM sys.login_token
         SQL-->>US: Domain group mapping
     end
 
-    Note over DC,SQL: Step 3 — Impersonation (permanently changes session)
+    Note over DC,SQL: Step 3: Impersonation (permanently changes session)
     alt Server.ImpersonationUsers present
         loop Each user in /user1/user2/...
             DC->>US: ImpersonateUser(user)
@@ -187,10 +187,10 @@ sequenceDiagram
     P->>DC: action.Execute(databaseContext)
 ```
 
-1. **Authentication** — [`AuthenticationService`](MSSQLand/Services/Authentication/AuthenticationService.cs) establishes the SQL connection
-2. **GetInfo()** — [`UserService`](MSSQLand/Services/UserService.cs)`.GetInfo()` captures the pre-impersonation identity (`SystemUser`, `MappedUser`)
-3. **Domain check** — `ComputeEffectiveUserAndSource()` runs before impersonation because `sys.login_token` is unavailable after `EXECUTE AS`
-4. **Impersonation** — [`DatabaseContext`](MSSQLand/Services/DatabaseContext.cs)`.HandleImpersonation()` iterates over [`Server`](MSSQLand/Models/Server.cs)`.ImpersonationUsers` and issues sequential `EXECUTE AS LOGIN` statements on the live connection
+1. **Authentication**: [`AuthenticationService`](MSSQLand/Services/Authentication/AuthenticationService.cs) establishes the SQL connection
+2. **GetInfo()**: [`UserService`](MSSQLand/Services/UserService.cs)`.GetInfo()` captures the pre-impersonation identity (`SystemUser`, `MappedUser`)
+3. **Domain check**: `ComputeEffectiveUserAndSource()` runs before impersonation because `sys.login_token` is unavailable after `EXECUTE AS`
+4. **Impersonation**: [`DatabaseContext`](MSSQLand/Services/DatabaseContext.cs)`.HandleImpersonation()` iterates over [`Server`](MSSQLand/Models/Server.cs)`.ImpersonationUsers` and issues sequential `EXECUTE AS LOGIN` statements on the live connection
 
 This order matters. After step 4, the `SqlConnection` session permanently operates under the impersonated identity. All subsequent `SqlCommand` executions (including those sent through linked servers) run as the impersonated user, because SQL Server checks permissions against the session's current execution context, not the original login.
 
@@ -203,7 +203,7 @@ EXECUTE AS LOGIN = 'user1';   -- pushes user1 onto the security stack
 EXECUTE AS LOGIN = 'user2';   -- from user1's context, pushes user2
 ```
 
-Each `EXECUTE AS LOGIN` pushes a new security context onto SQL Server's internal stack. The final identity is `user2`, but the chain `user1 → user2` must be valid — `user1` must have permission to impersonate `user2`. This is how you escalate through chains of trust that no single hop could traverse.
+Each `EXECUTE AS LOGIN` pushes a new security context onto SQL Server's internal stack. The final identity is `user2`, but the chain `user1 → user2` must be valid: `user1` must have permission to impersonate `user2`. This is how you escalate through chains of trust that no single hop could traverse.
 
 ### Impersonation on Linked Server Hops
 
@@ -226,8 +226,8 @@ This means impersonation at hop N happens *inside* the `EXEC AT` boundary of hop
 
 Two mechanisms exist for executing queries on linked servers:
 
-- **RPC (`EXEC AT`)** — Executes arbitrary SQL statements including `EXECUTE AS LOGIN`, `USE`, `sp_configure`, `xp_cmdshell`. Requires RPC Out enabled on the linked server.
-- **OPENQUERY** — Read-only queries that return a rowset. Cannot execute `EXECUTE AS LOGIN`, server-level commands, or statements that don't return rows.
+- **RPC (`EXEC AT`)**: Executes arbitrary SQL statements including `EXECUTE AS LOGIN`, `USE`, `sp_configure`, `xp_cmdshell`. Requires RPC Out enabled on the linked server.
+- **OPENQUERY**: Read-only queries that return a rowset. Cannot execute `EXECUTE AS LOGIN`, server-level commands, or statements that don't return rows.
 
 MSSQLand prefers RPC because it supports impersonation and server-level operations. If a linked server lacks RPC, [`QueryService`](MSSQLand/Services/QueryService.cs) automatically falls back to OPENQUERY for that specific hop (hybrid routing), while keeping RPC for hops that support it. This is tracked per-server via [`LinkedServers`](MSSQLand/Models/LinkedServers.cs)`._nonRpcServers`.
 
@@ -264,7 +264,7 @@ flowchart TD
 
 ### How Actions Interact With Context
 
-Actions receive a [`DatabaseContext`](MSSQLand/Services/DatabaseContext.cs) and call [`QueryService`](MSSQLand/Services/QueryService.cs)`.ExecuteTable(query)` (or `ExecuteScalar`, `Execute`, etc.). They never need to know whether impersonation or linked servers are active — the [`QueryService`](MSSQLand/Services/QueryService.cs)`.PrepareQuery()` pipeline transparently wraps their raw SQL with the correct nesting. An action written for a direct connection works identically through a five-hop linked server chain with cascading impersonation at each hop.
+Actions receive a [`DatabaseContext`](MSSQLand/Services/DatabaseContext.cs) and call [`QueryService`](MSSQLand/Services/QueryService.cs)`.ExecuteTable(query)` (or `ExecuteScalar`, `Execute`, etc.). They never need to know whether impersonation or linked servers are active; the [`QueryService`](MSSQLand/Services/QueryService.cs)`.PrepareQuery()` pipeline transparently wraps their raw SQL with the correct nesting. An action written for a direct connection works identically through a five-hop linked server chain with cascading impersonation at each hop.
 
 ---
 
@@ -308,7 +308,7 @@ Helper classes like [`Logger`](MSSQLand/Utilities/Logger.cs) and [`MarkdownForma
 
 ## 🎬 Adding a New Action
 
-This design makes adding new features straightforward—simply create a new action class, and the framework handles the rest.
+This design makes adding new features straightforward: simply create a new action class, and the framework handles the rest.
 
 ### Step 1: Choose the Right Directory
 

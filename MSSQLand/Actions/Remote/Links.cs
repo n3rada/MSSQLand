@@ -128,7 +128,7 @@ namespace MSSQLand.Actions.Remote
             raw.Columns.Remove("Is Default");
 
             // Remove "Denied (catch-all)" rows when specific mappings exist for the same link.
-            // The deny is implied — only keep it when it's the sole row (no visible mappings).
+            // The deny is implied; only keep it when it's the sole row (no visible mappings).
             var linksWithMappings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (DataRow row in raw.Rows)
             {

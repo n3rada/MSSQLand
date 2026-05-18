@@ -1,4 +1,4 @@
-# MSSQLand — AI Context
+# MSSQLand: AI Context
 
 ## Documentation
 
@@ -9,7 +9,7 @@ Read these before making changes:
 | [README.md](README.md) | Usage, CLI syntax, linked server chain format, discovery modes, credential types |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Architecture deep-dive, design principles, query chain internals, full action skeleton |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution workflow, branching, PR guidelines |
-| [ORIGIN.md](ORIGIN.md) | Project history — not technical, skip unless context on motivation is needed |
+| [ORIGIN.md](ORIGIN.md) | Project history (not technical, skip unless context on motivation is needed) |
 
 ## Project
 
@@ -39,7 +39,7 @@ MSSQLand/
 └── Exceptions/     # Custom exception types
 ```
 
-[`DatabaseContext`](MSSQLand/Services/DatabaseContext.cs) is the single facade actions receive. It composes all services. Actions never need to know whether impersonation or linked servers are active — [`QueryService`](MSSQLand/Services/QueryService.cs)`.PrepareQuery()` transparently wraps raw SQL with `EXECUTE AS LOGIN` and `OPENQUERY`/`EXEC AT` nesting at each hop.
+[`DatabaseContext`](MSSQLand/Services/DatabaseContext.cs) is the single facade actions receive. It composes all services. Actions never need to know whether impersonation or linked servers are active; [`QueryService`](MSSQLand/Services/QueryService.cs)`.PrepareQuery()` transparently wraps raw SQL with `EXECUTE AS LOGIN` and `OPENQUERY`/`EXEC AT` nesting at each hop.
 
 ## Adding a New Action
 
@@ -123,7 +123,7 @@ Aliases are optional (`null` if none). The key is the CLI name (lowercase).
 
 ### 3. Add to .csproj
 
-**Every new `.cs` file must be added to [`MSSQLand/MSSQLand.csproj`](MSSQLand/MSSQLand.csproj) — the project uses an explicit `<Compile>` manifest, not globbing. Files not listed here are silently ignored by the build.**
+**Every new `.cs` file must be added to [`MSSQLand/MSSQLand.csproj`](MSSQLand/MSSQLand.csproj). The project uses an explicit `<Compile>` manifest, not globbing. Files not listed here are silently ignored by the build.**
 
 Add a `<Compile>` entry in the appropriate `<ItemGroup>`:
 
@@ -131,14 +131,14 @@ Add a `<Compile>` entry in the appropriate `<ItemGroup>`:
 <Compile Include="Actions\<Category>\MyAction.cs" />
 ```
 
-This applies to all new files: actions, models, services, utilities, exceptions — anything under `MSSQLand/`.
+This applies to all new files: actions, models, services, utilities, exceptions, anything under `MSSQLand/`.
 
 ConfigMgr actions must be wrapped:
 ```xml
 <Compile Condition="'$(EnableCM)' == 'true'" Include="Actions\ConfigMgr\MyAction.cs" />
 ```
 
-## QueryService API — [`MSSQLand/Services/QueryService.cs`](MSSQLand/Services/QueryService.cs)
+## QueryService API: [`MSSQLand/Services/QueryService.cs`](MSSQLand/Services/QueryService.cs)
 
 | Method | Returns | Use for |
 |---|---|---|
@@ -146,7 +146,7 @@ ConfigMgr actions must be wrapped:
 | `ExecuteScalar(query)` | `object` | Single value (COUNT, @@SERVERNAME, etc.) |
 | `Execute(query)` | `SqlDataReader` | Raw reader access |
 
-## Logging — [`MSSQLand/Utilities/Logger.cs`](MSSQLand/Utilities/Logger.cs)
+## Logging: [`MSSQLand/Utilities/Logger.cs`](MSSQLand/Utilities/Logger.cs)
 
 ```csharp
 Logger.TaskNested("Starting...");   // [>] indented task line
@@ -159,5 +159,5 @@ Logger.Error("Something broke.");   // [✗] red
 
 - All action fields **must have default values** (required for .NET Framework 4.8 + reflection binding, avoids CS0649).
 - Boolean fields with `Toggle = true` never need `ValidateArguments()` override; `BindArguments()` handles all toggle aliases.
-- Actions must not duplicate impersonation or linked-server logic — `QueryService.PrepareQuery()` handles all of it transparently.
-- [`DatabaseContext`](MSSQLand/Services/DatabaseContext.cs) implements `IDisposable`; [`Program.cs`](MSSQLand/Program.cs) wraps it in `using` — never manually close the connection in an action.
+- Actions must not duplicate impersonation or linked-server logic; `QueryService.PrepareQuery()` handles all of it transparently.
+- [`DatabaseContext`](MSSQLand/Services/DatabaseContext.cs) implements `IDisposable`; [`Program.cs`](MSSQLand/Program.cs) wraps it in `using`; never manually close the connection in an action.

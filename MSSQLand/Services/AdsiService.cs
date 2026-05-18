@@ -80,7 +80,7 @@ namespace MSSQLand.Services
             {
                 _databaseContext.QueryService.ExecuteNonProcessing(query);
 
-                // Enable AllowInProcess for ADsDSOObject — required for OPENQUERY execution
+                // Enable AllowInProcess for ADsDSOObject, required for OPENQUERY execution
                 _databaseContext.QueryService.ExecuteNonProcessing(
                     "EXEC master.dbo.sp_MSset_oledb_prop N'ADsDSOObject', N'AllowInProcess', 1");
 
@@ -88,7 +88,7 @@ namespace MSSQLand.Services
                 _databaseContext.QueryService.ExecuteNonProcessing(
                     $"EXEC sp_addlinkedsrvlogin @rmtsrvname = '{serverName}', @useself = N'true'");
 
-                // Enable data access — required before OPENQUERY will work
+                // Enable data access, required before OPENQUERY will work
                 _databaseContext.ConfigService.SetServerOption(serverName, "data access", "true");
 
                 return true;

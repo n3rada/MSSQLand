@@ -110,7 +110,7 @@ WHERE HAS_PERMS_BY_NAME(sp.name, 'LOGIN', 'IMPERSONATE') = 1
                     Logger.Debug($"Impersonating '{loginToImpersonate}' to explore deeper chains");
                     databaseContext.UserService.ImpersonateUser(loginToImpersonate);
 
-                    // If this user is sysadmin, no need to recurse — they can already impersonate anyone
+                    // If this user is sysadmin, no need to recurse; they can already impersonate anyone
                     if (!databaseContext.UserService.IsAdmin())
                     {
                         BuildImpersonationMap(databaseContext, startingLogin, newPath, allChains, newVisited, depth + 1);

@@ -522,7 +522,7 @@ namespace MSSQLand.Models
             {
                 StringBuilder baseQuery = new StringBuilder();
 
-                // Skip impersonation — this content will be wrapped inside the parent's
+                // Skip impersonation; this content will be wrapped inside the parent's
                 // OPENQUERY, and EXECUTE AS LOGIN inside OPENQUERY always fails because
                 // sp_describe_first_result_set cannot handle it during metadata probing.
                 if (impersonationUsers != null && impersonationUsers.Length > 0)
@@ -559,7 +559,7 @@ namespace MSSQLand.Models
 
             // We are now inside the query, on the linked server
 
-            // Skip impersonation — EXECUTE AS LOGIN inside OPENQUERY always fails
+            // Skip impersonation; EXECUTE AS LOGIN inside OPENQUERY always fails
             // because sp_describe_first_result_set cannot handle it during metadata probing.
             if (impersonationUsers != null && impersonationUsers.Length > 0)
             {

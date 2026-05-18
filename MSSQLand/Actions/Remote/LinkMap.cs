@@ -300,7 +300,7 @@ namespace MSSQLand.Actions.Remote
             // Key: (server name, local login): same server with different login mappings are separate entries.
             // Skip impersonation discovery if already sysadmin: we can already see all linked servers.
             // Force impersonation discovery when current user has zero direct visibility (all rows were
-            // "No visibility") — an impersonable user may see what we cannot.
+            // "No visibility") - an impersonable user may see what we cannot.
             bool forceImpersonationDiscovery = sqlServerLinks.Count == 0 && noVisibilityLinks.Count > 0;
             var reachableChains = _rootNode.IsSysadmin
                 ? new List<List<string>>()
@@ -492,7 +492,7 @@ namespace MSSQLand.Actions.Remote
 
             // Count total chains.
             // Guard against the root having no children: CountLeafNodes returns 1 for any leaf node,
-            // including the root itself when all explorations failed (wrong — should be 0).
+            // including the root itself when all explorations failed (wrong, should be 0).
             int totalChains = _rootNode.Children.Count == 0 ? 0 : CountLeafNodes(_rootNode);
             int totalEscalations = CountEscalationPaths(_rootNode);
 

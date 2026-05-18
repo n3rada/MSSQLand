@@ -95,7 +95,7 @@ namespace MSSQLand.Services
 
         /// <summary>
         /// Detects if an exception is a terminal impersonation failure.
-        /// These are definitive errors — no retry, wrapping, or routing change will resolve them.
+        /// These are definitive errors: no retry, wrapping, or routing change will resolve them.
         /// SQL Server may append a secondary "metadata could not be determined" message
         /// which would otherwise trigger OPENQUERY wrapping; this check prevents that.
         /// </summary>
@@ -145,7 +145,7 @@ namespace MSSQLand.Services
             string m = ex.Message;
 
             // Check for OLE DB provider errors (linked server specific)
-            // Exclude ADSI/OLE DB query preparation errors — those are query failures, not connection failures
+            // Exclude ADSI/OLE DB query preparation errors; those are query failures, not connection failures
             if (m.Contains("OLE DB provider") && m.Contains("for linked server") && !m.Contains("while preparing the query"))
                 return true;
 
@@ -329,7 +329,7 @@ SELECT @result AS Result, @error AS Error;";
 
                         if (_linkedServers.AllServersNonRpc)
                         {
-                            // Every server in the chain lacks RPC — full OPENQUERY fallback
+                            // Every server in the chain lacks RPC, falling back to full OPENQUERY
                             if (!_rpcWarningShown)
                             {
                                 Logger.Debug("All linked servers lack RPC. Switching to full OPENQUERY.");
@@ -339,13 +339,13 @@ SELECT @result AS Result, @error AS Error;";
                         }
                         else
                         {
-                            // Only some hops lack RPC — use hybrid routing
+                            // Only some hops lack RPC; using hybrid routing
                             Logger.Debug($"RPC unavailable for '{failedServer}'. Using hybrid RPC/OPENQUERY routing.");
                         }
                     }
                     else
                     {
-                        // Could not extract server name — fall back to full OPENQUERY
+                        // Could not extract server name; falling back to full OPENQUERY
                         if (!_rpcWarningShown)
                         {
                             Logger.Debug("RPC unavailable. Switching to OPENQUERY.");
@@ -357,7 +357,7 @@ SELECT @result AS Result, @error AS Error;";
                     return ExecuteWithHandling(query, executeReader, timeout, retryCount + 1);
                 }
 
-                // Impersonation failures are terminal — wrapping or retrying won't help.
+                // Impersonation failures are terminal; wrapping or retrying won't help.
                 // Check this before IsOpenQueryRowsetFailure because SQL Server appends
                 // "The metadata could not be determined..." to impersonation errors,
                 // which would otherwise trigger the OPENQUERY wrapping path.

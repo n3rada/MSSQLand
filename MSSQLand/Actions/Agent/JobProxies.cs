@@ -11,7 +11,7 @@ namespace MSSQLand.Actions.Agent
     /// <summary>
     /// Enumerate SQL Server Agent proxy accounts, their mapped logins, credentials, and allowed subsystems.
     /// Queries msdb.dbo.sysproxies, sysproxylogin, sysproxysubsystem, and sys.credentials.
-    /// Proxy accounts allow job steps to run under alternate Windows credentials — valuable for credential discovery.
+    /// Proxy accounts allow job steps to run under alternate Windows credentials, valuable for credential discovery.
     /// </summary>
     internal class JobProxies : BaseAction
     {
