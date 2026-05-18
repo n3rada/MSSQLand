@@ -23,10 +23,10 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 1, ShortName = "t", LongName = "type", Description = "Filter by DP type")]
         private string _type = "";
 
-        [ArgumentMetadata(Position = 2, ShortName = "a", LongName = "active", Description = "Show only active DPs (default: false)")]
+        [ArgumentMetadata(Position = 2, ShortName = "a", LongName = "active", Description = "Show only active DPs")]
         private bool _activeOnly = false;
 
-        [ArgumentMetadata(Position = 3, ShortName = "l", LongName = "limit", Description = "Limit number of results (default: 25)")]
+        [ArgumentMetadata(Position = 3, ShortName = "l", LongName = "limit", Description = "Limit number of results")]
         private int _limit = 25;
 
         public override object Execute(DatabaseContext databaseContext)

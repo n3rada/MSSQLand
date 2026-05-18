@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.Database
     {
         private enum Mode { List, Exec, Read, Search }
 
-        [ArgumentMetadata(Position = 0, Description = "Mode: list, exec, read, or search (default: list)")]
+        [ArgumentMetadata(Position = 0, Description = "Mode: list, exec, read, or search")]
         private Mode _mode = Mode.List;
 
         [ArgumentMetadata(Position = 1, Description = "Stored procedure name as schema.procedure (required for exec/read) or search keyword (required for search)")]

@@ -26,7 +26,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 2, ShortName = "t", LongName = "type", Description = "Filter by type: other (0), user (1), or device (2)")]
         private string _collectionType = "";
 
-        [ArgumentMetadata(Position = 3,  LongName = "limit", Description = "Limit number of results (default: 25)")]
+        [ArgumentMetadata(Position = 3,  LongName = "limit", Description = "Limit number of results")]
         private int _limit = 25;
 
         [ArgumentMetadata(LongName = "with-members", Description = "Only show collections with members (MemberCount > 0)")]

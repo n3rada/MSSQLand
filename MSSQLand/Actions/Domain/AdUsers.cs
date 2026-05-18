@@ -19,7 +19,7 @@ namespace MSSQLand.Actions.Domain
 
         private enum OutputFormat { Default, Bash, Python, Table }
 
-        [ArgumentMetadata(Position = 0, Description = "Maximum RID to enumerate (default: 10000)")]
+        [ArgumentMetadata(Position = 0, Description = "Maximum RID to enumerate")]
         private int _maxRid = DefaultMaxRid;
 
         [ArgumentMetadata(LongName = "format", Description = "Output format: bash, python, or table")]

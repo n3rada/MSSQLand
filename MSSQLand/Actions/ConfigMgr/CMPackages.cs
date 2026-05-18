@@ -31,16 +31,16 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(Position = 4, ShortName = "t", LongName = "type", Description = "Filter by package type: package (0), driver (3), task-sequence (4), software-update (5), os-image (257), boot-image (258)")]
         private string _packageType = "";
 
-        [ArgumentMetadata(Position = 5, LongName = "with-programs", Description = "Show only packages with programs (default: false)")]
+        [ArgumentMetadata(Position = 5, LongName = "with-programs", Description = "Show only packages with programs")]
         private bool _withPrograms = false;
 
-        [ArgumentMetadata(Position = 6, LongName = "with-deployments", Description = "Show only packages with active deployments (default: false)")]
+        [ArgumentMetadata(Position = 6, LongName = "with-deployments", Description = "Show only packages with active deployments")]
         private bool _withDeployments = false;
 
-        [ArgumentMetadata(Position = 7, LongName = "no-source", Description = "Show only packages without source path (virtual packages) (default: false)")]
+        [ArgumentMetadata(Position = 7, LongName = "no-source", Description = "Show only packages without source path (virtual packages)")]
         private bool _noSource = false;
 
-        [ArgumentMetadata(Position = 8, LongName = "limit", Description = "Limit number of results (default: 25)")]
+        [ArgumentMetadata(Position = 8, LongName = "limit", Description = "Limit number of results")]
         private int _limit = 25;
 
         public override object Execute(DatabaseContext databaseContext)

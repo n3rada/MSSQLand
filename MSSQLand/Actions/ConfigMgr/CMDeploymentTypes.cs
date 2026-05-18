@@ -77,7 +77,7 @@ namespace MSSQLand.Actions.ConfigMgr
         [ArgumentMetadata(LongName = "enabled", Description = "Filter by enabled status (true/false)")]
         private string _enabled = "";
 
-        [ArgumentMetadata(LongName = "limit", Description = "Limit number of results (default: 25)")]
+        [ArgumentMetadata(LongName = "limit", Description = "Limit number of results")]
         private int _limit = 25;
 
         public override object Execute(DatabaseContext databaseContext)

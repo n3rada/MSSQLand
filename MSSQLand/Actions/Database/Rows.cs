@@ -13,7 +13,7 @@ namespace MSSQLand.Actions.Database
         [ArgumentMetadata(Position = 0, Required = true, Description = "Table name: [table], [schema.table], or [database.schema.table]")]
         private string _fqtn = "";
 
-        [ArgumentMetadata(Position = 1, ShortName = "l", LongName = "limit", Description = "Maximum rows to retrieve (default: 25)")]
+        [ArgumentMetadata(Position = 1, ShortName = "l", LongName = "limit", Description = "Maximum rows to retrieve")]
         private int _limit = 25;
 
         public override void ValidateArguments(string[] args)

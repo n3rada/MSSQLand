@@ -33,16 +33,16 @@ namespace MSSQLand.Actions.FileSystem
     /// </summary>
     internal class Tree : BaseAction
     {
-        [ArgumentMetadata(Position = 0, Required = false, Description = "Directory path to display (default: current directory)")]
+        [ArgumentMetadata(Position = 0, Required = false, Description = "Directory path to display")]
         private string _path = ".";
 
         [ArgumentMetadata(Position = 1, ShortName = "d", LongName = "depth", Description = "Directory depth to traverse (1-255)")]
         private int _depth = 3;
 
-        [ArgumentMetadata(Position = 2, ShortName = "f", LongName = "files", Description = "Show files (default: true). Disable with -f:0 or --files:false)")]
+        [ArgumentMetadata(Position = 2, ShortName = "f", LongName = "files", Description = "Show files. Disable with -f:0 or --files:false")]
         private bool _showFiles = true;
 
-        [ArgumentMetadata(Position = 3, ShortName = "u", LongName = "unicode", Description = "Use Unicode box-drawing characters (default: true, set to false for ASCII)")]
+        [ArgumentMetadata(Position = 3, ShortName = "u", LongName = "unicode", Description = "Use Unicode box-drawing characters (set to false for ASCII)")]
         private bool _useUnicode = true;
 
         /// <summary>
