@@ -169,22 +169,22 @@ namespace MSSQLand.Utilities
             var descriptors = actionInstance.GetArgumentDescriptors();
 
             var positional = descriptors.Where(d => d.Position >= 0).OrderBy(d => d.Position).ToList();
-            var optional   = descriptors.Where(d => d.Position < 0).ToList();
+            var named      = descriptors.Where(d => d.Position < 0).ToList();
 
-            // Build usage synopsis
-            var usageParts = new List<string> { action.ActionName };
+            // Build usage synopsis: !<action> <positionals> [named-flags]
+            var usageParts = new List<string> { $"!{action.ActionName}" };
             foreach (var d in positional)
                 usageParts.Add(d.Required ? $"<{d.FieldName}>" : $"[{d.FieldName}]");
-            foreach (var d in optional)
-            {
-                string flag = d.LongName != null ? $"--{d.LongName}" : $"--{d.FieldName}";
-                usageParts.Add(d.IsFlag ? $"[{flag}]" : $"[{flag} <{d.TypeName}>]");
-            }
+            foreach (var d in named)
+                usageParts.Add($"[{ActionArgUsageToken(d)}]");
 
-            Console.WriteLine($"\nusage: <host> -c <cred> [options] {string.Join(" ", usageParts)}\n");
-            Console.WriteLine($"  {action.Description}");
+            Console.WriteLine($"\nusage: {string.Join(" ", usageParts)}");
+
             if (action.Aliases != null && action.Aliases.Length > 0)
-                Console.WriteLine($"  Aliases: {string.Join(", ", action.Aliases)}");
+                Console.WriteLine($"aliases: {string.Join(", ", action.Aliases)}");
+
+            Console.WriteLine();
+            Console.WriteLine(action.Description);
 
             if (!descriptors.Any())
             {
@@ -193,40 +193,53 @@ namespace MSSQLand.Utilities
             }
 
             // Compute column width for alignment
-            int colWidth = positional.Select(d => $"  <{d.FieldName}>".Length)
-                .Concat(optional.Select(d => $"  {ActionArgLabel(d)}".Length))
+            int colWidth = positional.Select(d => d.Required ? $"  <{d.FieldName}>".Length : $"  [{d.FieldName}]".Length)
+                .Concat(named.Select(d => $"  {ActionArgLabel(d)}".Length))
                 .DefaultIfEmpty(0).Max() + 3;
 
-            if (positional.Any())
+            Console.WriteLine("\noptions:");
+
+            foreach (var d in positional)
             {
-                Console.WriteLine("\npositional arguments:");
-                foreach (var d in positional)
-                {
-                    string left = $"  <{d.FieldName}>";
-                    Console.WriteLine($"{left.PadRight(colWidth)}{ActionArgDescription(d)}");
-                }
+                string left = d.Required ? $"  <{d.FieldName}>" : $"  [{d.FieldName}]";
+                Console.WriteLine($"{left.PadRight(colWidth)}{ActionArgDescription(d)}");
             }
 
-            if (optional.Any())
+            foreach (var d in named)
             {
-                Console.WriteLine("\noptional arguments:");
-                foreach (var d in optional)
-                {
-                    string left = $"  {ActionArgLabel(d)}";
-                    Console.WriteLine($"{left.PadRight(colWidth)}{ActionArgDescription(d)}");
-                }
+                string left = $"  {ActionArgLabel(d)}";
+                Console.WriteLine($"{left.PadRight(colWidth)}{ActionArgDescription(d)}");
             }
 
             Console.WriteLine();
         }
 
+        private static string ActionArgUsageToken(ArgumentDescriptor d)
+        {
+            if (d.IsFlag)
+            {
+                if (d.ShortName != null && d.LongName != null)
+                    return $"-{d.ShortName}, --{d.LongName}";
+                return d.ShortName != null ? $"-{d.ShortName}" : $"--{d.LongName ?? d.FieldName}";
+            }
+            string valueName = (d.LongName ?? d.FieldName).ToUpper();
+            if (d.ShortName != null && d.LongName != null)
+                return $"-{d.ShortName}, --{d.LongName} {valueName}";
+            return d.ShortName != null ? $"-{d.ShortName} {valueName}" : $"--{d.LongName ?? d.FieldName} {valueName}";
+        }
+
         private static string ActionArgLabel(ArgumentDescriptor d)
         {
-            string flag      = d.LongName  != null ? $"--{d.LongName}"  : $"--{d.FieldName}";
-            string shortFlag = d.ShortName != null ? $"-{d.ShortName}, " : string.Empty;
-            return d.IsFlag
-                ? $"{shortFlag}{flag}"
-                : $"{shortFlag}{flag} <{d.TypeName}>";
+            if (d.IsFlag)
+            {
+                if (d.ShortName != null && d.LongName != null)
+                    return $"-{d.ShortName}, --{d.LongName}";
+                return d.ShortName != null ? $"-{d.ShortName}" : $"--{d.LongName ?? d.FieldName}";
+            }
+            string valueName = (d.LongName ?? d.FieldName).ToUpper();
+            if (d.ShortName != null && d.LongName != null)
+                return $"-{d.ShortName}, --{d.LongName} {valueName}";
+            return d.ShortName != null ? $"-{d.ShortName} {valueName}" : $"--{d.LongName ?? d.FieldName} {valueName}";
         }
 
         private static string ActionArgDescription(ArgumentDescriptor d)

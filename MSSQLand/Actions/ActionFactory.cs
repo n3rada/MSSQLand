@@ -69,6 +69,7 @@ namespace MSSQLand.Actions
             { "ole", (typeof(Ole), "Execute OS commands via OLE Automation (fire-and-forget, no output).", new[] { "oamethod" }) },
             { "powershell", (typeof(PowerShell), "Execute PowerShell scripts.", new[] { "pwsh" }) },
             { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.", null) },
+            { "clr-list", (typeof(ClrList), "List user-defined CLR assemblies. Optionally inspect a named assembly's exported procedures.", new[] { "assemblies" }) },
             { "run", (typeof(Run), "Execute a file on the SQL Server filesystem using OLE Automation.", null) },
 
             // ── SQL SERVER AGENT ACTIONS (sysjobs / sysjobsteps / sysjobhistory / sysproxies) ──
