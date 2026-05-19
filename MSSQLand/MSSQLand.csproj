@@ -12,7 +12,6 @@
     <LangVersion>11.0</LangVersion>
     <StartupObject>MSSQLand.Program</StartupObject>
     <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <NoWin32Manifest>true</NoWin32Manifest>
     <IsWebBootstrapper>false</IsWebBootstrapper>
@@ -214,7 +213,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
-    <None Include="App.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
