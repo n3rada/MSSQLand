@@ -324,10 +324,11 @@ namespace MSSQLand.Services
 
 
         /// <summary>
-        /// This function contains the .NET assembly for an LDAP server
-        /// in SQL byte format, as well as the SHA-512 hash for the assembly.
+        /// Returns the embedded LDAP server CLR assembly as a SQL-ready hex string and its SHA-512 hash.
+        /// The assembly is stored gzip-compressed and base64-encoded (~17 kB overhead in the binary).
+        /// Source: <see href="https://github.com/blackarrowsec/redteam-research/pull/13"/>
         /// </summary>
-        /// <returns></returns>
+        /// <returns>String array where [0] is the SHA-512 hash and [1] is the uppercase hex byte string.</returns>
         private string[] GetLdapServerAssembly()
         {
             // https://github.com/blackarrowsec/redteam-research/pull/13
