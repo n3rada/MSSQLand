@@ -14,6 +14,7 @@
     <FileAlignment>512</FileAlignment>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <NoWin32Manifest>true</NoWin32Manifest>
+    <HighEntropyVA>true</HighEntropyVA>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <BootstrapperEnabled>false</BootstrapperEnabled>
     <Install>false</Install>
