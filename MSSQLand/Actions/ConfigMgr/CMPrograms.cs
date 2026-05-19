@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMPrograms.cs
 
 using MSSQLand.Services;
@@ -149,3 +150,4 @@ ORDER BY pk.Name, pr.ProgramName;
         }
     }
 }
+#endif

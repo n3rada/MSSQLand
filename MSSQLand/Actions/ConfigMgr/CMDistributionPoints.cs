@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMDistributionPoints.cs
 
 using MSSQLand.Services;
@@ -131,3 +132,4 @@ ORDER BY ServerName;";
         }
     }
 }
+#endif

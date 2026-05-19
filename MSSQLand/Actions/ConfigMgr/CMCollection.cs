@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMCollection.cs
 
 using MSSQLand.Services;
@@ -320,3 +321,4 @@ ORDER BY usr.Unique_User_Name0;";
         }
     }
 }
+#endif

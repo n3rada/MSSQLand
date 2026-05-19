@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMAadApps.cs
 
 using MSSQLand.Services;
@@ -130,3 +131,4 @@ ORDER BY a.LastUpdateTime DESC";
         }
     }
 }
+#endif

@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMScriptDelete.cs
 
 using MSSQLand.Services;
@@ -77,3 +78,4 @@ WHERE ScriptGuid = '{_scriptGuid}'";
         }
     }
 }
+#endif

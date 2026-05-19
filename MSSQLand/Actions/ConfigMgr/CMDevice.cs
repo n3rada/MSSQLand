@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMDevice.cs
 
 using MSSQLand.Services;
@@ -609,3 +610,4 @@ ORDER BY ts.Name;";
         }
     }
 }
+#endif

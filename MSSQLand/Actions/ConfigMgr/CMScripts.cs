@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMScripts.cs
 
 using MSSQLand.Services;
@@ -92,3 +93,4 @@ ORDER BY LastUpdateTime DESC;";
         }
     }
 }
+#endif

@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMCollections.cs
 
 using MSSQLand.Services;
@@ -128,3 +129,4 @@ ORDER BY LastChangeTime DESC, LastRefreshTime DESC, MemberCount DESC";
         }
     }
 }
+#endif

@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMDeployments.cs
 
 using MSSQLand.Services;
@@ -245,3 +246,4 @@ ORDER BY ds.CreationTime DESC;
         }
     }
 }
+#endif

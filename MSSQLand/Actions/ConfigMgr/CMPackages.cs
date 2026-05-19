@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMPackages.cs
 
 using MSSQLand.Services;
@@ -207,3 +208,4 @@ ORDER BY
         }
     }
 }
+#endif

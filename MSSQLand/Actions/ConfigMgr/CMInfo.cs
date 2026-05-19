@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMInfo.cs
 
 using MSSQLand.Services;
@@ -159,3 +160,4 @@ namespace MSSQLand.Actions.ConfigMgr
         }
     }
 }
+#endif

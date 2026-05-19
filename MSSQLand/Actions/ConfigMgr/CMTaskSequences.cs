@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMTaskSequences.cs
 
 using MSSQLand.Services;
@@ -140,3 +141,4 @@ ORDER BY ts.Name;
         }
     }
 }
+#endif

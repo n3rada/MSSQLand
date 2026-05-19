@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMRbacAdd.cs
 
 using MSSQLand.Services;
@@ -130,3 +131,4 @@ VALUES (
     }
 }
 
+#endif

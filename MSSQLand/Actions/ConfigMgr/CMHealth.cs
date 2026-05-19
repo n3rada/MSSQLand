@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMHealth.cs
 
 using MSSQLand.Services;
@@ -111,3 +112,4 @@ ORDER BY ch.LastActiveTime DESC";
         }
     }
 }
+#endif

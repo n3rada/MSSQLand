@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMScriptStatus.cs
 
 using MSSQLand.Services;
@@ -132,3 +133,4 @@ WHERE ses.TaskID = {_taskId}";
         }
     }
 }
+#endif

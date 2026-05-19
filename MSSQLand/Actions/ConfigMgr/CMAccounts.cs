@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMAccounts.cs
 
 using MSSQLand.Services;
@@ -53,3 +54,4 @@ ORDER BY UserName;
         }
     }
 }
+#endif

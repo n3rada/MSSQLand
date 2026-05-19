@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMTaskSequence.cs
 
 using MSSQLand.Services;
@@ -512,3 +513,4 @@ ORDER BY ds.DeploymentTime DESC;";
         }
     }
 }
+#endif

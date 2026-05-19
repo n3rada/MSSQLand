@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMScript.cs
 
 using System;
@@ -137,3 +138,4 @@ namespace MSSQLand.Actions.ConfigMgr
         }
     }
 }
+#endif

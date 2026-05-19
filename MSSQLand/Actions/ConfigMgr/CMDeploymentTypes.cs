@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMDeploymentTypes.cs
 
 using MSSQLand.Services;
@@ -291,4 +292,4 @@ WHERE rel.RelationType = 9";
             return null;
         }
     }
-}
+}#endif

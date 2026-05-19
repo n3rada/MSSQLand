@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Services/CMService.cs
 
 using MSSQLand.Models;
@@ -655,3 +656,4 @@ ORDER BY ServerName;
         }
     }
 }
+#endif

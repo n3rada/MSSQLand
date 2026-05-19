@@ -10,7 +10,9 @@ using MSSQLand.Actions.Execution;
 using MSSQLand.Actions.Domain;
 using MSSQLand.Actions.Administration;
 using MSSQLand.Actions.Agent;
+#if CONFIGMGR
 using MSSQLand.Actions.ConfigMgr;
+#endif
 using MSSQLand.Exceptions;
 
 namespace MSSQLand.Actions
@@ -95,6 +97,7 @@ namespace MSSQLand.Actions
 
             { "unc", (typeof(UncProbe), "Force SMB authentication to a specified UNC path to capture Net-NTLMv2 challenge/response.", new[] { "coerce", "smb", "ntlm" }) },
 
+#if CONFIGMGR
             // CONFIGURATION MANAGER ACTIONS (ConfigMgr / SCCM / MECM)
             { "cm-info", (typeof(CMInfo), "Display ConfigMgr site information (site code, version, build, database server, management points) for infrastructure mapping.", null) },
             { "cm-servers", (typeof(CMServers), "Enumerate ConfigMgr site servers, management points, and distribution points in the hierarchy for infrastructure mapping.", null) },
@@ -124,6 +127,7 @@ namespace MSSQLand.Actions
             { "cm-script-run", (typeof(CMScriptRun), "Execute PowerShell script on target device via BGB notification channel (requires ResourceID and script GUID).", null) },
             { "cm-script-status", (typeof(CMScriptStatus), "Monitor script execution status and retrieve output from target devices by Task ID.", null) },
             { "cm-admin-add", (typeof(CMRbacAdd), "Create stealthy RBAC admin by mimicking existing admin attributes (dates, patterns).", new[] { "cm-rbac-add" }) }
+#endif
         };
 
         // Lazy-initialized alias lookup dictionary

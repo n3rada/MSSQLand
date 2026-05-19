@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMDeploymentType.cs
 
 using MSSQLand.Services;
@@ -451,3 +452,4 @@ ORDER BY ds.Document_ID DESC;";
         }
     }
 }
+#endif

@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMDeployment.cs
 
 using MSSQLand.Services;
@@ -667,3 +668,4 @@ WHERE PackageID = '{packageId.Replace("'", "''")}';";
         }
     }
 }
+#endif

@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMLogTrace.cs
 
 using MSSQLand.Services;
@@ -292,3 +293,4 @@ WHERE a.AssignmentID IN (
         }
     }
 }
+#endif

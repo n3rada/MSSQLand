@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMScriptAdd.cs
 
 using MSSQLand.Services;
@@ -113,3 +114,4 @@ VALUES
         }
     }
 }
+#endif

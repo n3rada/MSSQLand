@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMApplications.cs
 
 using MSSQLand.Services;
@@ -116,3 +117,4 @@ ORDER BY ci.IsDeployed DESC, ci.DateCreated DESC;
         }
     }
 }
+#endif

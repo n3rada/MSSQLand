@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMServers.cs
 
 using MSSQLand.Services;
@@ -79,3 +80,4 @@ ORDER BY sd.SiteCode, sd.SiteServerName";
         }
     }
 }
+#endif

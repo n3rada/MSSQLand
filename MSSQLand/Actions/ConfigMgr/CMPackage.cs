@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMPackage.cs
 
 using MSSQLand.Services;
@@ -321,3 +322,4 @@ ORDER BY dp.ServerNALPath;";
         }
     }
 }
+#endif

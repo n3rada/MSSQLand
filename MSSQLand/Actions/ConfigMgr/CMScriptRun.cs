@@ -1,3 +1,4 @@
+#if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMScriptRun.cs
 
 using MSSQLand.Services;
@@ -190,3 +191,4 @@ WHERE TaskID = {taskId}";
         }
     }
 }
+#endif
