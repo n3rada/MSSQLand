@@ -35,8 +35,6 @@ namespace MSSQLand
                         return 0;
                 }
 
-                if (!Logger.IsBannerSuppressed) Banner.Show();
-
                 if (parsedArgs == null || parsedArgs.Host == null)
                 {
                     Logger.Error("Invalid command arguments.");

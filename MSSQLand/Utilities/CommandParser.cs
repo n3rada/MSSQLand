@@ -133,6 +133,17 @@ namespace MSSQLand.Utilities
 
         public (ParseResultType, CommandArgs?) Parse(string[] args)
         {
+            // Scan for display flags first so banner and output are correctly
+            // suppressed regardless of what the command does.
+            foreach (string arg in args)
+            {
+                if (arg == "--no-banner") Logger.IsBannerSuppressed = true;
+                else if (arg == "--silent")  Logger.IsSilentModeEnabled = true;
+            }
+
+            if (!Logger.IsBannerSuppressed && !Logger.IsSilentModeEnabled)
+                Banner.Show();
+
             if (args.Length == 0)
             {
                 Helper.ShowQuickStart();
