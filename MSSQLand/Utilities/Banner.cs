@@ -22,7 +22,6 @@ namespace MSSQLand.Utilities
  | |  | |____) |___) | |__| | |___| (_| | | | | (_| |
  |_|  |_|_____/_____/ \___\_\______\__,_|_| |_|\__,_|
  @n3rada                                       {version}");
-            Console.WriteLine();
         }
     }
 }
