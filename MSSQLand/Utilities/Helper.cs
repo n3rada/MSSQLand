@@ -91,7 +91,7 @@ namespace MSSQLand.Utilities
         /// </summary>
         public static void Show()
         {
-            Console.WriteLine("Usage: <host> -c <cred> [options] <action> [action-args]\n");
+            Console.WriteLine("\nUsage: <host> -c <cred> [options] <action> [action-args]\n");
 
             Console.WriteLine("Positional arguments:");
             Console.WriteLine("\t<host>                 Target SQL Server");
@@ -127,6 +127,7 @@ namespace MSSQLand.Utilities
 
             Console.WriteLine("Output options:");
             Console.WriteLine("\t--format               Output format: markdown (default), csv");
+            Console.WriteLine("\t--no-banner            Suppress the ASCII art banner");
             Console.WriteLine("\t--silent               Silent mode (results only, no logging)");
             Console.WriteLine("\t--debug                Enable debug logging");
             Console.WriteLine("\t--trace                Enable trace logging\n");
@@ -294,7 +295,7 @@ namespace MSSQLand.Utilities
         /// </summary>
         public static void ShowQuickStart()
         {
-            Console.WriteLine("Usage: <host> -c <cred> [options] <action> [action-options]\n");
+            Console.WriteLine("\nUsage: <host> -c <cred> [options] <action> [action-options]\n");
             Console.WriteLine("For full help: -h or --help\n");
         }
     }

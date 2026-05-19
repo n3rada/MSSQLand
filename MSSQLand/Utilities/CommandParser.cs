@@ -256,6 +256,10 @@ namespace MSSQLand.Utilities
                     {
                         Logger.IsSilentModeEnabled = true;
                     }
+                    else if (args[i] == "--no-banner")
+                    {
+                        Logger.IsBannerSuppressed = true;
+                    }
                     else if (args[i].StartsWith("--output-format", StringComparison.OrdinalIgnoreCase) ||
                              args[i].StartsWith("--output=", StringComparison.OrdinalIgnoreCase) ||
                              args[i].StartsWith("--format", StringComparison.OrdinalIgnoreCase))

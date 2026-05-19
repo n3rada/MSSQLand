@@ -18,8 +18,6 @@ namespace MSSQLand
             Console.OutputEncoding = Encoding.UTF8;
             Console.InputEncoding = Encoding.UTF8;
 
-            Banner.Show();
-
             // Parse command-line arguments
             CommandArgs arguments;
             try
@@ -36,6 +34,8 @@ namespace MSSQLand
                     case CommandParser.ParseResultType.UtilityMode:
                         return 0;
                 }
+
+                if (!Logger.IsBannerSuppressed) Banner.Show();
 
                 if (parsedArgs == null || parsedArgs.Host == null)
                 {
