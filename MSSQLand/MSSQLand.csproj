@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
-          Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
@@ -24,7 +21,6 @@
     <UpdateEnabled>false</UpdateEnabled>
     <SignManifests>false</SignManifests>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
@@ -35,7 +31,6 @@
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Optimize>true</Optimize>
@@ -54,7 +49,23 @@
     <PublicSign>false</PublicSign>
     <DefineConstants>CONFIGMGR</DefineConstants>
   </PropertyGroup>
-
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release-NoCM|AnyCPU'">
+    <OutputPath>bin\Release-NoCM\</OutputPath>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Optimize>true</Optimize>
+    <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Deterministic>true</Deterministic>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+    <EmitDebugInformation>false</EmitDebugInformation>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <PathMap>$(MSBuildProjectDirectory)=.</PathMap>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <PublicSign>false</PublicSign>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -65,22 +76,18 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
-
   <ItemGroup>
     <Compile Include="Program.cs" />
-
     <Compile Include="Actions\ActionFactory.cs" />
     <Compile Include="Actions\ArgumentMetadataAttribute.cs" />
     <Compile Include="Actions\BaseAction.cs" />
     <Compile Include="Actions\ExcludeFromArgumentsAttribute.cs" />
-
     <Compile Include="Actions\Administration\Audit.cs" />
     <Compile Include="Actions\Administration\Config.cs" />
     <Compile Include="Actions\Administration\UserAdd.cs" />
     <Compile Include="Actions\Administration\Kill.cs" />
     <Compile Include="Actions\Administration\Requests.cs" />
     <Compile Include="Actions\Administration\Sessions.cs" />
-
     <Compile Include="Actions\Database\AuthToken.cs" />
     <Compile Include="Actions\Database\Databases.cs" />
     <Compile Include="Actions\Database\ExtendedProcs.cs" />
@@ -98,7 +105,6 @@
     <Compile Include="Actions\Database\Tables.cs" />
     <Compile Include="Actions\Database\Users.cs" />
     <Compile Include="Actions\Database\Whoami.cs" />
-
     <Compile Include="Actions\Domain\AdDomain.cs" />
     <Compile Include="Actions\Domain\AdSid.cs" />
     <Compile Include="Actions\Domain\AdUsers.cs" />
@@ -107,14 +113,12 @@
     <Compile Include="Actions\Domain\AdsiQuery.cs" />
     <Compile Include="Actions\Domain\AdsiCredentialExtractor.cs" />
     <Compile Include="Actions\Domain\AdsiRedirect.cs" />
-
     <Compile Include="Actions\Agent\AgentHelper.cs" />
     <Compile Include="Actions\Agent\JobExec.cs" />
     <Compile Include="Actions\Agent\JobHistory.cs" />
     <Compile Include="Actions\Agent\Job.cs" />
     <Compile Include="Actions\Agent\Jobs.cs" />
     <Compile Include="Actions\Agent\JobProxies.cs" />
-
     <Compile Include="Actions\Execution\ClrExecution.cs" />
     <Compile Include="Actions\Execution\ClrInspect.cs" />
     <Compile Include="Actions\Execution\ClrList.cs" />
@@ -123,12 +127,10 @@
     <Compile Include="Actions\Execution\Query.cs" />
     <Compile Include="Actions\Execution\Run.cs" />
     <Compile Include="Actions\Execution\XpCmd.cs" />
-
     <Compile Include="Actions\FileSystem\FileRead.cs" />
     <Compile Include="Actions\FileSystem\Tree.cs" />
     <Compile Include="Actions\FileSystem\RemoveFile.cs" />
     <Compile Include="Actions\FileSystem\Upload.cs" />
-
     <Compile Include="Actions\Remote\DataAccess.cs" />
     <Compile Include="Actions\Remote\ExternalCredentials.cs" />
     <Compile Include="Actions\Remote\ExternalSources.cs" />
@@ -137,7 +139,6 @@
     <Compile Include="Actions\Remote\Links.cs" />
     <Compile Include="Actions\Remote\RemoteProcedureCall.cs" />
     <Compile Include="Actions\Remote\UncProbe.cs" />
-
     <Compile Include="Actions\ConfigMgr\CMInfo.cs" />
     <Compile Include="Actions\ConfigMgr\CMLogTrace.cs" />
     <Compile Include="Actions\ConfigMgr\CMDeploymentType.cs" />
@@ -166,7 +167,6 @@
     <Compile Include="Actions\ConfigMgr\CMTaskSequence.cs" />
     <Compile Include="Actions\ConfigMgr\CMApplications.cs" />
     <Compile Include="Actions\ConfigMgr\CMDistributionPoints.cs" />
-
     <Compile Include="Exceptions\ActionNotFoundException.cs" />
     <Compile Include="Exceptions\AuthenticationFailedException.cs" />
     <Compile Include="Exceptions\ConfigurationException.cs" />
@@ -174,12 +174,10 @@
     <Compile Include="Exceptions\InvalidCredentialException.cs" />
     <Compile Include="Exceptions\MissingRequiredArgumentException.cs" />
     <Compile Include="Exceptions\RpcRequiredException.cs" />
-
     <Compile Include="Models\CommandArgs.cs" />
     <Compile Include="Models\LinkedServers.cs" />
     <Compile Include="Models\Server.cs" />
     <Compile Include="Models\ServerExecutionState.cs" />
-
     <Compile Include="Services\ActiveDirectoryService.cs" />
     <Compile Include="Services\AdsiService.cs" />
     <Compile Include="Services\ConfigurationService.cs" />
@@ -187,7 +185,6 @@
     <Compile Include="Services\QueryService.cs" />
     <Compile Include="Services\CMService.cs" />
     <Compile Include="Services\UserService.cs" />
-
     <Compile Include="Services\Authentication\AuthenticationService.cs" />
     <Compile Include="Services\Authentication\Credentials\BaseCredentials.cs" />
     <Compile Include="Services\Authentication\Credentials\CredentialsFactory.cs" />
@@ -197,7 +194,6 @@
     <Compile Include="Services\Authentication\Credentials\TokenCredentials.cs" />
     <Compile Include="Services\Authentication\Credentials\WindowsCredentials.cs" />
     <Compile Include="Services\Authentication\Credentials\WindowsIdentityImpersonation.cs" />
-
     <Compile Include="Utilities\Banner.cs" />
     <Compile Include="Utilities\ByteHelper.cs" />
     <Compile Include="Utilities\CommandParser.cs" />
@@ -207,24 +203,18 @@
     <Compile Include="Utilities\NetworkHelper.cs" />
     <Compile Include="Utilities\SidParser.cs" />
     <Compile Include="Utilities\SqlHelper.cs" />
-
     <Compile Include="Utilities\Discovery\FindSqlServers.cs" />
     <Compile Include="Utilities\Discovery\PortScanner.cs" />
     <Compile Include="Utilities\Discovery\SqlBrowser.cs" />
-
     <Compile Include="Utilities\Formatters\CsvFormatter.cs" />
     <Compile Include="Utilities\Formatters\IOutputFormatter.cs" />
     <Compile Include="Utilities\Formatters\MarkdownFormatter.cs" />
     <Compile Include="Utilities\Formatters\OutputFormatter.cs" />
-
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <None Include=".editorconfig" />
     <None Include="App.config" />
   </ItemGroup>
-
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-
 </Project>
