@@ -301,7 +301,7 @@ namespace MSSQLand.Services
             catch (Exception ex)
             {
                 Logger.Error($"Error occurred during the ADSI exploit: {ex.Message}");
-                Logger.InfoNested($"Deleting LDAP server assembly '{AssemblyName}', function '{FunctionName}' and trusted assembly hash");
+                Logger.ErrorNested($"Deleting LDAP server assembly '{AssemblyName}', function '{FunctionName}' and trusted assembly hash");
                 _databaseContext.QueryService.ExecuteNonProcessing(dropFunction);
                 _databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
                 _databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
