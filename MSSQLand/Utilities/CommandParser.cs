@@ -220,9 +220,10 @@ namespace MSSQLand.Utilities
                                 adDomain = currentDomain.Name;
                             }
                         }
-                        catch
+                        catch (Exception ex)
                         {
-                            throw new ArgumentException("FindSqlServers requires a domain argument.");
+                            throw new ArgumentException($"Failed to auto-detect domain: {ex.Message}.");
+                            
                         }
                     }
 
