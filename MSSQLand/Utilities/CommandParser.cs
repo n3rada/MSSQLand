@@ -223,7 +223,7 @@ namespace MSSQLand.Utilities
                         catch (Exception ex)
                         {
                             throw new ArgumentException($"Failed to auto-detect domain: {ex.Message}.");
-                            
+
                         }
                     }
 
@@ -346,7 +346,7 @@ namespace MSSQLand.Utilities
                             }
                         }
 
-                        Logger.Info($"Querying SQL Browser service on {hostArg} (UDP 1434)");
+                        Logger.Task($"Querying SQL Browser service on {hostArg} (UDP 1434)");
                         var instances = SqlBrowser.Query(resolvedIp, hostArg);
                         SqlBrowser.LogInstances(hostArg, instances);
 
@@ -387,7 +387,7 @@ namespace MSSQLand.Utilities
                                 if (customPorts == null || customPorts.Length == 0)
                                 {
                                     Logger.Error($"Invalid port specification: {nextVal}");
-                                    Logger.InfoNested("Examples: 65184, 65180-65190, 1433,5000,65184");
+                                    Logger.ErrorNested("Examples: 65184, 65180-65190, 1433,5000,65184");
                                     return (ParseResultType.UtilityMode, null);
                                 }
                             }
@@ -395,19 +395,19 @@ namespace MSSQLand.Utilities
 
                         if (customPorts != null)
                         {
-                            Logger.Info($"Scanning {hostArg} for SQL Server on {customPorts.Length} port(s)");
+                            Logger.Task($"Scanning {hostArg} for SQL Server on {customPorts.Length} port(s)");
                             PortScanner.ScanPorts(resolvedIp, hostArg, customPorts);
                         }
                         else
                         {
-                            Logger.Info($"Scanning {hostArg} for SQL Server ports (TDS validation)");
+                            Logger.Task($"Scanning {hostArg} for SQL Server ports (TDS validation)");
                             if (scanAll)
                             {
-                                Logger.InfoNested("Find all instances (full ephemeral range)");
+                                Logger.TaskNested("Find all instances (full ephemeral range)");
                             }
                             else
                             {
-                                Logger.InfoNested("Stop on first hit (use --all to find all)");
+                                Logger.TaskNested("Stop on first hit (use --all to find all)");
                             }
                             PortScanner.Scan(resolvedIp, hostArg, stopOnFirst: !scanAll);
                         }

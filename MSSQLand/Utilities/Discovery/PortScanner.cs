@@ -120,7 +120,7 @@ namespace MSSQLand.Utilities.Discovery
         public static List<ScanResult> Scan(IPAddress ip, string hostname, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism, bool stopOnFirst = true)
         {
             Logger.TaskNested("Using TDS prelogin packet for SQL Server validation");
-            Logger.InfoNested("Strategy: edges-to-middle for faster discovery");
+            Logger.TaskNested("Strategy: edges-to-middle for faster discovery");
 
             var globalStopwatch = Stopwatch.StartNew();
 
@@ -408,7 +408,7 @@ namespace MSSQLand.Utilities.Discovery
                     {
                         int oldTimeout = _adaptiveTimeoutMs;
                         _adaptiveTimeoutMs = newTimeout;
-                        Logger.InfoNested($"Timeout: {oldTimeout}ms -> {newTimeout}ms (max RTT: {maxResponseMs}ms)");
+                        Logger.TaskNested($"Timeout: {oldTimeout}ms -> {newTimeout}ms (max RTT: {maxResponseMs}ms)");
                     }
                 }
             }
@@ -451,12 +451,12 @@ namespace MSSQLand.Utilities.Discovery
             var globalStopwatch = Stopwatch.StartNew();
 
             Logger.NewLine();
-            Logger.InfoNested($"Testing ports: {FormatPortList(ports)}");
+            Logger.TaskNested($"Testing ports: {FormatPortList(ports)}");
 
             // Apply edges-to-middle strategy for better discovery (especially for large ranges)
             if (ports.Length > 10)
             {
-                Logger.InfoNested("Strategy: edges-to-middle for faster discovery");
+                Logger.TaskNested("Strategy: edges-to-middle for faster discovery");
                 ports = ReorderEdgesToMiddle(ports);
             }
 
@@ -505,7 +505,7 @@ namespace MSSQLand.Utilities.Discovery
         {
             stopwatch.Stop();
             Logger.NewLine();
-            Logger.Info($"Total scan time: {stopwatch.Elapsed.TotalSeconds:F1}s");
+            Logger.Task($"Total scan time: {stopwatch.Elapsed.TotalSeconds:F1}s");
             Logger.NewLine();
 
             if (results.Count == 0)
