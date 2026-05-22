@@ -148,11 +148,38 @@ ConfigMgr actions must be wrapped:
 
 ## Logging: [`MSSQLand/Utilities/Logger.cs`](MSSQLand/Utilities/Logger.cs)
 
+**Logging Hierarchy & Nesting Rules:**
+
+Logger levels form a strict hierarchy. Use `*Nested` for indented details **only after** a non-nested parent call of the same type:
+
+| Level | Usage | Example |
+|-------|-------|---------|
+| `Task` / `TaskNested` | Operational phases, procedures, what the program is doing | `Logger.Task("Scanning ports...")` + `Logger.TaskNested("Using TDS prelogin packet")` |
+| `Info` / `InfoNested` | Informational data rows, summaries about targets | `Logger.Info("Instance: SQL2019")` + `Logger.InfoNested("TCP 1433")` |
+| `Trace` / `TraceNested` | Internal implementation details for debugging | `Logger.Trace("Cache hit for context X")` |
+| `Success` | Positive outcome (no nesting) | `Logger.Success("Found 5 servers")` |
+| `Warning` / `WarningNested` | Negative outcome, issues, remediation (use sparingly with nesting) | `Logger.Warning("No results")` |
+| `Error` / `ErrorNested` | Failures, errors (use sparingly with nesting) | `Logger.Error("Connection failed")` |
+
+**Key Rule:** `*Nested` must always follow a non-nested parent call. Never nest without a parent.
+
 ```csharp
-Logger.TaskNested("Starting...");   // [>] indented task line
-Logger.Success("Done.");            // [✓] green
-Logger.Warning("Watch out.");       // [!] yellow
-Logger.Error("Something broke.");   // [✗] red
+// ✓ CORRECT: Parent before nested
+Logger.Task("Scanning for SQL Servers");
+Logger.TaskNested("Using TDS prelogin packet");
+Logger.TaskNested("Strategy: edges-to-middle");
+
+// ✓ CORRECT: Info data with nested details
+Logger.Info("Instance: SQL2019");
+Logger.InfoNested("TCP Port: 1433");
+
+// ✗ WRONG: Nested without parent
+Logger.TaskNested("This will not render correctly!");
+
+// ✓ CORRECT: Success, Warning, Error (no nesting unless needed)
+Logger.Success("Done.");
+Logger.Warning("Watch out.");
+Logger.Error("Something broke.");
 ```
 
 ## Key Conventions
