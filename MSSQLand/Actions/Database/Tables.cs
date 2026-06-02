@@ -4,6 +4,7 @@ using MSSQLand.Services;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
+using System.Collections.Generic;
 using System.Data;
 
 
@@ -104,7 +105,7 @@ namespace MSSQLand.Actions.Database
             }
 
             // Build object_id list for efficient filtering (avoids string concat in SQL)
-            var objectIds = new System.Collections.Generic.List<string>();
+            var objectIds = new List<string>();
             foreach (DataRow row in tables.Rows)
             {
                 objectIds.Add(row["ObjectId"].ToString());
@@ -112,7 +113,7 @@ namespace MSSQLand.Actions.Database
             string objectIdFilter = string.Join(",", objectIds);
 
             // Get permissions only if requested (fn_my_permissions is expensive)
-            var permissionsDict = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.HashSet<string>>();
+            var permissionsDict = new Dictionary<string, HashSet<string>>();
             
             if (_showPermissions)
             {
@@ -132,14 +133,14 @@ WHERE o.object_id IN ({objectIdFilter});";
 
                     if (!permissionsDict.ContainsKey(key))
                     {
-                        permissionsDict[key] = new System.Collections.Generic.HashSet<string>();
+                        permissionsDict[key] = new HashSet<string>();
                     }
                     permissionsDict[key].Add(permission);
                 }
             }
 
             // Optionally get columns if --columns flag is set
-            System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> columnsDict = null;
+            Dictionary<string, List<string>> columnsDict = null;
             
             if (_showColumns)
             {
@@ -155,7 +156,7 @@ ORDER BY o.object_id, c.column_id;";
                 DataTable columnsResult = databaseContext.QueryService.ExecuteTable(columnsQuery);
 
                 // Build dictionary: key = object_id, value = list of "column_name (data_type)"
-                columnsDict = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>>();
+                columnsDict = new Dictionary<string, List<string>>();
 
                 foreach (DataRow colRow in columnsResult.Rows)
                 {
@@ -164,7 +165,7 @@ ORDER BY o.object_id, c.column_id;";
 
                     if (!columnsDict.ContainsKey(key))
                     {
-                        columnsDict[key] = new System.Collections.Generic.List<string>();
+                        columnsDict[key] = new List<string>();
                     }
                     columnsDict[key].Add(columnInfo);
                 }

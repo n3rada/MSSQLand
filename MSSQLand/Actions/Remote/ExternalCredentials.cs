@@ -4,6 +4,7 @@ using MSSQLand.Services;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
+using System.Collections.Generic;
 using System.Data;
 
 
@@ -67,7 +68,7 @@ namespace MSSQLand.Actions.Remote
             // Get external data sources to check credential usage
             string edsQuery = "SELECT credential_id FROM sys.external_data_sources WHERE credential_id IS NOT NULL;";
             DataTable usedCreds = null;
-            System.Collections.Generic.HashSet<int> usedCredIds = new System.Collections.Generic.HashSet<int>();
+            var usedCredIds = new HashSet<int>();
 
             try
             {

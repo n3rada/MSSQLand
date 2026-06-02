@@ -5,6 +5,7 @@ using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
+using System.Collections.Generic;
 
 
 namespace MSSQLand.Actions.Remote
@@ -68,7 +69,7 @@ namespace MSSQLand.Actions.Remote
             // Get external data sources for lookup
             string dataSourcesQuery = "SELECT data_source_id, name, location FROM sys.external_data_sources;";
             DataTable dataSources = null;
-            var dataSourcesDict = new System.Collections.Generic.Dictionary<int, (string name, string location)>();
+            var dataSourcesDict = new Dictionary<int, (string name, string location)>();
             
             try
             {
@@ -89,7 +90,7 @@ namespace MSSQLand.Actions.Remote
             // Get external file formats for lookup
             string fileFormatsQuery = "SELECT file_format_id, name FROM sys.external_file_formats;";
             DataTable fileFormats = null;
-            var fileFormatsDict = new System.Collections.Generic.Dictionary<int, string>();
+            var fileFormatsDict = new Dictionary<int, string>();
             
             try
             {

@@ -2,6 +2,7 @@
 
 using MSSQLand.Utilities;
 using System;
+using System.Collections.Generic;
 
 namespace MSSQLand.Models
 {
@@ -360,7 +361,7 @@ namespace MSSQLand.Models
                 else if (firstDelimiter == '/')
                 {
                     // Collect all consecutive impersonation users
-                    System.Collections.Generic.List<string> impersonationList = new();
+                    var impersonationList = new List<string>();
                     impersonationList.Add(component);
 
                     // Check if there are more users to impersonate

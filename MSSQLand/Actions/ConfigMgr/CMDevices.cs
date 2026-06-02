@@ -5,6 +5,7 @@ using MSSQLand.Services;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
@@ -351,7 +352,7 @@ ORDER BY
                         {
                             if (row["UserAccountControl"] != DBNull.Value && int.TryParse(row["UserAccountControl"].ToString(), out int uacValue))
                             {
-                                var flags = new System.Collections.Generic.List<string>();
+                                var flags = new List<string>();
 
                                 if ((uacValue & 0x0002) != 0) flags.Add("Disabled");
                                 else flags.Add("Enabled");

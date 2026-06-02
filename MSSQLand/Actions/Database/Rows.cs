@@ -4,6 +4,7 @@ using MSSQLand.Services;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
+using System.Collections.Generic;
 using System.Data;
 
 namespace MSSQLand.Actions.Database
@@ -169,7 +170,7 @@ ORDER BY c.column_id;";
                 throw new InvalidOperationException($"Could not retrieve column information for table {database}.{schemaFilter}.{table}");
             }
 
-            var columnExpressions = new System.Collections.Generic.List<string>();
+            var columnExpressions = new List<string>();
 
             foreach (DataRow row in columnsTable.Rows)
             {

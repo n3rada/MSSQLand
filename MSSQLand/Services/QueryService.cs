@@ -5,6 +5,7 @@ using MSSQLand.Utilities;
 using MSSQLand.Exceptions;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
@@ -53,7 +54,7 @@ namespace MSSQLand.Services
         /// <summary>
         /// Tracks linked servers already reported as unreachable to suppress duplicate error messages.
         /// </summary>
-        private readonly System.Collections.Generic.HashSet<string> _reportedUnreachableServers = new(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _reportedUnreachableServers = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Determines if a SQL statement requires RPC execution because it modifies server-level state.

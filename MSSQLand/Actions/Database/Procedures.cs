@@ -4,6 +4,7 @@ using MSSQLand.Services;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
 using System;
+using System.Collections.Generic;
 using System.Data;
 
 namespace MSSQLand.Actions.Database
@@ -154,7 +155,7 @@ namespace MSSQLand.Actions.Database
             DataTable allPermissions = databaseContext.QueryService.ExecuteTable(allPermissionsQuery);
 
             // Build a dictionary for fast lookup: key = "schema.procedure", value = list of permissions
-            var permissionsDict = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>>();
+            var permissionsDict = new Dictionary<string, List<string>>();
 
             foreach (DataRow permRow in allPermissions.Rows)
             {
@@ -163,7 +164,7 @@ namespace MSSQLand.Actions.Database
 
                 if (!permissionsDict.ContainsKey(key))
                 {
-                    permissionsDict[key] = new System.Collections.Generic.List<string>();
+                    permissionsDict[key] = new List<string>();
                 }
                 permissionsDict[key].Add(permission);
             }
