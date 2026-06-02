@@ -28,7 +28,7 @@ namespace MSSQLand.Actions.Database
                 return null;
             }
 
-            Logger.TaskNested("Extracting SQL Server login password hashes");
+            Logger.Task("Extracting SQL Server login password hashes");
 
             string query = @"
                 SELECT 

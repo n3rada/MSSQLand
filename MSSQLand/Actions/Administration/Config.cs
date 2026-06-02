@@ -59,7 +59,7 @@ namespace MSSQLand.Actions.Administration
             // Mode 1: Set configuration option
             if (_value >= 0 && !string.IsNullOrEmpty(_optionName))
             {
-                Logger.TaskNested($"Setting {_optionName} to {_value}");
+                Logger.Task($"Setting {_optionName} to {_value}");
                 databaseContext.ConfigService.SetConfigurationOption(_optionName, _value);
                 return null;
             }
@@ -67,7 +67,7 @@ namespace MSSQLand.Actions.Administration
             // Mode 2: Show specific option status
             if (!string.IsNullOrEmpty(_optionName) && _value < 0)
             {
-                Logger.TaskNested($"Checking status of '{_optionName}'");
+                Logger.Task($"Checking status of '{_optionName}'");
                 int status = databaseContext.ConfigService.GetConfigurationStatus(_optionName);
 
                 if (status < 0)
@@ -81,7 +81,7 @@ namespace MSSQLand.Actions.Administration
             }
 
             // Mode 3: List all security-sensitive configurations
-            Logger.TaskNested("Listing all configuration options");
+            Logger.Task("Listing all configuration options");
             var results = CheckConfigurationOptions(databaseContext);
 
             if (results.Count > 0)
@@ -143,7 +143,7 @@ namespace MSSQLand.Actions.Administration
                 // Log permission status
                 if (canModify)
                 {
-                    Logger.SuccessNested("You have ALTER SETTINGS permission (can modify configurations)");
+                    Logger.Success("You have ALTER SETTINGS permission (can modify configurations)");
                 }
                 else
                 {

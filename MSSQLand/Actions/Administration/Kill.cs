@@ -38,8 +38,7 @@ namespace MSSQLand.Actions.Administration
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.NewLine();
-            Logger.Info($"Preparing to kill session(s) for target: {_target}");
+            Logger.Task($"Preparing to kill session(s) for target: {_target}");
 
             string allSessionsQuery = @"
             SELECT
@@ -65,7 +64,7 @@ namespace MSSQLand.Actions.Administration
             try
             {
                 // Fetch all running sessions
-                Logger.Task("Fetching all running sessions...");
+                Logger.TaskNested("Fetching all running sessions");
                 DataTable sessionsTable = databaseContext.QueryService.ExecuteTable(allSessionsQuery);
 
                 if (sessionsTable == null || sessionsTable.Rows.Count == 0)
@@ -88,18 +87,18 @@ namespace MSSQLand.Actions.Administration
                     }
 
                     // Kill the specific session
-                    Logger.Task($"Killing session {_target}...");
+                    Logger.TaskNested($"Killing session {_target}");
                     databaseContext.QueryService.ExecuteNonProcessing($"KILL {targetSessionId};");
                     Logger.Success($"Session {_target} killed successfully.");
                     return true;
                 }
 
                 // If "all" is specified, loop through all sessions and kill them
-                Logger.Task("Killing all sessions...");
+                Logger.TaskNested("Killing all sessions");
                 foreach (DataRow row in sessionsTable.Rows)
                 {
                     Int16 sessionId = row.Field<Int16>("SessionID");
-                    Logger.Info($"Killing session {sessionId}...");
+                    Logger.TaskNested($"Killing session {sessionId}");
                     databaseContext.QueryService.ExecuteNonProcessing($"KILL {sessionId};");
                 }
 

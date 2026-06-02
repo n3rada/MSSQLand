@@ -39,7 +39,7 @@ namespace MSSQLand.Actions.Remote
             if (resultTable.Rows.Count == 0)
             {
                 Logger.Warning("No external tables found in the current database.");
-                Logger.InfoNested("External tables are virtual tables that reference external data sources.");
+                Logger.Info("External tables are virtual tables that reference external data sources.");
             }
             else
             {

@@ -38,7 +38,7 @@ namespace MSSQLand.Actions.ConfigMgr
             string searchMsg = !string.IsNullOrEmpty(_collectionId)
                 ? $"ID: {_collectionId}"
                 : $"name pattern: {_collectionName}";
-            Logger.TaskNested($"Retrieving comprehensive collection information for {searchMsg}");
+            Logger.Task($"Retrieving comprehensive collection information for {searchMsg}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

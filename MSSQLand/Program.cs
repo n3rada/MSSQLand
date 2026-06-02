@@ -263,10 +263,10 @@ namespace MSSQLand
 
                     Logger.NewLine();
 
-                    // Execute action
                     if (arguments.Action != null)
                     {
-                        Logger.Task($"Executing action '{arguments.Action.GetName()}' against {databaseContext.QueryService.ExecutionServer.Hostname}");
+                        // Execute action
+                        Logger.Info($"Executing action '{arguments.Action.GetName()}' against {databaseContext.QueryService.ExecutionServer.Hostname}");
                         arguments.Action.Execute(databaseContext);
                     }
                     else

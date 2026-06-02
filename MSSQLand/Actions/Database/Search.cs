@@ -146,7 +146,7 @@ namespace MSSQLand.Actions.Database
 
             if (_searchAllDatabases)
             {
-                Logger.Info("Searching across ALL accessible databases");
+                Logger.TaskNested("Searching across ALL accessible databases");
                 DataTable accessibleDatabases = databaseContext.QueryService.ExecuteTable(
                     "SELECT name FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1 AND state = 0 ORDER BY name;"
                 );
@@ -160,14 +160,14 @@ namespace MSSQLand.Actions.Database
             }
             else if (!string.IsNullOrEmpty(_limitDatabase))
             {
-                Logger.Info($"Searching in database: [{_limitDatabase}]");
+                Logger.TaskNested($"Searching in database: [{_limitDatabase}]");
                 databasesToSearch.Add(_limitDatabase);
             }
             else
             {
                 // Default: only current execution database
                 string currentDb = databaseContext.QueryService.ExecutionServer.Database;
-                Logger.Info($"Searching in current database: [{currentDb}]");
+                Logger.TaskNested($"Searching in current database: [{currentDb}]");
                 databasesToSearch.Add(currentDb);
             }
 
@@ -202,7 +202,7 @@ namespace MSSQLand.Actions.Database
 
             if (_searchAllDatabases)
             {
-                Logger.Info("Searching columns across ALL accessible databases");
+                Logger.TaskNested("Searching columns across ALL accessible databases");
                 DataTable accessibleDatabases = databaseContext.QueryService.ExecuteTable(
                     "SELECT name FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1 AND state = 0 ORDER BY name;"
                 );
@@ -214,14 +214,14 @@ namespace MSSQLand.Actions.Database
             }
             else if (!string.IsNullOrEmpty(_limitDatabase))
             {
-                Logger.Info($"Searching columns in database: [{_limitDatabase}]");
+                Logger.TaskNested($"Searching columns in database: [{_limitDatabase}]");
                 databasesToSearch.Add(_limitDatabase);
             }
             else
             {
                 // Default: current database only
                 string currentDb = databaseContext.QueryService.ExecutionServer.Database;
-                Logger.Info($"Searching columns in current database: [{currentDb}]");
+                Logger.TaskNested($"Searching columns in current database: [{currentDb}]");
                 databasesToSearch.Add(currentDb);
             }
 

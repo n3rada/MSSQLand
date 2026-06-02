@@ -119,8 +119,8 @@ namespace MSSQLand.Utilities.Discovery
         /// </summary>
         public static List<ScanResult> Scan(IPAddress ip, string hostname, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism, bool stopOnFirst = true)
         {
-            Logger.TaskNested("Using TDS prelogin packet for SQL Server validation");
-            Logger.TaskNested("Strategy: edges-to-middle for faster discovery");
+            Logger.Task("Using TDS prelogin packet for SQL Server validation");
+            Logger.Task("Strategy: edges-to-middle for faster discovery");
 
             var globalStopwatch = Stopwatch.StartNew();
 

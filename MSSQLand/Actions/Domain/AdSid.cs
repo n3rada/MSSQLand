@@ -16,7 +16,7 @@ namespace MSSQLand.Actions.Domain
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Retrieving current user's SID");
+            Logger.Task("Retrieving current user's SID");
 
             try
             {

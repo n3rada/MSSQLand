@@ -37,7 +37,7 @@ namespace MSSQLand.Actions.Domain
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Enumerating domain users via RID cycling (max RID: {_maxRid})");
+            Logger.Task($"Enumerating domain users via RID cycling (max RID: {_maxRid})");
 
             var results = new List<Dictionary<string, object>>();
 

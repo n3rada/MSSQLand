@@ -536,7 +536,7 @@ ORDER BY aas.LastStatusTime DESC";
                     
                     Logger.Info("Device Status (showing TOP 50 recent activity)");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(deviceStatusResult));
-                    Logger.Info($"Showing {deviceStatusResult.Rows.Count} device status records");
+                    Logger.TaskNested($"Showing {deviceStatusResult.Rows.Count} device status records");
                 }
                 else
                 {

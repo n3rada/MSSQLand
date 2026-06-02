@@ -24,7 +24,7 @@ namespace MSSQLand.Actions.Execution
         /// <param name="databaseContext">The ConnectionManager for executing the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Executing against {databaseContext.QueryService.ExecutionServer.Hostname}: {_query}");
+            Logger.Task($"Executing against {databaseContext.QueryService.ExecutionServer.Hostname}: {_query}");
 
             Logger.NewLine();
 
@@ -95,13 +95,13 @@ namespace MSSQLand.Actions.Execution
             // Try sp_MSforeachdb first
             try
             {
-                Logger.Info("Attempting execution via sp_MSforeachdb");
+                Logger.TaskNested("Attempting execution via sp_MSforeachdb");
                 return ExecuteWithMSForeachDb(databaseContext);
             }
             catch (Exception ex)
             {
                 Logger.WarningNested($"sp_MSforeachdb failed: {ex.Message}");
-                Logger.Info("Falling back to manual loop across databases");
+                Logger.TaskNested("Falling back to manual loop across databases");
                 return ExecuteWithManualLoop(databaseContext);
             }
         }

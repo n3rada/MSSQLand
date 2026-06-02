@@ -11,7 +11,7 @@ namespace MSSQLand.Actions.Administration
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Retrieving currently executing SQL requests");
+            Logger.Task("Retrieving currently executing SQL requests");
 
             string currentCommandsQuery = @"
             SELECT 

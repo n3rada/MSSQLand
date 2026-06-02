@@ -83,7 +83,7 @@ namespace MSSQLand.Actions.Agent
                     $"EXEC msdb.dbo.sp_add_jobserver @job_name = '{jobName}', @server_name = '(local)';");
 
                 // Start job
-                Logger.Info($"Starting job '{jobName}'");
+                Logger.TaskNested($"Starting job '{jobName}'");
                 databaseContext.QueryService.ExecuteNonProcessing(
                     $"EXEC msdb.dbo.sp_start_job @job_name = '{jobName}';");
                 Logger.Success("Job started");
@@ -100,7 +100,7 @@ namespace MSSQLand.Actions.Agent
                 }
 
                 // Cleanup
-                Logger.Info($"Cleaning up job '{jobName}'");
+                Logger.TaskNested($"Cleaning up job '{jobName}'");
                 databaseContext.QueryService.ExecuteNonProcessing(
                     $"EXEC msdb.dbo.sp_delete_job @job_name = '{jobName}';");
                 Logger.Success("Job cleaned up");

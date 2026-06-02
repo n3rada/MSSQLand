@@ -110,7 +110,7 @@ namespace MSSQLand.Actions.Execution
                 databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
 
                 // Step 3: Create the assembly from the DLL bytes, retrying once on MVID conflict
-                Logger.Task("Creating the assembly from DLL bytes");
+                Logger.TaskNested("Creating the assembly from DLL bytes");
                 try
                 {
                     databaseContext.QueryService.ExecuteNonProcessing(
@@ -140,7 +140,7 @@ namespace MSSQLand.Actions.Execution
 
                 Logger.Success($"Assembly '{assemblyName}' successfully created");
 
-                Logger.Task("Creating the stored procedure linked to the assembly");
+                Logger.TaskNested("Creating the stored procedure linked to the assembly");
                 databaseContext.QueryService.ExecuteNonProcessing(
                     $"CREATE PROCEDURE [dbo].[{_function}] @args NVARCHAR(MAX) AS EXTERNAL NAME [{assemblyName}].[{_className}].[{_function}];");
 
@@ -153,7 +153,7 @@ namespace MSSQLand.Actions.Execution
                 Logger.Success($"Stored procedure '{_function}' successfully created");
 
                 // Step 5: Execute the stored procedure
-                Logger.Task($"Executing the stored procedure '{_function}'");
+                Logger.TaskNested($"Executing the stored procedure '{_function}'");
                 databaseContext.QueryService.ExecuteNonProcessing($"EXEC [{_function}] @args = '{_args}';");
                 Logger.Success("Stored procedure executed successfully");
 
@@ -167,7 +167,7 @@ namespace MSSQLand.Actions.Execution
             finally
             {
                 // Cleanup (always executed)
-                Logger.Task("Performing cleanup");
+                Logger.TaskNested("Performing cleanup");
                 databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
                 databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
 
@@ -178,7 +178,7 @@ namespace MSSQLand.Actions.Execution
 
                 if (setTrustworthy)
                 {
-                    Logger.Info("Resetting TRUSTWORTHY property");
+                    Logger.TaskNested("Resetting TRUSTWORTHY property");
                     databaseContext.QueryService.ExecuteNonProcessing(
                         $"ALTER DATABASE [{databaseContext.QueryService.ExecutionServer.Database}] SET TRUSTWORTHY OFF;");
                 }

@@ -155,7 +155,7 @@ namespace MSSQLand.Services
                 serverName = adsiServers[0];
             }
 
-            Logger.TaskNested($"Using ADSI linked server: {serverName}");
+            Logger.Task($"Using ADSI linked server: {serverName}");
 
             string query = $"SELECT * FROM OPENQUERY([{serverName}], 'SELECT {attributes} FROM ''<{ldapPath}>'' WHERE {filter}');";
 

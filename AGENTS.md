@@ -90,7 +90,7 @@ namespace MSSQLand.Actions.<Category>
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Running with name={_name}, count={_count}");
+            Logger.Task($"Running with name={_name}, count={_count}");
 
             string query = $"SELECT TOP {_count} column FROM sys.some_table WHERE name = '{_name}';";
 
@@ -154,7 +154,7 @@ Logger levels form a strict hierarchy. Use `*Nested` for indented details **only
 
 | Level | Usage | Example |
 |-------|-------|---------|
-| `Task` / `TaskNested` | Operational phases, procedures, what the program is doing | `Logger.Task("Scanning ports...")` + `Logger.TaskNested("Using TDS prelogin packet")` |
+| `Task` / `TaskNested` | Operational phases, procedures, what the program is doing | `Logger.Task("Scanning ports")` + `Logger.TaskNested("Using TDS prelogin packet")` |
 | `Info` / `InfoNested` | Informational data rows, summaries about targets | `Logger.Info("Instance: SQL2019")` + `Logger.InfoNested("TCP 1433")` |
 | `Trace` / `TraceNested` | Internal implementation details for debugging | `Logger.Trace("Cache hit for context X")` |
 | `Success` | Positive outcome (no nesting) | `Logger.Success("Found 5 servers")` |
@@ -181,6 +181,37 @@ Logger.Success("Done.");
 Logger.Warning("Watch out.");
 Logger.Error("Something broke.");
 ```
+
+**Action `Execute()` convention:** When implementing `public override object Execute(DatabaseContext databaseContext)` inside an Action class, the action itself should establish its own top-level task and then use nested steps for sub-operations:
+
+- `Program.cs`: use `Logger.Info(...)` to announce which action will run (concise, factual). Do not use `Logger.Task(...)` in the program bootstrap for grouping actions.
+- `Action.Execute()`: start the action with `Logger.Task(...)` to create the action's top-level task, then use `Logger.TaskNested(...)` for sub-steps, progress, fallback branches, cleanup, or loop details. Use `Logger.Info(...)`/`Logger.InfoNested(...)` for factual rows and summaries, and `Logger.Success/Warning/Error` for outcomes.
+
+- Rationale: this keeps a consistent hierarchy where the program announces the action, and the action owns the task scope with nested procedural details.
+
+Example:
+```csharp
+public override object Execute(DatabaseContext databaseContext)
+{
+    // Action owns its top-level task
+    Logger.Task($"Retrieving External Tables");
+    Logger.TaskNested("Step 1: ");
+    ...
+}
+```
+
+
+**Info vs Task:**
+
+- Use `Task`/`TaskNested` for operations and steps the program performs (verbs): "Enumerating", "Listing", "Searching", "Killing", "Querying", "Creating", "Starting". These indicate procedural phases and may be followed by nested details.
+- Use `Info`/`InfoNested` for factual data, summaries, or result rows: server names, counts, ports, or other descriptive values.
+
+Examples:
+
+- Operation (use `TaskNested`): `Logger.TaskNested($"Enumerating ConfigMgr database: {sccmDatabase} (Site Code: {siteCode})");`
+- Data (use `Info`): `Logger.Info($"Instance: {instanceName}"); Logger.InfoNested($"TCP Port: {port}");`
+
+When in doubt, prefer `TaskNested` for messages that start with a verb or describe an action being performed.
 
 ## Key Conventions
 

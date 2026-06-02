@@ -78,7 +78,7 @@ namespace MSSQLand.Actions.Domain
             if (existingServers.Count > 0)
             {
                 _targetServer = existingServers[0];
-                Logger.Info($"Found existing ADSI linked server: '{_targetServer}'");
+                Logger.Task($"Found existing ADSI linked server: '{_targetServer}'");
                 _useExistingServer = true;
                 return ExtractFromExistingServer(databaseContext);
             }
@@ -103,7 +103,7 @@ namespace MSSQLand.Actions.Domain
         /// </summary>
         private Tuple<string, string> ExtractFromExistingServer(DatabaseContext databaseContext)
         {
-            Logger.Task($"Extracting credentials from existing ADSI server '{_targetServer}'");
+            Logger.TaskNested($"Extracting credentials from existing ADSI server '{_targetServer}'");
             return ExtractCredentials(databaseContext, _targetServer);
         }
 
@@ -112,7 +112,7 @@ namespace MSSQLand.Actions.Domain
         /// </summary>
         private Tuple<string, string> ExtractWithTemporaryServer(DatabaseContext databaseContext)
         {
-            Logger.Task("Creating temporary ADSI server for credential extraction");
+            Logger.TaskNested("Creating temporary ADSI server for credential extraction");
 
             AdsiService adsiService = new(databaseContext);
 
@@ -159,7 +159,7 @@ namespace MSSQLand.Actions.Domain
                 return null;
             }
 
-            Logger.Task($"Extracting credentials via LDAP simple bind interception");
+            Logger.TaskNested($"Extracting credentials via LDAP simple bind interception");
 
             Logger.TaskNested($"Targeting linked ADSI server: {adsiServer}");
 
@@ -259,7 +259,7 @@ namespace MSSQLand.Actions.Domain
             }
             finally
             {
-                Logger.Info("Cleaning up CLR assembly and function");
+                Logger.TaskNested("Cleaning up CLR assembly and function");
                 try { databaseContext.ConfigService.DropDependentObjects(adsiService.AssemblyName); } catch { }
                 try { databaseContext.QueryService.ExecuteNonProcessing($"DROP FUNCTION IF EXISTS [{adsiService.FunctionName}];"); } catch { }
                 try { databaseContext.QueryService.ExecuteNonProcessing($"DROP ASSEMBLY IF EXISTS [{adsiService.AssemblyName}];"); } catch { }

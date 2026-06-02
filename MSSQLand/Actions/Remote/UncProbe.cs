@@ -115,7 +115,7 @@ namespace MSSQLand.Actions.Remote
         {
             try
             {
-                Logger.TaskNested("Trying xp_subdirs method...");
+                Logger.TaskNested("Trying xp_subdirs method");
 
                 string query = $"EXEC master..xp_subdirs '{_uncPath}';";
                 databaseContext.QueryService.ExecuteNonProcessing(query);
@@ -137,7 +137,7 @@ namespace MSSQLand.Actions.Remote
         {
             try
             {
-                Logger.TaskNested("Trying xp_fileexist method...");
+                Logger.TaskNested("Trying xp_fileexist method");
 
                 // xp_fileexist requires a file path, append a file
                 string filePath = _uncPath.TrimEnd('\\') + "\\data.txt";

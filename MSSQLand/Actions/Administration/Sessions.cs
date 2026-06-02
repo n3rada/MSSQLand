@@ -11,7 +11,7 @@ namespace MSSQLand.Actions.Administration
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Retrieving active SQL Server sessions");
+            Logger.Task("Retrieving active SQL Server sessions");
 
             string sessionsQuery = @"
             SELECT 
@@ -26,6 +26,7 @@ namespace MSSQLand.Actions.Administration
 
             var result = databaseContext.QueryService.Execute(sessionsQuery);
             Console.WriteLine(OutputFormatter.ConvertSqlDataReader(result));
+            Logger.Success($"Retrieved {result.RecordsAffected} active session(s)");
         
             return null;
         }

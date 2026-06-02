@@ -29,7 +29,7 @@ namespace MSSQLand.Actions.Database
             if (!databaseContext.QueryService.IsAzureSQL())
             {
                 // On-premises SQL Server: Show server logins and database users
-                Logger.TaskNested("Enumerating server-level principals (logins) and their instance-wide server roles");
+                Logger.Task("Enumerating server-level principals (logins) and their instance-wide server roles");
                 
                 string query;
                 if (databaseContext.QueryService.ExecutionServer.IsLegacy)

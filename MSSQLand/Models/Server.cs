@@ -54,7 +54,7 @@ namespace MSSQLand.Models
                 fullVersionString = value;
                 if (string.IsNullOrEmpty(value)) return;
 
-                // Extract version number (e.g., "15.0.2000" from "Microsoft SQL Server 2019 (RTM) - 15.0.2000.5...")
+                // Extract version number (e.g., "15.0.2000" from "Microsoft SQL Server 2019 (RTM) - 15.0.2000.5")
                 var match = System.Text.RegularExpressions.Regex.Match(value, @"\s(\d+\.\d+\.\d+)");
                 if (match.Success)
                 {

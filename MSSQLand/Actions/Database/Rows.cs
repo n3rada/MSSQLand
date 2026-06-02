@@ -93,29 +93,29 @@ WHERE o.name = '{table.Replace("'", "''")}'
             bool useTop = _limit > 0 && _limit < totalRows;
 
             // Display appropriate message based on limit and row count
-            if (_limit == 0)
-            {
-                // Unlimited mode
-                if (totalRows > 0)
-                    Logger.TaskNested($"Retrieving all {totalRows:N0} rows");
-            }
-            else if (totalRows == 0)
-            {
-                // Limited mode, no count info
-                Logger.TaskNested($"Limiting to {_limit} row(s)");
-                Logger.TaskNested("Use --all to retrieve all rows");
-            }
-            else if (useTop)
-            {
-                // Limited mode, applying TOP
-                Logger.TaskNested($"Limiting to {_limit} row(s) over {totalRows:N0}");
-                Logger.TaskNested("Use --all to retrieve all rows");
-            }
-            else
-            {
-                // Limited mode, but limit exceeds total
-                Logger.TaskNested($"Retrieving all {totalRows:N0} rows (limit {_limit} exceeds total)");
-            }
+                if (_limit == 0)
+                {
+                    // Unlimited mode
+                    if (totalRows > 0)
+                        Logger.TaskNested($"Retrieving all {totalRows:N0} rows");
+                }
+                else if (totalRows == 0)
+                {
+                    // Limited mode, no count info
+                    Logger.TaskNested($"Limiting to {_limit} row(s)");
+                    Logger.TaskNested("Use --all to retrieve all rows");
+                }
+                else if (useTop)
+                {
+                    // Limited mode, applying TOP
+                    Logger.TaskNested($"Limiting to {_limit} row(s) over {totalRows:N0}");
+                    Logger.TaskNested("Use --all to retrieve all rows");
+                }
+                else
+                {
+                    // Limited mode, but limit exceeds total
+                    Logger.TaskNested($"Retrieving all {totalRows:N0} rows (limit {_limit} exceeds total)");
+                }
 
             string topClause = useTop ? $"TOP ({_limit}) " : "";
             DataTable rows;

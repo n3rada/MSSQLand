@@ -237,7 +237,7 @@ namespace MSSQLand.Actions.Database
             // Parse schema.procedure using the FQTN parser
             var (_, schema, procedure) = SqlHelper.ParseQualifiedTableName(procedureName);
 
-            Logger.Task($"Executing [{databaseContext.QueryService.ExecutionServer.Database}].[{schema}].[{procedure}]");
+            Logger.TaskNested($"Executing [{databaseContext.QueryService.ExecutionServer.Database}].[{schema}].[{procedure}]");
             if (!string.IsNullOrEmpty(procedureArgs))
                 Logger.TaskNested($"With arguments: {procedureArgs}");
 

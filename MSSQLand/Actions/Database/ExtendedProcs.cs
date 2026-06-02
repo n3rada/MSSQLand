@@ -221,7 +221,7 @@ namespace MSSQLand.Actions.Database
                 // SECTION 2: OLE Automation Procedures (sp_OA*)
                 // ═══════════════════════════════════════════════════════════════════════════════
                 Logger.NewLine();
-                Logger.Task("Enumerating OLE Automation procedures (sp_OA*)");
+                Logger.TaskNested("Enumerating OLE Automation procedures (sp_OA*)");
 
                 // Check if Ole Automation is enabled
                 int oleStatus = databaseContext.ConfigService.GetConfigurationStatus("Ole Automation Procedures");
@@ -279,16 +279,16 @@ namespace MSSQLand.Actions.Database
                 // SECTION 3: Other Useful System Procedures
                 // ═══════════════════════════════════════════════════════════════════════════════
                 Logger.NewLine();
-                Logger.Task("Checking other useful system procedures");
+                Logger.TaskNested("Checking other useful system procedures");
 
                 // Check key configuration options
                 int externalScripts = databaseContext.ConfigService.GetConfigurationStatus("external scripts enabled");
                 int clrEnabled = databaseContext.ConfigService.GetConfigurationStatus("clr enabled");
                 int adHocQueries = databaseContext.ConfigService.GetConfigurationStatus("Ad Hoc Distributed Queries");
 
-                Logger.InfoNested($"External Scripts (R/Python): {(externalScripts == 1 ? "Enabled" : "Disabled")}");
-                Logger.InfoNested($"CLR Integration: {(clrEnabled == 1 ? "Enabled" : "Disabled")}");
-                Logger.InfoNested($"Ad Hoc Distributed Queries (OPENROWSET/OPENDATASOURCE): {(adHocQueries == 1 ? "Enabled" : "Disabled")}");
+                Logger.Info($"External Scripts (R/Python): {(externalScripts == 1 ? "Enabled" : "Disabled")}");
+                Logger.Info($"CLR Integration: {(clrEnabled == 1 ? "Enabled" : "Disabled")}");
+                Logger.Info($"Ad Hoc Distributed Queries (OPENROWSET/OPENDATASOURCE): {(adHocQueries == 1 ? "Enabled" : "Disabled")}");
 
                 // Check for key procedures
                 string systemQuery = $@"

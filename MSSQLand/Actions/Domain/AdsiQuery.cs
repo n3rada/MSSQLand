@@ -75,7 +75,7 @@ namespace MSSQLand.Actions.Domain
                 {
                     // Data access may have been disabled on the linked server.
                     Logger.Warning($"Data access is disabled for '{_adsiServerName}'");
-                    Logger.Info("Attempting to enable data access...");
+                    Logger.TaskNested("Attempting to enable data access");
 
                     if (!databaseContext.ConfigService.SetServerOption(_adsiServerName, "data access", "true"))
                     {

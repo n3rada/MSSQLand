@@ -16,7 +16,7 @@ namespace MSSQLand.Actions.Database
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Retrieving members of server role: {_roleName}");
+            Logger.Task($"Retrieving members of server role: {_roleName}");
 
             string query = $@"
 SELECT

@@ -20,7 +20,7 @@ namespace MSSQLand.Actions.Execution
         /// <returns>A list of strings containing the command output, or an empty list if no output.</returns>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Executing command: {_command}");
+            Logger.Task($"Executing command: {_command}");
 
             // Ensure command shell is enabled
             string procName = "x" + "p" + "_" + "cmdTest";

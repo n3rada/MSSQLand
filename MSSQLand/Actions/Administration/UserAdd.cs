@@ -43,7 +43,7 @@ namespace MSSQLand.Actions.Administration
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Creating SQL login '{_username}'");
+            Logger.Task($"Creating SQL login '{_username}'");
             Logger.TaskNested($"Password: '{_password}'");
             Logger.TaskNested($"Role: '{_role}'");
 

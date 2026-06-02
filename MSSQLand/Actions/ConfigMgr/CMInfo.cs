@@ -38,7 +38,7 @@ namespace MSSQLand.Actions.ConfigMgr
                     Logger.TaskNested($"Multiple ConfigMgr databases detected: {databases.Count}");
                     foreach (string db in databases)
                     {
-                        Logger.InfoNested($"- {db}");
+                        Logger.Info($"- {db}");
                     }
                 }
 
@@ -47,7 +47,7 @@ namespace MSSQLand.Actions.ConfigMgr
                 {
                     Logger.NewLine();
                     string siteCode = CMService.GetSiteCode(sccmDatabase);
-                    Logger.Info($"Enumerating ConfigMgr database: {sccmDatabase} (Site Code: {siteCode})");
+                    Logger.TaskNested($"Enumerating ConfigMgr database: {sccmDatabase} (Site Code: {siteCode})");
 
                     // Get site information
                     string siteInfoQuery = $"SELECT * FROM [{sccmDatabase}].dbo.Sites;";
@@ -154,7 +154,7 @@ namespace MSSQLand.Actions.ConfigMgr
             catch (Exception ex)
             {
                 Logger.Error($"Failed to enumerate ConfigMgr databases: {ex.Message}");
-                Logger.Trace($"Stack trace: {ex.StackTrace}");
+                Logger.TraceNested($"Stack trace: {ex.StackTrace}");
                 return null;
             }
         }

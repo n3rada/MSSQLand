@@ -53,7 +53,7 @@ namespace MSSQLand.Actions.Database
             string columnMsg = !string.IsNullOrEmpty(_columnFilter) ? $" with column containing '{_columnFilter}'" : "";
             string rowsMsg = _withRows ? " (rows > 0)" : "";
             string permsMsg = _showPermissions ? " with permissions" : "";
-            Logger.TaskNested($"Retrieving tables from [{targetDatabase}]{filterMsg}{columnsMsg}{columnMsg}{rowsMsg}{permsMsg}");
+            Logger.Task($"Retrieving tables from [{targetDatabase}]{filterMsg}{columnsMsg}{columnMsg}{rowsMsg}{permsMsg}");
 
             // Build WHERE clause with filter
             string whereClause = "WHERE t.type IN ('U', 'V')";

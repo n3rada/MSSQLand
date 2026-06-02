@@ -56,9 +56,8 @@ namespace MSSQLand.Actions.Database
         {
             if (string.IsNullOrEmpty(_fqtn))
             {
-                Logger.TaskNested("Listing permissions of the current user on server and accessible databases");
-                Logger.NewLine();
-                Logger.Info("Server permissions");
+                Logger.Task("Listing permissions of the current user on server and accessible databases");
+                Logger.TaskNested("Server permissions");
 
                 var serverPerms = databaseContext.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'SERVER');");
                 var sortedServerPerms = SortPermissionsByImportance(serverPerms);
