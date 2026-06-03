@@ -267,6 +267,7 @@ namespace MSSQLand
                     {
                         // Execute action
                         Logger.Info($"Executing action '{arguments.Action.GetName()}' against {databaseContext.QueryService.ExecutionServer.Hostname}");
+                        Logger.NewLine();
                         arguments.Action.Execute(databaseContext);
                     }
                     else
