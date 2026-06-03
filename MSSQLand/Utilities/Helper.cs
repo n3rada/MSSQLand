@@ -171,8 +171,8 @@ namespace MSSQLand.Utilities
             var positional = descriptors.Where(d => d.Position >= 0).OrderBy(d => d.Position).ToList();
             var named      = descriptors.Where(d => d.Position < 0).ToList();
 
-            // Build usage synopsis: !<action> <positionals> [named-flags]
-            var usageParts = new List<string> { $"!{action.ActionName}" };
+            // Build usage synopsis: <action> <positionals> [named-flags]
+            var usageParts = new List<string> { action.ActionName };
             foreach (var d in positional)
                 usageParts.Add(d.Required ? $"<{d.FieldName}>" : $"[{d.FieldName}]");
             foreach (var d in named)
