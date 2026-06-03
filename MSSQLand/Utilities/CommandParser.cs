@@ -33,6 +33,16 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
+        /// Boolean-only flags that consume no following value.
+        /// Used by FindEarlyActionName to skip flag values correctly.
+        /// </summary>
+        private static readonly HashSet<string> BooleanFlags = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "--probe", "--trace", "--debug", "--silent", "--no-banner",
+            "--no-encrypt", "--disable-encrypt", "--no-trust-cert", "--disable-trust-cert"
+        };
+
+        /// <summary>
         /// Checks if an argument matches a global argument (by short or long name).
         /// Supports both - and -- prefixes, and : or = separators, or space-separated values.
         /// </summary>
@@ -133,12 +143,13 @@ namespace MSSQLand.Utilities
 
         public (ParseResultType, CommandArgs?) Parse(string[] args)
         {
-            // Scan for display flags first so banner and output are correctly
-            // suppressed regardless of what the command does.
+            // Scan for display flags and early-exit flags before any work.
+            bool helpRequested = false;
             foreach (string arg in args)
             {
                 if (arg == "--no-banner") Logger.IsBannerSuppressed = true;
-                else if (arg == "--silent")  Logger.IsSilentModeEnabled = true;
+                else if (arg == "--silent") Logger.IsSilentModeEnabled = true;
+                else if (arg == "-h" || arg == "--help") helpRequested = true;
             }
 
             if (!Logger.IsBannerSuppressed && !Logger.IsSilentModeEnabled)
@@ -161,27 +172,28 @@ namespace MSSQLand.Utilities
             List<string> actionArgs = new List<string>();
 
             int currentIndex = 0;
-            bool actionFound = false;
 
             try
             {
-                // Handle special standalone commands first
-                if (args[0] == "--version")
+                // Short-circuit for help before any parsing work (avoids JIT overhead on host/links parsing).
+                if (helpRequested)
                 {
-                    var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-                    var version = assembly.GetName().Version;
-                    Console.WriteLine(version.ToString());
-                    return (ParseResultType.ShowHelp, null);
-                }
-
-                if (args[0] == "-h" || args[0] == "--help")
-                {
-                    // Check if next argument is a search term (not a flag)
-                    if (args.Length > 1 && !IsFlag(args[1]))
+                    string earlyAction = FindEarlyActionName(args);
+                    if (earlyAction != null)
                     {
-                        Helper.ShowFilteredHelp(args[1]);
+                        Helper.ShowActionHelp(earlyAction);
                         return (ParseResultType.ShowHelp, null);
                     }
+
+                    for (int i = 0; i < args.Length - 1; i++)
+                    {
+                        if ((args[i] == "-h" || args[i] == "--help") && !IsFlag(args[i + 1]))
+                        {
+                            Helper.ShowFilteredHelp(args[i + 1]);
+                            return (ParseResultType.ShowHelp, null);
+                        }
+                    }
+
                     Helper.Show();
                     return (ParseResultType.ShowHelp, null);
                 }
@@ -417,39 +429,15 @@ namespace MSSQLand.Utilities
                 }
 
                 // Parse global flags until we hit the action (non-flag positional arg)
-                while (currentIndex < args.Length && !actionFound)
+                while (currentIndex < args.Length)
                 {
                     string arg = args[currentIndex];
-
-                    // Check for help flag
-                    if (arg == "-h" || arg == "--help")
-                    {
-                        // Check if next argument is a search term (not a flag)
-                        if (currentIndex + 1 < args.Length && !IsFlag(args[currentIndex + 1]))
-                        {
-                            Helper.ShowFilteredHelp(args[currentIndex + 1]);
-                            return (ParseResultType.ShowHelp, null);
-                        }
-                        Helper.Show();
-                        return (ParseResultType.ShowHelp, null);
-                    }
 
                     // If it's not a flag, it's the action
                     if (!IsFlag(arg))
                     {
                         actionName = arg;
-                        actionFound = true;
                         currentIndex++;
-
-                        // Check for action-specific help anywhere in remaining arguments
-                        for (int i = currentIndex; i < args.Length; i++)
-                        {
-                            if (args[i] == "-h" || args[i] == "--help")
-                            {
-                                Helper.ShowActionHelp(actionName);
-                                return (ParseResultType.ShowHelp, null);
-                            }
-                        }
                         break;
                     }
 
@@ -570,18 +558,28 @@ namespace MSSQLand.Utilities
                     actionArgs.Add(args[currentIndex++]);
                 }
 
-                // Check if action was provided
-                if (string.IsNullOrWhiteSpace(actionName))
-                {
-                    // Connection test mode
-                    parsedArgs.Action = null;
-                }
-
-                // Check if credential type is provided
+                // No credentials specified — default to probe (connectivity test only)
                 if (string.IsNullOrWhiteSpace(parsedArgs.CredentialType))
                 {
-                    // No credentials specified - use probe mode to just test connectivity
                     parsedArgs.CredentialType = "probe";
+                }
+
+                // Probe is connectivity-check only; actions and linked server traversal both require real auth
+                if (parsedArgs.CredentialType.Equals("probe", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!string.IsNullOrWhiteSpace(actionName))
+                    {
+                        Logger.Error($"Action '{actionName}' cannot be used with probe mode.");
+                        Logger.ErrorNested("Probe only tests connectivity. Use a real credential type (e.g., -c token) to execute actions.");
+                        return (ParseResultType.InvalidInput, null);
+                    }
+
+                    if (parsedArgs.LinkedServers != null && !parsedArgs.LinkedServers.IsEmpty)
+                    {
+                        Logger.Error("Linked server chains cannot be used with probe mode.");
+                        Logger.ErrorNested("Probe only tests connectivity to the target host. Use a real credential type (e.g., -c token) to traverse linked servers.");
+                        return (ParseResultType.InvalidInput, null);
+                    }
                 }
 
                 if (connectionTimeout.HasValue)
@@ -763,6 +761,40 @@ namespace MSSQLand.Utilities
             {
                 throw new ArgumentException($"Extra arguments provided for {credentialType} credentials, which do not require additional parameters.");
             }
+        }
+
+        /// <summary>
+        /// Scans <paramref name="args"/> to find the action name (second positional arg)
+        /// that appears before the first <c>-h</c> / <c>--help</c> flag.
+        /// Flag values are skipped so they are not mistaken for positional args.
+        /// </summary>
+        private static string FindEarlyActionName(string[] args)
+        {
+            int positionals = 0;
+            bool skipNext = false;
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                string arg = args[i];
+
+                if (arg == "-h" || arg == "--help") break;
+
+                if (skipNext) { skipNext = false; continue; }
+
+                if (IsFlag(arg))
+                {
+                    bool hasInlineValue = arg.IndexOfAny(new[] { ':', '=' }) > 0;
+                    if (!hasInlineValue && !BooleanFlags.Contains(arg))
+                        skipNext = true;
+                }
+                else
+                {
+                    positionals++;
+                    if (positionals == 2) return arg; // host = 1st, action = 2nd
+                }
+            }
+
+            return null;
         }
 
     }
