@@ -93,7 +93,7 @@ namespace MSSQLand.Utilities
         {
             Console.WriteLine("\nUsage: <host> -c <cred> [options] <action> [action-args]\n");
 
-            Console.WriteLine("Positional arguments:");
+            Console.WriteLine("Positional Arguments:");
             Console.WriteLine("\t<host>                 Target SQL Server");
             Console.WriteLine("\t                         server[:port][/user][@database]");
             Console.WriteLine("\t                         :port     - Port number (default: 1433)");
@@ -102,7 +102,7 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t                         @database - Database context");
             Console.WriteLine("\t<action>               Action to execute (omit for connection test only)\n");
 
-            Console.WriteLine("Authentication (required):");
+            Console.WriteLine("Authentication (Required):");
             Console.WriteLine("\t-c, --credentials      Credential type: probe, token, local, windows, domain, entraid");
             Console.WriteLine("\t    --probe             Shorthand for -c probe (no credentials, connectivity check only)");
             Console.WriteLine("\t-u, --username         Username (if required by credential type)");
@@ -117,7 +117,7 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t                         @database - Database context on that hop");
             Console.WriteLine("\t                         [name]    - Bracket server names containing ; or @\n");
 
-            Console.WriteLine("Connection options:");
+            Console.WriteLine("Connection Options:");
             Console.WriteLine("\t--timeout              Connection timeout in seconds");
             Console.WriteLine("\t--workstation-id       Workstation ID");
             Console.WriteLine("\t--app-name             Application name");
@@ -125,20 +125,20 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t--no-encrypt           Disable connection encryption");
             Console.WriteLine("\t--no-trust-cert        Disable server certificate trust\n");
 
-            Console.WriteLine("Output options:");
+            Console.WriteLine("Output Options:");
             Console.WriteLine("\t--format               Output format: markdown (default), csv");
             Console.WriteLine("\t--no-banner            Suppress the ASCII art banner");
             Console.WriteLine("\t--silent               Silent mode (results only, no logging)");
             Console.WriteLine("\t--debug                Enable debug logging");
             Console.WriteLine("\t--trace                Enable trace logging\n");
 
-            Console.WriteLine("Discovery (no authentication required):");
+            Console.WriteLine("Discovery (No Authentication Required):");
             Console.WriteLine("\t--findsql [domain]     Find SQL Servers via LDAP query (add --gc for Global Catalog)");
             Console.WriteLine("\t--broadcast            Broadcast for SQL Servers on local network (UDP 1434)");
             Console.WriteLine("\t<host> --browse        Query SQL Browser service (UDP 1434)");
             Console.WriteLine("\t<host> --portscan      Scan for SQL Server ports with TDS validation\n");
 
-            Console.WriteLine("Getting help:");
+            Console.WriteLine("Getting Help:");
             Console.WriteLine("\t-h actions             List all available actions");
             Console.WriteLine("\t-h credentials         Show authentication types");
             Console.WriteLine("\t<action> -h            Show help for specific action");
