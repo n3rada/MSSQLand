@@ -5,7 +5,7 @@ This file is the canonical AI guidance for this repository.
 ## Read Order
 
 1. [README.md](README.md) - CLI behavior, usage, and operator-facing semantics.
-2. [DEVELOPMENT.md](DEVELOPMENT.md) - architecture and implementation notes.
+2. [DEVELOPMENT.md](DEVELOPMENT.md) - architecture, design principles, and extension model (source of truth).
 3. [CONTRIBUTING.md](CONTRIBUTING.md) - contribution and review workflow.
 
 ## Source Map (Start Here)
@@ -32,7 +32,10 @@ This file is the canonical AI guidance for this repository.
 
 ## Architecture and Design Principles
 
-Follow these principles for every change:
+This section is a strict summary. Detailed rationale and examples live in [DEVELOPMENT.md](DEVELOPMENT.md).
+If this file and [DEVELOPMENT.md](DEVELOPMENT.md) ever diverge, follow [DEVELOPMENT.md](DEVELOPMENT.md) for architecture and design decisions.
+
+Enforce these rules on every change:
 
 1. Single Responsibility Principle (SRP)
 - Keep actions focused on one user-facing capability.
@@ -48,11 +51,15 @@ Follow these principles for every change:
 - Add new behavior by introducing new action classes and registering them in [MSSQLand/Actions/ActionFactory.cs](MSSQLand/Actions/ActionFactory.cs).
 - Avoid changing shared base behavior unless there is a cross-cutting need.
 
-4. DRY and consistency
+4. Liskov + composition boundaries
+- Preserve BaseAction substitutability: every action must validate arguments and execute through the same lifecycle contracts in [MSSQLand/Actions/BaseAction.cs](MSSQLand/Actions/BaseAction.cs).
+- Prefer composition through [MSSQLand/Services/DatabaseContext.cs](MSSQLand/Services/DatabaseContext.cs) instead of introducing inheritance-heavy hierarchies.
+
+5. DRY and consistency
 - Reuse parser, logger, formatter, and query helpers.
 - Do not reimplement argument parsing that is already provided by [MSSQLand/Actions/BaseAction.cs](MSSQLand/Actions/BaseAction.cs).
 
-5. Fail fast and observable behavior
+6. Fail fast and observable behavior
 - Use clear errors and structured logs via [MSSQLand/Utilities/Logger.cs](MSSQLand/Utilities/Logger.cs).
 - Preserve existing operational semantics (timeouts, retries, linked-server fallback paths) unless a change explicitly targets them.
 

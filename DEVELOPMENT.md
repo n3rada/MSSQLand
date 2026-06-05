@@ -8,41 +8,61 @@ MSSQLand follows several key software development principles:
 
 ### Single Responsibility Principle (SRP)
 
+Further reading: [Wikipedia - Single-responsibility principle](https://en.wikipedia.org/wiki/Single-responsibility_principle), [Refactoring.Guru - Single Responsibility Principle](https://refactoring.guru/design-patterns/solid-principles#single-responsibility-principle)
+
 Each class should have one, and only one, reason to change. Each action class in the [Actions](MSSQLand/Actions) directory, like [Tables](MSSQLand/Actions/Database/Tables.cs) or [Permissions](MSSQLand/Actions/Database/Permissions.cs), is responsible for a single operation. The [Logger](MSSQLand/Utilities/Logger.cs) class solely handles logging, decoupling it from other logic.
 
 ### Open/Closed Principle (OCP)
+
+Further reading: [Wikipedia - Open-closed principle](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle), [Refactoring.Guru - Open Closed Principle](https://refactoring.guru/design-patterns/solid-principles#open-closed-principle)
 
 Software entities should be open for extension but closed for modification. The [BaseAction](MSSQLand/Actions/BaseAction.cs) abstract class defines a common interface for all actions. New actions can be added by inheriting from it without modifying existing code. The [ActionFactory](MSSQLand/Actions/ActionFactory.cs) enables seamless addition of new actions by simply registering them in the dictionary.
 
 ### Liskov Substitution Principle (LSP)
 
+Further reading: [Wikipedia - Liskov substitution principle](https://en.wikipedia.org/wiki/Liskov_substitution_principle), [Refactoring.Guru - Liskov Substitution Principle](https://refactoring.guru/design-patterns/solid-principles#liskov-substitution-principle)
+
 Subtypes should be substitutable for their base types without altering program behavior. The [BaseAction](MSSQLand/Actions/BaseAction.cs) class ensures all derived actions (e.g., Tables, Permissions, Smb) can be used interchangeably, provided they implement `Execute`. Similarly, all credential types ([TokenCredentials](MSSQLand/Services/Authentication/Credentials/TokenCredentials.cs), [WindowsCredentials](MSSQLand/Services/Authentication/Credentials/WindowsCredentials.cs), [LocalCredentials](MSSQLand/Services/Authentication/Credentials/LocalCredentials.cs), etc.) extend [BaseCredentials](MSSQLand/Services/Authentication/Credentials/BaseCredentials.cs) and are interchangeable in [`AuthenticationService`](MSSQLand/Services/Authentication/AuthenticationService.cs).
 
 ### DRY (Don't Repeat Yourself)
+
+Further reading: [Wikipedia - Don't repeat yourself](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself), [DevIQ - DRY Principle](https://deviq.com/principles/dont-repeat-yourself)
 
 Avoid duplicating logic across the codebase. The [QueryService](MSSQLand/Services/QueryService.cs) centralizes query execution, avoiding repetition in individual actions. Argument parsing is handled once in `BaseAction.BindArguments()` via reflection rather than duplicated in every action.
 
 ### KISS (Keep It Simple, Stupid)
 
+Further reading: [Wikipedia - KISS principle](https://en.wikipedia.org/wiki/KISS_principle)
+
 Systems should be as simple as possible but no simpler. Complex linked server queries and impersonation are abstracted into services, simplifying their usage.
 
 ### Composition over Inheritance
+
+Further reading: [Wikipedia - Composition over inheritance](https://en.wikipedia.org/wiki/Composition_over_inheritance), [Refactoring.Guru - Favor Composition Over Inheritance](https://refactoring.guru/favor-composition-over-inheritance)
 
 Prefer composing objects over deep inheritance hierarchies. [`DatabaseContext`](MSSQLand/Services/DatabaseContext.cs) composes [`QueryService`](MSSQLand/Services/QueryService.cs), [`UserService`](MSSQLand/Services/UserService.cs), [`ConfigurationService`](MSSQLand/Services/ConfigurationService.cs), and [`AuthenticationService`](MSSQLand/Services/Authentication/AuthenticationService.cs) into a single facade. Actions receive a `DatabaseContext` and access whichever service they need, without knowing about the others.
 
 ### Command Pattern
 
+Further reading: [Wikipedia - Command pattern](https://en.wikipedia.org/wiki/Command_pattern), [Refactoring.Guru - Command](https://refactoring.guru/design-patterns/command)
+
 Each action is a command object: [BaseAction](MSSQLand/Actions/BaseAction.cs) defines `ValidateArguments()` to configure the command and `Execute()` to run it. The [ActionFactory](MSSQLand/Actions/ActionFactory.cs) instantiates the right command from user input, [`Program.cs`](MSSQLand/Program.cs) validates it, then executes it, decoupling invocation from execution.
 
 ### Strategy Pattern
+
+Further reading: [Wikipedia - Strategy pattern](https://en.wikipedia.org/wiki/Strategy_pattern), [Refactoring.Guru - Strategy](https://refactoring.guru/design-patterns/strategy)
 
 Swappable implementations behind a common interface. [`IOutputFormatter`](MSSQLand/Utilities/Formatters/IOutputFormatter.cs) allows switching between [MarkdownFormatter](MSSQLand/Utilities/Formatters/MarkdownFormatter.cs) and [CsvFormatter](MSSQLand/Utilities/Formatters/CsvFormatter.cs) at runtime via [`OutputFormatter`](MSSQLand/Utilities/Formatters/OutputFormatter.cs)`.SetFormat()`. The [CredentialsFactory](MSSQLand/Services/Authentication/Credentials/CredentialsFactory.cs) registry maps credential type names to factory lambdas, each producing a different [BaseCredentials](MSSQLand/Services/Authentication/Credentials/BaseCredentials.cs) strategy. Query routing in [LinkedServers](MSSQLand/Models/LinkedServers.cs) selects between RPC (`EXEC AT`) and OPENQUERY strategies per hop.
 
 ### Declarative Configuration via Attributes
 
+Further reading: [Microsoft Learn - Attributes in C#](https://learn.microsoft.com/en-us/dotnet/csharp/advanced-topics/reflection-and-attributes/), [Wikipedia - Reflection (computer programming)](https://en.wikipedia.org/wiki/Reflective_programming)
+
 Action arguments are defined declaratively using [`[ArgumentMetadata]`](MSSQLand/Actions/ArgumentMetadataAttribute.cs) attributes on fields, specifying position, short/long names, required flag, and description. `BaseAction.BindArguments()` uses reflection to automatically parse, convert, and bind CLI arguments to these fields. [`[ExcludeFromArguments]`](MSSQLand/Actions/ExcludeFromArgumentsAttribute.cs) marks internal fields that should be skipped during binding. This eliminates boilerplate argument parsing from every action.
 
 ### Deterministic Resource Management
+
+Further reading: [Microsoft Learn - Implement a Dispose method](https://learn.microsoft.com/en-us/dotnet/standard/garbage-collection/implementing-dispose), [Wikipedia - RAII](https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization)
 
 [`DatabaseContext`](MSSQLand/Services/DatabaseContext.cs) implements `IDisposable` for deterministic cleanup of the `SqlConnection` session. [`Program.cs`](MSSQLand/Program.cs) wraps it in a `using` block, ensuring the connection is always closed even if an action throws.
 
