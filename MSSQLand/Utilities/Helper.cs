@@ -256,37 +256,53 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
-        /// Displays available credential types.
+        /// Displays available credential types in argparse style.
         /// </summary>
         public static void ShowCredentialTypes()
         {
-            Console.WriteLine("Available Credential Types\n");
+            var allCreds = Services.Credentials.CredentialsFactory.GetAvailableCredentials();
 
-            var credentials = Services.Credentials.CredentialsFactory.GetAvailableCredentials();
+            var preferredOrder = new[] { "probe", "token", "windows", "local", "entraid" };
+            var orderedCreds = preferredOrder
+                .Where(n => allCreds.ContainsKey(n))
+                .Select(n => allCreds[n])
+                .Concat(allCreds.Values.Where(c => !preferredOrder.Any(n => n.Equals(c.Name, StringComparison.OrdinalIgnoreCase))))
+                .ToList();
 
-            foreach (var credential in credentials.Values.OrderBy(c => c.Name))
+            var argToShort = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                Console.WriteLine($"  [{credential.Name}]");
-                Console.WriteLine($"\t{credential.Description}");
+                { "username", "-u" }, { "password", "-p" }, { "domain", "-d" }
+            };
 
-                if (credential.RequiredArguments.Any())
-                {
-                    Console.WriteLine($"\tRequired: {string.Join(", ", credential.RequiredArguments)}");
-                }
-                else
-                {
-                    Console.WriteLine("\tRequired: None");
-                }
-
-                if (credential.OptionalArguments.Any())
-                {
-                    Console.WriteLine($"\tOptional: {string.Join(", ", credential.OptionalArguments)}");
-                }
-
-                Console.WriteLine();
+            string BuildFlagsHint(Services.Credentials.CredentialMetadata c)
+            {
+                var required = c.RequiredArguments.Select(a => argToShort.TryGetValue(a, out var f) ? f : $"--{a}");
+                var optional = c.OptionalArguments.Select(a => argToShort.TryGetValue(a, out var f) ? $"[{f}]" : $"[--{a}]");
+                return string.Join(" ", required.Concat(optional));
             }
 
-            Console.WriteLine("For credential usage:  <host> -c <type> -h");
+            int nameWidth  = orderedCreds.Max(c => c.Name.Length) + 2;
+            int flagsWidth = orderedCreds.Max(c => BuildFlagsHint(c).Length) + 3;
+
+            Console.WriteLine($"\nusage: <host> -c <type> [auth-flags] [options] <action>\n");
+            Console.WriteLine($"  -c, --credentials {{{string.Join(",", orderedCreds.Select(c => c.Name))}}}\n");
+
+            foreach (var cred in orderedCreds)
+            {
+                string flags = BuildFlagsHint(cred);
+                Console.WriteLine($"    {cred.Name.PadRight(nameWidth)}{flags.PadRight(flagsWidth)}{cred.Description}");
+
+                if (cred.Aliases != null && cred.Aliases.Count > 0)
+                {
+                    string pad = new string(' ', 4 + nameWidth + flagsWidth);
+                    Console.WriteLine($"{pad}alias: {string.Join(", ", cred.Aliases)}");
+                }
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("  auth flags:  -u, --username  /  -p, --password  /  -d, --domain");
+            Console.WriteLine("  shorthand:   --probe  →  -c probe");
+            Console.WriteLine();
         }
 
         /// <summary>
