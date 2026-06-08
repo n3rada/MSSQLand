@@ -103,7 +103,7 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t<action>               Action to execute (omit for connection test only)\n");
 
             Console.WriteLine("Authentication (Required):");
-            Console.WriteLine("\t-c, --credentials      Credential type: probe, token, local, windows, domain, entraid");
+            Console.WriteLine("\t-c, --credentials      Credential type: probe, token, local, windows, entraid");
             Console.WriteLine("\t    --probe             Shorthand for -c probe (no credentials, connectivity check only)");
             Console.WriteLine("\t-u, --username         Username (if required by credential type)");
             Console.WriteLine("\t-p, --password         Password (if required by credential type)");

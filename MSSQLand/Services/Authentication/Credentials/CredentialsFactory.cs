@@ -14,14 +14,16 @@ namespace MSSQLand.Services.Credentials
         public string Description { get; set; }
         public List<string> RequiredArguments { get; set; }
         public List<string> OptionalArguments { get; set; }
+        public List<string> Aliases { get; set; }
         public Func<Server, BaseCredentials> Factory { get; set; }
 
-        public CredentialMetadata(string name, string description, List<string> requiredArguments, Func<Server, BaseCredentials> factory, List<string> optionalArguments = null)
+        public CredentialMetadata(string name, string description, List<string> requiredArguments, Func<Server, BaseCredentials> factory, List<string> optionalArguments = null, List<string> aliases = null)
         {
             Name = name;
             Description = description;
             RequiredArguments = requiredArguments ?? new List<string>();
             OptionalArguments = optionalArguments ?? new List<string>();
+            Aliases = aliases ?? new List<string>();
             Factory = factory;
         }
     }
@@ -52,22 +54,14 @@ namespace MSSQLand.Services.Credentials
                 )
             },
             {
-                "domain",
-                new CredentialMetadata(
-                    name: "domain",
-                    description: "Domain account authentication via impersonation",
-                    requiredArguments: new List<string> { "username", "password", "domain" },
-                    factory: WindowsCredentials.Create
-                )
-            },
-            {
                 "windows",
                 new CredentialMetadata(
                     name: "windows",
                     description: "Windows Authentication with impersonation (domain or local account)",
                     requiredArguments: new List<string> { "username", "password" },
                     factory: WindowsCredentials.Create,
-                    optionalArguments: new List<string> { "domain" }
+                    optionalArguments: new List<string> { "domain" },
+                    aliases: new List<string> { "domain" }
                 )
             },
             {
@@ -112,7 +106,15 @@ namespace MSSQLand.Services.Credentials
                 throw new ArgumentException("Credential type cannot be null or empty.", nameof(credentialsType));
             }
 
-            if (!_credentialRegistry.TryGetValue(credentialsType, out var metadata))
+            if (_credentialRegistry.TryGetValue(credentialsType, out var metadata))
+            {
+                return metadata;
+            }
+
+            metadata = _credentialRegistry.Values
+                .FirstOrDefault(m => m.Aliases.Any(alias => alias.Equals(credentialsType, StringComparison.OrdinalIgnoreCase)));
+
+            if (metadata == null)
             {
                 var availableTypes = string.Join(", ", _credentialRegistry.Keys);
                 throw new ArgumentException(
@@ -131,8 +133,18 @@ namespace MSSQLand.Services.Credentials
         /// <returns>True if the credential type is supported, false otherwise.</returns>
         public static bool IsValidCredentialType(string credentialsType)
         {
-            return !string.IsNullOrWhiteSpace(credentialsType) &&
-                   _credentialRegistry.ContainsKey(credentialsType);
+            if (string.IsNullOrWhiteSpace(credentialsType))
+            {
+                return false;
+            }
+
+            if (_credentialRegistry.ContainsKey(credentialsType))
+            {
+                return true;
+            }
+
+            return _credentialRegistry.Values
+                .Any(m => m.Aliases.Any(alias => alias.Equals(credentialsType, StringComparison.OrdinalIgnoreCase)));
         }
 
         /// <summary>
