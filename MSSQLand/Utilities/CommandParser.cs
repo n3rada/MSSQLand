@@ -619,8 +619,16 @@ namespace MSSQLand.Utilities
                     }
                 }
 
-                // Validate the provided arguments against the selected credential type
-                ValidateCredentialArguments(parsedArgs.CredentialType, username, password, domain);
+                // Probe is a mode, not a credential type — skip credential validation
+                if (parsedArgs.CredentialType.Equals("probe", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!string.IsNullOrEmpty(username) || !string.IsNullOrEmpty(password) || !string.IsNullOrEmpty(domain))
+                        Logger.Warning("Probe mode does not use credentials. -u/-p/-d flags are ignored.");
+                }
+                else
+                {
+                    ValidateCredentialArguments(parsedArgs.CredentialType, username, password, domain);
+                }
 
                 // Assign optional arguments to parsedArgs
                 parsedArgs.Username = username;

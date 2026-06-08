@@ -80,8 +80,10 @@ namespace MSSQLand.Services
             _enableEncryption = enableEncryption;
             _trustServerCertificate = trustServerCertificate;
 
-            // Get the appropriate credentials service
-            _credentials = CredentialsFactory.GetCredentials(credentialsType, Server);
+            // Probe dispatches directly — it is not a registered credential type
+            _credentials = credentialsType.Equals("probe", StringComparison.OrdinalIgnoreCase)
+                ? ProbeCredentials.Create(Server)
+                : CredentialsFactory.GetCredentials(credentialsType, Server);
             if (connectionTimeout.HasValue)
                 _credentials.SetConnectionTimeout(connectionTimeout.Value);
 
@@ -102,14 +104,11 @@ namespace MSSQLand.Services
             // Use the credentials service to authenticate and establish the connection
             Connection = _credentials.Authenticate(username, password, domain);
 
-            // Probe mode returns null after logging results - this is expected, not a failure
+            // Probe returns null after logging results — not a failure
             if (Connection == null)
             {
                 if (credentialsType.Equals("probe", StringComparison.OrdinalIgnoreCase))
-                {
-                    // Probe completed successfully (results already logged)
                     return;
-                }
                 throw new AuthenticationFailedException(Server.Hostname, credentialsType);
             }
 

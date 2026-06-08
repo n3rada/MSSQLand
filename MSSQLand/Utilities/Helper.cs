@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Collections.Generic;
 using MSSQLand.Actions;
+using MSSQLand.Services.Credentials;
 
 namespace MSSQLand.Utilities
 {
@@ -103,7 +104,8 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t<action>               Action to execute (omit for connection test only)\n");
 
             Console.WriteLine("Authentication (Required):");
-            Console.WriteLine("\t-c, --credentials      Credential type: probe, token, local, windows, entraid");
+            Console.WriteLine("\t-c, --credentials      Credential type:");
+            WriteCredentialTypeLines("\t                         ");
             Console.WriteLine("\t    --probe             Shorthand for -c probe (no credentials, connectivity check only)");
             Console.WriteLine("\t-u, --username         Username (if required by credential type)");
             Console.WriteLine("\t-p, --password         Password (if required by credential type)");
@@ -261,7 +263,25 @@ namespace MSSQLand.Utilities
         public static void ShowCredentialTypes()
         {
             var allCreds = Services.Credentials.CredentialsFactory.GetAvailableCredentials();
+            var names = string.Join(",", new[] { "probe", "token", "windows", "local", "entraid" }
+                .Where(n => allCreds.ContainsKey(n)));
 
+            Console.WriteLine($"\nusage: <host> -c <type> [auth-flags] [options] <action>\n");
+            Console.WriteLine($"  -c, --credentials {{{names}}}\n");
+            WriteCredentialTypeLines("    ");
+            Console.WriteLine();
+            Console.WriteLine("  auth flags:  -u, --username  /  -p, --password  /  -d, --domain");
+            Console.WriteLine("  shorthand:   --probe  →  -c probe");
+            Console.WriteLine();
+        }
+
+        /// <summary>
+        /// Writes one line per credential type to stdout, indented by <paramref name="indent"/>.
+        /// Shared by Show() and ShowCredentialTypes().
+        /// </summary>
+        private static void WriteCredentialTypeLines(string indent)
+        {
+            var allCreds = Services.Credentials.CredentialsFactory.GetAvailableCredentials();
             var preferredOrder = new[] { "probe", "token", "windows", "local", "entraid" };
             var orderedCreds = preferredOrder
                 .Where(n => allCreds.ContainsKey(n))
@@ -274,35 +294,27 @@ namespace MSSQLand.Utilities
                 { "username", "-u" }, { "password", "-p" }, { "domain", "-d" }
             };
 
-            string BuildFlagsHint(Services.Credentials.CredentialMetadata c)
+            string FlagsHint(CredentialMetadata c)
             {
-                var required = c.RequiredArguments.Select(a => argToShort.TryGetValue(a, out var f) ? f : $"--{a}");
-                var optional = c.OptionalArguments.Select(a => argToShort.TryGetValue(a, out var f) ? $"[{f}]" : $"[--{a}]");
-                return string.Join(" ", required.Concat(optional));
+                var req = c.RequiredArguments.Select(a => argToShort.TryGetValue(a, out var f) ? f : $"--{a}");
+                var opt = c.OptionalArguments.Select(a => argToShort.TryGetValue(a, out var f) ? $"[{f}]" : $"[--{a}]");
+                return string.Join(" ", req.Concat(opt));
             }
 
             int nameWidth  = orderedCreds.Max(c => c.Name.Length) + 2;
-            int flagsWidth = orderedCreds.Max(c => BuildFlagsHint(c).Length) + 3;
-
-            Console.WriteLine($"\nusage: <host> -c <type> [auth-flags] [options] <action>\n");
-            Console.WriteLine($"  -c, --credentials {{{string.Join(",", orderedCreds.Select(c => c.Name))}}}\n");
+            int flagsWidth = orderedCreds.Max(c => FlagsHint(c).Length) + 3;
 
             foreach (var cred in orderedCreds)
             {
-                string flags = BuildFlagsHint(cred);
-                Console.WriteLine($"    {cred.Name.PadRight(nameWidth)}{flags.PadRight(flagsWidth)}{cred.Description}");
+                string flags = FlagsHint(cred);
+                Console.WriteLine($"{indent}{cred.Name.PadRight(nameWidth)}{flags.PadRight(flagsWidth)}{cred.Description}");
 
                 if (cred.Aliases != null && cred.Aliases.Count > 0)
                 {
-                    string pad = new string(' ', 4 + nameWidth + flagsWidth);
+                    string pad = indent + new string(' ', nameWidth + flagsWidth);
                     Console.WriteLine($"{pad}alias: {string.Join(", ", cred.Aliases)}");
                 }
             }
-
-            Console.WriteLine();
-            Console.WriteLine("  auth flags:  -u, --username  /  -p, --password  /  -d, --domain");
-            Console.WriteLine("  shorthand:   --probe  →  -c probe");
-            Console.WriteLine();
         }
 
         /// <summary>

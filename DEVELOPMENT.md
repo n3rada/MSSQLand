@@ -67,6 +67,23 @@ Further reading: [Microsoft Learn - Implement a Dispose method](https://learn.mi
 [`DatabaseContext`](MSSQLand/Services/DatabaseContext.cs) implements `IDisposable` for deterministic cleanup of the `SqlConnection` session. [`Program.cs`](MSSQLand/Program.cs) wraps it in a `using` block, ensuring the connection is always closed even if an action throws.
 
 
+## 📝 C# Coding Conventions
+
+MSSQLand follows the Microsoft C# coding conventions. Key rules enforced in this codebase:
+
+- **`using` directives at the top of every file**: Never write fully-qualified type names inline (e.g. `System.Collections.Generic.List<T>`). Declare the namespace in a `using` directive at the top of the file. Only use a fully-qualified name to resolve a genuine ambiguity between two namespaces.
+- **Naming**: `PascalCase` for types, methods, properties, and constants; `camelCase` for local variables and parameters; `_camelCase` for private instance fields.
+- **One type per file**: Each class, struct, or interface lives in its own `.cs` file named after the type.
+- **Braces**: always use braces for control flow blocks, even single-line bodies.
+
+References (treat these the way Python treats PEP 8):
+- [Microsoft C# Coding Conventions](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions)
+- [.NET Framework Design Guidelines](https://learn.microsoft.com/en-us/dotnet/standard/design-guidelines/)
+- [C# Identifier Naming Rules and Conventions](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/identifier-names)
+- [Common C# Code Conventions (Microsoft Learn)](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/common-coding-conventions)
+
+---
+
 ## 🏗️ Architecture
 
 MSSQLand is built on a clean, OOP-driven architecture designed for extensibility:
