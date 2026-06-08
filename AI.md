@@ -26,6 +26,14 @@ This file is the canonical AI guidance for this repository.
 - Target framework: .NET Framework 4.8.
 - **Do not attempt to build on Linux.** .NET Framework 4.8 is Windows-only; builds will fail. Only verify that code is structurally correct (types, references, csproj manifest).
 - **On Windows, build exclusively via Visual Studio** (`msbuild` through the VS Developer Command Prompt, or the IDE itself). Do not use `dotnet build` — the .NET SDK CLI does not fully support .NET Framework 4.8 projects on Windows and may silently skip or mishandle build configurations.
+- **To locate MSBuild**, use `vswhere` (ships with every Visual Studio installation):
+  ```bat
+  "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
+  ```
+  Then invoke the returned path directly:
+  ```bat
+  <msbuild-path> MSSQLand\MSSQLand.csproj /p:Configuration=Release
+  ```
 - The project uses an explicit `<Compile Include=...>` list in [MSSQLand/MSSQLand.csproj](MSSQLand/MSSQLand.csproj). New `.cs` files must be added there or they will not build.
 - ConfigMgr code paths are guarded by `#if CONFIGMGR` in source (for example [MSSQLand/Actions/ActionFactory.cs](MSSQLand/Actions/ActionFactory.cs)).
 - Use build configurations, not ad-hoc symbols:
