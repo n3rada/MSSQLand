@@ -1,11 +1,12 @@
 #if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMCollection.cs
 
+using System;
+using System.Data;
+
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
-using System;
-using System.Data;
 
 namespace MSSQLand.Actions.ConfigMgr
 {

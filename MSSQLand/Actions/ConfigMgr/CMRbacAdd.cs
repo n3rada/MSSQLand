@@ -1,10 +1,11 @@
 #if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMRbacAdd.cs
 
-using MSSQLand.Services;
-using MSSQLand.Utilities;
 using System;
 using System.Data;
+
+using MSSQLand.Services;
+using MSSQLand.Utilities;
 
 namespace MSSQLand.Actions.ConfigMgr
 {

@@ -1,11 +1,12 @@
 // MSSQLand/Actions/Domain/AdSid.cs
 
-using MSSQLand.Services;
-using MSSQLand.Utilities;
-using MSSQLand.Utilities.Formatters;
 using System;
 using System.Collections.Generic;
 using System.Security.Principal;
+
+using MSSQLand.Services;
+using MSSQLand.Utilities;
+using MSSQLand.Utilities.Formatters;
 
 namespace MSSQLand.Actions.Domain
 {

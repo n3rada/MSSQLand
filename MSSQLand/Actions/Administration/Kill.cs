@@ -1,10 +1,11 @@
 ﻿// MSSQLand/Actions/Administration/Kill.cs
 
-using MSSQLand.Services;
-using MSSQLand.Utilities;
 using System;
 using System.Data;
 using System.Linq;
+
+using MSSQLand.Services;
+using MSSQLand.Utilities;
 
 namespace MSSQLand.Actions.Administration
 {

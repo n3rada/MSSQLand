@@ -1,10 +1,11 @@
 ﻿// MSSQLand/Services/Authentication/AuthenticationService.cs
 
-using MSSQLand.Models;
-using MSSQLand.Services.Credentials;
-using MSSQLand.Exceptions;
 using System;
 using System.Data.SqlClient;
+
+using MSSQLand.Exceptions;
+using MSSQLand.Models;
+using MSSQLand.Services.Credentials;
 
 namespace MSSQLand.Services
 {

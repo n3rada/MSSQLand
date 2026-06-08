@@ -1,7 +1,5 @@
 ﻿// MSSQLand/Services/Authentication/Credentials/WindowsIdentityImpersonation.cs
 
-using Microsoft.Win32.SafeHandles;
-using MSSQLand.Utilities;
 using System;
 using System.ComponentModel;
 using System.Runtime.ConstrainedExecution;
@@ -9,6 +7,9 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Permissions;
 using System.Security.Principal;
+
+using MSSQLand.Utilities;
+using Microsoft.Win32.SafeHandles;
 
 namespace MSSQLand.Services.Credentials
 {

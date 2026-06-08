@@ -1,10 +1,11 @@
 // MSSQLand/Actions/Domain/AdsiCredentialExtractor.cs
 
-using MSSQLand.Services;
-using MSSQLand.Utilities;
 using System;
 using System.Data;
 using System.Threading.Tasks;
+
+using MSSQLand.Services;
+using MSSQLand.Utilities;
 
 namespace MSSQLand.Actions.Domain
 {

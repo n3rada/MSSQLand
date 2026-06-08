@@ -1,7 +1,8 @@
 ﻿// MSSQLand/Models/CommandArgs.cs
 
-using MSSQLand.Actions;
 using System.Net;
+
+using MSSQLand.Actions;
 
 namespace MSSQLand.Models
 {

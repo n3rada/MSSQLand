@@ -1,6 +1,7 @@
 ﻿using MSSQLand.Exceptions;
-using MSSQLand.Models;
 using System.Data.SqlClient;
+
+using MSSQLand.Models;
 
 namespace MSSQLand.Services.Credentials
 {

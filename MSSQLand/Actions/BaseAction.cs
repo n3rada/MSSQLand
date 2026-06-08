@@ -1,11 +1,12 @@
 // MSSQLand/Actions/BaseAction.cs
 
-using MSSQLand.Services;
-using MSSQLand.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+
+using MSSQLand.Services;
+using MSSQLand.Utilities;
 
 namespace MSSQLand.Actions
 {

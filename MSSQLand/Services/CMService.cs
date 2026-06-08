@@ -1,12 +1,13 @@
 #if CONFIGMGR
 // MSSQLand/Services/CMService.cs
 
-using MSSQLand.Models;
-using MSSQLand.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
+
+using MSSQLand.Models;
+using MSSQLand.Utilities;
 
 namespace MSSQLand.Services
 {

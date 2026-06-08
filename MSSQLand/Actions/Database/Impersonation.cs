@@ -1,10 +1,11 @@
 ﻿// MSSQLand/Actions/Database/Impersonation.cs
 
+using System;
+using System.Data;
+
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
-using System;
-using System.Data;
 
 namespace MSSQLand.Actions.Database
 {

@@ -1,11 +1,12 @@
 #if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMScriptAdd.cs
 
-using MSSQLand.Services;
-using MSSQLand.Utilities;
 using System;
 using System.IO;
 using System.Text;
+
+using MSSQLand.Services;
+using MSSQLand.Utilities;
 
 namespace MSSQLand.Actions.ConfigMgr
 {

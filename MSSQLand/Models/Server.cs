@@ -1,8 +1,10 @@
 ﻿// MSSQLand/Models/Server.cs
 
-using MSSQLand.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
+
+using MSSQLand.Utilities;
 
 namespace MSSQLand.Models
 {
@@ -18,7 +20,7 @@ namespace MSSQLand.Models
         /// </summary>
         public string Hostname { get; set; }
 
-        private string version;
+        private string _version;
 
         /// <summary>
         /// The version string of the server (e.g., "15.0.2000").
@@ -26,10 +28,10 @@ namespace MSSQLand.Models
         /// </summary>
         public string Version
         {
-            get => version;
+            get => _version;
             private set
             {
-                version = value;
+                _version = value;
                 MajorVersion = ParseMajorVersion(version);
                 if (MajorVersion > 0 && MajorVersion <= 13)
                 {
@@ -38,7 +40,7 @@ namespace MSSQLand.Models
             }
         }
 
-        private string fullVersionString;
+        private string _fullVersionString;
 
         /// <summary>
         /// The complete @@VERSION output from SQL Server.
@@ -49,14 +51,14 @@ namespace MSSQLand.Models
         /// </summary>
         public string FullVersionString
         {
-            get => fullVersionString;
+            get => _fullVersionString;
             set
             {
-                fullVersionString = value;
+                _fullVersionString = value;
                 if (string.IsNullOrEmpty(value)) return;
 
                 // Extract version number (e.g., "15.0.2000" from "Microsoft SQL Server 2019 (RTM) - 15.0.2000.5")
-                var match = System.Text.RegularExpressions.Regex.Match(value, @"\s(\d+\.\d+\.\d+)");
+                var match = Regex.Match(value, @"\s(\d+\.\d+\.\d+)");
                 if (match.Success)
                 {
                     Version = match.Groups[1].Value;
@@ -151,8 +153,8 @@ namespace MSSQLand.Models
             return new Server
             {
                 Hostname = this.Hostname,
-                version = this.version,
-                fullVersionString = this.fullVersionString,
+                _version = this._version,
+                _fullVersionString = this._fullVersionString,
                 MajorVersion = this.MajorVersion,
                 IsLegacy = this.IsLegacy,
                 IsAzureSQL = this.IsAzureSQL,

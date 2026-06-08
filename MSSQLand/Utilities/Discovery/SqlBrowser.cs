@@ -1,6 +1,5 @@
 // MSSQLand/Utilities/Discovery/SqlBrowser.cs
 
-using MSSQLand.Utilities.Formatters;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -8,6 +7,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+
+using MSSQLand.Utilities.Formatters;
 
 namespace MSSQLand.Utilities.Discovery
 {

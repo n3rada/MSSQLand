@@ -1,12 +1,13 @@
 ﻿// MSSQLand/Actions/Execution/Query.cs
 
-using MSSQLand.Services;
-using MSSQLand.Utilities;
-using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+
+using MSSQLand.Services;
+using MSSQLand.Utilities;
+using MSSQLand.Utilities.Formatters;
 
 namespace MSSQLand.Actions.Execution
 {

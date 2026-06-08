@@ -1,11 +1,12 @@
 ﻿// MSSQLand/Models/LinkedServers.cs
 
-using MSSQLand.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Policy;
 using System.Text;
+
+using MSSQLand.Utilities;
 
 namespace MSSQLand.Models
 {

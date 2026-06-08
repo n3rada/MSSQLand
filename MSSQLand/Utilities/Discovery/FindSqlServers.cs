@@ -1,10 +1,11 @@
-using MSSQLand.Services;
-using MSSQLand.Utilities.Formatters;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Security.Principal;
+
+using MSSQLand.Services;
+using MSSQLand.Utilities.Formatters;
 
 namespace MSSQLand.Utilities.Discovery
 {

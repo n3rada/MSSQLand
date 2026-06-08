@@ -81,6 +81,7 @@ References (treat these the way Python treats PEP 8):
 - [.NET Framework Design Guidelines](https://learn.microsoft.com/en-us/dotnet/standard/design-guidelines/)
 - [C# Identifier Naming Rules and Conventions](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/identifier-names)
 - [Common C# Code Conventions (Microsoft Learn)](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/common-coding-conventions)
+- [Google C# Style Guide](https://google.github.io/styleguide/csharp-style.html)
 
 ---
 

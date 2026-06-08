@@ -1,11 +1,12 @@
 // MSSQLand/Actions/Database/Hashes.cs
 
-using MSSQLand.Services;
-using MSSQLand.Utilities;
-using MSSQLand.Utilities.Formatters;
 using System;
 using System.Data;
 using System.Text;
+
+using MSSQLand.Services;
+using MSSQLand.Utilities;
+using MSSQLand.Utilities.Formatters;
 
 namespace MSSQLand.Actions.Database
 {

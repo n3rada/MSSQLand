@@ -1,9 +1,10 @@
 #if CONFIGMGR
 // MSSQLand/Actions/ConfigMgr/CMScriptDelete.cs
 
+using System;
+
 using MSSQLand.Services;
 using MSSQLand.Utilities;
-using System;
 
 namespace MSSQLand.Actions.ConfigMgr
 {
