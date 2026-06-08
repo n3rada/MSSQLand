@@ -764,13 +764,17 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
-        /// Scans <paramref name="args"/> to find the action name (second positional arg)
-        /// that appears before the first <c>-h</c> / <c>--help</c> flag.
-        /// Flag values are skipped so they are not mistaken for positional args.
+        /// Scans <paramref name="args"/> to find the action name that appears before the first
+        /// <c>-h</c> / <c>--help</c> flag. Flag values are skipped so they are not mistaken for positional args.
+        ///
+        /// This supports both of these forms:
+        ///   <action> -h
+        ///   <host> <action> -h
         /// </summary>
         private static string FindEarlyActionName(string[] args)
         {
             int positionals = 0;
+            string lastPositional = null;
             bool skipNext = false;
 
             for (int i = 0; i < args.Length; i++)
@@ -790,8 +794,16 @@ namespace MSSQLand.Utilities
                 else
                 {
                     positionals++;
-                    if (positionals == 2) return arg; // host = 1st, action = 2nd
+                    lastPositional = arg;
+                    if (positionals == 2)
+                        return arg; // host = 1st, action = 2nd
                 }
+            }
+
+            if (positionals == 1 && lastPositional != null)
+            {
+                // Allow action-specific help without a host, but only if the lone positional is a known action.
+                return ActionFactory.GetActionType(lastPositional) != null ? lastPositional : null;
             }
 
             return null;
