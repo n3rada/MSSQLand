@@ -4,7 +4,6 @@ using System.Data;
 using MSSQLand.Exceptions;
 using MSSQLand.Models;
 using MSSQLand.Utilities;
-using MSSQLand.Utilities.Formatters;
 
 namespace MSSQLand.Services
 {
@@ -35,27 +34,6 @@ namespace MSSQLand.Services
             {
                 return -1;
             }
-        }
-
-        public bool CheckAssembly(string assemblyName)
-        {
-            string query = $"SELECT name FROM sys.assemblies WHERE name='{assemblyName}';";
-
-            return _queryService.ExecuteScalar(query)?.ToString() == assemblyName;
-        }
-
-        public bool CheckAssemblyModules(string assemblyName)
-        {
-            string query = $"SELECT * FROM sys.assembly_modules;";
-
-            string result = OutputFormatter.ConvertDataTable(_queryService.ExecuteTable(query)).ToLower();
-
-            if (result.Contains(assemblyName.ToLower()))
-            {
-                Logger.Success($"Assembly '{assemblyName}' has modules");
-                return true;
-            }
-            return false;
         }
 
         public bool CheckTrustedAssembly(string assemblyName)
@@ -100,43 +78,6 @@ namespace MSSQLand.Services
         }
 
 
-        public bool CheckProcedures(string procedureName)
-        {
-            try
-            {
-                // Query to retrieve all trusted assemblies
-                string query = "SELECT SCHEMA_NAME(schema_id), name, type FROM sys.procedures;";
-                DataTable trustedAssembliesTable = _queryService.ExecuteTable(query);
-
-                if (trustedAssembliesTable.Rows.Count == 0)
-                {
-                    Logger.Warning("No procedures found");
-                    return false;
-                }
-
-                // Log all trusted assemblies for debugging
-                Logger.Debug("Procedures");
-                foreach (DataRow row in trustedAssembliesTable.Rows)
-                {
-                    string name = row["name"].ToString();
-                    Logger.DebugNested(name);
-
-                    // Check if the assemblyName is a substring of the description
-                    if (name == procedureName)
-                    {
-                        Logger.Success($"Procedure '{procedureName}' exist");
-                        return true;
-                    }
-                }
-
-                Logger.Warning($"Procedure '{procedureName}' does not exist");
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Error retrieving procedures: {ex.Message}");
-                return false;
-            }
         }
 
 

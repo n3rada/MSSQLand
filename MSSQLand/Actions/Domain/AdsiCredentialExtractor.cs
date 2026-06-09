@@ -63,9 +63,6 @@ namespace MSSQLand.Actions.Domain
         /// </summary>
         public override object Execute(DatabaseContext databaseContext)
         {
-            string authType = databaseContext.AuthService.CredentialsType;
-            bool isExecutingThroughLinks = !databaseContext.QueryService.LinkedServers.IsEmpty;
-
             if (_useExistingServer)
             {
                 return ExtractFromExistingServer(databaseContext);
