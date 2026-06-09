@@ -107,7 +107,7 @@ namespace MSSQLand.Utilities
             Console.WriteLine("Authentication (Required):");
             Console.WriteLine("\t-c, --credentials      Credential type:");
             WriteCredentialTypeLines("\t                         ");
-            Console.WriteLine("\t    --probe             Shorthand for -c probe (no credentials, connectivity check only)");
+            Console.WriteLine("\t--probe                Connectivity check only (no credentials; default when -c is omitted)");
             Console.WriteLine("\t-u, --username         Username (if required by credential type)");
             Console.WriteLine("\t-p, --password         Password (if required by credential type)");
             Console.WriteLine("\t-d, --domain           Domain (if required by credential type)\n");
@@ -264,7 +264,7 @@ namespace MSSQLand.Utilities
         public static void ShowCredentialTypes()
         {
             var allCreds = Services.Credentials.CredentialsFactory.GetAvailableCredentials();
-            var names = string.Join(",", new[] { "probe", "token", "windows", "local", "entraid" }
+            var names = string.Join(",", new[] { "token", "windows", "local", "entraid" }
                 .Where(n => allCreds.ContainsKey(n)));
 
             Console.WriteLine($"\nusage: <host> -c <type> [auth-flags] [options] <action>\n");
@@ -272,7 +272,6 @@ namespace MSSQLand.Utilities
             WriteCredentialTypeLines("    ");
             Console.WriteLine();
             Console.WriteLine("  auth flags:  -u, --username  /  -p, --password  /  -d, --domain");
-            Console.WriteLine("  shorthand:   --probe  →  -c probe");
             Console.WriteLine();
         }
 
@@ -283,7 +282,7 @@ namespace MSSQLand.Utilities
         private static void WriteCredentialTypeLines(string indent)
         {
             var allCreds = Services.Credentials.CredentialsFactory.GetAvailableCredentials();
-            var preferredOrder = new[] { "probe", "token", "windows", "local", "entraid" };
+            var preferredOrder = new[] { "token", "windows", "local", "entraid" };
             var orderedCreds = preferredOrder
                 .Where(n => allCreds.ContainsKey(n))
                 .Select(n => allCreds[n])
