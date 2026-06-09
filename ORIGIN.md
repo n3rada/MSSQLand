@@ -50,3 +50,5 @@ Impersonation (`/i`) and linked servers (`/l`) are mutually exclusive. The code 
 MSSQLand uses a unified context model. Impersonation, linked server traversal, and database context are properties of each server in the chain, not separate modes. The notation `server/user1/user2@database` expresses cascading impersonation at any hop, and the query service handles the correct `EXECUTE AS` and `OPENQUERY`/`EXEC AT` nesting at any depth.
 
 Here, no one will be erased from Git history.
+
+The architecture behind these decisions is documented in [DEVELOPMENT.md](DEVELOPMENT.md).
