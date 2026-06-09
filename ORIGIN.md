@@ -4,6 +4,8 @@ MSSQLand was born from real-world needs and hard-earned lessons.
 
 ## The Contribution
 
+These features were not built for recognition. They came from real operational needs: scenarios where the existing tool simply could not do what was required in the field.
+
 I originally contributed extensively to [SQLRecon](https://github.com/skahwah/SQLRecon), which provided a solid foundation for MS SQL post-exploitation. In [issue #16](https://github.com/skahwah/SQLRecon/issues/16#issuecomment-2048435229), the author stated that chained linked server traversal via `OPENQUERY` was not feasible. I implemented it anyway, along with proper sysadmin impersonation detection, cascading impersonation through linked server chains, markdown-formatted output, a `/debug` flag (which the author himself requested), and a full module refactoring that unified the duplicated `i`/`l`/`t` command families into a single intelligent pipeline. The result was [PR #17](https://github.com/skahwah/SQLRecon/pull/17): **20 commits, 1523 additions, 2850 deletions**, developed over two months of back-and-forth collaboration.
 
 The author reviewed the PR over several weeks, acknowledged the work was solid, reported test failures which I fixed within hours, and even stated he had *"started building some changes on top of"* mine. The collaboration appeared healthy.
@@ -24,7 +26,7 @@ That same day, he [posted on X](https://x.com/sanjivkawa/status/1808275277325517
 
 > *"**I've** made some long awaited updates to SQLRecon!"*
 
-First person singular. No mention of any contributor. The very features demonstrated in the thread (linked server chaining, improved impersonation, unified module handling) were the core of my PR. Announcing them publicly as solely his own work, on the same day he closed the PR to erase the Git trail, speaks for itself.
+First person singular. No mention of any contributor. The very features demonstrated in the thread — linked server chaining, improved impersonation, unified module handling — were the core of my PR, closed that same day.
 
 ### 4. Dismissed the Contributor
 
