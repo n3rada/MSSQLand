@@ -83,6 +83,37 @@ namespace MSSQLand.Actions
             BindArguments(args);
         }
 
+        /// <summary>
+        /// Collects argument-bound fields by walking the type hierarchy from most-derived
+        /// to base, using DeclaredOnly at each level. When a derived class declares a field
+        /// at the same Position as a parent field, the parent field is excluded — allowing
+        /// subclasses to override positional arguments without surfacing both in help or binding.
+        /// </summary>
+        private IEnumerable<FieldInfo> CollectArgumentFields()
+        {
+            var result = new List<FieldInfo>();
+            var claimedPositions = new HashSet<int>();
+
+            Type type = GetType();
+            while (type != null && type != typeof(BaseAction))
+            {
+                foreach (var field in type.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+                {
+                    if (Attribute.IsDefined(field, typeof(ExcludeFromArgumentsAttribute))) continue;
+                    var meta = field.GetCustomAttribute<ArgumentMetadataAttribute>();
+                    if (meta == null) continue;
+
+                    if (meta.Position >= 0 && claimedPositions.Contains(meta.Position)) continue;
+                    if (meta.Position >= 0) claimedPositions.Add(meta.Position);
+
+                    result.Add(field);
+                }
+                type = type.BaseType;
+            }
+
+            return result;
+        }
+
 
         /// <summary>
         /// Executes the action using the provided ConnectionManager.
@@ -112,8 +143,7 @@ namespace MSSQLand.Actions
             // Build lookup of boolean fields from ArgumentMetadata
             var booleanFlags = new HashSet<string>(StringComparer.Ordinal);
             int remainderPosition = -1;
-            var fields = GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
-            foreach (var field in fields)
+            foreach (var field in CollectArgumentFields())
             {
                 var metadata = field.GetCustomAttribute<ArgumentMetadataAttribute>();
                 if (metadata == null) continue;
@@ -312,7 +342,7 @@ namespace MSSQLand.Actions
         protected void BindArguments(string[] args)
         {
             var (namedArgs, positionalArgs) = ParseActionArguments(args);
-            var fields = GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
+            var fields = CollectArgumentFields().ToList();
 
             // Second pass: bind arguments
             foreach (var field in fields)
@@ -461,12 +491,9 @@ namespace MSSQLand.Actions
         /// <returns>A list of formatted argument strings.</returns>
         public virtual List<string> GetArguments()
         {
-            var fields = this.GetType()
-                .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
-                .Where(field => !Attribute.IsDefined(field, typeof(ExcludeFromArgumentsAttribute)))
+            var fields = CollectArgumentFields()
                 .OrderBy(field =>
                 {
-                    // Order by position if ArgumentMetadata exists
                     var metadata = field.GetCustomAttribute<ArgumentMetadataAttribute>();
                     return metadata?.Position ?? int.MaxValue;
                 })
@@ -531,8 +558,7 @@ namespace MSSQLand.Actions
                 .ToList();
 
             // Inject built-in --all flag into help when any limit field exists
-            bool hasLimitField = this.GetType()
-                .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
+            bool hasLimitField = CollectArgumentFields()
                 .Any(f =>
                 {
                     var m = f.GetCustomAttribute<ArgumentMetadataAttribute>();
@@ -555,9 +581,7 @@ namespace MSSQLand.Actions
         {
             var result = new List<ArgumentDescriptor>();
 
-            var fields = GetType()
-                .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
-                .Where(f => !Attribute.IsDefined(f, typeof(ExcludeFromArgumentsAttribute)))
+            var fields = CollectArgumentFields()
                 .OrderBy(f =>
                 {
                     var m = f.GetCustomAttribute<ArgumentMetadataAttribute>();
@@ -587,8 +611,7 @@ namespace MSSQLand.Actions
             }
 
             // Inject --all flag when any --limit field exists
-            bool hasLimitField = GetType()
-                .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
+            bool hasLimitField = CollectArgumentFields()
                 .Any(f =>
                 {
                     var m = f.GetCustomAttribute<ArgumentMetadataAttribute>();
