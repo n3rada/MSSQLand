@@ -156,9 +156,7 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t-h credentials         Show credential types and required flags");
             Console.WriteLine("\t-h <action>            Show help for a specific action");
             Console.WriteLine("\t--help <action>        Same as above");
-            Console.WriteLine("\t<action> -h            Same as above\n");
-
-            Console.WriteLine();
+            Console.WriteLine("\t<action> -h            Same as above");
         }
 
         /// <summary>
