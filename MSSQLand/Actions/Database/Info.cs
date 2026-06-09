@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Text.RegularExpressions;
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
@@ -162,7 +163,7 @@ namespace MSSQLand.Actions.Database
                                 {
                                     lineKey = "OS Details";
                                 }
-                                else if (System.Text.RegularExpressions.Regex.IsMatch(line, @"^\w{3}\s+\d{1,2}\s+\d{4}"))
+                                else if (Regex.IsMatch(line, @"^\w{3}\s+\d{1,2}\s+\d{4}"))
                                 {
                                     // Matches date patterns like "Oct 7 2025"
                                     lineKey = "Build Date";

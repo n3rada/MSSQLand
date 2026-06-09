@@ -3,6 +3,7 @@
 
 using System;
 using System.Data;
+using System.Text.RegularExpressions;
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
@@ -81,7 +82,7 @@ namespace MSSQLand.Actions.ConfigMgr
             {
                 // User provided just DeploymentType_xxx, that's fine
             }
-            else if (System.Text.RegularExpressions.Regex.IsMatch(_guid, @"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            else if (Regex.IsMatch(_guid, @"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", RegexOptions.IgnoreCase))
             {
                 // User provided just the GUID without DeploymentType_ prefix
                 _guid = "DeploymentType_" + _guid;

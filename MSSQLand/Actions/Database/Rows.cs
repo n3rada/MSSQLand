@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 
 using MSSQLand.Services;
 using MSSQLand.Utilities;
@@ -128,7 +129,7 @@ WHERE o.name = '{table.Replace("'", "''")}'
                 string query = $"SELECT {topClause}* FROM {targetTable};";
                 rows = databaseContext.QueryService.ExecuteTable(query);
             }
-            catch (System.Data.SqlClient.SqlException ex) when (ex.Number == 9514)
+            catch (SqlException ex) when (ex.Number == 9514)
             {
                 // Error 9514: XML data type not supported in distributed queries
                 // Fall back to explicit column list with XML columns cast to NVARCHAR(MAX)

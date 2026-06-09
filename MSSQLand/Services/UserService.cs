@@ -1,12 +1,14 @@
 // MSSQLand/Services/UserService.cs
 
-using MSSQLand.Utilities;
-using MSSQLand.Exceptions;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Data.SqlClient;
 using System.Linq;
+
+using MSSQLand.Exceptions;
+using MSSQLand.Utilities;
 
 namespace MSSQLand.Services
 {
@@ -357,7 +359,7 @@ ORDER BY is_fixed_role DESC, name;";
                 _adminStatusCache.Clear();
                 Logger.Debug($"Impersonated user {user} for current connection");
             }
-            catch (Exception ex) when (ex.Message.Contains("916") || (ex is System.Data.SqlClient.SqlException sqlex && sqlex.Number == 916))
+            catch (Exception ex) when (ex.Message.Contains("916") || (ex is SqlException sqlex && sqlex.Number == 916))
             {
                 Logger.Debug($"Switching to master before impersonating '{user}' (current DB inaccessible: {ex.Message})");
                 try
