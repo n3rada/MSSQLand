@@ -92,7 +92,7 @@ MSSQLand is built on a clean, OOP-driven architecture designed for extensibility
 - **Modular Actions**: Each action is a self-contained class inheriting from [BaseAction](MSSQLand/Actions/BaseAction.cs)
 - **Factory Pattern**: Actions are automatically discovered and instantiated via [ActionFactory](MSSQLand/Actions/ActionFactory.cs)
 - **[Service Layer](MSSQLand/Services)**: Separation of concerns with [`DatabaseContext`](MSSQLand/Services/DatabaseContext.cs), [`QueryService`](MSSQLand/Services/QueryService.cs), [`UserService`](MSSQLand/Services/UserService.cs), and [`AuthenticationService`](MSSQLand/Services/Authentication/AuthenticationService.cs)
-- **Credential Abstraction**: Multiple authentication methods through [CredentialsFactory](MSSQLand/Services/Authentication/Credentials/CredentialsFactory.cs) (Token, Domain, Local, Azure, Entra ID, Windows Auth)
+- **Credential Abstraction**: Multiple authentication methods through [CredentialsFactory](MSSQLand/Services/Authentication/Credentials/CredentialsFactory.cs) (`token`, `windows`, `local`, `entraid`). Probe mode dispatches directly to `ProbeCredentials` and is not a registered credential type.
 - **Chainable Operations**: Built-in support for linked server traversal and user impersonation chaining
 
 ```mermaid
@@ -367,11 +367,12 @@ Copy-paste this skeleton and customize:
 ```csharp
 // MSSQLand/Actions/Database/NewAction.cs
 
+using System;
+using System.Data;
+
 using MSSQLand.Services;
 using MSSQLand.Utilities;
 using MSSQLand.Utilities.Formatters;
-using System;
-using System.Data;
 
 namespace MSSQLand.Actions.Database
 {
