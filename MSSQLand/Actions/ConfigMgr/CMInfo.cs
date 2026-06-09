@@ -19,7 +19,7 @@ namespace MSSQLand.Actions.ConfigMgr
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Detecting ConfigMgr databases");
+            Logger.Task("Detecting ConfigMgr databases");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

@@ -27,10 +27,12 @@ namespace MSSQLand.Actions.Database
         {
             string databaseUsersQuery;
 
+            Logger.Task("Enumerating database principals");
+
             if (!databaseContext.QueryService.IsAzureSQL())
             {
                 // On-premises SQL Server: Show server logins and database users
-                Logger.Task("Enumerating server-level principals (logins) and their instance-wide server roles");
+                Logger.TaskNested("Server-level principals and server roles");
                 
                 string query;
                 if (databaseContext.QueryService.ExecutionServer.IsLegacy)
@@ -77,7 +79,7 @@ namespace MSSQLand.Actions.Database
                 Console.WriteLine(OutputFormatter.ConvertDataTable(resultTable));
             }
 
-            Logger.TaskNested("Database users in current database context");
+            Logger.TaskNested("Database users in current context");
 
             databaseUsersQuery = @"
                 SELECT name AS username, create_date, modify_date, type_desc AS type, 

@@ -39,7 +39,7 @@ namespace MSSQLand.Actions.ConfigMgr
             string idMsg = !string.IsNullOrEmpty(_collectionId) ? $" (ID: {_collectionId})" : "";
             string nameMsg = !string.IsNullOrEmpty(_nameFilter) ? $" (name: {_nameFilter})" : "";
             string typeMsg = !string.IsNullOrEmpty(_collectionType) ? $" (type: {_collectionType})" : "";
-            Logger.TaskNested($"Enumerating ConfigMgr collections{idMsg}{nameMsg}{typeMsg}");
+            Logger.Task($"Enumerating ConfigMgr collections{idMsg}{nameMsg}{typeMsg}");
             Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);

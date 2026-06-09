@@ -32,7 +32,7 @@ namespace MSSQLand.Actions.FileSystem
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Deleting remote file: {_filePath}");
+            Logger.Task($"Deleting remote file: {_filePath}");
 
             bool success = DeleteViaOle(databaseContext);
 

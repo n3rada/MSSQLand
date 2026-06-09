@@ -90,7 +90,7 @@ WHERE o.name = '{table.Replace("'", "''")}'
                 Logger.Warning("Could not retrieve row count metadata.");
             }
 
-            Logger.TaskNested($"Retrieving rows from {targetTable}");
+            Logger.Task($"Retrieving rows from {targetTable}");
 
             // Intelligently decide whether to use TOP
             bool useTop = _limit > 0 && _limit < totalRows;

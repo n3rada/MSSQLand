@@ -19,7 +19,7 @@ namespace MSSQLand.Actions.Remote
         /// <param name="databaseContext">The ConnectionManager for executing the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Retrieving Linked SQL Servers");
+            Logger.Task($"Retrieving Linked SQL Servers");
 
             DataTable resultTable = GetLinkedServers(databaseContext);
 

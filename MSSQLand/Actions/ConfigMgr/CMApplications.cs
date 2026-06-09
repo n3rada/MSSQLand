@@ -38,7 +38,7 @@ namespace MSSQLand.Actions.ConfigMgr
             if (!string.IsNullOrEmpty(_modelName))
                 filterMsg += $" modelname: {_modelName}";
 
-            Logger.TaskNested($"Enumerating ConfigMgr applications{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
+            Logger.Task($"Enumerating ConfigMgr applications{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested(_limit > 0 ? $"Limit: {_limit}" : "Limit: none (--all)");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);

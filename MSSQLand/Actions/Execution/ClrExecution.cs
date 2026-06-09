@@ -34,6 +34,8 @@ namespace MSSQLand.Actions.Execution
 
         public override object Execute(DatabaseContext databaseContext)
         {
+            Logger.Task($"Deploying CLR assembly from: {_dllPath}");
+
             // Step 1: Get the SHA-512 hash for the DLL and its bytes.
             string[] library = ByteHelper.ConvertDllToSqlBytes(_dllPath);
 

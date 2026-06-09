@@ -91,7 +91,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Tracing deployment type: {_guid}");
+            Logger.Task($"Tracing deployment type: {_guid}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

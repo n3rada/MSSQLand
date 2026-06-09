@@ -33,7 +33,7 @@ namespace MSSQLand.Actions.Remote
         /// <param name="databaseContext">The DatabaseContext for executing the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Retrieving Database-Scoped Credentials");
+            Logger.Task($"Retrieving Database-Scoped Credentials");
 
             DataTable resultTable = GetDatabaseScopedCredentials(databaseContext);
 

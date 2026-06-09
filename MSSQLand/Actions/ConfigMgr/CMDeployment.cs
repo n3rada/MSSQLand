@@ -22,7 +22,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Retrieving assignment details for: {_assignmentId}");
+            Logger.Task($"Retrieving assignment details for: {_assignmentId}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

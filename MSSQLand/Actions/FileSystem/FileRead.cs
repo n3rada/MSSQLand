@@ -31,7 +31,7 @@ namespace MSSQLand.Actions.FileSystem
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Reading file: {_filePath}");
+            Logger.Task($"Reading file: {_filePath}");
             if (_base64)
             {
                 Logger.Info("Output: base64 encoded");

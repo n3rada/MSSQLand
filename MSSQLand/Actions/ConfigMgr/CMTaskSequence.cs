@@ -30,7 +30,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Retrieving task sequence details for: {_packageId}");
+            Logger.Task($"Retrieving task sequence details for: {_packageId}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

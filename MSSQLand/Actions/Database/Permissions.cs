@@ -89,7 +89,7 @@ namespace MSSQLand.Actions.Database
             // Build the target table name (schema is guaranteed non-null from validation)
             string targetTable = $"[{schema}].[{table}]";
 
-            Logger.TaskNested($"Listing permissions for {databaseContext.UserService.MappedUser} on [{database}]{targetTable}");
+            Logger.Task($"Listing permissions for {databaseContext.UserService.MappedUser} on [{database}]{targetTable}");
 
             // Build USE statement if database is different from current
             string useStatement = database == databaseContext.QueryService.ExecutionServer.Database

@@ -62,7 +62,7 @@ namespace MSSQLand.Actions.Remote
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Sending SMB request to: {_uncPath}");
+            Logger.Task($"Sending SMB request to: {_uncPath}");
 
             // Method 1: Try xp_dirtree (most common)
             if (TryXpDirtree(databaseContext))

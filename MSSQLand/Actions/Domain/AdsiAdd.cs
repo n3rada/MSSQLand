@@ -15,6 +15,8 @@ namespace MSSQLand.Actions.Domain
 
         public override object Execute(DatabaseContext databaseContext)
         {
+            Logger.Task("Creating ADSI linked server");
+
             AdsiService adsiService = new(databaseContext);
 
             string serverName = _serverName;

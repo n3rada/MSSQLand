@@ -66,6 +66,7 @@ namespace MSSQLand.Actions.FileSystem
         /// <param name="databaseContext">The DatabaseContext instance to execute the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
+            Logger.Task($"Uploading '{_localFileInfo.Name}' to remote server");
 
             if (string.IsNullOrWhiteSpace(_remotePath))
             {

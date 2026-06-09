@@ -61,7 +61,7 @@ namespace MSSQLand.Actions.ConfigMgr
             if (_withDeploymentTypes)
                 filterMsg += " with-deployment-types";
 
-            Logger.TaskNested($"Enumerating ConfigMgr deployments{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
+            Logger.Task($"Enumerating ConfigMgr deployments{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
             Logger.TaskNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);

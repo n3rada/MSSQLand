@@ -18,7 +18,7 @@ namespace MSSQLand.Actions.Remote
             string rpcValue = _enable ? "true" : "false";
             string actionVerb = _enable ? "Enabling" : "Disabling";
 
-            Logger.TaskNested($"{actionVerb} RPC on linked server '{_linkedServerName}'");
+            Logger.Task($"{actionVerb} RPC on linked server '{_linkedServerName}'");
 
             bool success = databaseContext.ConfigService.SetServerOption(_linkedServerName, "rpc out", rpcValue);
 

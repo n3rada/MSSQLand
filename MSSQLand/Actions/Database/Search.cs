@@ -121,7 +121,7 @@ namespace MSSQLand.Actions.Database
         public override object Execute(DatabaseContext databaseContext)
         {
             string columnFilterMsg = string.IsNullOrEmpty(_columnFilter) ? "" : $" (column filter: {_columnFilter})";
-            Logger.TaskNested($"Starting search for keyword: '{_keyword}'{columnFilterMsg}");
+            Logger.Task($"Starting search for keyword: '{_keyword}'{columnFilterMsg}");
 
             // Handle column-only search
             if (_columnsOnly)

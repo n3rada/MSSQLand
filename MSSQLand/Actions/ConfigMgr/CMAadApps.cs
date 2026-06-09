@@ -26,7 +26,7 @@ namespace MSSQLand.Actions.ConfigMgr
         public override object Execute(DatabaseContext databaseContext)
         {
             string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
-            Logger.TaskNested($"Enumerating Azure AD applications{filterMsg}");
+            Logger.Task($"Enumerating Azure AD applications{filterMsg}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

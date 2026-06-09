@@ -30,7 +30,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Executing ConfigMgr script on ResourceID: {_resourceId}");
+            Logger.Task($"Executing ConfigMgr script on ResourceID: {_resourceId}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

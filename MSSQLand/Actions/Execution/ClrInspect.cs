@@ -22,7 +22,7 @@ namespace MSSQLand.Actions.Execution
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Inspecting assembly '{_assemblyName}'");
+            Logger.Task($"Inspecting assembly '{_assemblyName}'");
 
             string safeName = _assemblyName.Replace("'", "''");
 

@@ -24,7 +24,7 @@ namespace MSSQLand.Actions.Database
         /// <param name="databaseContext"></param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Retrieving OLE DB providers information");
+            Logger.Task("Retrieving OLE DB providers information");
 
             // Query enumerates OLE DB providers and reads their registry settings
             // Uses cursor to iterate through each provider and read configuration from registry

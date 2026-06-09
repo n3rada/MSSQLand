@@ -62,7 +62,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Retrieving deployment type details for CI_ID: {_ciId}");
+            Logger.Task($"Retrieving deployment type details for CI_ID: {_ciId}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

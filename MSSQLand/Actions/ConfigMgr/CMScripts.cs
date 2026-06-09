@@ -23,7 +23,7 @@ namespace MSSQLand.Actions.ConfigMgr
         public override object Execute(DatabaseContext databaseContext)
         {
             string filterMsg = !string.IsNullOrEmpty(_name) ? " (filtered)" : "";
-            Logger.TaskNested($"Enumerating ConfigMgr scripts{filterMsg}");
+            Logger.Task($"Enumerating ConfigMgr scripts{filterMsg}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

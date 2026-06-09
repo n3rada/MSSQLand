@@ -24,7 +24,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Checking status for Task ID: {_taskId}");
+            Logger.Task($"Checking status for Task ID: {_taskId}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

@@ -50,17 +50,7 @@ namespace MSSQLand.Actions.Execution
         /// <param name="databaseContext">The DatabaseContext instance to execute the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            // Log execution details
-            if (_wait)
-            {
-                Logger.Info("Synchronous mode (will wait for completion)");
-            }
-            else
-            {
-                Logger.Info("Asynchronous mode (non-blocking)");
-            }
-
-            Logger.TaskNested($"Executing remote file: {_filePath}");
+            Logger.Task($"Executing remote file: {_filePath}");
             if (!string.IsNullOrWhiteSpace(_arguments))
             {
                 Logger.InfoNested($"Arguments: {_arguments}");

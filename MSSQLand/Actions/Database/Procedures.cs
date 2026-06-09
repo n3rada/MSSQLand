@@ -117,7 +117,7 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private DataTable ListProcedures(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Retrieving all stored procedures in [{databaseContext.QueryService.ExecutionServer.Database}]");
+            Logger.Task($"Retrieving all stored procedures in [{databaseContext.QueryService.ExecutionServer.Database}]");
 
             string query = $@"
                 SELECT
@@ -239,7 +239,7 @@ namespace MSSQLand.Actions.Database
             // Parse schema.procedure using the FQTN parser
             var (_, schema, procedure) = SqlHelper.ParseQualifiedTableName(procedureName);
 
-            Logger.TaskNested($"Executing [{databaseContext.QueryService.ExecutionServer.Database}].[{schema}].[{procedure}]");
+            Logger.Task($"Executing [{databaseContext.QueryService.ExecutionServer.Database}].[{schema}].[{procedure}]");
             if (!string.IsNullOrEmpty(procedureArgs))
                 Logger.TaskNested($"With arguments: {procedureArgs}");
 
@@ -269,7 +269,7 @@ namespace MSSQLand.Actions.Database
             // Parse schema.procedure using the FQTN parser
             var (_, schema, procedure) = SqlHelper.ParseQualifiedTableName(procedureName);
 
-            Logger.TaskNested($"Retrieving definition of [{databaseContext.QueryService.ExecutionServer.Database}].[{schema}].[{procedure}]");
+            Logger.Task($"Retrieving definition of [{databaseContext.QueryService.ExecutionServer.Database}].[{schema}].[{procedure}]");
 
             string query = $@"
                 SELECT
@@ -309,7 +309,7 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private DataTable SearchProcedures(DatabaseContext databaseContext, string keyword)
         {
-            Logger.TaskNested($"Searching for keyword '{keyword}' in [{databaseContext.QueryService.ExecutionServer.Database}] procedures");
+            Logger.Task($"Searching for keyword '{keyword}' in [{databaseContext.QueryService.ExecutionServer.Database}] procedures");
 
             string query = $@"
                 SELECT
