@@ -268,33 +268,14 @@ namespace MSSQLand.Services
                 _databaseContext.QueryService.ExecuteNonProcessing(
                     $"CREATE ASSEMBLY [{AssemblyName}] AUTHORIZATION [dbo] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;");
 
-                // Check if the assembly was successfully deployed
-                if (!_databaseContext.ConfigService.CheckAssembly(AssemblyName))
-                {
-                    Logger.Error($"Failed to create assembly '{AssemblyName}'. It might not have been loaded correctly.");
-                    _databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
-                    return false;
-                }
-
-
-                Logger.Success($"LDAP server assembly '{AssemblyName}' created successfully");
-
+                Logger.Success($"LDAP server assembly '{AssemblyName}' created");
 
                 // Create the function
                 Logger.Task("Creating the LDAP server function");
                 _databaseContext.QueryService.ExecuteNonProcessing(
                     $"CREATE FUNCTION [dbo].[{FunctionName}](@port int, @timeoutSeconds int) RETURNS NVARCHAR(MAX) AS EXTERNAL NAME {AssemblyName}.[ldapAssembly.LdapSrv].Listen;");
 
-                if (!_databaseContext.ConfigService.CheckAssemblyModules("ldapsrv"))
-                {
-                    Logger.Error("Failed to create the LDAP server function");
-                    _databaseContext.QueryService.ExecuteNonProcessing(dropFunction);
-                    _databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
-                    _databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
-                    return false;
-                }
-
-                Logger.Success($"LDAP server function '{FunctionName}' created successfully");
+                Logger.Success($"LDAP server function '{FunctionName}' created");
 
                 return true;
             }

@@ -133,25 +133,13 @@ namespace MSSQLand.Actions.Execution
                     }
                 }
 
-                if (!databaseContext.ConfigService.CheckAssembly(assemblyName))
-                {
-                    Logger.Error("Failed to create a new assembly");
-                    return false;
-                }
-
-                Logger.Success($"Assembly '{assemblyName}' successfully created");
+                Logger.Success($"Assembly '{assemblyName}' created");
 
                 Logger.TaskNested("Creating the stored procedure linked to the assembly");
                 databaseContext.QueryService.ExecuteNonProcessing(
                     $"CREATE PROCEDURE [dbo].[{_function}] @args NVARCHAR(MAX) AS EXTERNAL NAME [{assemblyName}].[{_className}].[{_function}];");
 
-                if (!databaseContext.ConfigService.CheckProcedures(_function))
-                {
-                    Logger.Error("Failed to create the stored procedure");
-                    return false;
-                }
-
-                Logger.Success($"Stored procedure '{_function}' successfully created");
+                Logger.Success($"Stored procedure '{_function}' created");
 
                 // Step 5: Execute the stored procedure
                 Logger.TaskNested($"Executing the stored procedure '{_function}'");

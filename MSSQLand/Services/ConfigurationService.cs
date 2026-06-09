@@ -155,7 +155,6 @@ namespace MSSQLand.Services
             }
 
 
-            Logger.Task($"Checking status of '{optionName}'");
             try
             {
                 // Check other module status via sys.configurations
@@ -168,9 +167,11 @@ namespace MSSQLand.Services
 
                 if (Convert.ToInt32(configValue) == value)
                 {
-                    Logger.Info($"Configuration option '{optionName}' is already set to {value}");
+                    Logger.Debug($"'{optionName}' is already set to {value}");
                     return true;
                 }
+
+                Logger.Task($"Setting '{optionName}' to {value}");
             }
             catch (Exception ex)
             {
@@ -181,8 +182,8 @@ namespace MSSQLand.Services
             try
             {
                 // Update the configuration option
-                Logger.Info($"Updating configuration option '{optionName}' to {value}.");
-                _queryService.ExecuteNonProcessing($"EXEC master..sp_configure '{optionName}', {value}; RECONFIGURE;");
+                _queryService.ExecuteNonProcessing($"EXEC master..sp_configure '{optionName}', {value};");
+                _queryService.ExecuteNonProcessing("RECONFIGURE;");
                 return true;
             }
             catch (Exception ex)
@@ -264,39 +265,28 @@ namespace MSSQLand.Services
         /// </summary>
         private bool EnableAdvancedOptions()
         {
-            Logger.Task("Ensuring advanced options are enabled");
-
             var advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM sys.configurations WHERE name = 'show advanced options';");
 
             if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
             {
-                Logger.Info("Advanced options already enabled");
+                Logger.Debug("Advanced options already enabled");
                 return true;
             }
 
-            string query = "EXEC master..sp_configure 'show advanced options', 1; RECONFIGURE;";
+            Logger.Task("Enabling advanced options");
 
             try
             {
-                _queryService.ExecuteNonProcessing(query);
+                _queryService.ExecuteNonProcessing("EXEC master..sp_configure 'show advanced options', 1;");
+                _queryService.ExecuteNonProcessing("RECONFIGURE;");
+                Logger.Success("Advanced options enabled");
+                return true;
             }
             catch (Exception)
             {
+                Logger.Error("Failed to enable advanced options.");
                 return false;
             }
-                    
-
-            // Verify the change
-            advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM sys.configurations WHERE name = 'show advanced options';");
-
-            if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
-            {
-                Logger.Success("Advanced options successfully enabled");
-                return true;
-            }
-
-            Logger.Warning("Failed to verify 'show advanced options' was enabled");
-            return false;
 
         }
 
@@ -315,9 +305,9 @@ namespace MSSQLand.Services
             try
             {
                 string query = $@"
-                    EXEC master..sp_serveroption 
-                         @server = '{serverName}', 
-                         @optname = '{optionName}', 
+                    EXEC master..sp_serveroption
+                         @server = '{serverName}',
+                         @optname = '{optionName}',
                          @optvalue = '{optionValue}';
                 ";
                 _queryService.ExecuteNonProcessing(query);
@@ -333,7 +323,7 @@ namespace MSSQLand.Services
 
         /// <summary>
         /// Drops all dependent database objects (procedures, functions, views) associated with a CLR assembly.
-        /// 
+        ///
         /// This method identifies and removes objects that depend on the specified assembly before the assembly
         /// itself can be dropped. It queries sys.assembly_modules to find all dependent objects and drops them
         /// in the correct order.
@@ -345,7 +335,7 @@ namespace MSSQLand.Services
         /// - CLR_TABLE_VALUED_FUNCTION / SQL_TABLE_VALUED_FUNCTION
         /// - CLR_STORED_PROCEDURE / SQL_STORED_PROCEDURE
         /// - VIEW
-        /// 
+        ///
         /// Objects of unsupported types will be skipped with a warning.
         /// All exceptions are caught and logged internally.
         /// </remarks>
@@ -356,12 +346,12 @@ namespace MSSQLand.Services
                 Logger.Task($"Identifying dependent objects for assembly '{assemblyName}'");
 
                 string query = $@"
-            SELECT o.type_desc, o.name 
+            SELECT o.type_desc, o.name
             FROM sys.assembly_modules am
             JOIN sys.objects o ON am.object_id = o.object_id
             WHERE am.assembly_id = (
-                SELECT assembly_id 
-                FROM sys.assemblies 
+                SELECT assembly_id
+                FROM sys.assemblies
                 WHERE name = '{assemblyName}'
             );";
 

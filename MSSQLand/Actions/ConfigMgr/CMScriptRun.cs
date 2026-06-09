@@ -102,7 +102,12 @@ INSERT INTO [{db}].dbo.BGB_Task
 VALUES
 (15, '', NULL, '{taskGuid}', '{taskParamBase64}')";
 
-                    databaseContext.QueryService.ExecuteNonProcessing(insertTaskQuery);
+                    if (databaseContext.QueryService.ExecuteNonProcessing(insertTaskQuery) <= 0)
+                    {
+                        Logger.Error("Failed to create BGB_Task entry (no rows inserted)");
+                        continue;
+                    }
+
                     Logger.Success("Created BGB_Task entry");
                     Logger.InfoNested($"Task GUID: {taskGuid}");
 
@@ -122,7 +127,12 @@ INSERT INTO [{db}].dbo.BGB_ResTask
 VALUES
 ({_resourceId}, 15, {taskId}, N'')";
 
-                    databaseContext.QueryService.ExecuteNonProcessing(insertResTaskQuery);
+                    if (databaseContext.QueryService.ExecuteNonProcessing(insertResTaskQuery) <= 0)
+                    {
+                        Logger.Error("Failed to push task to device (no rows inserted)");
+                        continue;
+                    }
+
                     Logger.Success("Task pushed to device");
 
                     // Step 7: Check status after brief delay

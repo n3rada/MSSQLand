@@ -97,7 +97,11 @@ INSERT INTO [{db}].dbo.Scripts
 VALUES
 ('{_scriptGuid}', 1, '{_scriptName.Replace("'", "''")}', 0x{scriptHex}, 0, 'CM', 3, 1, 'CM', '', '{scriptHash}', '', '')";
 
-                    databaseContext.QueryService.ExecuteNonProcessing(insertQuery);
+                    if (databaseContext.QueryService.ExecuteNonProcessing(insertQuery) <= 0)
+                    {
+                        Logger.Error("Failed to add script (no rows inserted)");
+                        continue;
+                    }
 
                     Logger.Success($"Script added successfully");
                     Logger.InfoNested($"Script GUID: {_scriptGuid}");
