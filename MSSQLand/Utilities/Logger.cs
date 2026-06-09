@@ -28,7 +28,7 @@ namespace MSSQLand.Utilities
     /// - Info/InfoNested: context, configuration, or results
     /// - Success/Warning/Error: outcomes
     /// - Debug: notable diagnostic events for operators running --debug (connection failures with reasons, significant state changes); not for repetitive per-iteration detail
-    /// - Trace: full internal state for developers and LLM-assisted diagnosis (per-hop traversal, cache hits, skip decisions, internal counts); bypasses soft-silent mode
+    /// - Trace: developer-level internal state (per-hop traversal, cache hits, skip decisions, internal counts, raw query routing); bypasses soft-silent mode; not intended for operators
     /// </remarks>
     internal static class Logger
     {
