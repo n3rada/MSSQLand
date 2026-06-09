@@ -78,7 +78,7 @@ namespace MSSQLand.Actions
             { "job", (typeof(Agent.Job), "Display detailed information about a specific Agent job including all steps, schedule, and history.", null) },
             { "job-history", (typeof(Agent.JobHistory), "Display SQL Server Agent job execution history with status and output messages.", null) },
             { "job-proxies", (typeof(Agent.JobProxies), "Enumerate Agent proxy accounts, mapped credentials, logins, and allowed subsystems.", null) },
-            { "job-exec", (typeof(Agent.JobExec), "Execute OS commands via SQL Server Agent job (CmdExec, PowerShell, TSQL, VBScript subsystems).", null) },
+            { "job-exec", (typeof(Agent.JobExec), "Dispatch OS commands asynchronously via SQL Server Agent (CmdExec, PowerShell, TSQL, VBScript); returns immediately after queuing — poll output with job-history.", null) },
 
             // FILESYSTEM ACTIONS
             { "read", (typeof(FileRead), "Read file contents from the server's file system.", new[] { "cat" }) },
@@ -88,7 +88,7 @@ namespace MSSQLand.Actions
 
             // REMOTE DATA ACCESS ACTIONS
             { "links", (typeof(Links), "Enumerate linked servers and their configuration.", new[] { "linkedservers" }) },
-            { "linkmap", (typeof(LinkMap), "Recursively represent the chains of linked servers as a tree structure with loop detection, highlighting the key endpoints. This operation may take some time. It is best to run it as a job, as it could block the current process.", new[] { "linksmap", "chains", "tunnel" }) },
+            { "linkmap", (typeof(LinkMap), "Recursively map linked server chains with loop detection, highlighting reachable endpoints and escalation paths. Blocks the calling process for an indeterminate duration — invoke as a background process, not inline.", new[] { "linksmap", "chains", "tunnel" }) },
             { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.", null) },
             { "data", (typeof(DataAccess), "Enable or disable data access (OPENQUERY) on linked servers.", null) },
             { "ext-sources", (typeof(ExternalSources), "Enumerate External Data Sources (Azure SQL Database, Synapse, PolyBase).", null) },
