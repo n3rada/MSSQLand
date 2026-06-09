@@ -88,7 +88,7 @@ namespace MSSQLand.Actions
 
             // REMOTE DATA ACCESS ACTIONS
             { "links", (typeof(Links), "Enumerate linked servers and their configuration.", new[] { "linkedservers" }) },
-            { "linkmap", (typeof(LinkMap), "Recursively map linked server chains with loop detection, highlighting reachable endpoints and escalation paths. Blocks the calling process for an indeterminate duration — invoke as a background process, not inline.", new[] { "linksmap", "chains", "tunnel" }) },
+            { "linkmap", (typeof(LinkMap), "Recursively map linked server chains with loop detection, highlighting reachable endpoints and escalation paths. Blocks the calling process for an indeterminate duration. Should be invoked as a background process (e.g., job), not inline.", new[] { "linksmap", "chains", "tunnel" }) },
             { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.", null) },
             { "data", (typeof(DataAccess), "Enable or disable data access (OPENQUERY) on linked servers.", null) },
             { "ext-sources", (typeof(ExternalSources), "Enumerate External Data Sources (Azure SQL Database, Synapse, PolyBase).", null) },
