@@ -65,7 +65,7 @@ namespace MSSQLand.Actions.Execution
             bool usedTrustedAssembly = false;
             bool setTrustworthy = false;
 
-            Logger.Task("Starting CLR assembly deployment process");
+            Logger.TaskNested("Starting deployment process");
 
             try
             {

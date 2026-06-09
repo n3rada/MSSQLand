@@ -93,7 +93,8 @@ When adding or changing an action:
 - Use `Success`, `Warning`, `Error` for outcomes.
 - Use `Debug` for notable diagnostic events useful to an operator running `--debug`: connection failures with reasons, significant state changes. Not for repetitive per-iteration detail.
 - Use `Trace` for developer-level internal state: per-hop traversal, cache hits, skip decisions, internal counts, raw query routing. Visible with `--trace`; not intended for operators — developers and LLM-assisted diagnosis only.
-- Use `Logger.NewLine()` to visually separate major phases in long-running operations. Do not use it between nested sub-steps of the same phase.
+- Use `Logger.NewLine()` to visually separate major phases **only between Logger calls** (e.g. between a block of `Logger.Info` lines and the next section header). Do not use it between nested sub-steps of the same phase.
+- **Never** call `Logger.NewLine()` after `Console.WriteLine(OutputFormatter.ConvertDataTable(...))` or any other `OutputFormatter` method — those already wrap their output in leading and trailing newlines (`"\n" + result + "\n"`), so adding `Logger.NewLine()` after them creates redundant blank lines.
 - Prefer formatter pipeline output over ad-hoc table rendering; see [MSSQLand/Utilities/Formatters](MSSQLand/Utilities/Formatters).
 
 ## OPSEC and IOC Discipline
