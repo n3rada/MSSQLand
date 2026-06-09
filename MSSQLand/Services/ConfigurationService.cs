@@ -4,6 +4,7 @@ using System.Data;
 using MSSQLand.Exceptions;
 using MSSQLand.Models;
 using MSSQLand.Utilities;
+using MSSQLand.Utilities.Formatters;
 
 namespace MSSQLand.Services
 {
@@ -34,6 +35,31 @@ namespace MSSQLand.Services
             {
                 return -1;
             }
+        }
+
+        public bool CheckAssembly(string assemblyName)
+        {
+            string query = $"SELECT name FROM sys.assemblies WHERE name='{assemblyName}';";
+            return _queryService.ExecuteScalar(query)?.ToString() == assemblyName;
+        }
+
+        public bool CheckAssemblyModules(string assemblyName)
+        {
+            string result = OutputFormatter.ConvertDataTable(
+                _queryService.ExecuteTable("SELECT * FROM sys.assembly_modules;")).ToLower();
+            return result.Contains(assemblyName.ToLower());
+        }
+
+        public bool CheckProcedures(string procedureName)
+        {
+            string query = "SELECT name FROM sys.procedures;";
+            DataTable table = _queryService.ExecuteTable(query);
+            foreach (DataRow row in table.Rows)
+            {
+                if (row["name"].ToString() == procedureName)
+                    return true;
+            }
+            return false;
         }
 
         public bool CheckTrustedAssembly(string assemblyName)
