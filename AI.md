@@ -25,7 +25,7 @@ This file is the canonical AI guidance for this repository.
 
 - Target framework: .NET Framework 4.8.
 - **Do not attempt to build on Linux.** .NET Framework 4.8 is Windows-only; builds will fail. Only verify that code is structurally correct (types, references, csproj manifest).
-- **On Windows, build exclusively via Visual Studio** (`msbuild` through the VS Developer Command Prompt, or the IDE itself). Do not use `dotnet build` — the .NET SDK CLI does not fully support .NET Framework 4.8 projects on Windows and may silently skip or mishandle build configurations.
+- **On Windows, build exclusively via Visual Studio** (`msbuild` through the VS Developer Command Prompt, or the IDE itself). Do not use `dotnet build`: the .NET SDK CLI does not fully support .NET Framework 4.8 projects on Windows and may silently skip or mishandle build configurations.
 - **To locate MSBuild**, use `vswhere` (ships with every Visual Studio installation):
   ```bat
   "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
@@ -108,25 +108,25 @@ MSSQLand is a professional tool. Static detection by AV, EDR, or SIEM commonly t
 Split flagged strings at runtime so no complete form appears in the compiled binary. See [`MSSQLand/Actions/Execution/XpCmd.cs`](MSSQLand/Actions/Execution/XpCmd.cs) as the reference:
 
 ```csharp
-// Wrong — complete IOC string present in binary:
+// Wrong - complete IOC string present in binary:
 string proc = "xp_cmdshell";
 
-// Correct — assembled at runtime, no complete string in static analysis:
+// Correct - assembled at runtime, no complete string in static analysis:
 string proc = "x" + "p" + "_" + "cmdTest";
 proc = proc.Replace("Test", "shell");
 ```
 
-Alternatives: character arrays, `string.Concat`, `StringBuilder`, or `string.Format` with non-obvious indices — choose whichever reads most naturally for the specific case.
+Alternatives: character arrays, `string.Concat`, `StringBuilder`, or `string.Format` with non-obvious indices. Choose whichever reads most naturally for the specific case.
 
 ### Where this rule applies
 
-- **SQL query strings** sent to the server — the highest-priority target.
-- **Log and error messages** — do not echo the raw flagged procedure name back to stdout. Log the intent ("enable command shell") not the literal token.
-- **Help text and action descriptions** — describe what the action does functionally. Do not reproduce the exact SQL identifier in user-visible strings.
+- **SQL query strings** sent to the server: highest priority.
+- **Log and error messages**: do not echo the raw flagged procedure name back to stdout. Log the intent ("enable command shell"), not the literal token.
+- **Help text and action descriptions**: describe what the action does functionally. Do not reproduce the exact SQL identifier in user-visible strings.
 
 ### Where this rule does NOT apply
 
-C# symbol names (class names, method names, variable names) are not IOCs — they do not appear as runtime strings in the binary in the same way SQL query strings do. `XpCmd` as a class name is fine; `"xp_cmdshell"` as a query string is not.
+C# symbol names (class names, method names, variable names) are not IOCs. They do not appear as runtime strings in the binary the same way SQL query strings do. `XpCmd` as a class name is fine; `"xp_cmdshell"` as a query string is not.
 
 ## Definition of Done for Code Changes
 
