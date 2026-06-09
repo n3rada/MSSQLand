@@ -89,7 +89,7 @@ namespace MSSQLand.Services
         {
             string m = ex.Message;
 
-            return m.Contains("The metadata could not be determined") ||
+            return m.Contains("metadata") ||
                    m.Contains("no columns") ||
                    m.Contains("Deferred prepare");
         }
