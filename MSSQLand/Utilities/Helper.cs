@@ -158,14 +158,6 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t--help <action>        Same as above");
             Console.WriteLine("\t<action> -h            Same as above\n");
 
-            Console.WriteLine("Examples:");
-            Console.WriteLine("\tsql01 --probe                               connectivity check (no credentials)");
-            Console.WriteLine("\tsql01 -c windows whoami                     current user via Windows auth");
-            Console.WriteLine("\tsql01 -c local -u sa -p Password1 whoami    current user via SQL auth");
-            Console.WriteLine("\tsql01 -c windows -l sql02 whoami            whoami via linked server");
-            Console.WriteLine("\tsql01 -c windows -h actions                 list all available actions");
-            Console.WriteLine("\tsql01 -c windows whoami -h                  show help for the whoami action");
-
             Console.WriteLine();
         }
 
@@ -197,7 +189,7 @@ namespace MSSQLand.Utilities
             // Build usage synopsis: <action> <positionals> [named-flags]
             var usageParts = new List<string> { action.ActionName };
             foreach (var d in positional)
-                usageParts.Add(d.Required ? $"<{d.FieldName}>" : $"[{d.FieldName}]");
+                usageParts.Add(PositionalLabel(d));
             foreach (var d in named)
                 usageParts.Add($"[{ActionArgUsageToken(d)}]");
 
@@ -216,7 +208,7 @@ namespace MSSQLand.Utilities
             }
 
             // Compute column width for alignment
-            int colWidth = positional.Select(d => d.Required ? $"  <{d.FieldName}>".Length : $"  [{d.FieldName}]".Length)
+            int colWidth = positional.Select(d => $"  {PositionalLabel(d)}".Length)
                 .Concat(named.Select(d => $"  {ActionArgLabel(d)}".Length))
                 .DefaultIfEmpty(0).Max() + 3;
 
@@ -224,7 +216,7 @@ namespace MSSQLand.Utilities
 
             foreach (var d in positional)
             {
-                string left = d.Required ? $"  <{d.FieldName}>" : $"  [{d.FieldName}]";
+                string left = $"  {PositionalLabel(d)}";
                 Console.WriteLine($"{left.PadRight(colWidth)}{ActionArgDescription(d)}");
             }
 
@@ -265,17 +257,24 @@ namespace MSSQLand.Utilities
             return d.ShortName != null ? $"-{d.ShortName} {valueName}" : $"--{d.LongName ?? d.FieldName} {valueName}";
         }
 
+        private static string PositionalLabel(ArgumentDescriptor d)
+        {
+            string core = d.Required ? $"<{d.FieldName}>" : $"[{d.FieldName}]";
+            return d.Remainder ? core + "..." : core;
+        }
+
         private static string ActionArgDescription(ArgumentDescriptor d)
         {
             string desc = d.Description ?? string.Empty;
+            string remainderNote = d.Remainder ? "; no quoting needed, all remaining words joined as-is" : string.Empty;
             if (d.Required)
-                return string.IsNullOrEmpty(desc) ? "(required)" : $"{desc} (required)";
+                return string.IsNullOrEmpty(desc) ? $"(required{remainderNote})" : $"{desc} (required{remainderNote})";
             // Suppress default: False for plain bool flags and default: "" for empty strings
             bool isEmptyStringDefault = d.DefaultValue is string s && s == string.Empty;
             bool isFalseBoolDefault   = d.IsFlag && d.DefaultValue is bool b && !b;
             if (d.DefaultValue != null && !isEmptyStringDefault && !isFalseBoolDefault)
-                return string.IsNullOrEmpty(desc) ? $"(default: {d.DefaultValue})" : $"{desc} (default: {d.DefaultValue})";
-            return desc;
+                return string.IsNullOrEmpty(desc) ? $"(default: {d.DefaultValue}{remainderNote})" : $"{desc} (default: {d.DefaultValue}{remainderNote})";
+            return string.IsNullOrEmpty(remainderNote) ? desc : $"{desc}{remainderNote}";
         }
 
         /// <summary>
