@@ -52,7 +52,7 @@ namespace MSSQLand.Actions.Agent
             if (!AgentHelper.CheckAgentRunning(databaseContext))
                 return null;
 
-            Logger.Info($"Subsystem: {_subSystem}");
+            Logger.Task($"Executing [{_subSystem}] command via SQL Server Agent job");
 
             // Use names that blend with legitimate internal tooling
             string jobName = $"SQLMaint_{Guid.NewGuid().ToString("N").Substring(0, 8)}";

@@ -21,7 +21,7 @@ namespace MSSQLand.Actions.Agent
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Enumerating SQL Server Agent proxy accounts");
+            Logger.Task("Enumerating SQL Server Agent proxy accounts");
 
             // ── Proxy accounts with credential identity ──
             string topClause = BuildTopClause(_limit);

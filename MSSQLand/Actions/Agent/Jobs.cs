@@ -30,7 +30,7 @@ namespace MSSQLand.Actions.Agent
                 return null;
 
             string filterMsg = !string.IsNullOrEmpty(_name) ? $" matching '{_name}'" : "";
-            Logger.TaskNested($"Enumerating SQL Server Agent jobs{filterMsg}");
+            Logger.Task($"Enumerating SQL Server Agent jobs{filterMsg}");
 
             string whereClause = "";
             if (!string.IsNullOrEmpty(_name))
@@ -106,7 +106,9 @@ namespace MSSQLand.Actions.Agent
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(result));
 
-            Logger.Success($"Found {result.Rows.Count} row(s)");
+            Logger.Success(_showCommands
+                ? $"Found {result.Rows.Count} step(s)"
+                : $"Found {result.Rows.Count} job(s)");
 
             return result;
         }

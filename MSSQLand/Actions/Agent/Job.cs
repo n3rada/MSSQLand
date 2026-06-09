@@ -34,7 +34,7 @@ namespace MSSQLand.Actions.Agent
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Retrieving details for job: {_jobIdentifier}");
+            Logger.Task($"Retrieving details for job: {_jobIdentifier}");
 
             // Determine if identifier is a GUID or name
             bool isGuid = Guid.TryParse(_jobIdentifier, out _);
