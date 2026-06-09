@@ -413,6 +413,7 @@ namespace MSSQLand.Actions.Remote
                 }
             }
 
+            Logger.NewLine();
             Logger.Task($"Exploring {allSqlLinks.Count} unique linked server connection(s)");
 
             Stopwatch totalStopwatch = Stopwatch.StartNew();
@@ -591,7 +592,10 @@ namespace MSSQLand.Actions.Remote
                     return;
                 }
 
-                Logger.Debug($"Reached {targetServer} (actual: {actualServerName}) as '{remoteLoggedInUser}' [{mappedUser}]");
+                string reachedLabel = actualServerName.Equals(targetServer, StringComparison.OrdinalIgnoreCase)
+                    ? targetServer
+                    : $"{targetServer} [{actualServerName}]";
+                Logger.TaskNested($"Reached {reachedLabel} as '{remoteLoggedInUser}'");
 
                 // Early re-entry check: if we have already fully explored (server, login) via a
                 // different chain, reuse cached roles to build a leaf node without paying for
@@ -660,6 +664,8 @@ namespace MSSQLand.Actions.Remote
                 var remoteReachableChains = isSysadmin
                     ? new List<List<string>>()
                     : GetReachableLoginChains(databaseContext);
+                if (remoteReachableChains.Count > 0)
+                    Logger.TraceNested($"{remoteReachableChains.Count} impersonable path(s) on {targetServer}");
                 Logger.TraceNested($"Reachable login chains on '{targetServer}': {remoteReachableChains.Count}");
 
                 var allLinkedServersOnThisServer = new Dictionary<(string server, string localLogin), (DataRow row, List<string> chain)>();
@@ -713,6 +719,7 @@ namespace MSSQLand.Actions.Remote
                             var steps = chain.Select(login => new ImpersonationStep { Login = login, Roles = new List<string>() }).ToList();
                             steps[steps.Count - 1].Roles = chainEndRoles;
                             currentNode.EscalationPaths.Add(steps);
+                            Logger.TaskNested($"Escalation path on {targetServer}: [{string.Join(" -> ", chain)}]");
                         }
 
                         DataTable chainLinks = Links.GetLinkedServers(databaseContext);
