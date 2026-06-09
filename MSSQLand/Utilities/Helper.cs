@@ -16,10 +16,9 @@ namespace MSSQLand.Utilities
         /// <summary>
         /// Displays help message for a specific help topic.
         /// </summary>
-        /// <param name="topic">The help topic (actions, credentials).</param>
+        /// <param name="topic">The help topic: "actions", "credentials", or any action name/alias.</param>
         public static void ShowFilteredHelp(string topic)
         {
-            // Help topics
             if (topic.Equals("actions", StringComparison.OrdinalIgnoreCase))
             {
                 ShowAllActions();
@@ -33,9 +32,20 @@ namespace MSSQLand.Utilities
                 return;
             }
 
-            // Unknown topic
+            // Try as an action name or alias
+            var actions = ActionFactory.GetAvailableActions();
+            var match = actions.FirstOrDefault(a =>
+                a.ActionName.Equals(topic, StringComparison.OrdinalIgnoreCase) ||
+                (a.Aliases != null && a.Aliases.Any(al => al.Equals(topic, StringComparison.OrdinalIgnoreCase))));
+
+            if (match != default)
+            {
+                ShowActionHelp(topic);
+                return;
+            }
+
             Logger.Error($"Unknown help topic: '{topic}'");
-            Logger.ErrorNested("Available topics: actions, credentials");
+            Logger.ErrorNested("Available topics: actions, credentials, <action-name>");
         }
 
         /// <summary>
@@ -143,8 +153,18 @@ namespace MSSQLand.Utilities
 
             Console.WriteLine("Getting Help:");
             Console.WriteLine("\t-h actions             List all available actions");
-            Console.WriteLine("\t-h credentials         Show authentication types");
-            Console.WriteLine("\t<action> -h            Show help for specific action");
+            Console.WriteLine("\t-h credentials         Show credential types and required flags");
+            Console.WriteLine("\t-h <action>            Show help for a specific action");
+            Console.WriteLine("\t--help <action>        Same as above");
+            Console.WriteLine("\t<action> -h            Same as above\n");
+
+            Console.WriteLine("Examples:");
+            Console.WriteLine("\tsql01 --probe                               connectivity check (no credentials)");
+            Console.WriteLine("\tsql01 -c windows whoami                     current user via Windows auth");
+            Console.WriteLine("\tsql01 -c local -u sa -p Password1 whoami    current user via SQL auth");
+            Console.WriteLine("\tsql01 -c windows -l sql02 whoami            whoami via linked server");
+            Console.WriteLine("\tsql01 -c windows -h actions                 list all available actions");
+            Console.WriteLine("\tsql01 -c windows whoami -h                  show help for the whoami action");
 
             Console.WriteLine();
         }
