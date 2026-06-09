@@ -402,7 +402,7 @@ SELECT @result AS Result, @error AS Error;";
         /// </summary>
         private string PrepareQuery(string query)
         {
-            Logger.Trace($"Query to execute: {query}");
+            Logger.Debug($"Query to execute: {query}");
 
             if (_linkedServers.IsEmpty)
                 return query;
