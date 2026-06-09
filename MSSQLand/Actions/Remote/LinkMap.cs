@@ -201,6 +201,7 @@ namespace MSSQLand.Actions.Remote
             Logger.Task("Mapping linked server topology");
             Logger.TaskNested($"Maximum recursion depth: {_limit}");
 
+            Logger.NewLine();
             Logger.Warning("This may take several minutes depending on chain depth and impersonation paths.");
 
             // Capture the initial impersonation so commands reflect the full execution context
@@ -309,7 +310,7 @@ namespace MSSQLand.Actions.Remote
             // "No visibility") - an impersonable user may see what we cannot.
             bool forceImpersonationDiscovery = sqlServerLinks.Count == 0 && noVisibilityLinks.Count > 0;
             if (!_rootNode.IsSysadmin)
-                Logger.TaskNested("Enumerating impersonable login paths");
+                Logger.Task("Enumerating impersonable login paths");
             var reachableChains = _rootNode.IsSysadmin
                 ? new List<List<string>>()
                 : GetReachableLoginChains(databaseContext);
