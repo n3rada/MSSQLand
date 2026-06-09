@@ -32,7 +32,7 @@ namespace MSSQLand.Models
             private set
             {
                 _version = value;
-                MajorVersion = ParseMajorVersion(version);
+                MajorVersion = ParseMajorVersion(_version);
                 if (MajorVersion > 0 && MajorVersion <= 13)
                 {
                     IsLegacy = true;
