@@ -40,7 +40,7 @@ namespace MSSQLand.Services.Credentials
                 "token",
                 new CredentialMetadata(
                     name: "token",
-                    description: "Windows Integrated Security (current process token)",
+                    description: "Windows Integrated Security using the current process token; no LogonUser call, inherits calling identity as-is",
                     requiredArguments: new List<string>(),
                     factory: TokenCredentials.Create
                 )
@@ -49,7 +49,7 @@ namespace MSSQLand.Services.Credentials
                 "windows",
                 new CredentialMetadata(
                     name: "windows",
-                    description: "Windows Authentication with impersonation (domain or local account)",
+                    description: "Windows auth via LogonUser type 9 (NewCredentials); local session unchanged, supplied creds forwarded for network auth",
                     requiredArguments: new List<string> { "username", "password" },
                     factory: WindowsCredentials.Create,
                     optionalArguments: new List<string> { "domain" },

@@ -172,33 +172,35 @@ namespace MSSQLand.Utilities
             string actionName = null;
             List<string> actionArgs = new List<string>();
 
+            // Short-circuit for help before any parsing work.
+            // Kept outside the try-catch so help display errors are not swallowed
+            // into "Error parsing command line arguments".
+            if (helpRequested)
+            {
+                string earlyAction = FindEarlyActionName(args);
+                if (earlyAction != null)
+                {
+                    Helper.ShowActionHelp(earlyAction);
+                    return (ParseResultType.ShowHelp, null);
+                }
+
+                for (int i = 0; i < args.Length - 1; i++)
+                {
+                    if ((args[i] == "-h" || args[i] == "--help") && !IsFlag(args[i + 1]))
+                    {
+                        Helper.ShowFilteredHelp(args[i + 1]);
+                        return (ParseResultType.ShowHelp, null);
+                    }
+                }
+
+                Helper.Show();
+                return (ParseResultType.ShowHelp, null);
+            }
+
             int currentIndex = 0;
 
             try
             {
-                // Short-circuit for help before any parsing work (avoids JIT overhead on host/links parsing).
-                if (helpRequested)
-                {
-                    string earlyAction = FindEarlyActionName(args);
-                    if (earlyAction != null)
-                    {
-                        Helper.ShowActionHelp(earlyAction);
-                        return (ParseResultType.ShowHelp, null);
-                    }
-
-                    for (int i = 0; i < args.Length - 1; i++)
-                    {
-                        if ((args[i] == "-h" || args[i] == "--help") && !IsFlag(args[i + 1]))
-                        {
-                            Helper.ShowFilteredHelp(args[i + 1]);
-                            return (ParseResultType.ShowHelp, null);
-                        }
-                    }
-
-                    Helper.Show();
-                    return (ParseResultType.ShowHelp, null);
-                }
-
                 if (args[0] == "--findsql")
                 {
                     string adDomain = null;
