@@ -198,6 +198,8 @@ namespace MSSQLand.Actions.Remote
 
         public override object Execute(DatabaseContext databaseContext)
         {
+            Logger.Task("Mapping linked server topology");
+            Logger.InfoNested("This may take several minutes depending on chain depth and impersonation paths.");
             Logger.TaskNested($"Maximum recursion depth: {_limit}");
 
             // Capture the initial impersonation so commands reflect the full execution context
@@ -240,6 +242,8 @@ namespace MSSQLand.Actions.Remote
                     sqlServerLinks.Add(row);
                 }
             }
+
+            Logger.Info($"Found {allLinkedServers.Rows.Count} linked server(s): {sqlServerLinks.Count} SQL Server (chainable), {noVisibilityLinks.Count} with no visibility");
 
             if (noVisibilityLinks.Count > 0)
             {
@@ -303,15 +307,17 @@ namespace MSSQLand.Actions.Remote
             // Force impersonation discovery when current user has zero direct visibility (all rows were
             // "No visibility") - an impersonable user may see what we cannot.
             bool forceImpersonationDiscovery = sqlServerLinks.Count == 0 && noVisibilityLinks.Count > 0;
+            if (!_rootNode.IsSysadmin)
+                Logger.TaskNested("Enumerating impersonable login paths");
             var reachableChains = _rootNode.IsSysadmin
                 ? new List<List<string>>()
                 : GetReachableLoginChains(databaseContext);
 
             if (reachableChains.Count > 0)
             {
-                Logger.Trace($"Reachable login chains from current user: {reachableChains.Count}");
+                Logger.Info($"{reachableChains.Count} impersonable login path(s) found");
                 foreach (var chain in reachableChains)
-                    Logger.TraceNested($"[{string.Join(" -> ", chain)}]");
+                    Logger.Trace($"[{string.Join(" -> ", chain)}]");
             }
             else if (forceImpersonationDiscovery)
             {
@@ -332,6 +338,8 @@ namespace MSSQLand.Actions.Remote
             }
 
             // Additional links visible from each transitive impersonation chain
+            if (reachableChains.Count > 0)
+                Logger.TaskNested("Expanding link visibility across impersonation contexts");
             foreach (var chain in reachableChains)
             {
                 // Skip chains ending at system accounts: they add no unique linked server info and cause errors
@@ -363,7 +371,7 @@ namespace MSSQLand.Actions.Remote
                         }
                     }
                     if (gained > 0)
-                        Logger.TraceNested($"Gained visibility into {gained} link mapping(s) via [{string.Join(" -> ", chain)}]");
+                        Logger.InfoNested($"+{gained} link(s) visible as [{string.Join(" -> ", chain)}]");
                 }
                 catch (Exception ex)
                 {
@@ -403,7 +411,7 @@ namespace MSSQLand.Actions.Remote
                 }
             }
 
-            Logger.TaskNested($"Total reachable SQL Server linked servers: {allSqlLinks.Count}");
+            Logger.Task($"Exploring {allSqlLinks.Count} unique linked server connection(s)");
 
             Stopwatch totalStopwatch = Stopwatch.StartNew();
 
@@ -440,6 +448,7 @@ namespace MSSQLand.Actions.Remote
                     continue;
                 }
 
+                Logger.TaskNested($"Probing {remoteServer}");
                 Stopwatch serverStopwatch = Stopwatch.StartNew();
 
                 HashSet<string> visitedInChain = new() { startingHash };
@@ -580,7 +589,7 @@ namespace MSSQLand.Actions.Remote
                     return;
                 }
 
-                Logger.TraceNested($"Logged in to server '{targetServer}' (actual: {actualServerName}) as: '{remoteLoggedInUser}' [{mappedUser}]");
+                Logger.Debug($"Reached {targetServer} (actual: {actualServerName}) as '{remoteLoggedInUser}' [{mappedUser}]");
 
                 // Early re-entry check: if we have already fully explored (server, login) via a
                 // different chain, reuse cached roles to build a leaf node without paying for
