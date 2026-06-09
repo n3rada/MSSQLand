@@ -49,7 +49,7 @@ namespace MSSQLand.Services
 
         private LinkedServers _linkedServers = new();
         private const int MAX_RETRIES = 3;
-        private static bool _rpcWarningShown = false;
+        private bool _rpcWarningShown = false;
 
         /// <summary>
         /// Tracks linked servers already reported as unreachable to suppress duplicate error messages.
@@ -89,7 +89,7 @@ namespace MSSQLand.Services
         {
             string m = ex.Message;
 
-            return m.Contains("metadata") ||
+            return m.Contains("The metadata could not be determined") ||
                    m.Contains("no columns") ||
                    m.Contains("Deferred prepare");
         }
@@ -277,7 +277,10 @@ SELECT @result AS Result, @error AS Error;";
             }
 
             if (Connection.State != ConnectionState.Open)
+            {
+                Logger.Trace("Connection is not open; skipping query execution.");
                 return null;
+            }
 
             string finalQuery = PrepareQuery(query);
 
@@ -399,7 +402,7 @@ SELECT @result AS Result, @error AS Error;";
         /// </summary>
         private string PrepareQuery(string query)
         {
-            Logger.Debug($"Query to execute: {query}");
+            Logger.Trace($"Query to execute: {query}");
 
             if (_linkedServers.IsEmpty)
                 return query;
@@ -426,7 +429,7 @@ SELECT @result AS Result, @error AS Error;";
                 finalQuery = _linkedServers.BuildSelectOpenQueryChain(query);
             }
 
-            Logger.DebugNested($"Linked query: {finalQuery}");
+            Logger.TraceNested($"Linked query: {finalQuery}");
             return finalQuery;
         }
 
@@ -437,6 +440,7 @@ SELECT @result AS Result, @error AS Error;";
         {
             DataTable dt = new();
             using SqlDataReader rdr = Execute(query);
+            if (rdr == null) return dt;
             dt.Load(rdr);
             return dt;
         }
@@ -507,9 +511,9 @@ SELECT @result AS Result, @error AS Error;";
                     ExecutionServer.FullVersionString = row[1].ToString();
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Server info detection is optional - keep alias as hostname
+                Logger.Trace($"Could not detect server info for '{linkedServerAlias}': {ex.Message}");
             }
 
             // Set database: use configured database or query DB_NAME()
@@ -518,10 +522,11 @@ SELECT @result AS Result, @error AS Error;";
                 try
                 {
                     ExecutionServer.Database = ExecuteScalar("SELECT DB_NAME();")?.ToString();
-                    Logger.Debug($"Detected execution database: {ExecutionServer.Database}");
+                    Logger.Trace($"Detected execution database: {ExecutionServer.Database}");
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Logger.Trace($"Could not detect execution database: {ex.Message}");
                     ExecutionServer.Database = null;
                 }
             }
