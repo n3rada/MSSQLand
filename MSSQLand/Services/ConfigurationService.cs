@@ -103,10 +103,6 @@ namespace MSSQLand.Services
             }
         }
 
-
-        }
-
-
         /// <summary>
         /// Enables or disables a specified SQL Server configuration option using sp_configure.
         /// </summary>
