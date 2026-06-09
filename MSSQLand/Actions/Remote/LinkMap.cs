@@ -199,8 +199,9 @@ namespace MSSQLand.Actions.Remote
         public override object Execute(DatabaseContext databaseContext)
         {
             Logger.Task("Mapping linked server topology");
-            Logger.InfoNested("This may take several minutes depending on chain depth and impersonation paths.");
             Logger.TaskNested($"Maximum recursion depth: {_limit}");
+
+            Logger.Warning("This may take several minutes depending on chain depth and impersonation paths.");
 
             // Capture the initial impersonation so commands reflect the full execution context
             _startingImpersonation = databaseContext.Server.ImpersonationUsers ?? Array.Empty<string>();
@@ -371,7 +372,7 @@ namespace MSSQLand.Actions.Remote
                         }
                     }
                     if (gained > 0)
-                        Logger.InfoNested($"+{gained} link(s) visible as [{string.Join(" -> ", chain)}]");
+                        Logger.TaskNested($"+{gained} link(s) visible as [{string.Join(" -> ", chain)}]");
                 }
                 catch (Exception ex)
                 {
