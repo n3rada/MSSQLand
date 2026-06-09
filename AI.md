@@ -91,6 +91,9 @@ When adding or changing an action:
 - Use `Task`/`TaskNested` for operational steps.
 - Use `Info`/`InfoNested` for factual data/results.
 - Use `Success`, `Warning`, `Error` for outcomes.
+- Use `Debug` for notable diagnostic events useful to an operator running `--debug`: connection failures with reasons, significant state changes. Not for repetitive per-iteration detail.
+- Use `Trace` for full internal state: per-hop traversal, cache hits, skip decisions, internal counts. Visible with `--trace`; intended for developers and LLM-assisted diagnosis.
+- Use `Logger.NewLine()` to visually separate major phases in long-running operations. Do not use it between nested sub-steps of the same phase.
 - Prefer formatter pipeline output over ad-hoc table rendering; see [MSSQLand/Utilities/Formatters](MSSQLand/Utilities/Formatters).
 
 ## OPSEC and IOC Discipline
