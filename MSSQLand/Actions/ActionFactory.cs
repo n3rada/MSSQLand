@@ -44,7 +44,8 @@ namespace MSSQLand.Actions
 
             // DATABASE ACTIONS - OPERATIONS
             { "search", (typeof(Search), "Search for keywords in column names and data across databases.", new[] { "find" }) },
-            { "query", (typeof(Query), "Execute a custom T-SQL query. Use --all to execute across all accessible databases.", new[] { "sql" }) },
+            { "query", (typeof(Query), "Execute a custom T-SQL query against the current execution context.", new[] { "sql" }) },
+            { "query-all", (typeof(QueryAll), "Execute a T-SQL query across every accessible database on the server. Results are combined into a single table with a leading Database column. Tries sp_MSforeachdb first, falls back to a manual USE loop.", new[] { "sql-all" }) },
             { "requests", (typeof(Requests), "Display currently executing SQL requests with query text and wait information.", null) },
 
             // ADMINISTRATION ACTIONS
