@@ -361,7 +361,8 @@ ORDER BY is_fixed_role DESC, name;";
             }
             catch (Exception ex) when (ex.Message.Contains("916") || (ex is SqlException sqlex && sqlex.Number == 916))
             {
-                Logger.Debug($"Switching to master before impersonating '{user}' (current DB inaccessible: {ex.Message})");
+                Logger.Debug($"Switching to master before impersonating '{user}'");
+                Logger.DebugNested(ex.Message);
                 try
                 {
                     using (var useMaster = _queryService.Connection.CreateCommand())
