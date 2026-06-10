@@ -23,21 +23,21 @@ namespace MSSQLand.Actions
         new()
         {
             // DATABASE ACTIONS - BASIC INFO & AUTHENTICATION
-            { "info", (typeof(Info), "Retrieve detailed information about the SQL Server instance.", null) },
+            { "info", (typeof(Info), "Enumerate SQL Server instance properties: server name, version, edition, authentication mode, service account, data/log paths, OS details, and Azure service tier when applicable.", null) },
             { "whoami", (typeof(Whoami), "Display current user context, roles, and accessible databases.", new[] { "id", "groups" }) },
             { "authtoken", (typeof(AuthToken), "Display all groups from the Windows authentication token (AD, BUILTIN, NT AUTHORITY, etc.).", null) },
 
             // DATABASE ACTIONS - ENUMERATION
-            { "databases", (typeof(Databases), "List all available databases.", null) },
+            { "databases", (typeof(Databases), "List all databases with accessibility, owner, TRUSTWORTHY flag, state, and file paths. Highlights databases where db_owner + TRUSTWORTHY + sysadmin owner enables privilege escalation via EXECUTE AS OWNER.", null) },
             { "tables", (typeof(Tables), "List all tables in a specified database.", null) },
             { "rows", (typeof(Rows), "Retrieve and display rows from a specified table.", null) },
             { "procedures", (typeof(Procedures), "List, read, or execute stored procedures in the current database.", new[] { "procs", "sprocs" }) },
             { "xprocs", (typeof(ExtendedProcs), "Enumerate built-in extended (xp_*), OLE Automation (sp_OA*), and system procedures with execution permissions.", new[] { "extendedprocs", "sysprocs" }) },
-            { "users", (typeof(Users), "List all database users.", null) },
+            { "users", (typeof(Users), "Enumerate server-level principals (logins) with their server roles, and database users in the current database context.", null) },
             { "hashes", (typeof(Hashes), "Dump SQL Server login password hashes in hashcat format.", new[] { "passwords" }) },
             { "roles", (typeof(Roles), "List all database roles and their members in the current database.", null) },
             { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).", null) },
-            { "permissions", (typeof(Permissions), "Enumerate user and role permissions.", null) },
+            { "permissions", (typeof(Permissions), "Enumerate current user's permissions via fn_my_permissions. No argument shows server-level and database-level permissions plus accessible databases. Pass schema.table or database.schema.table to check object-level permissions.", null) },
             { "impersonate", (typeof(Impersonation), "Enumerate SQL logins and Windows principals with their impersonation status from the current context. If the current user is sysadmin, all principals are listed as implicitly impersonatable. Use impersonate-chains to discover logins reachable through multi-hop EXECUTE AS paths.", new[] { "impersonation", "imp" }) },
             { "impersonate-chains", (typeof(ImpersonationMap), "Map multi-hop EXECUTE AS impersonation chains reachable from the current login. Records system accounts as endpoints without recursing. No-op if the current user is already sysadmin. Output lists each chain with starting login, intermediate hops, and end login.", new[] { "impchains", "impmap" }) },
             { "oledb", (typeof(OleDbProvidersInfo), "Enumerate OLE DB providers and their registry configuration.", new[] { "ole-providers" }) },
@@ -55,19 +55,19 @@ namespace MSSQLand.Actions
             { "kill", (typeof(Kill), "Terminate SQL Server sessions by session ID or kill all running sessions.", null) },
 
             // DOMAIN ACTIONS
-            { "ad-domain", (typeof(AdDomain), "Retrieve the domain SID using DEFAULT_DOMAIN() and SUSER_SID().", null) },
-            { "ad-sid", (typeof(AdSid), "Retrieve the current user's SID using SUSER_SID().", null) },
-            { "ad-users", (typeof(AdUsers), "Enumerate domain users by RID cycling using SUSER_SNAME().", new[] { "rid-brute" }) },
+            { "ad-domain", (typeof(AdDomain), "Resolve the AD domain name and SID the SQL Server is joined to, using the Domain Admins group as the pivot principal.", null) },
+            { "ad-sid", (typeof(AdSid), "Resolve the current login's Security Identifier (SID) with domain SID prefix and RID breakdown for AD accounts.", null) },
+            { "ad-users", (typeof(AdUsers), "Enumerate domain accounts by iterating RIDs and resolving each to a login name. Accepts a max RID limit and output format: default (plain list), table, bash, or python.", new[] { "rid-brute" }) },
             { "adsi-add", (typeof(AdsiAdd), "Create an ADSI linked server (auto-generates name if omitted).", null) },
             { "adsi-del", (typeof(AdsiDel), "Delete an ADSI linked server by name.", new[] { "adsi-delete", "adsi-drop" }) },
-            { "adsi-query", (typeof(AdsiQuery), "Query Active Directory via an ADSI linked server.", new[] { "ldap" }) },
+            { "adsi-query", (typeof(AdsiQuery), "Execute LDAP queries against Active Directory via an ADSI linked server using OPENQUERY.", new[] { "ldap" }) },
             { "adsi-creds", (typeof(AdsiCredentialExtractor), "Extract SQL login passwords via LDAP simple bind interception using a local CLR listener. Requires CONTROL SERVER or sysadmin.", null) },
             { "adsi-redirect", (typeof(AdsiRedirect), "Redirect an ADSI linked server LDAP query to an attacker-controlled listener to capture cleartext credentials. No privileges required.", null) },
 
             // EXECUTION ACTIONS
-            { "exec", (typeof(XpCmd), "Execute OS commands via xp_cmdshell.", null) },
+            { "exec", (typeof(XpCmd), "Execute OS commands on the SQL Server host via the command shell extended procedure and return output.", null) },
             { "ole", (typeof(Ole), "Execute OS commands via OLE Automation (fire-and-forget, no output).", new[] { "oamethod" }) },
-            { "powershell", (typeof(PowerShell), "Execute PowerShell scripts.", new[] { "pwsh" }) },
+            { "powershell", (typeof(PowerShell), "Execute PowerShell scripts or commands on the SQL Server host. The script is base64-encoded and invoked non-interactively. Returns command output.", new[] { "pwsh" }) },
             { "clr", (typeof(ClrExecution), "Deploy and execute custom CLR assemblies.", null) },
             { "clr-list", (typeof(ClrList), "Enumerate user-defined CLR assemblies in the current database.", new[] { "assemblies" }) },
             { "clr-inspect", (typeof(ClrInspect), "Show exported procedures and metadata for a named CLR assembly.", new[] { "assembly" }) },
@@ -78,7 +78,7 @@ namespace MSSQLand.Actions
             { "job", (typeof(Agent.Job), "Display detailed information about a specific Agent job including all steps, schedule, and history.", null) },
             { "job-history", (typeof(Agent.JobHistory), "Display SQL Server Agent job execution history with status and output messages.", null) },
             { "job-proxies", (typeof(Agent.JobProxies), "Enumerate Agent proxy accounts, mapped credentials, logins, and allowed subsystems.", null) },
-            { "job-exec", (typeof(Agent.JobExec), "Dispatch OS commands asynchronously via SQL Server Agent (CmdExec, PowerShell, TSQL, VBScript); returns immediately after queuing — poll output with job-history.", null) },
+            { "job-exec", (typeof(Agent.JobExec), "Dispatch OS commands asynchronously via SQL Server Agent (CmdExec, PowerShell, TSQL, VBScript). Returns immediately after queuing. Poll output with job-history.", null) },
 
             // FILESYSTEM ACTIONS
             { "read", (typeof(FileRead), "Read file contents from the server's file system.", new[] { "cat" }) },
@@ -87,7 +87,7 @@ namespace MSSQLand.Actions
             { "rm", (typeof(RemoveFile), "Delete a file on the SQL Server filesystem.", new[] { "del", "delete" }) },
 
             // REMOTE DATA ACCESS ACTIONS
-            { "links", (typeof(Links), "Enumerate linked servers and their configuration.", new[] { "linkedservers" }) },
+            { "links", (typeof(Links), "Enumerate linked servers and their login mappings: whether the caller is forwarded as-is (pass-through), substituted with a fixed remote credential (mapped), or blocked (denied). Also shows RPC out and OPENQUERY flags. Only returns entries visible to the current login.", new[] { "linkedservers" }) },
             { "linkmap", (typeof(LinkMap), "Recursively map linked server chains with loop detection, checking impersonation paths at each hop. Highlights reachable endpoints and privilege escalation opportunities. Unbounded runtime, invoke as a background task, not inline.", new[] { "linksmap", "chains" }) },
             { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.", null) },
             { "data", (typeof(DataAccess), "Enable or disable data access (OPENQUERY) on linked servers.", null) },
