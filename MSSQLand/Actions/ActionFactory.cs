@@ -38,8 +38,8 @@ namespace MSSQLand.Actions
             { "roles", (typeof(Roles), "List all database roles and their members in the current database.", null) },
             { "rolemembers", (typeof(RoleMembers), "List members of a specific server role (e.g., sysadmin).", null) },
             { "permissions", (typeof(Permissions), "Enumerate user and role permissions.", null) },
-            { "impersonate", (typeof(Impersonation), "Check impersonation permissions for SQL logins and Windows principals.", new[] { "impersonation", "imp" }) },
-            { "impersonate-chains", (typeof(ImpersonationMap), "Map impersonation chains to discover reachable logins through delegation paths.", new[] { "impchains", "impmap" }) },
+            { "impersonate", (typeof(Impersonation), "Enumerate SQL logins and Windows principals with their impersonation status from the current context. If the current user is sysadmin, all principals are listed as implicitly impersonatable. Use impersonate-chains to discover logins reachable through multi-hop EXECUTE AS paths.", new[] { "impersonation", "imp" }) },
+            { "impersonate-chains", (typeof(ImpersonationMap), "Map multi-hop EXECUTE AS impersonation chains reachable from the current login. Records system accounts as endpoints without recursing. No-op if the current user is already sysadmin. Output lists each chain with starting login, intermediate hops, and end login.", new[] { "impchains", "impmap" }) },
             { "oledb", (typeof(OleDbProvidersInfo), "Enumerate OLE DB providers and their registry configuration.", new[] { "ole-providers" }) },
 
             // DATABASE ACTIONS - OPERATIONS
@@ -88,7 +88,7 @@ namespace MSSQLand.Actions
 
             // REMOTE DATA ACCESS ACTIONS
             { "links", (typeof(Links), "Enumerate linked servers and their configuration.", new[] { "linkedservers" }) },
-            { "linkmap", (typeof(LinkMap), "Recursively map linked server chains with loop detection, highlighting reachable endpoints and escalation paths. Blocks the calling process for an indeterminate duration. Should be invoked as a background process (e.g., job), not inline.", new[] { "linksmap", "chains", "tunnel" }) },
+            { "linkmap", (typeof(LinkMap), "Recursively map linked server chains with loop detection, checking impersonation paths at each hop. Highlights reachable endpoints and privilege escalation opportunities. Unbounded runtime, invoke as a background task, not inline.", new[] { "linksmap", "chains" }) },
             { "rpc", (typeof(RemoteProcedureCall), "Enable or disable RPC (Remote Procedure Calls) on linked servers.", null) },
             { "data", (typeof(DataAccess), "Enable or disable data access (OPENQUERY) on linked servers.", null) },
             { "ext-sources", (typeof(ExternalSources), "Enumerate External Data Sources (Azure SQL Database, Synapse, PolyBase).", null) },
