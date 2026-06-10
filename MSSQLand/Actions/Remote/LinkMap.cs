@@ -317,7 +317,7 @@ namespace MSSQLand.Actions.Remote
 
             if (reachableChains.Count > 0)
             {
-                Logger.Info($"{reachableChains.Count} impersonable login path(s) found");
+                Logger.Success($"{reachableChains.Count} impersonable login path(s) found");
                 foreach (var chain in reachableChains)
                     Logger.Trace($"[{string.Join(" -> ", chain)}]");
             }
@@ -341,7 +341,7 @@ namespace MSSQLand.Actions.Remote
 
             // Additional links visible from each transitive impersonation chain
             if (reachableChains.Count > 0)
-                Logger.TaskNested("Expanding link visibility across impersonation contexts");
+                Logger.Task("Expanding link visibility across impersonation contexts");
             foreach (var chain in reachableChains)
             {
                 // Skip chains ending at system accounts: they add no unique linked server info and cause errors
