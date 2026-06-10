@@ -39,7 +39,7 @@ namespace MSSQLand.Utilities
         /// </summary>
         private static readonly HashSet<string> BooleanFlags = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "--probe", "--trace", "--debug", "--silent", "--no-banner",
+            "--probe", "--trace", "--debug", "--silent", "--version",
             "--no-encrypt", "--disable-encrypt", "--no-trust-cert", "--disable-trust-cert"
         };
 
@@ -148,13 +148,15 @@ namespace MSSQLand.Utilities
             bool helpRequested = false;
             foreach (string arg in args)
             {
-                if (arg == "--no-banner") Logger.IsBannerSuppressed = true;
-                else if (arg == "--silent") Logger.IsSilentModeEnabled = true;
+                if (arg == "--silent") Logger.IsSilentModeEnabled = true;
                 else if (arg == "-h" || arg == "--help") helpRequested = true;
+                else if (arg == "--version" || arg == "-v")
+                {
+                    string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
+                    Console.WriteLine($"MSSQLand v{version} by @n3rada");
+                    return (ParseResultType.UtilityMode, null);
+                }
             }
-
-            if (!Logger.IsBannerSuppressed && !Logger.IsSilentModeEnabled)
-                Banner.Show();
 
             if (args.Length == 0)
             {
@@ -282,10 +284,6 @@ namespace MSSQLand.Utilities
                     else if (args[i] == "--silent")
                     {
                         Logger.IsSilentModeEnabled = true;
-                    }
-                    else if (args[i] == "--no-banner")
-                    {
-                        Logger.IsBannerSuppressed = true;
                     }
                     else if (args[i].StartsWith("--output-format", StringComparison.OrdinalIgnoreCase) ||
                              args[i].StartsWith("--output=", StringComparison.OrdinalIgnoreCase) ||

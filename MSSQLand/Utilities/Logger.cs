@@ -42,13 +42,7 @@ namespace MSSQLand.Utilities
         /// </summary>
         public static bool IsSilentModeEnabled { get; set; } = false;
 
-        /// <summary>
-        /// Indicates whether the ASCII art banner should be suppressed.
-        /// Unlike IsSilentModeEnabled, logging output is still shown.
-        /// </summary>
-        public static bool IsBannerSuppressed { get; set; } = false;
-
-        /// <summary>
+/// <summary>
         /// Indicates whether output is suppressed by TemporarilySilent().
         /// Unlike IsSilentModeEnabled, this allows Trace-level messages through
         /// so diagnostic tracing remains visible during silenced sub-operations.

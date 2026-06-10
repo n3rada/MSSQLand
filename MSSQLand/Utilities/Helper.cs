@@ -139,8 +139,8 @@ namespace MSSQLand.Utilities
             Console.WriteLine("\t--no-trust-cert        Disable server certificate trust\n");
 
             Console.WriteLine("Output Options:");
+            Console.WriteLine("\t--version, -v          Print version and author");
             Console.WriteLine("\t--format               Output format: markdown (default), csv");
-            Console.WriteLine("\t--no-banner            Suppress the ASCII art banner");
             Console.WriteLine("\t--silent               Silent mode (results only, no logging)");
             Console.WriteLine("\t--debug                Enable debug logging");
             Console.WriteLine("\t--trace                Enable trace logging\n");
