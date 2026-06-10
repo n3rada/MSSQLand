@@ -534,6 +534,48 @@ namespace MSSQLand.Actions.Remote
         }
 
         /// <summary>
+        /// Builds the full traversal path to <paramref name="targetServerAlias"/> using
+        /// <see cref="LinkedServers.FormatChainDisplay"/> so the format is consistent with
+        /// the "Server chain:" line shown in Program.cs.
+        /// </summary>
+        private string BuildViaDisplay(List<ServerNode> currentPath, string targetServerAlias, List<ImpersonationStep> parentImpersonationChain)
+        {
+            // Construct the full hop list: currentPath nodes + a synthetic node for targetServer.
+            // Each node's ImpersonationChain is the impersonation applied on the PREVIOUS server
+            // to reach it, which maps to FormatChainDisplay's connector/initialImpersonation slots.
+            var fullPath = new List<ServerNode>(currentPath)
+            {
+                new ServerNode { Alias = targetServerAlias, ImpersonationChain = parentImpersonationChain ?? new List<ImpersonationStep>() }
+            };
+
+            var serverList = new List<Server>();
+            string[] initialImpersonation = null;
+
+            for (int i = 0; i < fullPath.Count; i++)
+            {
+                var node = fullPath[i];
+                string[] impLogins = node.ImpersonationChain.Count > 0
+                    ? node.ImpersonationChain.ConvertAll(s => s.Login).ToArray()
+                    : null;
+
+                if (i == 0)
+                {
+                    // Impersonation on root → connector to first hop
+                    initialImpersonation = impLogins;
+                }
+                else if (impLogins != null)
+                {
+                    // Impersonation on previous server → connector to this hop
+                    serverList[serverList.Count - 1].ImpersonationUsers = impLogins;
+                }
+
+                serverList.Add(new Server { Hostname = node.Alias });
+            }
+
+            return new LinkedServers(serverList.ToArray()).FormatChainDisplay(_rootNode.Alias, initialImpersonation: initialImpersonation);
+        }
+
+        /// <summary>
         /// Recursively explores linked servers, building a tree structure.
         /// At each server, dynamically discovers what users can be impersonated and what linked servers they have access to.
         /// Uses a single connection with AddToChain/RemoveLastFromChain for clean push/pop semantics,
@@ -595,7 +637,7 @@ namespace MSSQLand.Actions.Remote
                 string reachedLabel = actualServerName.Equals(targetServer, StringComparison.OrdinalIgnoreCase)
                     ? targetServer
                     : $"{targetServer} [{actualServerName}]";
-                Logger.TaskNested($"Reached {reachedLabel} as '{remoteLoggedInUser}'");
+                Logger.TaskNested($"Reached {reachedLabel} as '{remoteLoggedInUser}' via {BuildViaDisplay(currentPath, targetServer, parentImpersonationChain)}");
 
                 // Early re-entry check: if we have already fully explored (server, login) via a
                 // different chain, reuse cached roles to build a leaf node without paying for
