@@ -28,7 +28,7 @@ namespace MSSQLand.Actions
             { "authtoken", (typeof(AuthToken), "Display all groups from the Windows authentication token (AD, BUILTIN, NT AUTHORITY, etc.).", null) },
 
             // DATABASE ACTIONS - ENUMERATION
-            { "databases", (typeof(Databases), "List all databases with accessibility, owner, TRUSTWORTHY flag, state, and file paths. Highlights databases where db_owner + TRUSTWORTHY + sysadmin owner enables privilege escalation via EXECUTE AS OWNER.", null) },
+            { "databases", (typeof(Databases), "List all databases with accessibility, owner, TRUSTWORTHY flag, state, and file paths.", null) },
             { "tables", (typeof(Tables), "List all tables in a specified database.", null) },
             { "rows", (typeof(Rows), "Retrieve and display rows from a specified table.", null) },
             { "procedures", (typeof(Procedures), "List, read, or execute stored procedures in the current database.", new[] { "procs", "sprocs" }) },
