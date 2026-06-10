@@ -245,7 +245,7 @@ namespace MSSQLand.Actions.Remote
                 }
             }
 
-            Logger.Info($"Found {allLinkedServers.Rows.Count} linked server(s): {sqlServerLinks.Count} SQL Server (chainable), {noVisibilityLinks.Count} with no visibility");
+            Logger.Info($"Found {allLinkedServers.Rows.Count} linked server(s)" + (noVisibilityLinks.Count > 0 ? $" ({noVisibilityLinks.Count} require impersonation to determine mapping)" : ""));
 
             if (noVisibilityLinks.Count > 0)
             {
@@ -256,7 +256,7 @@ namespace MSSQLand.Actions.Remote
                 }
             }
 
-            Logger.Trace($"SQL Server linked servers (chainable): {sqlServerLinks.Count}");
+
             foreach (DataRow row in sqlServerLinks)
             {
                 string link = row["Link"].ToString();
@@ -414,7 +414,7 @@ namespace MSSQLand.Actions.Remote
             }
 
             Logger.NewLine();
-            Logger.Task($"Exploring {allSqlLinks.Count} unique linked server connection(s)");
+            Logger.Task($"Exploring {allSqlLinks.Count} SQL Server chainable link(s)");
 
             Stopwatch totalStopwatch = Stopwatch.StartNew();
 
