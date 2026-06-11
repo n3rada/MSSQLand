@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace MSSQLand.Services
 {
@@ -402,7 +403,7 @@ SELECT @result AS Result, @error AS Error;";
         /// </summary>
         private string PrepareQuery(string query)
         {
-            Logger.Debug($"Query to execute: {query}");
+            Logger.Debug($"Query to execute: {StripHexPayload(query)}");
 
             if (_linkedServers.IsEmpty)
                 return query;
@@ -429,8 +430,21 @@ SELECT @result AS Result, @error AS Error;";
                 finalQuery = _linkedServers.BuildSelectOpenQueryChain(query);
             }
 
-            Logger.TraceNested($"Linked query: {finalQuery}");
+            Logger.TraceNested($"Linked query: {StripHexPayload(finalQuery)}");
             return finalQuery;
+        }
+
+        /// <summary>
+        /// Replaces large hex literals in a query string with a truncated placeholder
+        /// so log lines stay readable. Matches 0x followed by 9+ hex chars and keeps
+        /// only the first 8 characters before appending &lt;strip&gt;.
+        /// </summary>
+        private static string StripHexPayload(string query)
+        {
+            return Regex.Replace(
+                query,
+                @"0x([0-9A-Fa-f]{9,})",
+                m => $"0x{m.Groups[1].Value.Substring(0, 8)}<strip>");
         }
 
         /// <summary>
