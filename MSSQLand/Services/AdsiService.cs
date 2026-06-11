@@ -266,12 +266,12 @@ namespace MSSQLand.Services
                 // Batch sp_add_trusted_assembly + drop + create assembly + create function into one
                 // call so they execute in the same remote connection, avoiding DTC visibility issues.
                 Logger.Task("Deploying the LDAP server assembly");
-                _databaseContext.QueryService.ExecuteNonProcessing(
-                    $"{addTrustedQuery}" +
-                    $"DROP FUNCTION IF EXISTS [dbo].[{FunctionName}];\n" +
-                    $"DROP ASSEMBLY IF EXISTS [{AssemblyName}];\n" +
-                    $"CREATE ASSEMBLY [{AssemblyName}] AUTHORIZATION [dbo] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;\n" +
-                    $"CREATE FUNCTION [dbo].[{FunctionName}](@port int, @timeoutSeconds int) RETURNS NVARCHAR(MAX) AS EXTERNAL NAME {AssemblyName}.[ldapAssembly.LdapSrv].Listen;");
+                _databaseContext.QueryService.ExecuteNonProcessing($@"
+                    {addTrustedQuery}
+                    DROP FUNCTION IF EXISTS [dbo].[{FunctionName}];
+                    DROP ASSEMBLY IF EXISTS [{AssemblyName}];
+                    CREATE ASSEMBLY [{AssemblyName}] AUTHORIZATION [dbo] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;
+                    CREATE FUNCTION [dbo].[{FunctionName}](@port int, @timeoutSeconds int) RETURNS NVARCHAR(MAX) AS EXTERNAL NAME {AssemblyName}.[ldapAssembly.LdapSrv].Listen;");
 
                 Logger.Success($"LDAP server assembly '{AssemblyName}' and function '{FunctionName}' deployed");
 

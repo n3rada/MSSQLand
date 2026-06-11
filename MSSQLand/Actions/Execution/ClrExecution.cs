@@ -120,12 +120,12 @@ namespace MSSQLand.Actions.Execution
 
                 try
                 {
-                    databaseContext.QueryService.ExecuteNonProcessing(
-                        $"{addTrustedQuery}" +
-                        $"DROP PROCEDURE IF EXISTS [{_function}];\n" +
-                        $"DROP ASSEMBLY IF EXISTS [{assemblyName}];\n" +
-                        $"CREATE ASSEMBLY [{assemblyName}] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;\n" +
-                        $"CREATE PROCEDURE [dbo].[{_function}] @args NVARCHAR(MAX) AS EXTERNAL NAME [{assemblyName}].[{_className}].[{_function}];");
+                    databaseContext.QueryService.ExecuteNonProcessing($@"
+                        {addTrustedQuery}
+                        DROP PROCEDURE IF EXISTS [{_function}];
+                        DROP ASSEMBLY IF EXISTS [{assemblyName}];
+                        CREATE ASSEMBLY [{assemblyName}] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;
+                        CREATE PROCEDURE [dbo].[{_function}] @args NVARCHAR(MAX) AS EXTERNAL NAME [{assemblyName}].[{_className}].[{_function}];");
                 }
                 catch (Exception createErr)
                 {
@@ -134,11 +134,11 @@ namespace MSSQLand.Actions.Execution
                     {
                         Logger.Warning($"Dropping conflicting leftover assembly '{conflicting}' (MVID collision)");
                         databaseContext.QueryService.ExecuteNonProcessing($"DROP ASSEMBLY IF EXISTS [{conflicting}];");
-                        databaseContext.QueryService.ExecuteNonProcessing(
-                            $"{addTrustedQuery}" +
-                            $"DROP ASSEMBLY IF EXISTS [{assemblyName}];\n" +
-                            $"CREATE ASSEMBLY [{assemblyName}] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;\n" +
-                            $"CREATE PROCEDURE [dbo].[{_function}] @args NVARCHAR(MAX) AS EXTERNAL NAME [{assemblyName}].[{_className}].[{_function}];");
+                        databaseContext.QueryService.ExecuteNonProcessing($@"
+                            {addTrustedQuery}
+                            DROP ASSEMBLY IF EXISTS [{assemblyName}];
+                            CREATE ASSEMBLY [{assemblyName}] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;
+                            CREATE PROCEDURE [dbo].[{_function}] @args NVARCHAR(MAX) AS EXTERNAL NAME [{assemblyName}].[{_className}].[{_function}];");
                     }
                     else
                     {
