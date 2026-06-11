@@ -79,7 +79,7 @@ namespace MSSQLand.Utilities
             }
             int columnWidth = maxWidth + 4;
 
-            Console.WriteLine("Available Actions");
+            Console.WriteLine("Available Actions\n");
 
             foreach (var group in groupedActions.OrderBy(g => g.Key))
             {
