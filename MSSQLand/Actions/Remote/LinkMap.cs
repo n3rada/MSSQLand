@@ -1226,7 +1226,8 @@ namespace MSSQLand.Actions.Remote
             result.Columns.Add("Mapped To", typeof(string));
             result.Columns.Add("Hops", typeof(int));
             result.Columns.Add("Server Roles", typeof(string));
-            result.Columns.Add("Command", typeof(string));
+            result.Columns.Add("Host", typeof(string));
+            result.Columns.Add("Links", typeof(string));
 
             // Sort: privileged first, then shortest hop count
             var ordered = _allChains
@@ -1237,17 +1238,11 @@ namespace MSSQLand.Actions.Remote
             foreach (var chain in ordered)
             {
                 int hops = GetTotalHops(chain);
-                var row = BuildChainRow(chain, hops);
-                result.Rows.Add(row);
+                result.Rows.Add(BuildRow(chain, hops));
 
-                // Add escalation path rows for the last node in this chain
                 var lastNode = chain[chain.Count - 1];
                 foreach (var escalation in lastNode.EscalationPaths)
-                {
-                    int escHops = hops + escalation.Count;
-                    var escRow = BuildEscalationRow(chain, escalation, escHops);
-                    result.Rows.Add(escRow);
-                }
+                    result.Rows.Add(BuildRow(chain, hops + escalation.Count, escalation));
             }
 
             if (result.Rows.Count > 0)
@@ -1318,74 +1313,48 @@ namespace MSSQLand.Actions.Remote
         }
 
         /// <summary>
-        /// Builds a DataRow array for a single chain, showing the real MSSQLand command.
+        /// Builds a DataRow for a reachable chain. When <paramref name="escalation"/> is provided,
+        /// the row reflects the escalated login and appends its impersonation to the last hop.
         /// </summary>
-        private object[] BuildChainRow(List<ServerNode> chain, int hops)
+        private object[] BuildRow(List<ServerNode> chain, int hops, List<ImpersonationStep> escalation = null)
         {
             var lastNode = chain[chain.Count - 1];
-
-            var (linkedServers, hostArg) = BuildChainContext(chain);
-            string command = $"\"{hostArg}\" -l \"{linkedServers.GetChainArguments()}\"";
-
-            // Endpoint display
-            string endpoint = lastNode.Alias;
-            if (!lastNode.Alias.Equals(lastNode.ActualName, StringComparison.OrdinalIgnoreCase))
-            {
-                endpoint = $"{lastNode.Alias} [{lastNode.ActualName}]";
-            }
-
-            // Login context
-            string login = lastNode.LoggedInUser;
-            string mappedTo = lastNode.MappedUser;
-
-            // Privilege level
-            string privilege;
-            if (lastNode.IsSysadmin)
-                privilege = "sysadmin";
-            else if (lastNode.IsElevated)
-                privilege = string.Join(", ", lastNode.ServerRoles.FindAll(r => ElevatedRoles.Contains(r)));
-            else
-                privilege = "";
-
-            return new object[] { endpoint, login, mappedTo, hops, privilege, command };
-        }
-
-        /// <summary>
-        /// Builds a DataRow array for a privilege escalation path at the end of a chain.
-        /// The command includes the linked server path with escalation impersonation on the final server.
-        /// </summary>
-        private object[] BuildEscalationRow(List<ServerNode> chain, List<ImpersonationStep> escalation, int hops)
-        {
-            var lastNode = chain[chain.Count - 1];
-
             var (linkedServers, hostArg) = BuildChainContext(chain);
 
-            // Add escalation impersonation on the last server in the chain
-            linkedServers.ServerChain[linkedServers.ServerChain.Length - 1].ImpersonationUsers = escalation.ConvertAll(s => s.Login).ToArray();
-            string command = $"{hostArg} -l {linkedServers.GetChainArguments()}";
+            string endpoint = lastNode.Alias.Equals(lastNode.ActualName, StringComparison.OrdinalIgnoreCase)
+                ? lastNode.Alias
+                : $"{lastNode.Alias} [{lastNode.ActualName}]";
 
-            // Endpoint is same server but with escalated login
-            string endpoint = lastNode.Alias;
-            if (!lastNode.Alias.Equals(lastNode.ActualName, StringComparison.OrdinalIgnoreCase))
+            string login, mappedTo, privilege;
+
+            if (escalation != null)
             {
-                endpoint = $"{lastNode.Alias} [{lastNode.ActualName}]";
+                linkedServers.ServerChain[linkedServers.ServerChain.Length - 1].ImpersonationUsers =
+                    escalation.ConvertAll(s => s.Login).ToArray();
+
+                var lastStep = escalation[escalation.Count - 1];
+                login = lastStep.Login;
+                mappedTo = "";
+                if (lastStep.IsSysadmin)
+                    privilege = "sysadmin";
+                else if (lastStep.Roles.Exists(r => ElevatedRoles.Contains(r)))
+                    privilege = string.Join(", ", lastStep.Roles.FindAll(r => ElevatedRoles.Contains(r)));
+                else
+                    privilege = string.Join(", ", lastStep.Roles);
+            }
+            else
+            {
+                login = lastNode.LoggedInUser;
+                mappedTo = lastNode.MappedUser;
+                if (lastNode.IsSysadmin)
+                    privilege = "sysadmin";
+                else if (lastNode.IsElevated)
+                    privilege = string.Join(", ", lastNode.ServerRoles.FindAll(r => ElevatedRoles.Contains(r)));
+                else
+                    privilege = "";
             }
 
-            // Login is the end of the escalation chain
-            var lastStep = escalation[escalation.Count - 1];
-            string login = lastStep.Login;
-            string mappedTo = "";
-
-            // Privilege level from the escalation endpoint
-            string privilege;
-            if (lastStep.IsSysadmin)
-                privilege = "sysadmin";
-            else if (lastStep.Roles.Exists(r => ElevatedRoles.Contains(r)))
-                privilege = string.Join(", ", lastStep.Roles.FindAll(r => ElevatedRoles.Contains(r)));
-            else
-                privilege = string.Join(", ", lastStep.Roles);
-
-            return new object[] { endpoint, login, mappedTo, hops, privilege, command };
+            return new object[] { endpoint, login, mappedTo, hops, privilege, hostArg, linkedServers.GetChainArguments() };
         }
 
     }
