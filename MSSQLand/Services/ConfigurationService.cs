@@ -156,12 +156,13 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
-        /// Adds a CLR assembly hash to the list of trusted assemblies in SQL Server.
+        /// Checks whether the server supports trusted assemblies and removes an existing
+        /// entry for the given hash if present. Must be called before batching
+        /// <see cref="GetTrustedAssemblyQuery"/> with CREATE ASSEMBLY.
         /// </summary>
-        /// <param name="assemblyHash">The SHA-512 hash of the assembly to trust.</param>
-        /// <param name="assemblyDescription">A description of the assembly (e.g., name, version, etc.).</param>
-        /// <returns>True if the hash was successfully added, false otherwise.</returns>
-        public bool RegisterTrustedAssembly(string assemblyHash, string assemblyDescription)
+        /// <returns>True if the caller may proceed with sp_add_trusted_assembly, false if
+        /// the server is legacy or privileges are insufficient.</returns>
+        public bool PrepareForTrustedAssembly(string assemblyHash)
         {
             if (_server.IsLegacy)
             {
@@ -171,8 +172,8 @@ namespace MSSQLand.Services
 
             try
             {
-                // Check if the hash already exists
-                string checkHash = _queryService.ExecuteScalar($"SELECT * FROM sys.trusted_assemblies WHERE hash = 0x{assemblyHash};")?.ToString()?.ToLower();
+                string checkHash = _queryService.ExecuteScalar(
+                    $"SELECT * FROM sys.trusted_assemblies WHERE hash = 0x{assemblyHash};")?.ToString()?.ToLower();
 
                 if (checkHash?.Contains("permission was denied") == true)
                 {
@@ -184,10 +185,10 @@ namespace MSSQLand.Services
                 {
                     Logger.Warning("Hash already exists in sys.trusted_assemblies");
 
-                    // Attempt to remove the existing hash
-                    string deletionQuery = _queryService.ExecuteScalar($"EXEC master..sp_drop_trusted_assembly 0x{assemblyHash};")?.ToString()?.ToLower();
+                    string drop = _queryService.ExecuteScalar(
+                        $"EXEC master..sp_drop_trusted_assembly 0x{assemblyHash};")?.ToString()?.ToLower();
 
-                    if (deletionQuery?.Contains("permission was denied") == true)
+                    if (drop?.Contains("permission was denied") == true)
                     {
                         Logger.Debug("Insufficient privileges to remove existing trusted assembly");
                         return false;
@@ -196,29 +197,23 @@ namespace MSSQLand.Services
                     Logger.Success("Existing hash removed successfully");
                 }
 
-                // Add the new hash to the trusted assemblies
-                _queryService.ExecuteNonProcessing($@"
-                    EXEC master..sp_add_trusted_assembly
-                    0x{assemblyHash},
-                    N'{assemblyDescription}';
-                ");
-
-                // Verify if the hash was successfully added (CheckTrustedAssembly matches on name portion only)
-                string nameOnly = assemblyDescription.Split(',')[0].Trim();
-                if (CheckTrustedAssembly(nameOnly))
-                {
-                    Logger.Success($"Added assembly hash '0x{assemblyHash}' as trusted");
-                    return true;
-                }
-
-                Logger.Debug("Failed to add hash to sys.trusted_assemblies");
-                return false;
+                return true;
             }
             catch (Exception ex)
             {
-                Logger.Debug($"Trusted assembly registration failed: {ex.Message}");
+                Logger.Debug($"Trusted assembly preparation failed: {ex.Message}");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Returns the sp_add_trusted_assembly SQL statement for the given hash and description.
+        /// Intended to be prepended to a CREATE ASSEMBLY statement in a single batch so that
+        /// both execute in the same remote connection, avoiding distributed-transaction visibility issues.
+        /// </summary>
+        public static string GetTrustedAssemblyQuery(string assemblyHash, string assemblyDescription)
+        {
+            return $"EXEC master..sp_add_trusted_assembly 0x{assemblyHash}, N'{assemblyDescription}';";
         }
 
 

