@@ -270,8 +270,9 @@ namespace MSSQLand.Services
                     {addTrustedQuery}
                     DROP FUNCTION IF EXISTS [dbo].[{FunctionName}];
                     DROP ASSEMBLY IF EXISTS [{AssemblyName}];
-                    CREATE ASSEMBLY [{AssemblyName}] AUTHORIZATION [dbo] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE;
-                    CREATE FUNCTION [dbo].[{FunctionName}](@port int, @timeoutSeconds int) RETURNS NVARCHAR(MAX) AS EXTERNAL NAME {AssemblyName}.[ldapAssembly.LdapSrv].Listen;");
+                    CREATE ASSEMBLY [{AssemblyName}] AUTHORIZATION [dbo] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE");
+                _databaseContext.QueryService.ExecuteNonProcessing(
+                    $"CREATE FUNCTION [dbo].[{FunctionName}](@port int, @timeoutSeconds int) RETURNS NVARCHAR(MAX) AS EXTERNAL NAME {AssemblyName}.[ldapAssembly.LdapSrv].Listen");
 
                 Logger.Success($"LDAP server assembly '{AssemblyName}' and function '{FunctionName}' deployed");
 
