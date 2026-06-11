@@ -133,13 +133,19 @@ namespace MSSQLand.Utilities
         }
 
         /// <summary>
-        /// Replaces large hex literals in a SQL string with a truncated placeholder
-        /// so log lines stay readable. Keeps the first 8 hex chars and appends &lt;strip&gt;.
+        /// Truncates large hex literals in a SQL string for readable log output.
+        /// Hex values shorter than <paramref name="threshold"/> chars (e.g. hashes) are kept intact.
+        /// Longer values (e.g. DLL byte payloads) are replaced with first4...last4 form:
+        /// <c>0x4D5A&lt;strip&gt;7000</c>.
         /// Only intended for display — never pass the result back to SQL Server.
         /// </summary>
-        public static string StripHexPayload(string query)
-            => Regex.Replace(query, @"0x([0-9A-Fa-f]{9,})",
-                m => $"0x{m.Groups[1].Value.Substring(0, 8)}<strip>");
+        public static string StripHex(string query, int threshold = 256)
+            => Regex.Replace(query, @"0x([0-9A-Fa-f]+)", m =>
+            {
+                string hex = m.Groups[1].Value;
+                if (hex.Length < threshold) return m.Value;
+                return $"0x{hex.Substring(0, 4)}<strip>{hex.Substring(hex.Length - 4)}";
+            });
 
         /// <summary>
         /// Returns null if the string is empty or whitespace, otherwise returns the trimmed string.

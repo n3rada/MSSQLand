@@ -402,7 +402,7 @@ SELECT @result AS Result, @error AS Error;";
         /// </summary>
         private string PrepareQuery(string query)
         {
-            Logger.Debug($"Query to execute: {SqlHelper.StripHexPayload(query)}");
+            Logger.Debug($"Query to execute: {SqlHelper.StripHex(query)}");
 
             if (_linkedServers.IsEmpty)
                 return query;
@@ -429,7 +429,7 @@ SELECT @result AS Result, @error AS Error;";
                 finalQuery = _linkedServers.BuildSelectOpenQueryChain(query);
             }
 
-            Logger.TraceNested($"Linked query: {SqlHelper.StripHexPayload(finalQuery)}");
+            Logger.TraceNested($"Linked query: {SqlHelper.StripHex(finalQuery)}");
             return finalQuery;
         }
 
