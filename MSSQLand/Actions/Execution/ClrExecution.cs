@@ -154,10 +154,8 @@ namespace MSSQLand.Actions.Execution
 
                 // Step 5: Execute the stored procedure
                 Logger.TaskNested($"Executing the stored procedure '{_function}'");
-                string output = databaseContext.QueryService.ExecuteString($"EXEC [{_function}] @args = '{_args}'");
+                databaseContext.QueryService.ExecuteNonProcessing($"EXEC [{_function}] @args = '{_args}'");
                 Logger.Success("Stored procedure executed successfully");
-                if (!string.IsNullOrEmpty(output))
-                    Console.WriteLine(output);
 
                 return true;
             }

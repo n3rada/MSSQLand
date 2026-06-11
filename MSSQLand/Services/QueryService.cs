@@ -478,61 +478,6 @@ SELECT @result AS Result, @error AS Error";
         }
 
         /// <summary>
-        /// Executes a query and returns all output as a plain string.
-        /// Captures both result set rows (columns joined with tab) and InfoMessage events
-        /// emitted by PRINT or SqlContext.Pipe.Send(string) inside CLR procedures.
-        /// Returns null when the query produces no output of either kind.
-        /// </summary>
-        public string ExecuteString(string query)
-        {
-            var output = new System.Text.StringBuilder();
-
-            SqlInfoMessageEventHandler handler = (sender, e) =>
-            {
-                foreach (SqlError msg in e.Errors)
-                {
-                    Logger.Trace($"InfoMessage: {msg.Message}");
-                    output.AppendLine(msg.Message);
-                }
-            };
-
-            Connection.InfoMessage += handler;
-            bool prev = Connection.FireInfoMessageEventOnUserErrors;
-            Connection.FireInfoMessageEventOnUserErrors = true;
-
-            try
-            {
-                using SqlDataReader reader = ExecuteWithHandling(query, executeReader: true) as SqlDataReader;
-                if (reader != null)
-                {
-                    int rowCount = 0;
-                    while (reader.Read())
-                    {
-                        var cols = new string[reader.FieldCount];
-                        for (int i = 0; i < reader.FieldCount; i++)
-                            cols[i] = reader.IsDBNull(i) ? string.Empty : reader.GetValue(i).ToString();
-                        output.AppendLine(string.Join("\t", cols));
-                        rowCount++;
-                    }
-                    Logger.Trace($"ExecuteString read {rowCount} row(s) from result set");
-                }
-                else
-                {
-                    Logger.Trace("ExecuteString: no result set returned");
-                }
-            }
-            finally
-            {
-                Connection.FireInfoMessageEventOnUserErrors = prev;
-                Connection.InfoMessage -= handler;
-            }
-
-            string result = output.ToString().TrimEnd();
-            Logger.Trace($"ExecuteString output length: {result.Length} chars");
-            return result.Length > 0 ? result : null;
-        }
-
-        /// <summary>
         /// Executes a query and returns the first column of the first row.
         /// </summary>
         public object ExecuteScalar(string query)
