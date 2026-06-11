@@ -15,8 +15,6 @@ namespace MSSQLand.Actions.Database
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Info("Retrieving current user information");
-
             (string userName, string systemUser) = databaseContext.UserService.GetInfo();
 
             var (fixedServerRoles, customServerRoles) = databaseContext.UserService.GetServerRoles();
