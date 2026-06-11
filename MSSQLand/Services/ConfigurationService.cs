@@ -200,11 +200,12 @@ namespace MSSQLand.Services
                 _queryService.ExecuteNonProcessing($@"
                     EXEC master..sp_add_trusted_assembly
                     0x{assemblyHash},
-                    N'{assemblyDescription}, version=0.0.0.0, culture=neutral, publickeytoken=null, processorarchitecture=msil';
+                    N'{assemblyDescription}';
                 ");
 
-                // Verify if the hash was successfully added
-                if (CheckTrustedAssembly(assemblyDescription))
+                // Verify if the hash was successfully added (CheckTrustedAssembly matches on name portion only)
+                string nameOnly = assemblyDescription.Split(',')[0].Trim();
+                if (CheckTrustedAssembly(nameOnly))
                 {
                     Logger.Success($"Added assembly hash '0x{assemblyHash}' as trusted");
                     return true;

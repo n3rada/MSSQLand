@@ -56,8 +56,7 @@ namespace MSSQLand.Actions.Execution
             Logger.Info($"SHA-512 Hash: {libraryHash}");
             Logger.Info($"DLL Bytes Length: {libraryHexBytes.Length}");
 
-            string assemblyName = Guid.NewGuid().ToString("N").Substring(0, 6);
-            string libraryPath = Guid.NewGuid().ToString("N").Substring(0, 6);
+            string assemblyName = ByteHelper.GetRandomIdentifier(6);
 
             string dropProcedure = $"DROP PROCEDURE IF EXISTS [{_function}];";
             string dropAssembly = $"DROP ASSEMBLY IF EXISTS [{assemblyName}];";
@@ -73,7 +72,8 @@ namespace MSSQLand.Actions.Execution
                 // Strategy 2: Fall back to TRUSTWORTHY property (requires db_owner on a trustworthy-eligible database)
                 if (!databaseContext.QueryService.ExecutionServer.IsLegacy)
                 {
-                    usedTrustedAssembly = databaseContext.ConfigService.RegisterTrustedAssembly(libraryHash, libraryPath);
+                    string assemblyDescription = $"{ByteHelper.GetRandomIdentifier(6)}, version=0.0.0.0, culture=neutral, publickeytoken=null, processorarchitecture=msil";
+                    usedTrustedAssembly = databaseContext.ConfigService.RegisterTrustedAssembly(libraryHash, assemblyDescription);
                 }
 
                 if (!usedTrustedAssembly)
