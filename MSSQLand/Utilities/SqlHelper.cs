@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MSSQLand.Utilities
 {
@@ -130,6 +131,15 @@ namespace MSSQLand.Utilities
                 ? $"[{database.Trim('[', ']')}]..[{table.Trim('[', ']')}]"
                 : $"[{database.Trim('[', ']')}].[{schema.Trim('[', ']')}].[{table.Trim('[', ']')}]";
         }
+
+        /// <summary>
+        /// Replaces large hex literals in a SQL string with a truncated placeholder
+        /// so log lines stay readable. Keeps the first 8 hex chars and appends &lt;strip&gt;.
+        /// Only intended for display — never pass the result back to SQL Server.
+        /// </summary>
+        public static string StripHexPayload(string query)
+            => Regex.Replace(query, @"0x([0-9A-Fa-f]{9,})",
+                m => $"0x{m.Groups[1].Value.Substring(0, 8)}<strip>");
 
         /// <summary>
         /// Returns null if the string is empty or whitespace, otherwise returns the trimmed string.
