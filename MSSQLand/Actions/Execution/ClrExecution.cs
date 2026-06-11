@@ -56,7 +56,7 @@ namespace MSSQLand.Actions.Execution
             Logger.Info($"SHA-512 Hash: {libraryHash}");
             Logger.Info($"DLL Bytes Length: {libraryHexBytes.Length}");
 
-            string assemblyName = ByteHelper.GetRandomIdentifier(6);
+            string assemblyName = ByteHelper.GetAssemblyName();
 
             string dropProcedure = $"DROP PROCEDURE IF EXISTS [{_function}]";
             string dropAssembly = $"DROP ASSEMBLY IF EXISTS [{assemblyName}]";

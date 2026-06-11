@@ -38,6 +38,35 @@ namespace MSSQLand.Utilities
             return Guid.NewGuid().ToString("N").Substring(0, length);
         }
 
+        private static readonly string[] _namePrefixes = new[]
+        {
+            "Sql", "Data", "Query", "Core", "DbUtil",
+            "Schema", "Record", "Engine", "Table", "Index"
+        };
+
+        private static readonly string[] _nameSuffixes = new[]
+        {
+            "Helper", "Manager", "Service", "Provider",
+            "Access", "Handler", "Util", "Processor"
+        };
+
+        /// <summary>
+        /// Generates a plausible assembly name that blends with legitimate SQL Server objects,
+        /// with a short random hex suffix for uniqueness.
+        /// </summary>
+        /// <returns>A name like "SqlHelper_a3f7c2b1".</returns>
+        /// <example>
+        /// GetAssemblyName() => "QueryService_e9d2f1a0"
+        /// GetAssemblyName() => "DataHelper_c3b8a2d1"
+        /// </example>
+        public static string GetAssemblyName()
+        {
+            string prefix = _namePrefixes[_random.Next(_namePrefixes.Length)];
+            string suffix = _nameSuffixes[_random.Next(_nameSuffixes.Length)];
+            string unique = GetRandomIdentifier(6);
+            return $"{prefix}{suffix}_{unique}";
+        }
+
         /// <summary>
         /// Converts a nibble (4-bit value from 0 to 15) into its corresponding hexadecimal character.
         /// This method avoids allocations and conditionally returns either uppercase or lowercase letters.

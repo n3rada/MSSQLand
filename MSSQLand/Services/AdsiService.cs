@@ -17,7 +17,7 @@ namespace MSSQLand.Services
 
         public int Port = 12235;
 
-        public string AssemblyName = "ldapServer";
+        public string AssemblyName = "ldapserver";
         public string FunctionName = $"f_{ByteHelper.GetRandomIdentifier()}";
         public string LibraryPath = $"l_{ByteHelper.GetRandomIdentifier()}";
 

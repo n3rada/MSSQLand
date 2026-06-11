@@ -186,7 +186,7 @@ namespace MSSQLand.Models
 
         public string GetChainArguments()
         {
-            return string.Join("", GetChainParts());
+            return string.Join(";", GetChainParts());
         }
 
         /// <summary>
