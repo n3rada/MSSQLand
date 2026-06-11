@@ -64,7 +64,7 @@ namespace MSSQLand.Actions.Execution
             bool usedTrustedAssembly = false;
             bool setTrustworthy = false;
 
-            Logger.TaskNested("Starting deployment process");
+            Logger.Task("Starting deployment process");
 
             try
             {
@@ -166,22 +166,20 @@ namespace MSSQLand.Actions.Execution
             }
             finally
             {
-                // Cleanup (always executed)
-                Logger.TaskNested("Performing cleanup");
+                Logger.Task("Performing cleanup");
                 databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
                 databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
 
                 if (usedTrustedAssembly)
-                {
                     databaseContext.QueryService.ExecuteNonProcessing(dropClrHash);
-                }
 
                 if (setTrustworthy)
                 {
-                    Logger.TaskNested("Resetting TRUSTWORTHY property");
                     databaseContext.QueryService.ExecuteNonProcessing(
-                        $"ALTER DATABASE [{databaseContext.QueryService.ExecutionServer.Database}] SET TRUSTWORTHY OFF;");
+                        $"ALTER DATABASE [{databaseContext.QueryService.ExecutionServer.Database}] SET TRUSTWORTHY OFF");
                 }
+
+                Logger.Success("Cleanup complete");
             }
         }
 
