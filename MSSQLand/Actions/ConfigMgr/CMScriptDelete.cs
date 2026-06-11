@@ -35,7 +35,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Deleting ConfigMgr script: {_scriptGuid}");
+            Logger.Info($"Deleting ConfigMgr script: {_scriptGuid}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

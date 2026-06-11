@@ -36,8 +36,8 @@ namespace MSSQLand.Actions.ConfigMgr
             string serverMsg = !string.IsNullOrEmpty(_server) ? $" (server: {_server})" : "";
             string typeMsg = !string.IsNullOrEmpty(_type) ? $" (type: {_type})" : "";
             string activeMsg = _activeOnly ? " (active only)" : "";
-            Logger.Task($"Enumerating ConfigMgr distribution points{serverMsg}{typeMsg}{activeMsg}");
-            Logger.TaskNested(_limit > 0 ? $"Limit: {_limit}" : "Limit: none (--all)");
+            Logger.Info($"Enumerating ConfigMgr distribution points{serverMsg}{typeMsg}{activeMsg}");
+            Logger.InfoNested(_limit > 0 ? $"Limit: {_limit}" : "Limit: none (--all)");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

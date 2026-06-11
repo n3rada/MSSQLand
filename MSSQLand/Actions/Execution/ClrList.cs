@@ -18,7 +18,7 @@ namespace MSSQLand.Actions.Execution
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Enumerating user-defined CLR assemblies");
+            Logger.Info("Enumerating user-defined CLR assemblies");
 
             const string query = @"
 SELECT

@@ -15,7 +15,7 @@ namespace MSSQLand.Actions.Database
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Retrieving current user information");
+            Logger.Info("Retrieving current user information");
 
             (string userName, string systemUser) = databaseContext.UserService.GetInfo();
 

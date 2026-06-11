@@ -65,7 +65,7 @@ namespace MSSQLand.Actions.FileSystem
         /// <param name="databaseContext">The DatabaseContext instance to execute the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Displaying tree for: {_path}");
+            Logger.Info($"Displaying tree for: {_path}");
             Logger.Info($"Depth: {_depth}, Show files: {_showFiles}, Mode: {(_useUnicode ? "Unicode" : "ASCII")}");
 
             // Ensure path ends with backslash for xp_dirtree

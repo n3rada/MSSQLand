@@ -60,7 +60,7 @@ namespace MSSQLand.Actions.Administration
             // Mode 1: Set configuration option
             if (_value >= 0 && !string.IsNullOrEmpty(_optionName))
             {
-                Logger.Task($"Setting {_optionName} to {_value}");
+                Logger.Info($"Setting {_optionName} to {_value}");
                 databaseContext.ConfigService.SetConfigurationOption(_optionName, _value);
                 return null;
             }
@@ -68,7 +68,7 @@ namespace MSSQLand.Actions.Administration
             // Mode 2: Show specific option status
             if (!string.IsNullOrEmpty(_optionName) && _value < 0)
             {
-                Logger.Task($"Checking status of '{_optionName}'");
+                Logger.Info($"Checking status of '{_optionName}'");
                 int status = databaseContext.ConfigService.GetConfigurationStatus(_optionName);
 
                 if (status < 0)
@@ -82,7 +82,7 @@ namespace MSSQLand.Actions.Administration
             }
 
             // Mode 3: List all security-sensitive configurations
-            Logger.Task("Listing all configuration options");
+            Logger.Info("Listing all configuration options");
             var results = CheckConfigurationOptions(databaseContext);
 
             if (results.Count > 0)

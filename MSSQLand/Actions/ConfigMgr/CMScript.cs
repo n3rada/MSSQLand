@@ -20,7 +20,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Retrieving ConfigMgr script: {_scriptGuid}");
+            Logger.Info($"Retrieving ConfigMgr script: {_scriptGuid}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

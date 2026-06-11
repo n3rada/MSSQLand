@@ -30,7 +30,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Executing ConfigMgr script on ResourceID: {_resourceId}");
+            Logger.Info($"Executing ConfigMgr script on ResourceID: {_resourceId}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -136,7 +136,7 @@ VALUES
                     Logger.Success("Task pushed to device");
 
                     // Step 7: Check status after brief delay
-                    Logger.TaskNested("Checking execution status after 2 seconds");
+                    Logger.InfoNested("Checking execution status after 2 seconds");
                     Thread.Sleep(2000); // Wait 2 seconds for execution
 
                     string outputQuery = $@"
@@ -153,7 +153,7 @@ WHERE TaskID = {taskId}";
 
                         Logger.NewLine();
                         Logger.Success($"Script execution completed (Exit Code: {exitCode})");
-                        Logger.TaskNested("Script Output");
+                        Logger.InfoNested("Script Output");
                         Logger.NewLine();
 
                         if (!string.IsNullOrEmpty(scriptOutput))

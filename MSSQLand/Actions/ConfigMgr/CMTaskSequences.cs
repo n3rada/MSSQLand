@@ -56,8 +56,8 @@ namespace MSSQLand.Actions.ConfigMgr
             if (!string.IsNullOrEmpty(_description))
                 filterMsg += $" description: {_description}";
 
-            Logger.Task($"Enumerating ConfigMgr task sequences{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
-            Logger.TaskNested($"Limit: {_limit}");
+            Logger.Info($"Enumerating ConfigMgr task sequences{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
+            Logger.InfoNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

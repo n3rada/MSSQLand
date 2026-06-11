@@ -13,10 +13,9 @@ namespace MSSQLand.Utilities
         Trace = 0,
         Debug = 1,
         Info = 2,
-        Task = 3,
-        Success = 4,
-        Warning = 5,
-        Error = 6
+        Success = 3,
+        Warning = 4,
+        Error = 5
     }
 
     /// <summary>
@@ -24,8 +23,7 @@ namespace MSSQLand.Utilities
     /// </summary>
     /// <remarks>
     /// Usage convention:
-    /// - Task/TaskNested: an operation about to execute (query/run/create/scan)
-    /// - Info/InfoNested: context, configuration, or results
+    /// - Info/InfoNested: operations, context, configuration, or results
     /// - Success/Warning/Error: outcomes
     /// - Debug: notable diagnostic events for operators running --debug (connection failures with reasons, significant state changes); not for repetitive per-iteration detail
     /// - Trace: developer-level internal state (per-hop traversal, cache hits, skip decisions, internal counts, raw query routing); bypasses soft-silent mode; not intended for operators
@@ -137,14 +135,6 @@ namespace MSSQLand.Utilities
             Console.ResetColor();
         }
 
-        public static void Task(string message)
-        {
-            if (IsSilenced || MinimumLogLevel > LogLevel.Task) return;
-            Console.ForegroundColor = ConsoleColor.DarkCyan;
-            Console.Out.WriteLine($"[>] {message}");
-            Console.ResetColor();
-        }
-
         public static void Success(string message)
         {
             if (IsSilenced || MinimumLogLevel > LogLevel.Success) return;
@@ -198,15 +188,6 @@ namespace MSSQLand.Utilities
         {
             if (IsSilenced || MinimumLogLevel > LogLevel.Success) return;
             Console.ForegroundColor = ConsoleColor.DarkGreen;
-            string indent = new(' ', indentLevel * 4);
-            Console.Out.WriteLine($"{indent}{symbol} {message}");
-            Console.ResetColor();
-        }
-
-        public static void TaskNested(string message, int indentLevel = 0, string symbol = "|->")
-        {
-            if (IsSilenced || MinimumLogLevel > LogLevel.Task) return;
-            Console.ForegroundColor = ConsoleColor.DarkCyan;
             string indent = new(' ', indentLevel * 4);
             Console.Out.WriteLine($"{indent}{symbol} {message}");
             Console.ResetColor();

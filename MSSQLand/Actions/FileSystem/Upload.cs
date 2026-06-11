@@ -66,7 +66,7 @@ namespace MSSQLand.Actions.FileSystem
         /// <param name="databaseContext">The DatabaseContext instance to execute the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Uploading '{_localFileInfo.Name}' to remote server");
+            Logger.Info($"Uploading '{_localFileInfo.Name}' to remote server");
 
             if (string.IsNullOrWhiteSpace(_remotePath))
             {
@@ -76,12 +76,12 @@ namespace MSSQLand.Actions.FileSystem
             {
                 // Path is a directory (ends with \ or has no extension)
                 _remotePath = Path.Combine(_remotePath, _localFileInfo.Name);
-                Logger.TaskNested($"Remote path is a directory, appending filename");
+                Logger.InfoNested($"Remote path is a directory, appending filename");
             }
 
-            Logger.TaskNested($"Local file: {_localFileInfo.FullName}");
-            Logger.TaskNested($"File size: {_localFileInfo.Length:N0} bytes");
-            Logger.TaskNested($"Remote destination: {_remotePath}");
+            Logger.InfoNested($"Local file: {_localFileInfo.FullName}");
+            Logger.InfoNested($"File size: {_localFileInfo.Length:N0} bytes");
+            Logger.InfoNested($"Remote destination: {_remotePath}");
 
             // Read local file content
             byte[] fileContent;

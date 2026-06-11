@@ -24,7 +24,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Checking status for Task ID: {_taskId}");
+            Logger.Info($"Checking status for Task ID: {_taskId}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -92,7 +92,7 @@ WHERE ses.TaskID = {_taskId}";
                     if (!string.IsNullOrEmpty(scriptOutput))
                     {
                         Logger.NewLine();
-                        Logger.TaskNested("Script Output");
+                        Logger.InfoNested("Script Output");
                         Logger.NewLine();
 
                         try

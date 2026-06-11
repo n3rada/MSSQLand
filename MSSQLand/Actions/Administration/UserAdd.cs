@@ -44,9 +44,9 @@ namespace MSSQLand.Actions.Administration
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Creating SQL login '{_username}'");
-            Logger.TaskNested($"Password: '{_password}'");
-            Logger.TaskNested($"Role: '{_role}'");
+            Logger.Info($"Creating SQL login '{_username}'");
+            Logger.InfoNested($"Password: '{_password}'");
+            Logger.InfoNested($"Role: '{_role}'");
 
             try
             {
@@ -72,7 +72,7 @@ namespace MSSQLand.Actions.Administration
             try
             {
                 // Add the login to the specified server role
-                Logger.TaskNested($"Adding '{_username}' to {_role} server role.");
+                Logger.InfoNested($"Adding '{_username}' to {_role} server role.");
 
                 string addRoleToNewUserQuery = $"ALTER SERVER ROLE [{_role}] ADD MEMBER [{_username}]";
                 databaseContext.QueryService.ExecuteNonProcessing(addRoleToNewUserQuery);

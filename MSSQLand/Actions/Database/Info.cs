@@ -71,7 +71,7 @@ namespace MSSQLand.Actions.Database
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Retrieving SQL Server information");
+            Logger.Info("Retrieving SQL Server information");
 
             var results = new Dictionary<string, string>();
             bool isAzureSQL = databaseContext.QueryService.IsAzureSQL();

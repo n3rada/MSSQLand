@@ -19,7 +19,7 @@ namespace MSSQLand.Actions.Database
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Retrieving Windows authentication token groups");
+            Logger.Info("Retrieving Windows authentication token groups");
 
             try
             {

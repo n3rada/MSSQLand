@@ -26,7 +26,7 @@ namespace MSSQLand.Actions.Administration
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Enumerating SQL Server audit configuration");
+            Logger.Info("Enumerating SQL Server audit configuration");
 
             // 1. Audit objects
             string auditsQuery = @"
@@ -64,7 +64,7 @@ FROM sys.server_audits a ORDER BY a.name";
                 );
             }
 
-            Logger.TaskNested($"Found {audits.Rows.Count} audit object(s)");
+            Logger.InfoNested($"Found {audits.Rows.Count} audit object(s)");
             Console.WriteLine(OutputFormatter.ConvertDataTable(display));
 
             // 2. Audit specifications + event groups
@@ -100,7 +100,7 @@ ORDER BY a.name, s.name, d.audit_action_name";
                 );
             }
 
-            Logger.TaskNested($"Found {specs.Rows.Count} audited event group(s)");
+            Logger.InfoNested($"Found {specs.Rows.Count} audited event group(s)");
             Console.WriteLine(OutputFormatter.ConvertDataTable(specsDisplay));
 
             return specsDisplay;

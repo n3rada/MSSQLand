@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.Administration
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Retrieving currently executing SQL requests");
+            Logger.Info("Retrieving currently executing SQL requests");
 
             string currentCommandsQuery = @"
             SELECT 

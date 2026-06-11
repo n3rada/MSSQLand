@@ -93,8 +93,8 @@ namespace MSSQLand.Actions.ConfigMgr
             if (!string.IsNullOrEmpty(_application)) filterMsg += $" app:{_application}";
             if (!string.IsNullOrEmpty(_enabled)) filterMsg += $" enabled:{_enabled}";
 
-            Logger.Task($"Retrieving deployment types{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filters:{filterMsg})")}");
-            Logger.TaskNested(_limit > 0 ? $"Limit: {_limit}" : "Limit: none (--all)");
+            Logger.Info($"Retrieving deployment types{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filters:{filterMsg})")}");
+            Logger.InfoNested(_limit > 0 ? $"Limit: {_limit}" : "Limit: none (--all)");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

@@ -20,7 +20,7 @@ namespace MSSQLand.Actions.ConfigMgr
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Enumerating ConfigMgr servers in hierarchy");
+            Logger.Info("Enumerating ConfigMgr servers in hierarchy");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

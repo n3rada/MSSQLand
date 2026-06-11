@@ -165,7 +165,7 @@ namespace MSSQLand.Actions.Database
             // ═══════════════════════════════════════════════════════════════════════════════
             // SECTION 1: Extended Stored Procedures (xp_*)
             // ═══════════════════════════════════════════════════════════════════════════════
-            Logger.Task("Enumerating extended stored procedures (xp_*)");
+            Logger.Info("Enumerating extended stored procedures (xp_*)");
 
             string xpQuery = $@"
                 SELECT 
@@ -222,7 +222,7 @@ namespace MSSQLand.Actions.Database
                 // SECTION 2: OLE Automation Procedures (sp_OA*)
                 // ═══════════════════════════════════════════════════════════════════════════════
                 Logger.NewLine();
-                Logger.TaskNested("Enumerating OLE Automation procedures (sp_OA*)");
+                Logger.InfoNested("Enumerating OLE Automation procedures (sp_OA*)");
 
                 // Check if Ole Automation is enabled
                 int oleStatus = databaseContext.ConfigService.GetConfigurationStatus("Ole Automation Procedures");
@@ -280,7 +280,7 @@ namespace MSSQLand.Actions.Database
                 // SECTION 3: Other Useful System Procedures
                 // ═══════════════════════════════════════════════════════════════════════════════
                 Logger.NewLine();
-                Logger.TaskNested("Checking other useful system procedures");
+                Logger.InfoNested("Checking other useful system procedures");
 
                 // Check key configuration options
                 int externalScripts = databaseContext.ConfigService.GetConfigurationStatus("external scripts enabled");

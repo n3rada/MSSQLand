@@ -52,7 +52,7 @@ namespace MSSQLand.Actions.Agent
             if (!AgentHelper.CheckAgentRunning(databaseContext))
                 return null;
 
-            Logger.Task($"Executing [{_subSystem}] command via SQL Server Agent job");
+            Logger.Info($"Executing [{_subSystem}] command via SQL Server Agent job");
 
             // Use names that blend with legitimate internal tooling
             string jobName = $"SQLMaint_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
@@ -84,7 +84,7 @@ namespace MSSQLand.Actions.Agent
                     $"EXEC msdb.dbo.sp_add_jobserver @job_name = '{jobName}', @server_name = '(local)'");
 
                 // Start job
-                Logger.TaskNested($"Starting job '{jobName}'");
+                Logger.InfoNested($"Starting job '{jobName}'");
                 databaseContext.QueryService.ExecuteNonProcessing(
                     $"EXEC msdb.dbo.sp_start_job @job_name = '{jobName}'");
                 Logger.Success("Job started");
@@ -101,7 +101,7 @@ namespace MSSQLand.Actions.Agent
                 }
 
                 // Cleanup
-                Logger.TaskNested($"Cleaning up job '{jobName}'");
+                Logger.InfoNested($"Cleaning up job '{jobName}'");
                 databaseContext.QueryService.ExecuteNonProcessing(
                     $"EXEC msdb.dbo.sp_delete_job @job_name = '{jobName}'");
                 Logger.Success("Job cleaned up");

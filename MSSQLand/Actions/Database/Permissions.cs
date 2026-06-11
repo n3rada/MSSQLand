@@ -57,8 +57,8 @@ namespace MSSQLand.Actions.Database
         {
             if (string.IsNullOrEmpty(_fqtn))
             {
-                Logger.Task("Listing permissions of the current user on server and accessible databases");
-                Logger.TaskNested("Server permissions");
+                Logger.Info("Listing permissions of the current user on server and accessible databases");
+                Logger.InfoNested("Server permissions");
 
                 var serverPerms = databaseContext.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'SERVER')");
                 var sortedServerPerms = SortPermissionsByImportance(serverPerms);
@@ -89,7 +89,7 @@ namespace MSSQLand.Actions.Database
             // Build the target table name (schema is guaranteed non-null from validation)
             string targetTable = $"[{schema}].[{table}]";
 
-            Logger.Task($"Listing permissions for {databaseContext.UserService.MappedUser} on [{database}]{targetTable}");
+            Logger.Info($"Listing permissions for {databaseContext.UserService.MappedUser} on [{database}]{targetTable}");
 
             // Build USE statement if database is different from current
             string useStatement = database == databaseContext.QueryService.ExecutionServer.Database

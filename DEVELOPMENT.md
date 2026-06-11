@@ -416,7 +416,7 @@ namespace MSSQLand.Actions.Database
         public override object Execute(DatabaseContext databaseContext)
         {
             // Log the action being performed
-            Logger.TaskNested($"Performing action with argument: {_argument}, count: {_count}");
+            Logger.InfoNested($"Performing action with argument: {_argument}, count: {_count}");
 
             // Your T-SQL query
             string query = @"

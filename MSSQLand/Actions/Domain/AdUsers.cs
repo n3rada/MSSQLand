@@ -37,7 +37,7 @@ namespace MSSQLand.Actions.Domain
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Enumerating domain users via RID cycling (max RID: {_maxRid})");
+            Logger.Info($"Enumerating domain users via RID cycling (max RID: {_maxRid})");
 
             var results = new List<Dictionary<string, object>>();
 
@@ -58,8 +58,8 @@ namespace MSSQLand.Actions.Domain
                 string domain = domainInfo["Domain"];
                 string AdDomainPrefix = domainInfo["Domain SID"];
 
-                Logger.TaskNested($"Target domain: {domain}");
-                Logger.TaskNested($"Domain SID prefix: {AdDomainPrefix}");
+                Logger.InfoNested($"Target domain: {domain}");
+                Logger.InfoNested($"Domain SID prefix: {AdDomainPrefix}");
 
                 // Iterate in batches
                 int foundCount = 0;

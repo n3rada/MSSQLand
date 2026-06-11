@@ -48,7 +48,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Adding ConfigMgr script: {_scriptName}");
+            Logger.Info($"Adding ConfigMgr script: {_scriptName}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

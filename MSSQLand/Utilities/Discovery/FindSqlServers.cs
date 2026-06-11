@@ -34,16 +34,16 @@ namespace MSSQLand.Utilities.Discovery
             string protocol = globalCatalog ? "GC" : "LDAP";
             string scope = globalCatalog ? "forest-wide (Global Catalog)" : "domain";
 
-            Logger.Task($"Lurking for MS SQL Servers on Active Directory {scope}: {domain}");
+            Logger.Info($"Lurking for MS SQL Servers on Active Directory {scope}: {domain}");
 
             if (globalCatalog)
             {
-                Logger.TaskNested("Discovery methods: MSSQLSvc SPNs + computers with 'SQL' in name or description.");
-                Logger.TaskNested("Using Global Catalog (port 3268) - OU-based search disabled (not indexed in GC).");
+                Logger.InfoNested("Discovery methods: MSSQLSvc SPNs + computers with 'SQL' in name or description.");
+                Logger.InfoNested("Using Global Catalog (port 3268) - OU-based search disabled (not indexed in GC).");
             }
             else
             {
-                Logger.TaskNested("Discovery methods: MSSQLSvc SPNs + computers with 'SQL' in name, description, or OU.");
+                Logger.InfoNested("Discovery methods: MSSQLSvc SPNs + computers with 'SQL' in name, description, or OU.");
             }
 
             // Initialize domain service based on the provided domain

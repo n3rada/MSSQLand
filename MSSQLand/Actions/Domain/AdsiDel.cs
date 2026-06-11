@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.Domain
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Deleting ADSI linked server: {_serverName}");
+            Logger.Info($"Deleting ADSI linked server: {_serverName}");
 
             AdsiService adsiService = new(databaseContext);
 

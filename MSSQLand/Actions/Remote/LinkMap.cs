@@ -198,8 +198,8 @@ namespace MSSQLand.Actions.Remote
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Mapping linked server topology");
-            Logger.TaskNested($"Maximum recursion depth: {_limit}");
+            Logger.Info("Mapping linked server topology");
+            Logger.InfoNested($"Maximum recursion depth: {_limit}");
 
             Logger.NewLine();
             Logger.Warning("This may take several minutes depending on chain depth and impersonation paths.");
@@ -310,7 +310,7 @@ namespace MSSQLand.Actions.Remote
             // "No visibility") - an impersonable user may see what we cannot.
             bool forceImpersonationDiscovery = sqlServerLinks.Count == 0 && noVisibilityLinks.Count > 0;
             if (!_rootNode.IsSysadmin)
-                Logger.Task("Enumerating impersonable login paths");
+                Logger.Info("Enumerating impersonable login paths");
             var reachableChains = _rootNode.IsSysadmin
                 ? new List<List<string>>()
                 : GetReachableLoginChains(databaseContext);
@@ -341,7 +341,7 @@ namespace MSSQLand.Actions.Remote
 
             // Additional links visible from each transitive impersonation chain
             if (reachableChains.Count > 0)
-                Logger.Task("Expanding link visibility across impersonation contexts");
+                Logger.Info("Expanding link visibility across impersonation contexts");
             foreach (var chain in reachableChains)
             {
                 // Skip chains ending at system accounts: they add no unique linked server info and cause errors
@@ -373,7 +373,7 @@ namespace MSSQLand.Actions.Remote
                         }
                     }
                     if (gained > 0)
-                        Logger.TaskNested($"+{gained} link(s) visible as [{string.Join(" -> ", chain)}]");
+                        Logger.InfoNested($"+{gained} link(s) visible as [{string.Join(" -> ", chain)}]");
                 }
                 catch (Exception ex)
                 {
@@ -414,7 +414,7 @@ namespace MSSQLand.Actions.Remote
             }
 
             Logger.NewLine();
-            Logger.Task($"Exploring {allSqlLinks.Count} SQL Server chainable link(s)");
+            Logger.Info($"Exploring {allSqlLinks.Count} SQL Server chainable link(s)");
 
             Stopwatch totalStopwatch = Stopwatch.StartNew();
 
@@ -451,7 +451,7 @@ namespace MSSQLand.Actions.Remote
                     continue;
                 }
 
-                Logger.TaskNested($"Probing {remoteServer}");
+                Logger.InfoNested($"Probing {remoteServer}");
                 Stopwatch serverStopwatch = Stopwatch.StartNew();
 
                 HashSet<string> visitedInChain = new() { startingHash };
@@ -637,7 +637,7 @@ namespace MSSQLand.Actions.Remote
                 string reachedLabel = actualServerName.Equals(targetServer, StringComparison.OrdinalIgnoreCase)
                     ? targetServer
                     : $"{targetServer} [{actualServerName}]";
-                Logger.TaskNested($"Reached {reachedLabel} as '{remoteLoggedInUser}' via {BuildViaDisplay(currentPath, targetServer, parentImpersonationChain)}");
+                Logger.InfoNested($"Reached {reachedLabel} as '{remoteLoggedInUser}' via {BuildViaDisplay(currentPath, targetServer, parentImpersonationChain)}");
 
                 // Early re-entry check: if we have already fully explored (server, login) via a
                 // different chain, reuse cached roles to build a leaf node without paying for
@@ -761,7 +761,7 @@ namespace MSSQLand.Actions.Remote
                             var steps = chain.Select(login => new ImpersonationStep { Login = login, Roles = new List<string>() }).ToList();
                             steps[steps.Count - 1].Roles = chainEndRoles;
                             currentNode.EscalationPaths.Add(steps);
-                            Logger.TaskNested($"Escalation path on {targetServer}: [{string.Join(" -> ", chain)}]");
+                            Logger.InfoNested($"Escalation path on {targetServer}: [{string.Join(" -> ", chain)}]");
                         }
 
                         DataTable chainLinks = Links.GetLinkedServers(databaseContext);

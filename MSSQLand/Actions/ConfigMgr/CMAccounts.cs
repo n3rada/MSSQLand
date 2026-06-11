@@ -14,7 +14,7 @@ namespace MSSQLand.Actions.ConfigMgr
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Enumerating ConfigMgr user accounts (NAA, Client Push, Task Sequence)");
+            Logger.Info("Enumerating ConfigMgr user accounts (NAA, Client Push, Task Sequence)");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

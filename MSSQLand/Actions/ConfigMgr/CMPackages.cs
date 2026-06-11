@@ -65,8 +65,8 @@ namespace MSSQLand.Actions.ConfigMgr
             if (_noSource)
                 filterMsg += " no-source";
 
-            Logger.Task($"Enumerating ConfigMgr packages{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
-            Logger.TaskNested($"Limit: {_limit}");
+            Logger.Info($"Enumerating ConfigMgr packages{(string.IsNullOrEmpty(filterMsg) ? "" : $" (filter:{filterMsg})")}");
+            Logger.InfoNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

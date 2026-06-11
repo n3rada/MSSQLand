@@ -23,7 +23,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Retrieving comprehensive package information for: {_packageId}");
+            Logger.Info($"Retrieving comprehensive package information for: {_packageId}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

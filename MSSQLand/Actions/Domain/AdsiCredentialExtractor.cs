@@ -76,7 +76,7 @@ namespace MSSQLand.Actions.Domain
             if (existingServers.Count > 0)
             {
                 _targetServer = existingServers[0];
-                Logger.Task($"Found existing ADSI linked server: '{_targetServer}'");
+                Logger.Info($"Found existing ADSI linked server: '{_targetServer}'");
                 _useExistingServer = true;
                 return ExtractFromExistingServer(databaseContext);
             }
@@ -101,7 +101,7 @@ namespace MSSQLand.Actions.Domain
         /// </summary>
         private Tuple<string, string> ExtractFromExistingServer(DatabaseContext databaseContext)
         {
-            Logger.TaskNested($"Extracting credentials from existing ADSI server '{_targetServer}'");
+            Logger.InfoNested($"Extracting credentials from existing ADSI server '{_targetServer}'");
             return ExtractCredentials(databaseContext, _targetServer);
         }
 
@@ -110,7 +110,7 @@ namespace MSSQLand.Actions.Domain
         /// </summary>
         private Tuple<string, string> ExtractWithTemporaryServer(DatabaseContext databaseContext)
         {
-            Logger.TaskNested("Creating temporary ADSI server for credential extraction");
+            Logger.InfoNested("Creating temporary ADSI server for credential extraction");
 
             AdsiService adsiService = new(databaseContext);
 
@@ -121,7 +121,7 @@ namespace MSSQLand.Actions.Domain
                 return null;
             }
 
-            Logger.TaskNested($"Server name: {_targetServer}");
+            Logger.InfoNested($"Server name: {_targetServer}");
 
             try
             {
@@ -157,9 +157,9 @@ namespace MSSQLand.Actions.Domain
                 return null;
             }
 
-            Logger.TaskNested($"Extracting credentials via LDAP simple bind interception");
+            Logger.InfoNested($"Extracting credentials via LDAP simple bind interception");
 
-            Logger.TaskNested($"Targeting linked ADSI server: {adsiServer}");
+            Logger.InfoNested($"Targeting linked ADSI server: {adsiServer}");
 
             // CLR deployment requires CONTROL SERVER or sysadmin.
             // For unprivileged capture via an external listener, use adsi-redirect instead.
@@ -183,7 +183,7 @@ namespace MSSQLand.Actions.Domain
                 adsiService.LoadLdapServerAssembly();
                 Task<DataTable> task = adsiService.ListenForRequest();
 
-                Logger.TaskNested("Executing LDAP solicitation");
+                Logger.InfoNested("Executing LDAP solicitation");
 
                 // For a temporary server using @useself='true', impersonated users won't have
                 // a login mapping on the newly created server: bail out early.
@@ -257,7 +257,7 @@ namespace MSSQLand.Actions.Domain
             }
             finally
             {
-                Logger.TaskNested("Cleaning up CLR assembly and function");
+                Logger.InfoNested("Cleaning up CLR assembly and function");
                 try { databaseContext.ConfigService.DropDependentObjects(adsiService.AssemblyName); } catch { }
                 try { databaseContext.QueryService.ExecuteNonProcessing($"DROP FUNCTION IF EXISTS [{adsiService.FunctionName}];"); } catch { }
                 try { databaseContext.QueryService.ExecuteNonProcessing($"DROP ASSEMBLY IF EXISTS [{adsiService.AssemblyName}];"); } catch { }

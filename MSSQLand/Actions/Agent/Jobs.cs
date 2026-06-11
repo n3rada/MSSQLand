@@ -30,7 +30,7 @@ namespace MSSQLand.Actions.Agent
                 return null;
 
             string filterMsg = !string.IsNullOrEmpty(_name) ? $" matching '{_name}'" : "";
-            Logger.Task($"Enumerating SQL Server Agent jobs{filterMsg}");
+            Logger.Info($"Enumerating SQL Server Agent jobs{filterMsg}");
 
             string whereClause = "";
             if (!string.IsNullOrEmpty(_name))

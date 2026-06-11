@@ -117,7 +117,7 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private DataTable ListProcedures(DatabaseContext databaseContext)
         {
-            Logger.Task($"Retrieving all stored procedures in [{databaseContext.QueryService.ExecutionServer.Database}]");
+            Logger.Info($"Retrieving all stored procedures in [{databaseContext.QueryService.ExecutionServer.Database}]");
 
             string query = $@"
                 SELECT
@@ -239,9 +239,9 @@ namespace MSSQLand.Actions.Database
             // Parse schema.procedure using the FQTN parser
             var (_, schema, procedure) = SqlHelper.ParseQualifiedTableName(procedureName);
 
-            Logger.Task($"Executing [{databaseContext.QueryService.ExecutionServer.Database}].[{schema}].[{procedure}]");
+            Logger.Info($"Executing [{databaseContext.QueryService.ExecutionServer.Database}].[{schema}].[{procedure}]");
             if (!string.IsNullOrEmpty(procedureArgs))
-                Logger.TaskNested($"With arguments: {procedureArgs}");
+                Logger.InfoNested($"With arguments: {procedureArgs}");
 
             // Use schema-qualified name in EXEC
             string query = $"EXEC [{schema}].[{procedure}] {procedureArgs}";
@@ -269,7 +269,7 @@ namespace MSSQLand.Actions.Database
             // Parse schema.procedure using the FQTN parser
             var (_, schema, procedure) = SqlHelper.ParseQualifiedTableName(procedureName);
 
-            Logger.Task($"Retrieving definition of [{databaseContext.QueryService.ExecutionServer.Database}].[{schema}].[{procedure}]");
+            Logger.Info($"Retrieving definition of [{databaseContext.QueryService.ExecutionServer.Database}].[{schema}].[{procedure}]");
 
             string query = $@"
                 SELECT
@@ -309,7 +309,7 @@ namespace MSSQLand.Actions.Database
         /// </summary>
         private DataTable SearchProcedures(DatabaseContext databaseContext, string keyword)
         {
-            Logger.Task($"Searching for keyword '{keyword}' in [{databaseContext.QueryService.ExecutionServer.Database}] procedures");
+            Logger.Info($"Searching for keyword '{keyword}' in [{databaseContext.QueryService.ExecutionServer.Database}] procedures");
 
             string query = $@"
                 SELECT

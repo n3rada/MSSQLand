@@ -50,7 +50,7 @@ namespace MSSQLand.Actions.Execution
         /// <param name="databaseContext">The DatabaseContext instance to execute the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Executing remote file: {_filePath}");
+            Logger.Info($"Executing remote file: {_filePath}");
             if (!string.IsNullOrWhiteSpace(_arguments))
             {
                 Logger.InfoNested($"Arguments: {_arguments}");

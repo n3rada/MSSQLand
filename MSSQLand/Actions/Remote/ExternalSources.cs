@@ -30,7 +30,7 @@ namespace MSSQLand.Actions.Remote
         /// <param name="databaseContext">The DatabaseContext for executing the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Retrieving External Data Sources");
+            Logger.Info($"Retrieving External Data Sources");
 
             DataTable resultTable = GetExternalDataSources(databaseContext);
 

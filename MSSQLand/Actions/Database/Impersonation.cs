@@ -13,7 +13,7 @@ namespace MSSQLand.Actions.Database
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Starting impersonation check");
+            Logger.Info("Starting impersonation check");
 
             // Query to obtain all SQL logins and Windows principals except current user
             string query = @"SELECT

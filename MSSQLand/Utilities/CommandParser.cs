@@ -359,7 +359,7 @@ namespace MSSQLand.Utilities
                             }
                         }
 
-                        Logger.Task($"Querying SQL Browser service on {hostArg} (UDP 1434)");
+                        Logger.Info($"Querying SQL Browser service on {hostArg} (UDP 1434)");
                         var instances = SqlBrowser.Query(resolvedIp, hostArg);
                         SqlBrowser.LogInstances(hostArg, instances);
 
@@ -408,19 +408,19 @@ namespace MSSQLand.Utilities
 
                         if (customPorts != null)
                         {
-                            Logger.Task($"Scanning {hostArg} for SQL Server on {customPorts.Length} port(s)");
+                            Logger.Info($"Scanning {hostArg} for SQL Server on {customPorts.Length} port(s)");
                             PortScanner.ScanPorts(resolvedIp, hostArg, customPorts);
                         }
                         else
                         {
-                            Logger.Task($"Scanning {hostArg} for SQL Server ports (TDS validation)");
+                            Logger.Info($"Scanning {hostArg} for SQL Server ports (TDS validation)");
                             if (scanAll)
                             {
-                                Logger.TaskNested("Find all instances (full ephemeral range)");
+                                Logger.InfoNested("Find all instances (full ephemeral range)");
                             }
                             else
                             {
-                                Logger.TaskNested("Stop on first hit (use --all to find all)");
+                                Logger.InfoNested("Stop on first hit (use --all to find all)");
                             }
                             PortScanner.Scan(resolvedIp, hostArg, stopOnFirst: !scanAll);
                         }

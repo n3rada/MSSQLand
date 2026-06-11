@@ -22,7 +22,7 @@ namespace MSSQLand.Actions.Execution
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Inspecting assembly '{_assemblyName}'");
+            Logger.Info($"Inspecting assembly '{_assemblyName}'");
 
             string safeName = _assemblyName.Replace("'", "''");
 
@@ -65,7 +65,7 @@ WHERE a.name = '{safeName}'";
                 return meta;
             }
 
-            Logger.Task("Registered procedures / functions");
+            Logger.Info("Registered procedures / functions");
             Console.WriteLine(OutputFormatter.ConvertDataTable(modules));
 
             return modules;

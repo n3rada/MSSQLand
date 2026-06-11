@@ -133,7 +133,7 @@ namespace MSSQLand.Services
                     return true;
                 }
 
-                Logger.Task($"Setting '{optionName}' to {value}");
+                Logger.Info($"Setting '{optionName}' to {value}");
             }
             catch (Exception ex)
             {
@@ -231,7 +231,7 @@ namespace MSSQLand.Services
                 return true;
             }
 
-            Logger.Task("Enabling advanced options");
+            Logger.Info("Enabling advanced options");
 
             try
             {
@@ -259,7 +259,7 @@ namespace MSSQLand.Services
         /// <returns>True if the option was successfully set, false otherwise.</returns>
         public bool SetServerOption(string serverName, string optionName, string optionValue)
         {
-            Logger.Task($"Setting '{optionName}' to '{optionValue}' on server '{serverName}'");
+            Logger.Info($"Setting '{optionName}' to '{optionValue}' on server '{serverName}'");
             try
             {
                 string query = $@"
@@ -301,7 +301,7 @@ namespace MSSQLand.Services
         {
             try
             {
-                Logger.Task($"Identifying dependent objects for assembly '{assemblyName}'");
+                Logger.Info($"Identifying dependent objects for assembly '{assemblyName}'");
 
                 string query = $@"
             SELECT o.type_desc, o.name

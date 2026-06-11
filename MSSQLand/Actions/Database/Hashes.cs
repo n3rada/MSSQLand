@@ -29,7 +29,7 @@ namespace MSSQLand.Actions.Database
                 return null;
             }
 
-            Logger.Task("Extracting SQL Server login password hashes");
+            Logger.Info("Extracting SQL Server login password hashes");
 
             string query = @"
                 SELECT 

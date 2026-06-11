@@ -25,7 +25,7 @@ namespace MSSQLand.Actions.Database
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Enumerating server-level and database-level roles with their members");
+            Logger.Info("Enumerating server-level and database-level roles with their members");
 
             // ========== SERVER-LEVEL ROLES ==========
 

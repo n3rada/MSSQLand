@@ -119,8 +119,8 @@ namespace MSSQLand.Utilities.Discovery
         /// </summary>
         public static List<ScanResult> Scan(IPAddress ip, string hostname, int timeoutMs = DefaultTimeoutMs, int maxParallelism = DefaultParallelism, bool stopOnFirst = true)
         {
-            Logger.Task("Using TDS prelogin packet for SQL Server validation");
-            Logger.Task("Strategy: edges-to-middle for faster discovery");
+            Logger.Info("Using TDS prelogin packet for SQL Server validation");
+            Logger.Info("Strategy: edges-to-middle for faster discovery");
 
             var globalStopwatch = Stopwatch.StartNew();
 
@@ -136,8 +136,8 @@ namespace MSSQLand.Utilities.Discovery
             Logger.NewLine();
 
             // Phase 1: Known ports
-            Logger.Task($"Testing {KnownPorts.Length} known ports");
-            Logger.TaskNested($"{string.Join(", ", KnownPorts)}");
+            Logger.Info($"Testing {KnownPorts.Length} known ports");
+            Logger.InfoNested($"{string.Join(", ", KnownPorts)}");
             var knownStopwatch = Stopwatch.StartNew();
             var knownResults = ScanPortsParallel(ip, KnownPorts, timeoutMs, maxParallelism, stopOnFirst ? cts : null);
             knownStopwatch.Stop();
@@ -162,7 +162,7 @@ namespace MSSQLand.Utilities.Discovery
             int ephemeralCount = ephemeralPortsToScan.Length;
 
             Logger.NewLine();
-            Logger.Task($"Scanning ephemeral range ({EphemeralStart}-{EphemeralEnd}) - {ephemeralCount} ports");
+            Logger.Info($"Scanning ephemeral range ({EphemeralStart}-{EphemeralEnd}) - {ephemeralCount} ports");
 
             var ephemeralStopwatch = Stopwatch.StartNew();
             var ephemeralPorts = ReorderEdgesToMiddle(ephemeralPortsToScan);
@@ -194,7 +194,7 @@ namespace MSSQLand.Utilities.Discovery
             if (middleCount > 0)
             {
                 Logger.NewLine();
-                Logger.Task($"Scanning middle range ({MiddleRangeStart}-{MiddleRangeEnd}, excluding known ports) - {middleCount} ports");
+                Logger.Info($"Scanning middle range ({MiddleRangeStart}-{MiddleRangeEnd}, excluding known ports) - {middleCount} ports");
 
                 var middleStopwatch = Stopwatch.StartNew();
                 var reorderedMiddlePorts = ReorderEdgesToMiddle(middlePorts);
@@ -408,7 +408,7 @@ namespace MSSQLand.Utilities.Discovery
                     {
                         int oldTimeout = _adaptiveTimeoutMs;
                         _adaptiveTimeoutMs = newTimeout;
-                        Logger.TaskNested($"Timeout: {oldTimeout}ms -> {newTimeout}ms (max RTT: {maxResponseMs}ms)");
+                        Logger.InfoNested($"Timeout: {oldTimeout}ms -> {newTimeout}ms (max RTT: {maxResponseMs}ms)");
                     }
                 }
             }
@@ -451,12 +451,12 @@ namespace MSSQLand.Utilities.Discovery
             var globalStopwatch = Stopwatch.StartNew();
 
             Logger.NewLine();
-            Logger.TaskNested($"Testing ports: {FormatPortList(ports)}");
+            Logger.InfoNested($"Testing ports: {FormatPortList(ports)}");
 
             // Apply edges-to-middle strategy for better discovery (especially for large ranges)
             if (ports.Length > 10)
             {
-                Logger.TaskNested("Strategy: edges-to-middle for faster discovery");
+                Logger.InfoNested("Strategy: edges-to-middle for faster discovery");
                 ports = ReorderEdgesToMiddle(ports);
             }
 
@@ -505,7 +505,7 @@ namespace MSSQLand.Utilities.Discovery
         {
             stopwatch.Stop();
             Logger.NewLine();
-            Logger.Task($"Total scan time: {stopwatch.Elapsed.TotalSeconds:F1}s");
+            Logger.Info($"Total scan time: {stopwatch.Elapsed.TotalSeconds:F1}s");
             Logger.NewLine();
 
             if (results.Count == 0)

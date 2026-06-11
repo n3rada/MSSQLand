@@ -17,7 +17,7 @@ namespace MSSQLand.Actions.Execution
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Executing PowerShell script: {_script}");
+            Logger.Info($"Executing PowerShell script: {_script}");
 
             _command = $"powershell.exe -NonI -NoPro -of Text -encodedComm {EncodingHelper.ConvertToBase64(_script)}";
 

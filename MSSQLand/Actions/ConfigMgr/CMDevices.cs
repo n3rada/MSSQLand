@@ -94,8 +94,8 @@ namespace MSSQLand.Actions.ConfigMgr
             string userSeenMsg = _userSeenDays > 0 ? $" (user seen in last {_userSeenDays} days)" : "";
             string countMsg = _countOnly ? " (count only)" : "";
 
-            Logger.Task($"Enumerating ConfigMgr devices{deviceMsg}{domainMsg}{usernameMsg}{ipMsg}{collectionMsg}{dnMsg}{onlineMsg}{withUsersMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeenMsg}{userSeenMsg}{countMsg}");
-            if (!_countOnly) Logger.TaskNested(_limit > 0 ? $"Limit: {_limit}" : "Limit: none (--all)");
+            Logger.Info($"Enumerating ConfigMgr devices{deviceMsg}{domainMsg}{usernameMsg}{ipMsg}{collectionMsg}{dnMsg}{onlineMsg}{withUsersMsg}{noUserMsg}{clientOnlyMsg}{activeOnlyMsg}{lastSeenMsg}{userSeenMsg}{countMsg}");
+            if (!_countOnly) Logger.InfoNested(_limit > 0 ? $"Limit: {_limit}" : "Limit: none (--all)");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

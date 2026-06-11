@@ -160,8 +160,8 @@ namespace MSSQLand.Utilities.Discovery
         /// <returns>Number of unique servers found</returns>
         public static int Broadcast(int timeoutMs = 3000)
         {
-            Logger.Task("Broadcasting for SQL Servers on the local network (UDP 1434)");
-            Logger.TaskNested("Sending SQL Browser broadcast: servers with Browser service enabled will respond.");
+            Logger.Info("Broadcasting for SQL Servers on the local network (UDP 1434)");
+            Logger.InfoNested("Sending SQL Browser broadcast: servers with Browser service enabled will respond.");
 
             var allInstances = new Dictionary<string, List<SqlInstance>>(StringComparer.OrdinalIgnoreCase);
 

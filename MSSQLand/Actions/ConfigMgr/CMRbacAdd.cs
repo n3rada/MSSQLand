@@ -20,7 +20,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Creating stealthy RBAC admin: {_accountName}");
+            Logger.Info($"Creating stealthy RBAC admin: {_accountName}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

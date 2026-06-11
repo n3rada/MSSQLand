@@ -155,7 +155,7 @@ namespace MSSQLand.Services
                 serverName = adsiServers[0];
             }
 
-            Logger.Task($"Using ADSI linked server: {serverName}");
+            Logger.Info($"Using ADSI linked server: {serverName}");
 
             string query = $"SELECT * FROM OPENQUERY([{serverName}], 'SELECT {attributes} FROM ''<{ldapPath}>'' WHERE {filter}')";
 
@@ -228,10 +228,10 @@ namespace MSSQLand.Services
             string libraryHash = ldapAssembly[0];
             string libraryHexBytes = ldapAssembly[1];
 
-            Logger.Task("Deploying the LDAP server assembly");
-            Logger.TaskNested($"Assembly name: {AssemblyName}");
-            Logger.TaskNested($"Function name: {FunctionName}");
-            Logger.TaskNested($"Library name: {LibraryPath}");
+            Logger.Info("Deploying the LDAP server assembly");
+            Logger.InfoNested($"Assembly name: {AssemblyName}");
+            Logger.InfoNested($"Function name: {FunctionName}");
+            Logger.InfoNested($"Library name: {LibraryPath}");
 
             string dropFunction = $"DROP FUNCTION IF EXISTS [{FunctionName}]";
             string dropAssembly = $"DROP ASSEMBLY IF EXISTS [{AssemblyName}]";
@@ -265,7 +265,7 @@ namespace MSSQLand.Services
 
                 // Batch sp_add_trusted_assembly + drop + create assembly + create function into one
                 // call so they execute in the same remote connection, avoiding DTC visibility issues.
-                Logger.Task("Deploying the LDAP server assembly");
+                Logger.Info("Deploying the LDAP server assembly");
                 _databaseContext.QueryService.ExecuteNonProcessing($@"
                     {addTrustedQuery}
                     DROP FUNCTION IF EXISTS [dbo].[{FunctionName}];

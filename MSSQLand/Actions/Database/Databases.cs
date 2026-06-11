@@ -17,7 +17,7 @@ namespace MSSQLand.Actions.Database
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Enumerating databases");
+            Logger.Info("Enumerating databases");
 
             // Try the full query with physical_name first
             DataTable allDatabases;

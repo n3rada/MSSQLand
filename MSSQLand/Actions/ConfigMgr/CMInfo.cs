@@ -19,7 +19,7 @@ namespace MSSQLand.Actions.ConfigMgr
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Detecting ConfigMgr databases");
+            Logger.Info("Detecting ConfigMgr databases");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -36,7 +36,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
                 if (databases.Count > 1)
                 {
-                    Logger.TaskNested($"Multiple ConfigMgr databases detected: {databases.Count}");
+                    Logger.InfoNested($"Multiple ConfigMgr databases detected: {databases.Count}");
                     foreach (string db in databases)
                     {
                         Logger.Info($"- {db}");
@@ -48,7 +48,7 @@ namespace MSSQLand.Actions.ConfigMgr
                 {
                     Logger.NewLine();
                     string siteCode = CMService.GetSiteCode(sccmDatabase);
-                    Logger.TaskNested($"Enumerating ConfigMgr database: {sccmDatabase} (Site Code: {siteCode})");
+                    Logger.InfoNested($"Enumerating ConfigMgr database: {sccmDatabase} (Site Code: {siteCode})");
 
                     // Get site information
                     string siteInfoQuery = $"SELECT * FROM [{sccmDatabase}].dbo.Sites";

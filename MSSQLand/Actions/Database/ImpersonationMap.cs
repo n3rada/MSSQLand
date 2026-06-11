@@ -24,7 +24,7 @@ WHERE HAS_PERMS_BY_NAME(sp.name, 'LOGIN', 'IMPERSONATE') = 1
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Starting impersonation chain mapping");
+            Logger.Info("Starting impersonation chain mapping");
 
             string startingLogin = databaseContext.UserService.SystemUser;
 

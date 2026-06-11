@@ -64,8 +64,8 @@ namespace MSSQLand.Actions.Domain
                     return null;
                 }
 
-                Logger.Task($"Querying ADSI server '{_adsiServerName}'");
-                Logger.TaskNested($"LDAP: {_ldapQuery}");
+                Logger.Info($"Querying ADSI server '{_adsiServerName}'");
+                Logger.InfoNested($"LDAP: {_ldapQuery}");
 
                 DataTable result;
                 try
@@ -76,7 +76,7 @@ namespace MSSQLand.Actions.Domain
                 {
                     // Data access may have been disabled on the linked server.
                     Logger.Warning($"Data access is disabled for '{_adsiServerName}'");
-                    Logger.TaskNested("Attempting to enable data access");
+                    Logger.InfoNested("Attempting to enable data access");
 
                     if (!databaseContext.ConfigService.SetServerOption(_adsiServerName, "data access", "true"))
                     {

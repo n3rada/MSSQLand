@@ -88,8 +88,7 @@ When adding or changing an action:
 
 ## Logging and Output Rules
 
-- Use `Task`/`TaskNested` for operational steps.
-- Use `Info`/`InfoNested` for factual data/results.
+- Use `Info`/`InfoNested` for operational steps, factual data, and results.
 - Use `Success`, `Warning`, `Error` for outcomes.
 - Use `Debug` for notable diagnostic events useful to an operator running `--debug`: connection failures with reasons, significant state changes. Not for repetitive per-iteration detail.
 - Use `Trace` for developer-level internal state: per-hop traversal, cache hits, skip decisions, internal counts, raw query routing. Visible with `--trace`; not intended for operators — developers and LLM-assisted diagnosis only.

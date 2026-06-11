@@ -17,7 +17,7 @@ namespace MSSQLand.Actions.Execution
         /// <returns>0 on success, null on failure.</returns>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Executing OLE command: {_command}");
+            Logger.Info($"Executing OLE command: {_command}");
 
             // Ensure 'Ole Automation Procedures' are enabled
             if (!databaseContext.ConfigService.SetConfigurationOption("Ole Automation Procedures", 1))

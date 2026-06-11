@@ -19,19 +19,19 @@ namespace MSSQLand.Actions.Execution
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Executing across all accessible databases on {databaseContext.QueryService.ExecutionServer.Hostname}: {_query}");
+            Logger.Info($"Executing across all accessible databases on {databaseContext.QueryService.ExecutionServer.Hostname}: {_query}");
 
             Logger.NewLine();
 
             try
             {
-                Logger.TaskNested("Attempting execution via sp_MSforeachdb");
+                Logger.InfoNested("Attempting execution via sp_MSforeachdb");
                 return ExecuteWithMSForeachDb(databaseContext);
             }
             catch (Exception ex)
             {
                 Logger.Warning($"sp_MSforeachdb failed: {ex.Message}");
-                Logger.TaskNested("Falling back to manual loop across databases");
+                Logger.InfoNested("Falling back to manual loop across databases");
                 return ExecuteWithManualLoop(databaseContext);
             }
         }
@@ -83,7 +83,7 @@ namespace MSSQLand.Actions.Execution
             foreach (DataRow dbRow in databases.Rows)
             {
                 string dbName = dbRow["name"].ToString();
-                Logger.TaskNested($"Querying: {dbName}");
+                Logger.InfoNested($"Querying: {dbName}");
 
                 try
                 {

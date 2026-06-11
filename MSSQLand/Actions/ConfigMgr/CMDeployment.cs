@@ -22,7 +22,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Retrieving assignment details for: {_assignmentId}");
+            Logger.Info($"Retrieving assignment details for: {_assignmentId}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 
@@ -537,7 +537,7 @@ ORDER BY aas.LastStatusTime DESC";
                     
                     Logger.Info("Device Status (showing TOP 50 recent activity)");
                     Console.WriteLine(OutputFormatter.ConvertDataTable(deviceStatusResult));
-                    Logger.TaskNested($"Showing {deviceStatusResult.Rows.Count} device status records");
+                    Logger.InfoNested($"Showing {deviceStatusResult.Rows.Count} device status records");
                 }
                 else
                 {

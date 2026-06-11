@@ -27,8 +27,8 @@ namespace MSSQLand.Actions.ConfigMgr
         public override object Execute(DatabaseContext databaseContext)
         {
             string filterMsg = !string.IsNullOrEmpty(_filter) ? $" (filter: {_filter})" : "";
-            Logger.Task($"Enumerating ConfigMgr client health{filterMsg}");
-            Logger.TaskNested($"Limit: {_limit}");
+            Logger.Info($"Enumerating ConfigMgr client health{filterMsg}");
+            Logger.InfoNested($"Limit: {_limit}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

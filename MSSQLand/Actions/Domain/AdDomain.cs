@@ -17,7 +17,7 @@ namespace MSSQLand.Actions.Domain
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Retrieving domain SID");
+            Logger.Info("Retrieving domain SID");
 
             try
             {

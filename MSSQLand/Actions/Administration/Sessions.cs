@@ -12,7 +12,7 @@ namespace MSSQLand.Actions.Administration
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task("Retrieving active SQL Server sessions");
+            Logger.Info("Retrieving active SQL Server sessions");
 
             string sessionsQuery = @"
             SELECT 

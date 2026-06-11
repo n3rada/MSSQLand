@@ -34,7 +34,7 @@ namespace MSSQLand.Actions.Execution
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Deploying CLR assembly from: {_dllPath}");
+            Logger.Info($"Deploying CLR assembly from: {_dllPath}");
 
             // Step 1: Get the SHA-512 hash for the DLL and its bytes.
             string[] library = ByteHelper.ConvertDllToSqlBytes(_dllPath);
@@ -64,7 +64,7 @@ namespace MSSQLand.Actions.Execution
             bool usedTrustedAssembly = false;
             bool setTrustworthy = false;
 
-            Logger.Task("Starting deployment process");
+            Logger.Info("Starting deployment process");
 
             try
             {
@@ -111,7 +111,7 @@ namespace MSSQLand.Actions.Execution
                 // ExecuteNonProcessing call ensures they land in the same remote connection,
                 // which avoids the distributed-transaction visibility issue where CREATE ASSEMBLY
                 // would not see the trusted assembly entry added in a prior call.
-                Logger.TaskNested("Deploying assembly and stored procedure");
+                Logger.InfoNested("Deploying assembly and stored procedure");
 
                 string assemblyDescription = $"{ByteHelper.GetRandomIdentifier(6)}, version=0.0.0.0, culture=neutral, publickeytoken=null, processorarchitecture=msil";
                 string addTrustedQuery = usedTrustedAssembly
@@ -153,7 +153,7 @@ namespace MSSQLand.Actions.Execution
                 Logger.Success($"Assembly '{assemblyName}' and procedure '{_function}' deployed");
 
                 // Step 5: Execute the stored procedure
-                Logger.TaskNested($"Executing the stored procedure '{_function}'");
+                Logger.InfoNested($"Executing the stored procedure '{_function}'");
                 databaseContext.QueryService.ExecuteNonProcessing($"EXEC [{_function}] @args = '{_args}'");
                 Logger.Success("Stored procedure executed successfully");
 
@@ -166,7 +166,7 @@ namespace MSSQLand.Actions.Execution
             }
             finally
             {
-                Logger.Task("Performing cleanup");
+                Logger.Info("Performing cleanup");
                 databaseContext.QueryService.ExecuteNonProcessing(dropProcedure);
                 databaseContext.QueryService.ExecuteNonProcessing(dropAssembly);
 

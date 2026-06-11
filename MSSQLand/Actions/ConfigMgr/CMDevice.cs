@@ -23,7 +23,7 @@ namespace MSSQLand.Actions.ConfigMgr
 
         public override object Execute(DatabaseContext databaseContext)
         {
-            Logger.Task($"Retrieving comprehensive device information for: {_deviceName}");
+            Logger.Info($"Retrieving comprehensive device information for: {_deviceName}");
 
             CMService sccmService = new(databaseContext.QueryService, databaseContext.Server);
 

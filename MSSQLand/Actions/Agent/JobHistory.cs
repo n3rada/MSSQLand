@@ -28,7 +28,7 @@ namespace MSSQLand.Actions.Agent
         {
             string filterMsg = !string.IsNullOrEmpty(_name) ? $" for '{_name}'" : "";
             string failedMsg = _failedOnly ? " (failed only)" : "";
-            Logger.Task($"Retrieving Agent job history{filterMsg}{failedMsg}");
+            Logger.Info($"Retrieving Agent job history{filterMsg}{failedMsg}");
 
             string whereClause = "WHERE 1=1";
 
