@@ -2,6 +2,7 @@
 
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace MSSQLand.Utilities
 {
@@ -81,6 +82,14 @@ namespace MSSQLand.Utilities
             }
         }
 
+        /// <summary>
+        /// Replaces large hex literals with a truncated placeholder so debug/trace
+        /// lines stay readable. Keeps the first 8 hex chars and appends &lt;strip&gt;.
+        /// </summary>
+        private static string StripHexPayload(string message)
+            => Regex.Replace(message, @"0x([0-9A-Fa-f]{9,})",
+                m => $"0x{m.Groups[1].Value.Substring(0, 8)}<strip>");
+
         public static void NewLine()
         {
             if (IsSilenced) return;
@@ -157,7 +166,7 @@ namespace MSSQLand.Utilities
         {
             if (IsSilenced || MinimumLogLevel > LogLevel.Debug) return;
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.Out.WriteLine($"[*] {message}");
+            Console.Out.WriteLine($"[*] {StripHexPayload(message)}");
             Console.ResetColor();
         }
 
@@ -165,7 +174,7 @@ namespace MSSQLand.Utilities
         {
             if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Trace) return;
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.Out.WriteLine($"[~] {message}");
+            Console.Out.WriteLine($"[~] {StripHexPayload(message)}");
             Console.ResetColor();
         }
 
@@ -217,7 +226,7 @@ namespace MSSQLand.Utilities
             if (IsSilenced || MinimumLogLevel > LogLevel.Debug) return;
             string indent = new(' ', indentLevel * 4);
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.Out.WriteLine($"{indent}{symbol} {message}");
+            Console.Out.WriteLine($"{indent}{symbol} {StripHexPayload(message)}");
             Console.ResetColor();
         }
 
@@ -226,7 +235,7 @@ namespace MSSQLand.Utilities
             if (IsSilentModeEnabled || MinimumLogLevel > LogLevel.Trace) return;
             string indent = new(' ', indentLevel * 4);
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.Out.WriteLine($"{indent}{symbol} {message}");
+            Console.Out.WriteLine($"{indent}{symbol} {StripHexPayload(message)}");
             Console.ResetColor();
         }
 
