@@ -149,7 +149,7 @@ namespace MSSQLand.Actions.Database
             {
                 Logger.TaskNested("Searching across ALL accessible databases");
                 DataTable accessibleDatabases = databaseContext.QueryService.ExecuteTable(
-                    "SELECT name FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1 AND state = 0 ORDER BY name;"
+                    "SELECT name FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1 AND state = 0 ORDER BY name"
                 );
 
                 foreach (DataRow row in accessibleDatabases.Rows)
@@ -205,7 +205,7 @@ namespace MSSQLand.Actions.Database
             {
                 Logger.TaskNested("Searching columns across ALL accessible databases");
                 DataTable accessibleDatabases = databaseContext.QueryService.ExecuteTable(
-                    "SELECT name FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1 AND state = 0 ORDER BY name;"
+                    "SELECT name FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1 AND state = 0 ORDER BY name"
                 );
 
                 foreach (DataRow row in accessibleDatabases.Rows)
@@ -252,7 +252,7 @@ namespace MSSQLand.Actions.Database
                     INNER JOIN [{dbName}].sys.types ty ON c.user_type_id = ty.user_type_id
                     WHERE t.is_ms_shipped = 0{BuildColumnFilterCondition()}
                     AND c.name LIKE '%{_keyword.Replace("'", "''")}%'
-                    ORDER BY s.name, t.name, c.column_id;";
+                    ORDER BY s.name, t.name, c.column_id";
 
                 try
                 {
@@ -316,7 +316,7 @@ namespace MSSQLand.Actions.Database
                 INNER JOIN [{database}].sys.columns c ON t.object_id = c.object_id
                 INNER JOIN [{database}].sys.types ty ON c.user_type_id = ty.user_type_id
                 WHERE t.is_ms_shipped = 0 {tableFilter}{BuildColumnFilterCondition()}
-                ORDER BY s.name, t.name, c.column_id;";
+                ORDER BY s.name, t.name, c.column_id";
 
             DataTable columnsTable;
             try
@@ -418,7 +418,7 @@ namespace MSSQLand.Actions.Database
                 string searchQuery = $@"
                     SELECT *
                     FROM {SqlHelper.BuildQualifiedTableName(database, schema, table)}
-                    WHERE {whereClause};";
+                    WHERE {whereClause}";
 
                 try
                 {

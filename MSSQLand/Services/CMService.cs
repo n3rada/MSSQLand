@@ -50,7 +50,7 @@ namespace MSSQLand.Services
             // Query for all ConfigMgr databases
             try
             {
-                var result = _queryService.ExecuteTable("SELECT name FROM sys.databases WHERE name LIKE 'CM_%';");
+                var result = _queryService.ExecuteTable("SELECT name FROM sys.databases WHERE name LIKE 'CM_%'");
                 foreach (DataRow row in result.Rows)
                 {
                     databases.Add(row["name"].ToString());

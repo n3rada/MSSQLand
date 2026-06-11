@@ -25,46 +25,46 @@ namespace MSSQLand.Actions.Database
                 "all", new Dictionary<string, string>
                 {
                     // Server Identification
-                    { "Server Name", "SELECT @@SERVERNAME;" },
-                    { "Instance Name", "SELECT ISNULL(SERVERPROPERTY('InstanceName'), 'DEFAULT');" },
-                    { "Computer Name", "SELECT SERVERPROPERTY('ComputerNamePhysicalNetBIOS');" },
-                    { "Default Domain", "SELECT DEFAULT_DOMAIN();" },
-                    { "Current Database", "SELECT DB_NAME();" },
+                    { "Server Name", "SELECT @@SERVERNAME" },
+                    { "Instance Name", "SELECT ISNULL(SERVERPROPERTY('InstanceName'), 'DEFAULT')" },
+                    { "Computer Name", "SELECT SERVERPROPERTY('ComputerNamePhysicalNetBIOS')" },
+                    { "Default Domain", "SELECT DEFAULT_DOMAIN()" },
+                    { "Current Database", "SELECT DB_NAME()" },
 
                     // SQL Server Information
-                    { "SQL Version", "SELECT SERVERPROPERTY('ProductVersion');" },
-                    { "SQL Major Version", "SELECT SERVERPROPERTY('ProductMajorVersion');" },
-                    { "SQL Edition", "SELECT SERVERPROPERTY('Edition');" },
-                    { "SQL Service Pack", "SELECT SERVERPROPERTY('ProductLevel');" },
+                    { "SQL Version", "SELECT SERVERPROPERTY('ProductVersion')" },
+                    { "SQL Major Version", "SELECT SERVERPROPERTY('ProductMajorVersion')" },
+                    { "SQL Edition", "SELECT SERVERPROPERTY('Edition')" },
+                    { "SQL Service Pack", "SELECT SERVERPROPERTY('ProductLevel')" },
 
                     // Configuration
-                    { "Authentication Mode", "SELECT CASE SERVERPROPERTY('IsIntegratedSecurityOnly') WHEN 1 THEN 'Windows Authentication only' ELSE 'Mixed mode (Windows + SQL)' END;" },
-                    { "Clustered Server", "SELECT CASE SERVERPROPERTY('IsClustered') WHEN 0 THEN 'No' ELSE 'Yes' END;" },
+                    { "Authentication Mode", "SELECT CASE SERVERPROPERTY('IsIntegratedSecurityOnly') WHEN 1 THEN 'Windows Authentication only' ELSE 'Mixed mode (Windows + SQL)' END" },
+                    { "Clustered Server", "SELECT CASE SERVERPROPERTY('IsClustered') WHEN 0 THEN 'No' ELSE 'Yes' END" },
 
                     // Full Version
-                    { "Full Version String", "SELECT @@VERSION;" }
+                    { "Full Version String", "SELECT @@VERSION" }
                 }
             },
             {
                 "on-premises", new Dictionary<string, string>
                 {
-                    { "Host Name", "SELECT SERVERPROPERTY('MachineName');" },
-                    { "SQL Service Process ID", "SELECT SERVERPROPERTY('ProcessId');" },
-                    { "SQL Service Account", "SELECT TOP 1 service_account FROM sys.dm_server_services WHERE servicename NOT LIKE '%Agent%' AND servicename LIKE 'SQL Server%';" },
-                    { "Instance Data Path", "SELECT SERVERPROPERTY('InstanceDefaultDataPath');" },
-                    { "Instance Log Path", "SELECT SERVERPROPERTY('InstanceDefaultLogPath');" },
-                    { "Operating System Version", "SELECT TOP(1) windows_release + ISNULL(' ' + windows_service_pack_level, '') FROM master.sys.dm_os_windows_info;" },
-                    { "OS Architecture", "SELECT CASE WHEN CAST(SERVERPROPERTY('Edition') AS NVARCHAR(128)) LIKE '%64%' THEN '64-bit' ELSE '32-bit' END;" },
-                    { "DAC (Remote)", "SELECT CASE value_in_use WHEN 1 THEN 'Enabled (admin:hostname)' ELSE 'Disabled (local only)' END FROM sys.configurations WHERE name = 'remote admin connections';" }
+                    { "Host Name", "SELECT SERVERPROPERTY('MachineName')" },
+                    { "SQL Service Process ID", "SELECT SERVERPROPERTY('ProcessId')" },
+                    { "SQL Service Account", "SELECT TOP 1 service_account FROM sys.dm_server_services WHERE servicename NOT LIKE '%Agent%' AND servicename LIKE 'SQL Server%'" },
+                    { "Instance Data Path", "SELECT SERVERPROPERTY('InstanceDefaultDataPath')" },
+                    { "Instance Log Path", "SELECT SERVERPROPERTY('InstanceDefaultLogPath')" },
+                    { "Operating System Version", "SELECT TOP(1) windows_release + ISNULL(' ' + windows_service_pack_level, '') FROM master.sys.dm_os_windows_info" },
+                    { "OS Architecture", "SELECT CASE WHEN CAST(SERVERPROPERTY('Edition') AS NVARCHAR(128)) LIKE '%64%' THEN '64-bit' ELSE '32-bit' END" },
+                    { "DAC (Remote)", "SELECT CASE value_in_use WHEN 1 THEN 'Enabled (admin:hostname)' ELSE 'Disabled (local only)' END FROM sys.configurations WHERE name = 'remote admin connections'" }
                 }
             },
             {
                 "azure", new Dictionary<string, string>
                 {
-                    { "Azure Service Tier", "SELECT DATABASEPROPERTYEX(DB_NAME(), 'ServiceObjective');" },
-                    { "Azure Database Edition", "SELECT DATABASEPROPERTYEX(DB_NAME(), 'Edition');" },
-                    { "Azure Max Database Size", "SELECT CAST(DATABASEPROPERTYEX(DB_NAME(), 'MaxSizeInBytes') AS BIGINT);" },
-                    { "Azure Engine Edition", "SELECT SERVERPROPERTY('EngineEdition');" }
+                    { "Azure Service Tier", "SELECT DATABASEPROPERTYEX(DB_NAME(), 'ServiceObjective')" },
+                    { "Azure Database Edition", "SELECT DATABASEPROPERTYEX(DB_NAME(), 'Edition')" },
+                    { "Azure Max Database Size", "SELECT CAST(DATABASEPROPERTYEX(DB_NAME(), 'MaxSizeInBytes') AS BIGINT)" },
+                    { "Azure Engine Edition", "SELECT SERVERPROPERTY('EngineEdition')" }
                 }
             }
         };

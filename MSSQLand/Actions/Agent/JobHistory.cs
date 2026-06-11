@@ -67,7 +67,7 @@ namespace MSSQLand.Actions.Agent
                 JOIN msdb.dbo.sysjobs j
                     ON h.job_id = j.job_id
                 {whereClause}
-                ORDER BY h.run_date DESC, h.run_time DESC;";
+                ORDER BY h.run_date DESC, h.run_time DESC";
 
             DataTable result = databaseContext.QueryService.ExecuteTable(query);
 

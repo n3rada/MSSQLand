@@ -163,7 +163,7 @@ SELECT
     END AS Status
 FROM [{db}].dbo.v_Program pr
 WHERE pr.PackageID = '{_packageId.Replace("'", "''")}'
-ORDER BY pr.ProgramName;";
+ORDER BY pr.ProgramName";
 
                     DataTable programsResult = databaseContext.QueryService.ExecuteTable(programsQuery);
                     
@@ -203,7 +203,7 @@ SELECT
 FROM [{db}].dbo.v_Advertisement adv
 LEFT JOIN [{db}].dbo.v_Collection c ON adv.CollectionID = c.CollectionID
 WHERE adv.PackageID = '{_packageId.Replace("'", "''")}'
-ORDER BY adv.PresentTime DESC;";
+ORDER BY adv.PresentTime DESC";
 
                 DataTable advertisementsResult = databaseContext.QueryService.ExecuteTable(advertisementsQuery);
                 
@@ -243,7 +243,7 @@ SELECT DISTINCT
 FROM [{db}].dbo.v_Advertisement adv
 INNER JOIN [{db}].dbo.v_Collection c ON adv.CollectionID = c.CollectionID
 WHERE adv.PackageID = '{_packageId.Replace("'", "''")}'
-ORDER BY c.MemberCount DESC, c.Name;";
+ORDER BY c.MemberCount DESC, c.Name";
 
                     DataTable targetedCollectionsResult = databaseContext.QueryService.ExecuteTable(targetedCollectionsQuery);
                     
@@ -278,7 +278,7 @@ SELECT
     psd.SummaryDate
 FROM [{db}].dbo.v_PackageStatusDetailSumm psd
 WHERE psd.PackageID = '{_packageId.Replace("'", "''")}'
-ORDER BY psd.SiteCode;";
+ORDER BY psd.SiteCode";
 
                 DataTable statusResult = databaseContext.QueryService.ExecuteTable(statusQuery);
                 
@@ -296,7 +296,7 @@ ORDER BY psd.SiteCode;";
 SELECT *
 FROM [{db}].dbo.v_DistributionPoint dp
 WHERE dp.PackageID = '{_packageId.Replace("'", "''")}'
-ORDER BY dp.ServerNALPath;";
+ORDER BY dp.ServerNALPath";
 
                 DataTable distributionResult = databaseContext.QueryService.ExecuteTable(distributionQuery);
                 

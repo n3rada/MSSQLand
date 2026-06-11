@@ -58,7 +58,7 @@ namespace MSSQLand.Actions.Remote
         private static DataTable GetDatabaseScopedCredentials(DatabaseContext databaseContext)
         {
             // Select all columns - different SQL Server versions may have different column sets
-            string credQuery = "SELECT * FROM sys.database_scoped_credentials ORDER BY create_date DESC;";
+            string credQuery = "SELECT * FROM sys.database_scoped_credentials ORDER BY create_date DESC";
             DataTable rawCreds = databaseContext.QueryService.ExecuteTable(credQuery);
 
             if (rawCreds == null || rawCreds.Rows.Count == 0)
@@ -67,7 +67,7 @@ namespace MSSQLand.Actions.Remote
             }
 
             // Get external data sources to check credential usage
-            string edsQuery = "SELECT credential_id FROM sys.external_data_sources WHERE credential_id IS NOT NULL;";
+            string edsQuery = "SELECT credential_id FROM sys.external_data_sources WHERE credential_id IS NOT NULL";
             DataTable usedCreds = null;
             var usedCredIds = new HashSet<int>();
 

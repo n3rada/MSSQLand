@@ -54,17 +54,17 @@ namespace MSSQLand.Actions.Database
                             ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS groups
                         FROM master.sys.server_principals sp
                         WHERE sp.type IN ('G','U','E','S','X') AND sp.name NOT LIKE '##%'
-                        ORDER BY sp.is_disabled ASC, sp.modify_date DESC;";
+                        ORDER BY sp.is_disabled ASC, sp.modify_date DESC";
                 }
                 else
                 {
                     // SQL Server 2017+: Use STRING_AGG
                     query = @"
-                        SELECT 
-                            sp.name AS Name, 
-                            sp.type_desc AS Type, 
-                            sp.is_disabled, 
-                            sp.create_date, 
+                        SELECT
+                            sp.name AS Name,
+                            sp.type_desc AS Type,
+                            sp.is_disabled,
+                            sp.create_date,
                             sp.modify_date,
                             STRING_AGG(sr.name, ', ') AS groups
                         FROM master.sys.server_principals sp
@@ -72,7 +72,7 @@ namespace MSSQLand.Actions.Database
                         LEFT JOIN master.sys.server_principals sr ON srm.role_principal_id = sr.principal_id AND sr.type = 'R'
                         WHERE sp.type IN ('G','U','E','S','X') AND sp.name NOT LIKE '##%'
                         GROUP BY sp.name, sp.type_desc, sp.is_disabled, sp.create_date, sp.modify_date
-                        ORDER BY sp.is_disabled ASC, sp.modify_date DESC;";
+                        ORDER BY sp.is_disabled ASC, sp.modify_date DESC";
                 }
 
                 DataTable resultTable = databaseContext.QueryService.ExecuteTable(query);
@@ -86,7 +86,7 @@ namespace MSSQLand.Actions.Database
                        authentication_type_desc AS authentication_type 
                 FROM sys.database_principals 
                 WHERE type NOT IN ('R', 'A', 'X') AND sid IS NOT null AND name NOT LIKE '##%' 
-                ORDER BY modify_date DESC;";
+                ORDER BY modify_date DESC";
 
             Console.WriteLine(OutputFormatter.ConvertDataTable(
                 databaseContext.QueryService.ExecuteTable(databaseUsersQuery)));

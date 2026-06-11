@@ -74,7 +74,7 @@ SELECT
     Timeout
 FROM [{db}].dbo.Scripts 
 {whereClause} 
-ORDER BY LastUpdateTime DESC;";
+ORDER BY LastUpdateTime DESC";
 
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
 

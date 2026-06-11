@@ -240,7 +240,7 @@ SELECT
 FROM [{db}].dbo.v_Advertisement adv
 LEFT JOIN [{db}].dbo.v_Collection c ON adv.CollectionID = c.CollectionID
 WHERE adv.PackageID = '{_packageId.Replace("'", "''")}'
-ORDER BY adv.PresentTime DESC;";
+ORDER BY adv.PresentTime DESC";
 
                 DataTable deploymentsResult = databaseContext.QueryService.ExecuteTable(deploymentsQuery);
 
@@ -284,7 +284,7 @@ FROM [{db}].dbo.v_DeploymentSummary ds
 LEFT JOIN [{db}].dbo.v_Collection c ON ds.CollectionID = c.CollectionID
 WHERE ds.PackageID = '{_packageId.Replace("'", "''")}'
     AND ds.FeatureType = 7
-ORDER BY ds.DeploymentTime DESC;";
+ORDER BY ds.DeploymentTime DESC";
 
                 DataTable statusResult = databaseContext.QueryService.ExecuteTable(statusQuery);
 

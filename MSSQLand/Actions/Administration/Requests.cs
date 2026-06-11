@@ -33,7 +33,7 @@ namespace MSSQLand.Actions.Administration
             LEFT JOIN master.sys.dm_exec_connections c
                 ON r.session_id = c.session_id
             WHERE r.session_id != @@SPID
-            ORDER BY r.start_time DESC;";
+            ORDER BY r.start_time DESC";
 
             var result = databaseContext.QueryService.Execute(currentCommandsQuery);
             Console.WriteLine(OutputFormatter.ConvertSqlDataReader(result));

@@ -27,7 +27,7 @@ namespace MSSQLand.Actions.Agent
                             WHERE program_name LIKE 'SQLAgent%'
                         ) THEN 'Running'
                         ELSE 'Stopped'
-                    END AS AgentStatus;";
+                    END AS AgentStatus";
 
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
                 string status = result.Rows[0]["AgentStatus"].ToString();

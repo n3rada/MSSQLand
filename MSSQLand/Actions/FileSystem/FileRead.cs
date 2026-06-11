@@ -47,13 +47,13 @@ namespace MSSQLand.Actions.FileSystem
                     // Read as binary and convert to base64 in SQL
                     string query = $@"
 SELECT CAST('' AS XML).value('xs:base64Binary(sql:column(""B""))', 'VARCHAR(MAX)')
-FROM (SELECT A AS B FROM OPENROWSET(BULK '{escapedPath}', SINGLE_BLOB) AS R(A)) AS T;";
+FROM (SELECT A AS B FROM OPENROWSET(BULK '{escapedPath}', SINGLE_BLOB) AS R(A)) AS T";
                     output = databaseContext.QueryService.ExecuteScalar(query)?.ToString();
                 }
                 else
                 {
                     // SINGLE_NCLOB handles both ANSI and Unicode text files
-                    string query = $@"SELECT A FROM OPENROWSET(BULK '{escapedPath}', SINGLE_NCLOB) AS R(A);";
+                    string query = $@"SELECT A FROM OPENROWSET(BULK '{escapedPath}', SINGLE_NCLOB) AS R(A)";
                     output = databaseContext.QueryService.ExecuteScalar(query)?.ToString();
                 }
 

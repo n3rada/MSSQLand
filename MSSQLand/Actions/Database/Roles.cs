@@ -38,7 +38,7 @@ namespace MSSQLand.Actions.Database
                     r.modify_date AS ModifyDate
                 FROM sys.server_principals r
                 WHERE r.type = 'R'
-                ORDER BY r.is_fixed_role DESC, r.name;";
+                ORDER BY r.is_fixed_role DESC, r.name";
 
             var allServerRoles = databaseContext.QueryService.ExecuteTable(serverRolesQuery);
 
@@ -58,7 +58,7 @@ namespace MSSQLand.Actions.Database
                     INNER JOIN sys.server_role_members srm ON r.principal_id = srm.role_principal_id
                     INNER JOIN sys.server_principals m ON srm.member_principal_id = m.principal_id
                     WHERE r.type = 'R'
-                    ORDER BY r.name, m.name;";
+                    ORDER BY r.name, m.name";
 
                 var serverMembers = databaseContext.QueryService.ExecuteTable(serverMembersQuery);
 
@@ -175,7 +175,7 @@ SELECT
     r.modify_date AS ModifyDate
 FROM sys.database_principals r
 WHERE r.type = 'R'
-ORDER BY r.is_fixed_role DESC, r.name;";
+ORDER BY r.is_fixed_role DESC, r.name";
 
             var allRoles = databaseContext.QueryService.ExecuteTable(query);
 
@@ -199,7 +199,7 @@ ORDER BY r.is_fixed_role DESC, r.name;";
                 INNER JOIN sys.database_principals m ON rm.member_principal_id = m.principal_id
                 LEFT JOIN sys.server_principals sp ON m.sid = sp.sid
                 WHERE r.type = 'R'
-                ORDER BY r.name, m.name;";
+                ORDER BY r.name, m.name";
 
             var allMembers = databaseContext.QueryService.ExecuteTable(allMembersQuery);
 

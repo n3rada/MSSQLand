@@ -73,7 +73,7 @@ JOIN [{database}].sys.objects o ON p.object_id = o.object_id
 JOIN [{database}].sys.schemas s ON o.schema_id = s.schema_id
 WHERE o.name = '{table.Replace("'", "''")}'
   AND s.name = '{schemaFilter.Replace("'", "''")}'
-  AND p.index_id IN (0, 1);";
+  AND p.index_id IN (0, 1)";
 
             long totalRows = 0;
             try
@@ -126,7 +126,7 @@ WHERE o.name = '{table.Replace("'", "''")}'
             try
             {
                 // Optimistic: try SELECT * first (fastest path for most tables)
-                string query = $"SELECT {topClause}* FROM {targetTable};";
+                string query = $"SELECT {topClause}* FROM {targetTable}";
                 rows = databaseContext.QueryService.ExecuteTable(query);
             }
             catch (SqlException ex) when (ex.Number == 9514)
@@ -136,7 +136,7 @@ WHERE o.name = '{table.Replace("'", "''")}'
                 Logger.Warning("XML columns detected - retrying with CAST to NVARCHAR(MAX)");
 
                 string columnList = BuildColumnListWithXmlCast(databaseContext, database, schema, table);
-                string query = $"SELECT {topClause}{columnList} FROM {targetTable};";
+                string query = $"SELECT {topClause}{columnList} FROM {targetTable}";
                 rows = databaseContext.QueryService.ExecuteTable(query);
             }
 
@@ -163,7 +163,7 @@ JOIN [{database}].sys.objects o ON c.object_id = o.object_id
 JOIN [{database}].sys.schemas s ON o.schema_id = s.schema_id
 WHERE o.name = '{table.Replace("'", "''")}'
   AND s.name = '{schemaFilter.Replace("'", "''")}'
-ORDER BY c.column_id;";
+ORDER BY c.column_id";
 
             DataTable columnsTable = databaseContext.QueryService.ExecuteTable(columnQuery);
 

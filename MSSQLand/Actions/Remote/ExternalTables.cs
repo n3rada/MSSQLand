@@ -59,7 +59,7 @@ namespace MSSQLand.Actions.Remote
         private static DataTable GetExternalTables(DatabaseContext databaseContext)
         {
             // Get external tables
-            string tablesQuery = "SELECT * FROM sys.external_tables ORDER BY name;";
+            string tablesQuery = "SELECT * FROM sys.external_tables ORDER BY name";
             DataTable rawTables = databaseContext.QueryService.ExecuteTable(tablesQuery);
 
             if (rawTables == null || rawTables.Rows.Count == 0)
@@ -68,7 +68,7 @@ namespace MSSQLand.Actions.Remote
             }
 
             // Get external data sources for lookup
-            string dataSourcesQuery = "SELECT data_source_id, name, location FROM sys.external_data_sources;";
+            string dataSourcesQuery = "SELECT data_source_id, name, location FROM sys.external_data_sources";
             DataTable dataSources = null;
             var dataSourcesDict = new Dictionary<int, (string name, string location)>();
             
@@ -89,7 +89,7 @@ namespace MSSQLand.Actions.Remote
             catch { }
 
             // Get external file formats for lookup
-            string fileFormatsQuery = "SELECT file_format_id, name FROM sys.external_file_formats;";
+            string fileFormatsQuery = "SELECT file_format_id, name FROM sys.external_file_formats";
             DataTable fileFormats = null;
             var fileFormatsDict = new Dictionary<int, string>();
             
@@ -133,7 +133,7 @@ namespace MSSQLand.Actions.Remote
                 {
                     try
                     {
-                        string schemaQuery = $"SELECT SCHEMA_NAME({schemaId});";
+                        string schemaQuery = $"SELECT SCHEMA_NAME({schemaId})";
                         var schemaResult = databaseContext.QueryService.ExecuteScalar(schemaQuery);
                         newRow["Schema"] = schemaResult?.ToString() ?? "dbo";
                     }

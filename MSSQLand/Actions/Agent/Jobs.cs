@@ -66,7 +66,7 @@ namespace MSSQLand.Actions.Agent
                 LEFT JOIN msdb.dbo.syscategories c
                     ON j.category_id = c.category_id
                 {whereClause}
-                ORDER BY j.name, js.step_id;";
+                ORDER BY j.name, js.step_id";
             }
             else
             {
@@ -93,7 +93,7 @@ namespace MSSQLand.Actions.Agent
                     ON j.category_id = c.category_id
                 {whereClause}
                 GROUP BY j.job_id, j.name, j.owner_sid, j.enabled, c.name, j.description, j.date_created, j.date_modified
-                ORDER BY j.name;";
+                ORDER BY j.name";
             }
 
             DataTable result = databaseContext.QueryService.ExecuteTable(query);

@@ -54,7 +54,7 @@ namespace MSSQLand.Actions.Remote
         private static DataTable GetExternalDataSources(DatabaseContext databaseContext)
         {
             // Select all columns - different SQL Server versions have different column sets
-            string query = "SELECT * FROM sys.external_data_sources ORDER BY name;";
+            string query = "SELECT * FROM sys.external_data_sources ORDER BY name";
 
             DataTable rawTable = databaseContext.QueryService.ExecuteTable(query);
 

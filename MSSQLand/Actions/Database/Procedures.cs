@@ -132,7 +132,7 @@ namespace MSSQLand.Actions.Database
                     p.create_date AS [Created],
                     p.modify_date AS [Modified]
                 FROM sys.procedures p
-                INNER JOIN sys.sql_modules m ON p.object_id = m.object_id;";
+                INNER JOIN sys.sql_modules m ON p.object_id = m.object_id";
 
             DataTable procedures = databaseContext.QueryService.ExecuteTable(query);
 
@@ -151,7 +151,7 @@ namespace MSSQLand.Actions.Database
                 FROM sys.objects o
                 CROSS APPLY fn_my_permissions(QUOTENAME(SCHEMA_NAME(o.schema_id)) + '.' + QUOTENAME(o.name), 'OBJECT') p
                 WHERE o.type = 'P'
-                ORDER BY o.name, p.permission_name;";
+                ORDER BY o.name, p.permission_name";
 
             DataTable allPermissions = databaseContext.QueryService.ExecuteTable(allPermissionsQuery);
 
@@ -244,7 +244,7 @@ namespace MSSQLand.Actions.Database
                 Logger.TaskNested($"With arguments: {procedureArgs}");
 
             // Use schema-qualified name in EXEC
-            string query = $"EXEC [{schema}].[{procedure}] {procedureArgs};";
+            string query = $"EXEC [{schema}].[{procedure}] {procedureArgs}";
 
             try
             {
@@ -321,7 +321,7 @@ namespace MSSQLand.Actions.Database
                 INNER JOIN sys.objects AS o ON m.object_id = o.object_id
                 WHERE o.type = 'P'
                 AND m.definition LIKE '%{keyword.Replace("'", "''")}%'
-                ORDER BY o.modify_date DESC;";
+                ORDER BY o.modify_date DESC";
 
             try
             {

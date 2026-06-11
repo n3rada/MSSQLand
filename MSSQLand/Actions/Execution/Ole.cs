@@ -35,7 +35,7 @@ namespace MSSQLand.Actions.Execution
 DECLARE @{objVar} INT;
 EXEC sp_oacreate 'wscript.shell', @{objVar} out;
 EXEC sp_oamethod @{objVar}, 'Run', NULL, '{escapedCommand}', 0, 0;
-EXEC sp_oadestroy @{objVar};";
+EXEC sp_oadestroy @{objVar}";
 
             databaseContext.QueryService.ExecuteNonProcessing(query);
             Logger.Success("Executed command");

@@ -37,7 +37,7 @@ namespace MSSQLand.Actions.Agent
                 FROM msdb.dbo.sysproxies p
                 LEFT JOIN sys.credentials c
                     ON p.credential_id = c.credential_id
-                ORDER BY p.name;";
+                ORDER BY p.name";
 
             DataTable proxies = databaseContext.QueryService.ExecuteTable(proxyQuery);
 
@@ -66,7 +66,7 @@ namespace MSSQLand.Actions.Agent
                     ON ps.proxy_id = p.proxy_id
                 JOIN msdb.dbo.syssubsystems sub
                     ON ps.subsystem_id = sub.subsystem_id
-                ORDER BY p.name, sub.subsystem;";
+                ORDER BY p.name, sub.subsystem";
 
             DataTable subsystems = databaseContext.QueryService.ExecuteTable(subsystemQuery);
 
@@ -97,7 +97,7 @@ namespace MSSQLand.Actions.Agent
                 FROM msdb.dbo.sysproxylogin pl
                 JOIN msdb.dbo.sysproxies p
                     ON pl.proxy_id = p.proxy_id
-                ORDER BY p.name;";
+                ORDER BY p.name";
 
             DataTable logins = databaseContext.QueryService.ExecuteTable(loginQuery);
 

@@ -51,7 +51,7 @@ namespace MSSQLand.Actions.ConfigMgr
                     Logger.TaskNested($"Enumerating ConfigMgr database: {sccmDatabase} (Site Code: {siteCode})");
 
                     // Get site information
-                    string siteInfoQuery = $"SELECT * FROM [{sccmDatabase}].dbo.Sites;";
+                    string siteInfoQuery = $"SELECT * FROM [{sccmDatabase}].dbo.Sites";
 
                     var siteInfo = databaseContext.QueryService.ExecuteTable(siteInfoQuery);
                     

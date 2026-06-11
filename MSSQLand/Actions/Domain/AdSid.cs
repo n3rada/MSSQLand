@@ -25,7 +25,7 @@ namespace MSSQLand.Actions.Domain
                 Logger.Info($"System User: {systemUser}");
 
                 // Get the user's SID using SUSER_SID()
-                var dtSid = databaseContext.QueryService.ExecuteTable($"SELECT SUSER_SID('{systemUser}');");
+                var dtSid = databaseContext.QueryService.ExecuteTable($"SELECT SUSER_SID('{systemUser}')");
                 
                 if (dtSid.Rows.Count == 0 || dtSid.Rows[0][0] == DBNull.Value)
                 {

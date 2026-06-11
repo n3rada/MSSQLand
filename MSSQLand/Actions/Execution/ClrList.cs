@@ -32,7 +32,7 @@ FROM sys.assemblies a
 LEFT JOIN sys.assembly_modules am ON a.assembly_id = am.assembly_id
 WHERE a.is_user_defined = 1
 GROUP BY a.name, a.clr_name, a.permission_set_desc, a.create_date, a.modify_date
-ORDER BY a.create_date DESC;";
+ORDER BY a.create_date DESC";
 
             DataTable result = databaseContext.QueryService.ExecuteTable(query);
 

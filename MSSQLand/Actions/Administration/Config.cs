@@ -110,7 +110,7 @@ namespace MSSQLand.Actions.Administration
                 {
                     try
                     {
-                        string permQuery = "SELECT HAS_PERMS_BY_NAME(NULL, NULL, 'ALTER SETTINGS') AS HasPerm;";
+                        string permQuery = "SELECT HAS_PERMS_BY_NAME(NULL, NULL, 'ALTER SETTINGS') AS HasPerm";
                         var permResult = databaseContext.QueryService.ExecuteTable(permQuery);
                         if (permResult.Rows.Count > 0)
                         {
@@ -124,7 +124,7 @@ namespace MSSQLand.Actions.Administration
                 }
 
                 // Fetch all configurations at once
-                string query = "SELECT name, value_in_use FROM sys.configurations ORDER BY name;";
+                string query = "SELECT name, value_in_use FROM sys.configurations ORDER BY name";
                 DataTable configsTable = databaseContext.QueryService.ExecuteTable(query);
 
                 foreach (DataRow row in configsTable.Rows)

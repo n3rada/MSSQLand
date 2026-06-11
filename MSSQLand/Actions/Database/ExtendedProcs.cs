@@ -180,7 +180,7 @@ namespace MSSQLand.Actions.Database
                 FROM master.sys.all_objects o
                 WHERE o.type = 'X' 
                     AND o.name LIKE 'xp[_]%'
-                ORDER BY o.name;";
+                ORDER BY o.name";
 
             try
             {
@@ -248,7 +248,7 @@ namespace MSSQLand.Actions.Database
                     FROM master.sys.all_objects o
                     WHERE o.type = 'X' 
                         AND o.name LIKE 'sp[_]OA%'
-                    ORDER BY o.name;";
+                    ORDER BY o.name";
 
                 DataTable oleTable = databaseContext.QueryService.ExecuteTable(oleQuery);
 
@@ -310,7 +310,7 @@ namespace MSSQLand.Actions.Database
                         'sp_add_job', 'sp_add_jobstep', 'sp_start_job', 'sp_delete_job',
                         'sp_add_credential', 'sp_add_proxy'
                     )
-                    ORDER BY o.name;";
+                    ORDER BY o.name";
 
                 DataTable systemTable = databaseContext.QueryService.ExecuteTable(systemQuery);
 

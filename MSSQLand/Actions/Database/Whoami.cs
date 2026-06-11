@@ -23,7 +23,7 @@ namespace MSSQLand.Actions.Database
 
             // Query for accessible databases
             DataTable accessibleDatabases = databaseContext.QueryService.ExecuteTable(
-                "SELECT name FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1;"
+                "SELECT name FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1"
             );
 
             var databaseNames = accessibleDatabases.AsEnumerable()
@@ -37,7 +37,7 @@ namespace MSSQLand.Actions.Database
                     ISNULL(IS_ROLEMEMBER(name), 0) AS is_member
                 FROM sys.database_principals
                 WHERE type = 'R'
-                ORDER BY name;";
+                ORDER BY name";
 
             DataTable dbRolesTable = databaseContext.QueryService.ExecuteTable(dbRolesQuery);
 

@@ -54,7 +54,7 @@ namespace MSSQLand.Actions.Administration
                 string escapedPassword = _password.Replace("'", "''");
 
                 // Try to create new login
-                string createLoginQuery = $@"CREATE LOGIN [{_username}] WITH PASSWORD = '{escapedPassword}', CHECK_POLICY = OFF, CHECK_EXPIRATION = OFF;";
+                string createLoginQuery = $@"CREATE LOGIN [{_username}] WITH PASSWORD = '{escapedPassword}', CHECK_POLICY = OFF, CHECK_EXPIRATION = OFF";
                 databaseContext.QueryService.ExecuteNonProcessing(createLoginQuery);
                 Logger.Success($"SQL login '{_username}' created successfully.");
             }
@@ -64,7 +64,7 @@ namespace MSSQLand.Actions.Administration
                 Logger.Warning($"SQL login '{_username}' already exists. Updating password.");
 
                 string escapedPassword = _password.Replace("'", "''");
-                string alterPasswordQuery = $@"ALTER LOGIN [{_username}] WITH PASSWORD = '{escapedPassword}';";
+                string alterPasswordQuery = $@"ALTER LOGIN [{_username}] WITH PASSWORD = '{escapedPassword}'";
                 databaseContext.QueryService.ExecuteNonProcessing(alterPasswordQuery);
                 Logger.Success($"Password updated for '{_username}'.");
             }
@@ -74,7 +74,7 @@ namespace MSSQLand.Actions.Administration
                 // Add the login to the specified server role
                 Logger.TaskNested($"Adding '{_username}' to {_role} server role.");
 
-                string addRoleToNewUserQuery = $"ALTER SERVER ROLE [{_role}] ADD MEMBER [{_username}];";
+                string addRoleToNewUserQuery = $"ALTER SERVER ROLE [{_role}] ADD MEMBER [{_username}]";
                 databaseContext.QueryService.ExecuteNonProcessing(addRoleToNewUserQuery);
 
                 Logger.Success($"'{_username}' added to {_role} role successfully.");

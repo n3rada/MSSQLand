@@ -60,19 +60,19 @@ namespace MSSQLand.Actions.Database
                 Logger.Task("Listing permissions of the current user on server and accessible databases");
                 Logger.TaskNested("Server permissions");
 
-                var serverPerms = databaseContext.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'SERVER');");
+                var serverPerms = databaseContext.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'SERVER')");
                 var sortedServerPerms = SortPermissionsByImportance(serverPerms);
                 Console.WriteLine(OutputFormatter.ConvertDataTable(sortedServerPerms));
 
                 Logger.Info("Database permissions");
 
-                var dbPerms = databaseContext.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'DATABASE');");
+                var dbPerms = databaseContext.QueryService.ExecuteTable("SELECT permission_name AS Permission FROM fn_my_permissions(NULL, 'DATABASE')");
                 var sortedDbPerms = SortPermissionsByImportance(dbPerms);
                 Console.WriteLine(OutputFormatter.ConvertDataTable(sortedDbPerms));
 
                 Logger.Info("Database access");
 
-                Console.WriteLine(OutputFormatter.ConvertDataTable(databaseContext.QueryService.ExecuteTable("SELECT name AS [Accessible Database] FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1;")));
+                Console.WriteLine(OutputFormatter.ConvertDataTable(databaseContext.QueryService.ExecuteTable("SELECT name AS [Accessible Database] FROM master.sys.databases WHERE HAS_DBACCESS(name) = 1")));
 
                 return null;
             }
@@ -94,7 +94,7 @@ namespace MSSQLand.Actions.Database
             // Build USE statement if database is different from current
             string useStatement = database == databaseContext.QueryService.ExecutionServer.Database
                 ? ""
-                : $"USE [{database}];";
+                : $"USE [{database}]";
 
             // Query to get permissions
             string query = $@"

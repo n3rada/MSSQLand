@@ -178,7 +178,7 @@ namespace MSSQLand.Services
                 if (useIdx == -1 || useIdx > useEnd + 50) break; // No USE or too far
                 int bracket = normalized.IndexOf("]", useIdx);
                 if (bracket == -1) break;
-                int semi = normalized.IndexOf(";", bracket);
+                int semi = normalized.IndexOf("", bracket);
                 useEnd = semi > bracket ? semi + 1 : bracket + 1;
             }
 
@@ -218,7 +218,7 @@ BEGIN CATCH
     SET @result = NULL;
     SET @error = ERROR_MESSAGE();
 END CATCH;
-SELECT @result AS Result, @error AS Error;";
+SELECT @result AS Result, @error AS Error";
         }
 
         /// <summary>
@@ -522,7 +522,7 @@ SELECT @result AS Result, @error AS Error;";
             {
                 try
                 {
-                    ExecutionServer.Database = ExecuteScalar("SELECT DB_NAME();")?.ToString();
+                    ExecutionServer.Database = ExecuteScalar("SELECT DB_NAME()")?.ToString();
                     Logger.Trace($"Detected execution database: {ExecutionServer.Database}");
                 }
                 catch (Exception ex)

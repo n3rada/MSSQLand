@@ -93,7 +93,7 @@ SELECT
     c.CurrentStatus,
     c.MemberClassName
 FROM [{db}].dbo.v_Collection c
-WHERE {whereClause};";
+WHERE {whereClause}";
 
                 DataTable collectionResult = databaseContext.QueryService.ExecuteTable(collectionQuery);
 
@@ -165,7 +165,7 @@ LEFT JOIN [{db}].dbo.v_Advertisement adv ON ds.PackageID = adv.PackageID
     AND adv.CollectionID = ds.CollectionID
     AND ds.FeatureType = 2
 WHERE ds.CollectionID = '{collectionId.Replace("'", "''")}'
-ORDER BY ds.DeploymentTime DESC;";
+ORDER BY ds.DeploymentTime DESC";
 
                 DataTable deploymentsResult = databaseContext.QueryService.ExecuteTable(deploymentsQuery);
 
@@ -235,7 +235,7 @@ SELECT
 FROM [{db}].dbo.Collection_Rules cr
 WHERE cr.CollectionID = (SELECT CollectionID FROM [{db}].dbo.Collections_G WHERE SiteID = '{collectionId.Replace("'", "''")}')
     AND cr.RuleType IN (3, 4)
-ORDER BY RuleType, RuleName;";
+ORDER BY RuleType, RuleName";
 
                 DataTable rulesResult = databaseContext.QueryService.ExecuteTable(rulesQuery);
 
@@ -273,7 +273,7 @@ SELECT
 FROM [{db}].dbo.v_FullCollectionMembership cm
 INNER JOIN [{db}].dbo.v_R_System sys ON cm.ResourceID = sys.ResourceID
 WHERE cm.CollectionID = '{collectionId.Replace("'", "''")}'
-ORDER BY sys.Client0 DESC, sys.Name0;";
+ORDER BY sys.Client0 DESC, sys.Name0";
                     }
                     else // User collection
                     {
@@ -289,7 +289,7 @@ SELECT
 FROM [{db}].dbo.v_FullCollectionMembership cm
 INNER JOIN [{db}].dbo.v_R_User usr ON cm.ResourceID = usr.ResourceID
 WHERE cm.CollectionID = '{collectionId.Replace("'", "''")}'
-ORDER BY usr.Unique_User_Name0;";
+ORDER BY usr.Unique_User_Name0";
                     }
 
                     DataTable membersResult = databaseContext.QueryService.ExecuteTable(membersQuery);

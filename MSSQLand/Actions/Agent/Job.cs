@@ -59,7 +59,7 @@ namespace MSSQLand.Actions.Agent
                 FROM msdb.dbo.sysjobs j
                 LEFT JOIN msdb.dbo.syscategories c
                     ON j.category_id = c.category_id
-                WHERE {jobFilter};";
+                WHERE {jobFilter}";
 
             DataTable jobInfo = databaseContext.QueryService.ExecuteTable(jobQuery);
 
@@ -114,7 +114,7 @@ namespace MSSQLand.Actions.Agent
                 LEFT JOIN msdb.dbo.sysproxies p
                     ON js.proxy_id = p.proxy_id
                 WHERE js.job_id = '{jobId}'
-                ORDER BY js.step_id;";
+                ORDER BY js.step_id";
 
             DataTable steps = databaseContext.QueryService.ExecuteTable(stepsQuery);
 
@@ -168,7 +168,7 @@ namespace MSSQLand.Actions.Agent
                 FROM msdb.dbo.sysjobschedules jsc
                 JOIN msdb.dbo.sysschedules s
                     ON jsc.schedule_id = s.schedule_id
-                WHERE jsc.job_id = '{jobId}';";
+                WHERE jsc.job_id = '{jobId}'";
 
             DataTable schedules = databaseContext.QueryService.ExecuteTable(scheduleQuery);
 
@@ -200,7 +200,7 @@ namespace MSSQLand.Actions.Agent
                     h.message AS Message
                 FROM msdb.dbo.sysjobhistory h
                 WHERE h.job_id = '{jobId}'
-                ORDER BY h.run_date DESC, h.run_time DESC;";
+                ORDER BY h.run_date DESC, h.run_time DESC";
 
             DataTable history = databaseContext.QueryService.ExecuteTable(historyQuery);
 

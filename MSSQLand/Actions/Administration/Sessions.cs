@@ -23,7 +23,7 @@ namespace MSSQLand.Actions.Administration
                 client_interface_name,
                 login_name
             FROM master.sys.dm_exec_sessions
-            ORDER BY login_time DESC;";
+            ORDER BY login_time DESC";
 
             var result = databaseContext.QueryService.Execute(sessionsQuery);
             Console.WriteLine(OutputFormatter.ConvertSqlDataReader(result));

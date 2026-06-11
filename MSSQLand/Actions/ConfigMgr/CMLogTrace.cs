@@ -170,7 +170,7 @@ SELECT
 FROM [{db}].dbo.CI_ConfigurationItems AS ci
 LEFT JOIN [{db}].dbo.CI_ApplicationModelInfo AS ami ON ci.CI_ID = ami.CI_ID
 LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties AS lcp ON ci.CI_ID = lcp.CI_ID
-WHERE ci.CI_ID = {deploymentTypeCiId};";
+WHERE ci.CI_ID = {deploymentTypeCiId}";
 
                 DataTable dtDetailsResult = databaseContext.QueryService.ExecuteTable(dtDetailsQuery);
 
@@ -261,7 +261,7 @@ WHERE a.AssignmentID IN (
     SELECT atc.AssignmentID
     FROM [{db}].dbo.v_CIAssignmentToCI AS atc
     WHERE atc.CI_ID = {applicationCiId}
-);";
+)";
 
                 DataTable assignmentsResult = databaseContext.QueryService.ExecuteTable(assignmentsQuery);
 

@@ -38,7 +38,7 @@ namespace MSSQLand.Actions.ConfigMgr
             {
                 string siteCode = CMService.GetSiteCode(db);
 
-                string query = $@"SELECT * FROM [{db}].dbo.Scripts WHERE ScriptGuid = '{_scriptGuid.Replace("'", "''")}';";
+                string query = $@"SELECT * FROM [{db}].dbo.Scripts WHERE ScriptGuid = '{_scriptGuid.Replace("'", "''")}'";
 
                 DataTable result = databaseContext.QueryService.ExecuteTable(query);
 

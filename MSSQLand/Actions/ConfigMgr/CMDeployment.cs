@@ -572,7 +572,7 @@ FROM [{db}].dbo.DistributionPoints dp
 INNER JOIN [{db}].dbo.DistributionStatus ds ON dp.NALPath = ds.DPNALPath
 LEFT JOIN [{db}].dbo.DistributionStatusInfo dsi ON ds.LastStatusMsgID = dsi.MessageID
 WHERE ds.PkgID = '{packageId.Replace("'", "''")}'
-ORDER BY ds.LastStatusTime DESC;";
+ORDER BY ds.LastStatusTime DESC";
 
                     DataTable dpStatusResult = databaseContext.QueryService.ExecuteTable(dpStatusQuery);
                     
@@ -626,7 +626,7 @@ SELECT
     LastRefreshTime,
     SourceSite
 FROM [{db}].dbo.v_Package
-WHERE PackageID = '{packageId.Replace("'", "''")}';";
+WHERE PackageID = '{packageId.Replace("'", "''")}'";
 
                     DataTable pkgInfoResult = databaseContext.QueryService.ExecuteTable(pkgInfoQuery);
                     

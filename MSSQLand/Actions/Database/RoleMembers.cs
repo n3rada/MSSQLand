@@ -29,7 +29,7 @@ FROM master.sys.server_role_members rm
 JOIN master.sys.server_principals r ON rm.role_principal_id = r.principal_id
 JOIN master.sys.server_principals l ON rm.member_principal_id = l.principal_id
 WHERE r.name = '{_roleName}'
-ORDER BY l.create_date DESC;";
+ORDER BY l.create_date DESC";
 
             DataTable result = databaseContext.QueryService.ExecuteTable(query);
 

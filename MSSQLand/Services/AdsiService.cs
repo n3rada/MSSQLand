@@ -74,7 +74,7 @@ namespace MSSQLand.Services
                 @server = '{serverName}',
                 @srvproduct = 'ADSI',
                 @provider = 'ADsDSOObject',
-                @datasrc = '{dataSource}';";
+                @datasrc = '{dataSource}'";
 
             try
             {
@@ -115,7 +115,7 @@ namespace MSSQLand.Services
 
         public void DropLinkedServer(string serverName)
         {
-            _databaseContext.QueryService.ExecuteNonProcessing($"EXEC sp_dropserver @server = '{serverName}';");
+            _databaseContext.QueryService.ExecuteNonProcessing($"EXEC sp_dropserver @server = '{serverName}'");
         }
 
         /// <summary>
@@ -157,7 +157,7 @@ namespace MSSQLand.Services
 
             Logger.Task($"Using ADSI linked server: {serverName}");
 
-            string query = $"SELECT * FROM OPENQUERY([{serverName}], 'SELECT {attributes} FROM ''<{ldapPath}>'' WHERE {filter}');";
+            string query = $"SELECT * FROM OPENQUERY([{serverName}], 'SELECT {attributes} FROM ''<{ldapPath}>'' WHERE {filter}')";
 
             try
             {
@@ -197,7 +197,7 @@ namespace MSSQLand.Services
                     try
                     {
                         // Execute the LDAP listener query through the duplicated context
-                        DataTable result = listenerContext.QueryService.ExecuteTable($"SELECT [dbo].[{FunctionName}]({Port},8);");
+                        DataTable result = listenerContext.QueryService.ExecuteTable($"SELECT [dbo].[{FunctionName}]({Port},8)");
 
                         // Set the result once the query completes
                         taskCompletionSource.TrySetResult(result);
@@ -233,9 +233,9 @@ namespace MSSQLand.Services
             Logger.TaskNested($"Function name: {FunctionName}");
             Logger.TaskNested($"Library name: {LibraryPath}");
 
-            string dropFunction = $"DROP FUNCTION IF EXISTS [{FunctionName}];";
-            string dropAssembly = $"DROP ASSEMBLY IF EXISTS [{AssemblyName}];";
-            string dropClrHash = $"EXEC sp_drop_trusted_assembly 0x{libraryHash};";
+            string dropFunction = $"DROP FUNCTION IF EXISTS [{FunctionName}]";
+            string dropAssembly = $"DROP ASSEMBLY IF EXISTS [{AssemblyName}]";
+            string dropClrHash = $"EXEC sp_drop_trusted_assembly 0x{libraryHash}";
 
 
             try

@@ -139,7 +139,7 @@ SELECT {topClause}
     ci.SDMPackageDigest
 FROM [{db}].dbo.CI_ConfigurationItems ci
 WHERE {whereClause}
-ORDER BY ci.DateLastModified DESC, ci.DateCreated DESC;";
+ORDER BY ci.DateLastModified DESC, ci.DateCreated DESC";
 
                 DataTable results = databaseContext.QueryService.ExecuteTable(query);
 

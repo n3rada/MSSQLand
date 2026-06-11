@@ -29,7 +29,7 @@ namespace MSSQLand.Actions.Execution
             string checkQuery = $@"
 SELECT name, clr_name, permission_set_desc, create_date, modify_date
 FROM sys.assemblies
-WHERE is_user_defined = 1 AND name = '{safeName}';";
+WHERE is_user_defined = 1 AND name = '{safeName}'";
 
             DataTable meta = databaseContext.QueryService.ExecuteTable(checkQuery);
 
@@ -55,7 +55,7 @@ SELECT
 FROM sys.assembly_modules am
 JOIN sys.objects o ON am.object_id = o.object_id
 JOIN sys.assemblies a ON am.assembly_id = a.assembly_id
-WHERE a.name = '{safeName}';";
+WHERE a.name = '{safeName}'";
 
             DataTable modules = databaseContext.QueryService.ExecuteTable(modulesQuery);
 

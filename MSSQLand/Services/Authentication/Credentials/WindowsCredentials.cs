@@ -32,7 +32,7 @@ namespace MSSQLand.Services.Credentials
             using (new WindowsIdentityImpersonation(effectiveDomain, username, password))
             {
                 // Connection string with Integrated Security (uses impersonated token)
-                var connectionString = $"Data Source={Server.GetConnectionTarget()}; Integrated Security=True;";
+                var connectionString = $"Data Source={Server.GetConnectionTarget()}; Integrated Security=True";
                 return CreateSqlConnection(connectionString);
             }
         }

@@ -27,7 +27,7 @@ namespace MSSQLand.Services
         {
             try
             {
-                var result = _queryService.ExecuteScalar($"SELECT value_in_use FROM sys.configurations WHERE name = '{optionName}';");
+                var result = _queryService.ExecuteScalar($"SELECT value_in_use FROM sys.configurations WHERE name = '{optionName}'");
                 return result != null ? Convert.ToInt32(result) : -1;
             }
             catch
@@ -38,20 +38,20 @@ namespace MSSQLand.Services
 
         public bool CheckAssembly(string assemblyName)
         {
-            string query = $"SELECT name FROM sys.assemblies WHERE name='{assemblyName}';";
+            string query = $"SELECT name FROM sys.assemblies WHERE name='{assemblyName}'";
             return _queryService.ExecuteScalar(query)?.ToString() == assemblyName;
         }
 
         public bool CheckAssemblyModules(string assemblyName)
         {
             string result = OutputFormatter.ConvertDataTable(
-                _queryService.ExecuteTable("SELECT * FROM sys.assembly_modules;")).ToLower();
+                _queryService.ExecuteTable("SELECT * FROM sys.assembly_modules")).ToLower();
             return result.Contains(assemblyName.ToLower());
         }
 
         public bool CheckProcedures(string procedureName)
         {
-            string query = "SELECT name FROM sys.procedures;";
+            string query = "SELECT name FROM sys.procedures";
             DataTable table = _queryService.ExecuteTable(query);
             foreach (DataRow row in table.Rows)
             {
@@ -66,7 +66,7 @@ namespace MSSQLand.Services
             try
             {
                 // Query to retrieve all trusted assemblies
-                string query = "SELECT description FROM sys.trusted_assemblies;";
+                string query = "SELECT description FROM sys.trusted_assemblies";
                 DataTable trustedAssembliesTable = _queryService.ExecuteTable(query);
 
                 if (trustedAssembliesTable.Rows.Count == 0)
@@ -120,7 +120,7 @@ namespace MSSQLand.Services
             try
             {
                 // Check other module status via sys.configurations
-                var configValue = _queryService.ExecuteScalar($"SELECT value FROM sys.configurations WHERE name = '{optionName}';");
+                var configValue = _queryService.ExecuteScalar($"SELECT value FROM sys.configurations WHERE name = '{optionName}'");
                 if (configValue == null)
                 {
                     Logger.Warning($"Configuration '{optionName}' not found or inaccessible");
@@ -173,7 +173,7 @@ namespace MSSQLand.Services
             try
             {
                 string checkHash = _queryService.ExecuteScalar(
-                    $"SELECT * FROM sys.trusted_assemblies WHERE hash = 0x{assemblyHash};")?.ToString()?.ToLower();
+                    $"SELECT * FROM sys.trusted_assemblies WHERE hash = 0x{assemblyHash}")?.ToString()?.ToLower();
 
                 if (checkHash?.Contains("permission was denied") == true)
                 {
@@ -223,7 +223,7 @@ namespace MSSQLand.Services
         /// </summary>
         private bool EnableAdvancedOptions()
         {
-            var advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM sys.configurations WHERE name = 'show advanced options';");
+            var advancedOptionsEnabled = _queryService.ExecuteScalar("SELECT value_in_use FROM sys.configurations WHERE name = 'show advanced options'");
 
             if (advancedOptionsEnabled != null && Convert.ToInt32(advancedOptionsEnabled) == 1)
             {
@@ -311,7 +311,7 @@ namespace MSSQLand.Services
                 SELECT assembly_id
                 FROM sys.assemblies
                 WHERE name = '{assemblyName}'
-            );";
+            )";
 
                 DataTable dependencies = _queryService.ExecuteTable(query);
 
@@ -334,21 +334,21 @@ namespace MSSQLand.Services
                     {
                         case "CLR_SCALAR_FUNCTION":
                         case "SQL_SCALAR_FUNCTION":
-                            dropCommand = $"DROP FUNCTION IF EXISTS [{objectName}];";
+                            dropCommand = $"DROP FUNCTION IF EXISTS [{objectName}]";
                             break;
 
                         case "CLR_TABLE_VALUED_FUNCTION":
                         case "SQL_TABLE_VALUED_FUNCTION":
-                            dropCommand = $"DROP FUNCTION IF EXISTS [{objectName}];";
+                            dropCommand = $"DROP FUNCTION IF EXISTS [{objectName}]";
                             break;
 
                         case "CLR_STORED_PROCEDURE":
                         case "SQL_STORED_PROCEDURE":
-                            dropCommand = $"DROP PROCEDURE IF EXISTS [{objectName}];";
+                            dropCommand = $"DROP PROCEDURE IF EXISTS [{objectName}]";
                             break;
 
                         case "VIEW":
-                            dropCommand = $"DROP VIEW IF EXISTS [{objectName}];";
+                            dropCommand = $"DROP VIEW IF EXISTS [{objectName}]";
                             break;
 
                         default:

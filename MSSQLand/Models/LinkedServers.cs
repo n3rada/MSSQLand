@@ -186,7 +186,7 @@ namespace MSSQLand.Models
 
         public string GetChainArguments()
         {
-            return string.Join(";", GetChainParts());
+            return string.Join("", GetChainParts());
         }
 
         /// <summary>
@@ -537,11 +537,11 @@ namespace MSSQLand.Models
 
                 if (!string.IsNullOrEmpty(database))
                 {
-                    baseQuery.Append($"USE [{database}];");
+                    baseQuery.Append($"USE [{database}]");
                 }
 
                 baseQuery.Append(currentQuery.TrimEnd(';'));
-                baseQuery.Append(";");
+                baseQuery.Append("");
 
                 currentQuery = baseQuery.ToString().Replace("'", thicksRepr);
 
@@ -574,7 +574,7 @@ namespace MSSQLand.Models
             // Add database context if applicable
             if (!string.IsNullOrEmpty(database))
             {
-                string useQuery = $"USE [{database}];";
+                string useQuery = $"USE [{database}]";
                 stringBuilder.Append(useQuery.Replace("'", new('\'',(1 << (thicksCounter + 1)))));
             }
 
@@ -662,7 +662,7 @@ namespace MSSQLand.Models
                 }
 
                 queryBuilder.Append(currentQuery.TrimEnd(';'));
-                queryBuilder.Append(";");
+                queryBuilder.Append("");
 
                 // Double single quotes to escape them in the SQL string
                 currentQuery = $"EXEC ('{queryBuilder.ToString().Replace("'", "''")}') AT [{server}]";
@@ -752,7 +752,7 @@ namespace MSSQLand.Models
                 }
 
                 queryBuilder.Append(currentQuery.TrimEnd(';'));
-                queryBuilder.Append(";");
+                queryBuilder.Append("");
 
                 // Double single quotes for the nesting level
                 string escaped = queryBuilder.ToString().Replace("'", "''");

@@ -60,7 +60,7 @@ namespace MSSQLand.Actions.Administration
             LEFT JOIN master.sys.dm_exec_connections c
                 ON r.session_id = c.session_id
             WHERE r.session_id != @@SPID
-            ORDER BY r.start_time DESC;";
+            ORDER BY r.start_time DESC";
 
             try
             {
@@ -89,7 +89,7 @@ namespace MSSQLand.Actions.Administration
 
                     // Kill the specific session
                     Logger.TaskNested($"Killing session {_target}");
-                    databaseContext.QueryService.ExecuteNonProcessing($"KILL {targetSessionId};");
+                    databaseContext.QueryService.ExecuteNonProcessing($"KILL {targetSessionId}");
                     Logger.Success($"Session {_target} killed successfully.");
                     return true;
                 }
@@ -100,7 +100,7 @@ namespace MSSQLand.Actions.Administration
                 {
                     Int16 sessionId = row.Field<Int16>("SessionID");
                     Logger.TaskNested($"Killing session {sessionId}");
-                    databaseContext.QueryService.ExecuteNonProcessing($"KILL {sessionId};");
+                    databaseContext.QueryService.ExecuteNonProcessing($"KILL {sessionId}");
                 }
 
                 Logger.Success("All sessions killed successfully.");

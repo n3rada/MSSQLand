@@ -31,7 +31,7 @@ namespace MSSQLand.Actions.Administration
             // 1. Audit objects
             string auditsQuery = @"
 SELECT a.name, a.type_desc, a.is_state_enabled, a.on_failure_desc, a.queue_delay
-FROM sys.server_audits a ORDER BY a.name;";
+FROM sys.server_audits a ORDER BY a.name";
 
             DataTable audits = databaseContext.QueryService.ExecuteTable(auditsQuery);
 
@@ -73,7 +73,7 @@ SELECT a.name AS audit, s.name AS spec, s.is_state_enabled, d.audit_action_name
 FROM sys.server_audit_specifications s
 JOIN sys.server_audits a ON a.audit_guid = s.audit_guid
 JOIN sys.server_audit_specification_details d ON d.server_specification_id = s.server_specification_id
-ORDER BY a.name, s.name, d.audit_action_name;";
+ORDER BY a.name, s.name, d.audit_action_name";
 
             DataTable specs = databaseContext.QueryService.ExecuteTable(specsQuery);
 

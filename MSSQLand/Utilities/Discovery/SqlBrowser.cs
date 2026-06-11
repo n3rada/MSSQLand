@@ -107,7 +107,7 @@ namespace MSSQLand.Utilities.Discovery
             var instances = new List<SqlInstance>();
 
             // Split by ;; to get individual instances
-            string[] instanceStrings = response.Split(new[] { ";;" }, StringSplitOptions.RemoveEmptyEntries);
+            string[] instanceStrings = response.Split(new[] { ";" }, StringSplitOptions.RemoveEmptyEntries);
 
             foreach (string instanceStr in instanceStrings)
             {

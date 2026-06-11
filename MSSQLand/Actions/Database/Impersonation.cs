@@ -26,7 +26,7 @@ FROM sys.server_principals sp
 WHERE sp.type_desc IN ('SQL_LOGIN', 'WINDOWS_LOGIN', 'WINDOWS_GROUP')
   AND sp.name NOT LIKE '##%'
   AND sp.name != SYSTEM_USER
-ORDER BY can_impersonate DESC, sp.create_date DESC;";
+ORDER BY can_impersonate DESC, sp.create_date DESC";
 
             DataTable queryResult = databaseContext.QueryService.ExecuteTable(query);
 

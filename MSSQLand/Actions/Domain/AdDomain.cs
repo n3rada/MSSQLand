@@ -22,7 +22,7 @@ namespace MSSQLand.Actions.Domain
             try
             {
                 // 1) Get the default domain
-                var dtDomain = databaseContext.QueryService.ExecuteTable("SELECT DEFAULT_DOMAIN();");
+                var dtDomain = databaseContext.QueryService.ExecuteTable("SELECT DEFAULT_DOMAIN()");
                 if (dtDomain.Rows.Count == 0 || dtDomain.Rows[0][0] == DBNull.Value)
                 {
                     Logger.Error("Could not determine DEFAULT_DOMAIN(). The server may not be domain-joined.");
@@ -33,7 +33,7 @@ namespace MSSQLand.Actions.Domain
                 Logger.Info($"Domain: {domain}");
 
                 // 2) Obtain the domain SID by querying a known group
-                var dtSid = databaseContext.QueryService.ExecuteTable($"SELECT SUSER_SID('{domain}\\Domain Admins');");
+                var dtSid = databaseContext.QueryService.ExecuteTable($"SELECT SUSER_SID('{domain}\\Domain Admins')");
                 if (dtSid.Rows.Count == 0 || dtSid.Rows[0][0] == DBNull.Value)
                 {
                     Logger.Error("Could not obtain domain SID via SUSER_SID(). Ensure the server has access to the domain.");

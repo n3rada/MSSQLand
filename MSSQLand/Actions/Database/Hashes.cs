@@ -38,7 +38,7 @@ namespace MSSQLand.Actions.Database
                 FROM master.sys.sql_logins
                 WHERE password_hash IS NOT NULL
                 AND name NOT LIKE '##MS_%##'
-                ORDER BY name;";
+                ORDER BY name";
 
             DataTable hashTable;
             try

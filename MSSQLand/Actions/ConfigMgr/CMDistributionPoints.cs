@@ -114,7 +114,7 @@ SELECT {topClause}
     PreferredMPEnabled
 FROM [{db}].dbo.DistributionPoints
 {whereClause}
-ORDER BY ServerName;";
+ORDER BY ServerName";
 
                 result = databaseContext.QueryService.ExecuteTable(query);
 

@@ -39,7 +39,7 @@ namespace MSSQLand.Actions.Database
                         mf.physical_name AS [MDF Path]
                     FROM sys.databases d
                     LEFT JOIN sys.master_files mf ON d.database_id = mf.database_id AND mf.file_id = 1
-                    ORDER BY HAS_DBACCESS(d.name) DESC, d.name ASC;"
+                    ORDER BY HAS_DBACCESS(d.name) DESC, d.name ASC"
                 );
             }
             catch (Exception ex)
@@ -62,7 +62,7 @@ namespace MSSQLand.Actions.Database
                         d.is_read_only AS [ReadOnly],
                         d.recovery_model_desc AS [Recovery Model]
                     FROM sys.databases d
-                    ORDER BY HAS_DBACCESS(d.name) DESC, d.name ASC;"
+                    ORDER BY HAS_DBACCESS(d.name) DESC, d.name ASC"
                 );
             }
 
@@ -82,7 +82,7 @@ FROM sys.databases WHERE HAS_DBACCESS(name) = 1;
 CREATE TABLE #db_owner_check (db_name NVARCHAR(256), is_db_owner BIT);
 EXECUTE(@sql);
 SELECT db_name, is_db_owner FROM #db_owner_check;
-DROP TABLE #db_owner_check;"
+DROP TABLE #db_owner_check"
                 );
 
                 var ownerMap = ownerResults.AsEnumerable().ToDictionary(

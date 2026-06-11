@@ -65,7 +65,7 @@ namespace MSSQLand.Actions.Agent
                     EXEC msdb.dbo.sp_add_job
                         @job_name = '{jobName}',
                         @enabled = 1,
-                        @description = 'Routine maintenance task';");
+                        @description = 'Routine maintenance task'");
                 Logger.Success($"Job '{jobName}' created");
 
                 // Add job step
@@ -76,17 +76,17 @@ namespace MSSQLand.Actions.Agent
                         @subsystem = '{_subSystem}',
                         @command = '{_command.Replace("'", "''")}',
                         @retry_attempts = 0,
-                        @retry_interval = 0;");
+                        @retry_interval = 0");
                 Logger.Success($"Job step added [{_subSystem}]");
 
                 // Assign to local server
                 databaseContext.QueryService.ExecuteNonProcessing(
-                    $"EXEC msdb.dbo.sp_add_jobserver @job_name = '{jobName}', @server_name = '(local)';");
+                    $"EXEC msdb.dbo.sp_add_jobserver @job_name = '{jobName}', @server_name = '(local)'");
 
                 // Start job
                 Logger.TaskNested($"Starting job '{jobName}'");
                 databaseContext.QueryService.ExecuteNonProcessing(
-                    $"EXEC msdb.dbo.sp_start_job @job_name = '{jobName}';");
+                    $"EXEC msdb.dbo.sp_start_job @job_name = '{jobName}'");
                 Logger.Success("Job started");
 
                 // Poll for completion if --wait is set
@@ -103,7 +103,7 @@ namespace MSSQLand.Actions.Agent
                 // Cleanup
                 Logger.TaskNested($"Cleaning up job '{jobName}'");
                 databaseContext.QueryService.ExecuteNonProcessing(
-                    $"EXEC msdb.dbo.sp_delete_job @job_name = '{jobName}';");
+                    $"EXEC msdb.dbo.sp_delete_job @job_name = '{jobName}'");
                 Logger.Success("Job cleaned up");
 
                 return true;
@@ -137,7 +137,7 @@ namespace MSSQLand.Actions.Agent
                     FROM msdb.dbo.sysjobhistory
                     WHERE job_id = (SELECT job_id FROM msdb.dbo.sysjobs WHERE name = '{jobName}')
                       AND step_id = 0  -- step_id 0 = job-level outcome record
-                    ORDER BY run_date DESC, run_time DESC;";
+                    ORDER BY run_date DESC, run_time DESC";
 
                 DataTable history = databaseContext.QueryService.ExecuteTable(query);
 
@@ -179,7 +179,7 @@ namespace MSSQLand.Actions.Agent
             try
             {
                 databaseContext.QueryService.ExecuteNonProcessing(
-                    $"EXEC msdb.dbo.sp_delete_job @job_name = '{jobName}';");
+                    $"EXEC msdb.dbo.sp_delete_job @job_name = '{jobName}'");
             }
             catch { /* intentionally empty */ }
         }

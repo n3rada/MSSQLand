@@ -100,7 +100,7 @@ VALUES (
     '{template["ModifiedBy"].ToString().Replace("'", "''")}',
     '{template["ModifiedDate"]:yyyy-MM-ddTHH:mm:ss}',
     '{template["SourceSite"]}'
-);";
+)";
 
                     int rowsAffected = databaseContext.QueryService.ExecuteNonProcessing(insertQuery);
 

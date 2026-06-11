@@ -78,7 +78,8 @@ LEFT JOIN [{db}].dbo.BGB_ResStatus bgb ON sys.ResourceID = bgb.ResourceID
 LEFT JOIN [{db}].dbo.v_GS_WORKSTATION_STATUS ws ON sys.ResourceID = ws.ResourceID
 LEFT JOIN [{db}].dbo.v_CH_ClientSummary chs ON sys.ResourceID = chs.ResourceID
 LEFT JOIN [{db}].dbo.v_UpdateScanStatus uss ON sys.ResourceID = uss.ResourceID
-WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}';";
+WHERE sys.Name0 = '{_deviceName.Replace("'", "''")}'";
+
 
                 DataTable deviceResult = databaseContext.QueryService.ExecuteTable(deviceQuery);
 
@@ -261,7 +262,7 @@ INNER JOIN [{db}].dbo.vSMS_BoundaryGroup bg ON blb.BoundaryGroupID = bg.GroupID
 LEFT JOIN [{db}].dbo.vSMS_BoundaryGroupMembers bgm ON bg.GroupID = bgm.GroupID
 LEFT JOIN [{db}].dbo.vSMS_Boundary b ON bgm.BoundaryID = b.BoundaryID
 WHERE blb.ResourceID = {resourceId}
-ORDER BY bg.Name;";
+ORDER BY bg.Name";
 
                 try
                 {
@@ -298,7 +299,7 @@ INNER JOIN [{db}].dbo.vSMS_BoundaryGroup bg ON bgss.GroupID = bg.GroupID
 INNER JOIN [{db}].dbo.v_SystemResourceList ss ON bgss.ServerNALPath = ss.NALPath
 WHERE bgss.GroupID IN ({groupIds})
     AND ss.RoleName = 'SMS Distribution Point'
-ORDER BY bg.Name, ss.ServerName;";
+ORDER BY bg.Name, ss.ServerName";
 
                             DataTable dpResult = databaseContext.QueryService.ExecuteTable(dpQuery);
 
@@ -345,7 +346,7 @@ SELECT
 FROM [{db}].dbo.v_FullCollectionMembership cm
 INNER JOIN [{db}].dbo.v_Collection c ON cm.CollectionID = c.CollectionID
 WHERE cm.ResourceID = {resourceId}
-ORDER BY c.CollectionID;";
+ORDER BY c.CollectionID";
 
                 DataTable collectionsResult = databaseContext.QueryService.ExecuteTable(collectionsQuery);
 
@@ -384,7 +385,7 @@ LEFT JOIN [{db}].dbo.v_Advertisement adv ON ds.CollectionID = adv.CollectionID
     AND ds.ProgramName = adv.ProgramName
     AND ds.FeatureType = 2
 WHERE cm.ResourceID = {resourceId}
-ORDER BY ds.DeploymentTime DESC;";
+ORDER BY ds.DeploymentTime DESC";
 
                 DataTable deploymentsResult = databaseContext.QueryService.ExecuteTable(deploymentsQuery);
 
@@ -459,7 +460,7 @@ INNER JOIN [{db}].dbo.v_Collection c ON adv.CollectionID = c.CollectionID
 INNER JOIN [{db}].dbo.v_Package p ON adv.PkgID = p.PackageID
 LEFT JOIN [{db}].dbo.v_ClientAdvertisementStatus cas ON cas.AdvertisementID = adv.OfferID AND cas.ResourceID = {resourceId}
 WHERE cm.ResourceID = {resourceId}
-ORDER BY SortPriority, cas.LastStatusTime DESC, p.Name;";
+ORDER BY SortPriority, cas.LastStatusTime DESC, p.Name";
 
                 DataTable packagesResult = databaseContext.QueryService.ExecuteTable(packagesQuery);
 
@@ -538,7 +539,7 @@ LEFT JOIN (
 WHERE cm.ResourceID = {resourceId}
     AND ci.CIType_ID = 10
     AND ds.FeatureType = 1
-ORDER BY ApplicationName;";
+ORDER BY ApplicationName";
 
                 DataTable applicationsResult = databaseContext.QueryService.ExecuteTable(applicationsQuery);
 
@@ -582,7 +583,7 @@ FROM [{db}].dbo.v_FullCollectionMembership cm
 INNER JOIN [{db}].dbo.v_Advertisement adv ON cm.CollectionID = adv.CollectionID
 INNER JOIN [{db}].dbo.v_TaskSequencePackage ts ON adv.PackageID = ts.PackageID
 WHERE cm.ResourceID = {resourceId}
-ORDER BY ts.Name;";
+ORDER BY ts.Name";
 
                 DataTable taskSequencesResult = databaseContext.QueryService.ExecuteTable(taskSequencesQuery);
 

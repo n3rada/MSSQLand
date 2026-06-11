@@ -145,7 +145,7 @@ namespace MSSQLand.Services
         {
             try
             {
-                return Convert.ToInt32(_queryService.ExecuteScalar($"SELECT IS_SRVROLEMEMBER('{role}');")) == 1;
+                return Convert.ToInt32(_queryService.ExecuteScalar($"SELECT IS_SRVROLEMEMBER('{role}')")) == 1;
             }
             catch (Exception ex)
             {
@@ -160,7 +160,7 @@ namespace MSSQLand.Services
         /// <returns>A tuple containing the mapped user and system user.</returns>
         public (string MappedUser, string SystemUser) GetInfo()
         {
-            const string query = "SELECT USER_NAME() AS U, SYSTEM_USER AS S;";
+            const string query = "SELECT USER_NAME() AS U, SYSTEM_USER AS S";
 
             string mappedUser = "";
             string systemUser = "";
@@ -203,7 +203,7 @@ namespace MSSQLand.Services
                 // Check if SYSTEM_USER has a direct Windows login (type 'U') in sys.server_principals.
                 // This is a single indexed lookup, cheap for the common case.
                 object type = _queryService.ExecuteScalar(
-                    "SELECT type FROM sys.server_principals WHERE name = SYSTEM_USER;");
+                    "SELECT type FROM sys.server_principals WHERE name = SYSTEM_USER");
 
                 if (type?.ToString() == "U")
                 {
@@ -218,7 +218,7 @@ SELECT TOP 1 sp.name
 FROM sys.login_token lt
 INNER JOIN sys.server_principals sp ON sp.sid = lt.sid
 WHERE lt.type = 'WINDOWS GROUP' AND sp.type = 'G'
-ORDER BY sp.principal_id;");
+ORDER BY sp.principal_id");
 
                 this.SourcePrincipal = group?.ToString() ?? SystemUser;
             }
@@ -279,7 +279,7 @@ WHERE type = 'R'
   AND name != 'public'
   AND name NOT LIKE '##%##'
   AND ISNULL(IS_SRVROLEMEMBER(name), 0) = 1
-ORDER BY is_fixed_role DESC, name;";
+ORDER BY is_fixed_role DESC, name";
 
             var fixedRoles = new List<string>();
             var customRoles = new List<string>();
@@ -320,7 +320,7 @@ ORDER BY is_fixed_role DESC, name;";
             }
 
             string safeUser = user.Replace("'", "''");
-            string query = $"SELECT 1 FROM master.sys.server_permissions a INNER JOIN master.sys.server_principals b ON a.grantor_principal_id = b.principal_id WHERE a.permission_name = 'IMPERSONATE' AND b.name = '{safeUser}';";
+            string query = $"SELECT 1 FROM master.sys.server_permissions a INNER JOIN master.sys.server_principals b ON a.grantor_principal_id = b.principal_id WHERE a.permission_name = 'IMPERSONATE' AND b.name = '{safeUser}'";
 
             try
             {
@@ -350,8 +350,7 @@ ORDER BY is_fixed_role DESC, name;";
                 return;
             }
 
-            string impersonateQuery = $"EXECUTE AS LOGIN = N'{user.Replace("'", "''")}';";
-            try
+            string impersonateQuery = $"EXECUTE AS LOGIN = N'{user.Replace("'", "''")}'";            try
             {
                 using var command = _queryService.Connection.CreateCommand();
                 command.CommandText = impersonateQuery;
@@ -367,7 +366,7 @@ ORDER BY is_fixed_role DESC, name;";
                 {
                     using (var useMaster = _queryService.Connection.CreateCommand())
                     {
-                        useMaster.CommandText = "USE master;";
+                        useMaster.CommandText = "USE master";
                         useMaster.ExecuteNonQuery();
                     }
 
@@ -421,7 +420,7 @@ ORDER BY is_fixed_role DESC, name;";
             }
 
             using var command = _queryService.Connection.CreateCommand();
-            command.CommandText = "REVERT;";
+            command.CommandText = "REVERT";
             command.ExecuteNonQuery();
 
             _adminStatusCache.Clear();

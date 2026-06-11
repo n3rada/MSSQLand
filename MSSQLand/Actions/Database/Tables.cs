@@ -95,7 +95,7 @@ namespace MSSQLand.Actions.Database
                 ) pr
                 {whereClause}
                 ORDER BY 
-                    CASE WHEN t.type = 'U' THEN COALESCE(pr.Rows, 0) ELSE -1 END DESC, SchemaName, TableName;";
+                    CASE WHEN t.type = 'U' THEN COALESCE(pr.Rows, 0) ELSE -1 END DESC, SchemaName, TableName";
 
             DataTable tables = databaseContext.QueryService.ExecuteTable(query);
 
@@ -123,7 +123,7 @@ namespace MSSQLand.Actions.Database
     p.permission_name 
 FROM sys.objects o 
 CROSS APPLY fn_my_permissions(QUOTENAME(SCHEMA_NAME(o.schema_id)) + '.' + QUOTENAME(o.name), 'OBJECT') p 
-WHERE o.object_id IN ({objectIdFilter});";
+WHERE o.object_id IN ({objectIdFilter})";
 
                 DataTable allPermissions = databaseContext.QueryService.ExecuteTable(permissionsQuery);
 
@@ -152,7 +152,7 @@ WHERE o.object_id IN ({objectIdFilter});";
 FROM sys.columns c
 INNER JOIN sys.objects o ON c.object_id = o.object_id
 WHERE o.object_id IN ({objectIdFilter})
-ORDER BY o.object_id, c.column_id;";
+ORDER BY o.object_id, c.column_id";
 
                 DataTable columnsResult = databaseContext.QueryService.ExecuteTable(columnsQuery);
 

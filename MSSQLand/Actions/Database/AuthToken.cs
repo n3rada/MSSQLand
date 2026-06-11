@@ -41,7 +41,7 @@ namespace MSSQLand.Actions.Database
                     FROM sys.login_token lt
                     LEFT JOIN master.sys.server_principals sp ON lt.principal_id = sp.principal_id
                     WHERE lt.type = 'WINDOWS GROUP'
-                    ORDER BY lt.name;";
+                    ORDER BY lt.name";
 
                 var tokenTable = databaseContext.QueryService.ExecuteTable(tokenQuery);
 

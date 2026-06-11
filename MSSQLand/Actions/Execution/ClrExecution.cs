@@ -58,9 +58,9 @@ namespace MSSQLand.Actions.Execution
 
             string assemblyName = ByteHelper.GetRandomIdentifier(6);
 
-            string dropProcedure = $"DROP PROCEDURE IF EXISTS [{_function}];";
-            string dropAssembly = $"DROP ASSEMBLY IF EXISTS [{assemblyName}];";
-            string dropClrHash = $"EXEC sp_drop_trusted_assembly 0x{libraryHash};";
+            string dropProcedure = $"DROP PROCEDURE IF EXISTS [{_function}]";
+            string dropAssembly = $"DROP ASSEMBLY IF EXISTS [{assemblyName}]";
+            string dropClrHash = $"EXEC sp_drop_trusted_assembly 0x{libraryHash}";
             bool usedTrustedAssembly = false;
             bool setTrustworthy = false;
 
@@ -79,7 +79,7 @@ namespace MSSQLand.Actions.Execution
                 {
                     Logger.Warning("Trusted assembly registration unavailable, falling back to TRUSTWORTHY");
                     object trustworthyResult = databaseContext.QueryService.ExecuteScalar(
-                        $"SELECT is_trustworthy_on FROM sys.databases WHERE name = DB_NAME();");
+                        $"SELECT is_trustworthy_on FROM sys.databases WHERE name = DB_NAME()");
 
                     bool isTrustworthy = trustworthyResult != null && Convert.ToBoolean(trustworthyResult);
 
@@ -150,7 +150,7 @@ namespace MSSQLand.Actions.Execution
 
                 // Step 5: Execute the stored procedure
                 Logger.TaskNested($"Executing the stored procedure '{_function}'");
-                databaseContext.QueryService.ExecuteNonProcessing($"EXEC [{_function}] @args = '{_args}';");
+                databaseContext.QueryService.ExecuteNonProcessing($"EXEC [{_function}] @args = '{_args}'");
                 Logger.Success("Stored procedure executed successfully");
 
                 return true;

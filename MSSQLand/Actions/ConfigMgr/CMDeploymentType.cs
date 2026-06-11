@@ -105,7 +105,7 @@ SELECT
     lcp.Version AS LocalizedVersion
 FROM [{db}].dbo.CI_ConfigurationItems ci
 LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp ON ci.CI_ID = lcp.CI_ID AND lcp.LocaleID = 1033
-WHERE ci.CI_ID = {_ciId} AND ci.CIType_ID = 21;";
+WHERE ci.CI_ID = {_ciId} AND ci.CIType_ID = 21";
 
                 DataTable dtResult = databaseContext.QueryService.ExecuteTable(dtQuery);
 
@@ -225,7 +225,7 @@ FROM [{db}].dbo.CI_ConfigurationItemRelations rel
 INNER JOIN [{db}].dbo.CI_ConfigurationItems ci ON rel.FromCI_ID = ci.CI_ID
 LEFT JOIN [{db}].dbo.v_LocalizedCIProperties lp ON ci.CI_ID = lp.CI_ID AND lp.LocaleID = 1033
 LEFT JOIN [{db}].dbo.CI_LocalizedCIClientProperties lcp ON ci.CI_ID = lcp.CI_ID AND lcp.LocaleID = 1033
-WHERE rel.ToCI_ID = {_ciId} AND rel.RelationType = 9;";
+WHERE rel.ToCI_ID = {_ciId} AND rel.RelationType = 9";
 
                 DataTable parentResult = databaseContext.QueryService.ExecuteTable(parentQuery);
 
@@ -392,7 +392,7 @@ SELECT TOP 1
 FROM [{db}].dbo.CI_CIDocuments cid
 INNER JOIN [{db}].dbo.CI_DocumentStore ds ON cid.Document_ID = ds.Document_ID
 WHERE cid.CI_ID = {_ciId} AND ds.IsVersionLatest = 1
-ORDER BY ds.Document_ID DESC;";
+ORDER BY ds.Document_ID DESC";
 
                 DataTable docResult = databaseContext.QueryService.ExecuteTable(docQuery);
 
