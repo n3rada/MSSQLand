@@ -478,6 +478,29 @@ SELECT @result AS Result, @error AS Error";
         }
 
         /// <summary>
+        /// Executes a query and returns all output as a plain string.
+        /// Reads every row and column, joining columns with a tab and rows with a newline.
+        /// Returns null when the query produces no result set or no rows.
+        /// </summary>
+        public string ExecuteString(string query)
+        {
+            using SqlDataReader reader = Execute(query);
+            if (reader == null) return null;
+
+            var lines = new System.Text.StringBuilder();
+            while (reader.Read())
+            {
+                var cols = new string[reader.FieldCount];
+                for (int i = 0; i < reader.FieldCount; i++)
+                    cols[i] = reader.IsDBNull(i) ? string.Empty : reader.GetValue(i).ToString();
+                lines.AppendLine(string.Join("\t", cols));
+            }
+
+            string result = lines.ToString().TrimEnd();
+            return result.Length > 0 ? result : null;
+        }
+
+        /// <summary>
         /// Executes a query and returns the first column of the first row.
         /// </summary>
         public object ExecuteScalar(string query)
