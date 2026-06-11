@@ -79,6 +79,32 @@ namespace MSSQLand.Services
         }
 
         /// <summary>
+        /// Wraps DDL statements that must be the first in their batch inside EXEC('...') so
+        /// that the impersonation steps prepended by the linked server chain do not violate
+        /// the T-SQL batch rule for CREATE PROCEDURE, FUNCTION, TRIGGER, and VIEW.
+        /// Single quotes inside the query are escaped to '' before wrapping.
+        /// No-op when the query does not start with one of these keywords.
+        /// </summary>
+        static string WrapDdlForLinkedServer(string query)
+        {
+            string trimmed = query.TrimStart().ToUpperInvariant();
+            if (trimmed.StartsWith("CREATE PROCEDURE")  ||
+                trimmed.StartsWith("CREATE PROC ")     ||
+                trimmed.StartsWith("ALTER PROCEDURE")  ||
+                trimmed.StartsWith("ALTER PROC ")      ||
+                trimmed.StartsWith("CREATE FUNCTION")  ||
+                trimmed.StartsWith("ALTER FUNCTION")   ||
+                trimmed.StartsWith("CREATE TRIGGER")   ||
+                trimmed.StartsWith("ALTER TRIGGER")    ||
+                trimmed.StartsWith("CREATE VIEW")      ||
+                trimmed.StartsWith("ALTER VIEW"))
+            {
+                return $"EXEC('{query.Replace("'", "''")}')";
+            }
+            return query;
+        }
+
+        /// <summary>
         /// Detects failure cases where OPENQUERY rejects a query because no rowset is returned.
         /// </summary>
         /// <param name="ex">Thrown exception.</param>
@@ -406,6 +432,11 @@ SELECT @result AS Result, @error AS Error";
 
             if (_linkedServers.IsEmpty)
                 return query;
+
+            // CREATE PROCEDURE/FUNCTION/TRIGGER/VIEW must be the first statement in their
+            // T-SQL batch. Over linked servers the chain prepends EXECUTE AS LOGIN steps,
+            // so wrap these DDL statements in EXEC('...') to give them an isolated inner batch.
+            query = WrapDdlForLinkedServer(query);
 
             if (!_linkedServers.UseRemoteProcedureCall && RequiresRPC(query))
             {

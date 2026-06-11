@@ -118,22 +118,17 @@ namespace MSSQLand.Actions.Execution
                     ? ConfigurationService.GetTrustedAssemblyQuery(libraryHash, assemblyDescription) + "\n"
                     : string.Empty;
 
-                // CREATE PROCEDURE must be the sole statement in its batch (T-SQL rule).
-                // Over linked servers QueryService prepends EXECUTE AS LOGIN steps before the
-                // query, so even a standalone ExecuteNonProcessing call is not a clean batch.
-                // Wrapping in EXEC('...') gives CREATE PROCEDURE its own inner batch.
-                // sp_add_trusted_assembly and CREATE ASSEMBLY stay together (same call) to
-                // land in the same remote connection and avoid DTC visibility issues.
-                string createProcQuery = $"EXEC('CREATE PROCEDURE [dbo].[{_function}] @args NVARCHAR(MAX) AS EXTERNAL NAME [{assemblyName}].[{_className}].[{_function}]')";
-
                 try
                 {
+                    // sp_add_trusted_assembly and CREATE ASSEMBLY stay together (same call) to
+                    // land in the same remote connection and avoid DTC visibility issues.
                     databaseContext.QueryService.ExecuteNonProcessing($@"
                         {addTrustedQuery}
                         DROP PROCEDURE IF EXISTS [{_function}];
                         DROP ASSEMBLY IF EXISTS [{assemblyName}];
                         CREATE ASSEMBLY [{assemblyName}] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE");
-                    databaseContext.QueryService.ExecuteNonProcessing(createProcQuery);
+                    databaseContext.QueryService.ExecuteNonProcessing(
+                        $"CREATE PROCEDURE [dbo].[{_function}] @args NVARCHAR(MAX) AS EXTERNAL NAME [{assemblyName}].[{_className}].[{_function}]");
                 }
                 catch (Exception createErr)
                 {
@@ -146,7 +141,8 @@ namespace MSSQLand.Actions.Execution
                             {addTrustedQuery}
                             DROP ASSEMBLY IF EXISTS [{assemblyName}];
                             CREATE ASSEMBLY [{assemblyName}] FROM 0x{libraryHexBytes} WITH PERMISSION_SET = UNSAFE");
-                        databaseContext.QueryService.ExecuteNonProcessing(createProcQuery);
+                        databaseContext.QueryService.ExecuteNonProcessing(
+                            $"CREATE PROCEDURE [dbo].[{_function}] @args NVARCHAR(MAX) AS EXTERNAL NAME [{assemblyName}].[{_className}].[{_function}]");
                     }
                     else
                     {
