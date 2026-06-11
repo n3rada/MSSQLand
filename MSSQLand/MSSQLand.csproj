@@ -50,6 +50,7 @@
     <DefineConstants>CONFIGMGR</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release-NoCM|AnyCPU'">
+    <AssemblyName>MSSQLand-NoCM</AssemblyName>
     <OutputPath>bin\Release-NoCM\</OutputPath>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Optimize>true</Optimize>
