@@ -144,7 +144,7 @@ namespace MSSQLand.Utilities
             {
                 string hex = m.Groups[1].Value;
                 if (hex.Length < threshold) return m.Value;
-                return $"0x{hex.Substring(0, 4)}<strip>{hex.Substring(hex.Length - 4)}";
+                return $"0x{hex.Substring(0, 4)}<strip:{hex.Length / 2} bytes>{hex.Substring(hex.Length - 4)}";
             });
 
         /// <summary>
