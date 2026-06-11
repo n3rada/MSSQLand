@@ -479,24 +479,56 @@ SELECT @result AS Result, @error AS Error";
 
         /// <summary>
         /// Executes a query and returns all output as a plain string.
-        /// Reads every row and column, joining columns with a tab and rows with a newline.
-        /// Returns null when the query produces no result set or no rows.
+        /// Captures both result set rows (columns joined with tab) and InfoMessage events
+        /// emitted by PRINT or SqlContext.Pipe.Send(string) inside CLR procedures.
+        /// Returns null when the query produces no output of either kind.
         /// </summary>
         public string ExecuteString(string query)
         {
-            using SqlDataReader reader = Execute(query);
-            if (reader == null) return null;
+            var output = new System.Text.StringBuilder();
 
-            var lines = new System.Text.StringBuilder();
-            while (reader.Read())
+            SqlInfoMessageEventHandler handler = (sender, e) =>
             {
-                var cols = new string[reader.FieldCount];
-                for (int i = 0; i < reader.FieldCount; i++)
-                    cols[i] = reader.IsDBNull(i) ? string.Empty : reader.GetValue(i).ToString();
-                lines.AppendLine(string.Join("\t", cols));
+                foreach (SqlError msg in e.Errors)
+                {
+                    Logger.Trace($"InfoMessage: {msg.Message}");
+                    output.AppendLine(msg.Message);
+                }
+            };
+
+            Connection.InfoMessage += handler;
+            bool prev = Connection.FireInfoMessageEventOnUserErrors;
+            Connection.FireInfoMessageEventOnUserErrors = true;
+
+            try
+            {
+                using SqlDataReader reader = ExecuteWithHandling(query, executeReader: true) as SqlDataReader;
+                if (reader != null)
+                {
+                    int rowCount = 0;
+                    while (reader.Read())
+                    {
+                        var cols = new string[reader.FieldCount];
+                        for (int i = 0; i < reader.FieldCount; i++)
+                            cols[i] = reader.IsDBNull(i) ? string.Empty : reader.GetValue(i).ToString();
+                        output.AppendLine(string.Join("\t", cols));
+                        rowCount++;
+                    }
+                    Logger.Trace($"ExecuteString read {rowCount} row(s) from result set");
+                }
+                else
+                {
+                    Logger.Trace("ExecuteString: no result set returned");
+                }
+            }
+            finally
+            {
+                Connection.FireInfoMessageEventOnUserErrors = prev;
+                Connection.InfoMessage -= handler;
             }
 
-            string result = lines.ToString().TrimEnd();
+            string result = output.ToString().TrimEnd();
+            Logger.Trace($"ExecuteString output length: {result.Length} chars");
             return result.Length > 0 ? result : null;
         }
 
