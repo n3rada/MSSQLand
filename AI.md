@@ -2,6 +2,13 @@
 
 This file is the canonical AI guidance for this repository.
 
+## Relationship with mssqlclient-ng
+
+MSSQLand and [mssqlclient-ng](https://github.com/n3rada/mssqlclient-ng) are complementary tools by the same author:
+
+- **MSSQLand** (this repo): C#, .NET Framework 4.8, runs inside a beacon via assembly execution (`execute-assembly`), authenticates using the current Windows token, no external dependencies, minimal OPSEC footprint. The right tool when already operating inside the target environment.
+- **mssqlclient-ng**: Python 3, runs from an external Linux attack box, supports Kerberos, NTLM, pass-the-hash, and NTLM relay. The right tool when approaching from an external position, trivially paired with a SOCKS5 proxy established from a beacon.
+
 ## Read Order
 
 1. [README.md](README.md) - CLI behavior, usage, and operator-facing semantics.
