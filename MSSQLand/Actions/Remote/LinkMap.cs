@@ -75,10 +75,10 @@ namespace MSSQLand.Actions.Remote
             public List<string> ServerRoles { get; set; } = new();
             public List<ServerNode> Children { get; set; } = new();
             /// <summary>
-            /// Privilege escalation paths discovered via impersonation at this server.
+            /// Impersonation paths discovered at this server that lead to elevated privileges.
             /// Each path is a chain of impersonation steps ending in a privileged user (sysadmin/elevated).
             /// </summary>
-            public List<List<ImpersonationStep>> EscalationPaths { get; set; } = new();
+            public List<List<ImpersonationStep>> ImpersonationPaths { get; set; } = new();
 
             /// <summary>
             /// True if the user has any elevated (security-relevant) server roles beyond sysadmin.
@@ -507,9 +507,9 @@ namespace MSSQLand.Actions.Remote
             // Guard against the root having no children: CountLeafNodes returns 1 for any leaf node,
             // including the root itself when all explorations failed (wrong, should be 0).
             int totalChains = _rootNode.Children.Count == 0 ? 0 : CountLeafNodes(_rootNode);
-            int totalEscalations = CountEscalationPaths(_rootNode);
+            int totalImpersonationPaths = CountImpersonationPaths(_rootNode);
 
-            if (totalChains == 0 && totalEscalations == 0)
+            if (totalChains == 0 && totalImpersonationPaths == 0)
             {
                 Logger.Warning("No accessible linked server chains found.");
                 return null;
@@ -517,8 +517,8 @@ namespace MSSQLand.Actions.Remote
 
             Logger.NewLine();
             string summary = $"Found {totalChains} accessible chain(s)";
-            if (totalEscalations > 0)
-                summary += $" and {totalEscalations} privilege escalation path(s)";
+            if (totalImpersonationPaths > 0)
+                summary += $" and {totalImpersonationPaths} impersonation path(s)";
             summary += $" in {totalStopwatch.Elapsed.TotalSeconds:F2}s";
             Logger.Success(summary);
 
@@ -754,14 +754,14 @@ namespace MSSQLand.Actions.Remote
                         List<string> chainEndRoles = fixedChainEndRoles.Concat(customChainEndRoles).ToList();
                         bool chainEndIsSysadmin = databaseContext.UserService.IsAdmin();
 
-                        // Record as an escalation path only when the chain end carries
+                        // Record as an impersonation path only when the chain end carries
                         // sysadmin or another elevated role.
                         if (chainEndIsSysadmin || chainEndRoles.Exists(r => ElevatedRoles.Contains(r)))
                         {
                             var steps = chain.Select(login => new ImpersonationStep { Login = login, Roles = new List<string>() }).ToList();
                             steps[steps.Count - 1].Roles = chainEndRoles;
-                            currentNode.EscalationPaths.Add(steps);
-                            Logger.InfoNested($"Escalation path on {targetServer}: [{string.Join(" -> ", chain)}]");
+                            currentNode.ImpersonationPaths.Add(steps);
+                            Logger.InfoNested($"Impersonation path on {targetServer}: [{string.Join(" -> ", chain)}]");
                         }
 
                         DataTable chainLinks = Links.GetLinkedServers(databaseContext);
@@ -1084,14 +1084,14 @@ namespace MSSQLand.Actions.Remote
         }
 
         /// <summary>
-        /// Counts all privilege escalation paths across the entire tree.
+        /// Counts all impersonation paths across the entire tree.
         /// </summary>
-        private int CountEscalationPaths(ServerNode node)
+        private int CountImpersonationPaths(ServerNode node)
         {
-            int count = node.EscalationPaths.Count;
+            int count = node.ImpersonationPaths.Count;
             foreach (var child in node.Children)
             {
-                count += CountEscalationPaths(child);
+                count += CountImpersonationPaths(child);
             }
             return count;
         }
@@ -1171,11 +1171,11 @@ namespace MSSQLand.Actions.Remote
 
                 for (int i = 0; i < node.Children.Count; i++)
                 {
-                    bool childIsLast = (i == node.Children.Count - 1) && node.EscalationPaths.Count == 0;
+                    bool childIsLast = (i == node.Children.Count - 1) && node.ImpersonationPaths.Count == 0;
                     DisplayTreeNode(node.Children[i], serverChildIndent, childIsLast, currentPath);
                 }
 
-                RenderEscalationPaths(node, serverChildIndent);
+                RenderImpersonationPaths(node, serverChildIndent);
             }
             else
             {
@@ -1187,26 +1187,26 @@ namespace MSSQLand.Actions.Remote
 
                 for (int i = 0; i < node.Children.Count; i++)
                 {
-                    bool childIsLast = (i == node.Children.Count - 1) && node.EscalationPaths.Count == 0;
+                    bool childIsLast = (i == node.Children.Count - 1) && node.ImpersonationPaths.Count == 0;
                     DisplayTreeNode(node.Children[i], childIndent, childIsLast, currentPath);
                 }
 
-                RenderEscalationPaths(node, childIndent);
+                RenderImpersonationPaths(node, childIndent);
             }
         }
 
         /// <summary>
-        /// Renders privilege escalation paths discovered at a server node.
+        /// Renders impersonation paths discovered at a server node.
         /// Shows impersonation chains that lead to sysadmin or elevated roles.
         /// </summary>
-        private static void RenderEscalationPaths(ServerNode node, string indent)
+        private static void RenderImpersonationPaths(ServerNode node, string indent)
         {
-            if (node.EscalationPaths.Count == 0) return;
+            if (node.ImpersonationPaths.Count == 0) return;
 
-            for (int p = 0; p < node.EscalationPaths.Count; p++)
+            for (int p = 0; p < node.ImpersonationPaths.Count; p++)
             {
-                var path = node.EscalationPaths[p];
-                bool isLast = (p == node.EscalationPaths.Count - 1);
+                var path = node.ImpersonationPaths[p];
+                bool isLast = (p == node.ImpersonationPaths.Count - 1);
                 string connector = isLast ? "└── " : "├── ";
 
                 string chainDisplay = string.Join(" → ", path.Select(s => s.Login + s.PrivilegeMarker));
@@ -1241,8 +1241,8 @@ namespace MSSQLand.Actions.Remote
                 result.Rows.Add(BuildRow(chain, hops));
 
                 var lastNode = chain[chain.Count - 1];
-                foreach (var escalation in lastNode.EscalationPaths)
-                    result.Rows.Add(BuildRow(chain, hops + escalation.Count, escalation));
+                foreach (var impersonation in lastNode.ImpersonationPaths)
+                    result.Rows.Add(BuildRow(chain, hops + impersonation.Count, impersonation));
             }
 
             if (result.Rows.Count > 0)
@@ -1278,7 +1278,7 @@ namespace MSSQLand.Actions.Remote
 
         /// <summary>
         /// Builds LinkedServers and host argument from a chain of ServerNodes.
-        /// Shared by BuildChainRow and BuildEscalationRow.
+        /// Shared by BuildRow overloads.
         /// </summary>
         private (LinkedServers linkedServers, string hostArg) BuildChainContext(List<ServerNode> chain)
         {
@@ -1313,10 +1313,10 @@ namespace MSSQLand.Actions.Remote
         }
 
         /// <summary>
-        /// Builds a DataRow for a reachable chain. When <paramref name="escalation"/> is provided,
-        /// the row reflects the escalated login and appends its impersonation to the last hop.
+        /// Builds a DataRow for a reachable chain. When <paramref name="impersonation"/> is provided,
+        /// the row reflects the impersonated login and appends its impersonation to the last hop.
         /// </summary>
-        private object[] BuildRow(List<ServerNode> chain, int hops, List<ImpersonationStep> escalation = null)
+        private object[] BuildRow(List<ServerNode> chain, int hops, List<ImpersonationStep> impersonation = null)
         {
             var lastNode = chain[chain.Count - 1];
             var (linkedServers, hostArg) = BuildChainContext(chain);
@@ -1327,12 +1327,12 @@ namespace MSSQLand.Actions.Remote
 
             string login, mappedTo, privilege;
 
-            if (escalation != null)
+            if (impersonation != null)
             {
                 linkedServers.ServerChain[linkedServers.ServerChain.Length - 1].ImpersonationUsers =
-                    escalation.ConvertAll(s => s.Login).ToArray();
+                    impersonation.ConvertAll(s => s.Login).ToArray();
 
-                var lastStep = escalation[escalation.Count - 1];
+                var lastStep = impersonation[impersonation.Count - 1];
                 login = lastStep.Login;
                 mappedTo = "";
                 if (lastStep.IsSysadmin)
