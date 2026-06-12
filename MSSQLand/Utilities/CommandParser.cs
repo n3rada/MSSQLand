@@ -144,7 +144,7 @@ namespace MSSQLand.Utilities
 
         public (ParseResultType, CommandArgs?) Parse(string[] args)
         {
-            // Scan for display flags and early-exit flags before any work.
+            // Pre-scan: --silent, --version, and --help must take effect before any output.
             bool helpRequested = false;
             foreach (string arg in args)
             {
@@ -164,19 +164,7 @@ namespace MSSQLand.Utilities
                 return (ParseResultType.ShowHelp, null);
             }
 
-            CommandArgs parsedArgs = new();
-            string username = null, password = null, domain = null;
-            int? connectionTimeout = null;
-            string appName = null, workstationId = null;
-            int? packetSize = null;
-            bool? enableEncryption = null, trustServerCertificate = null;
-            string hostArg = null;
-            string actionName = null;
-            List<string> actionArgs = new List<string>();
-
             // Short-circuit for help before any parsing work.
-            // Kept outside the try-catch so help display errors are not swallowed
-            // into "Error parsing command line arguments".
             if (helpRequested)
             {
                 string earlyAction = FindEarlyActionName(args);
@@ -199,48 +187,46 @@ namespace MSSQLand.Utilities
                 return (ParseResultType.ShowHelp, null);
             }
 
+            CommandArgs parsedArgs = new();
+            string username = null, password = null, domain = null;
+            int? connectionTimeout = null;
+            string appName = null, workstationId = null;
+            int? packetSize = null;
+            bool? enableEncryption = null, trustServerCertificate = null;
+            string hostArg = null;
+            string actionName = null;
+            List<string> actionArgs = new List<string>();
+
             int currentIndex = 0;
 
             try
             {
+                // Early-exit utility modes that start with a top-level flag (no host needed).
                 if (args[0] == "--findsql")
                 {
                     string adDomain = null;
                     bool useGlobalCatalog = false;
 
-                    // Parse optional arguments
                     for (int i = 1; i < args.Length; i++)
                     {
                         if (args[i] == "--global-catalog" || args[i] == "--gc")
-                        {
                             useGlobalCatalog = true;
-                        }
                         else if (!IsFlag(args[i]) && adDomain == null)
-                        {
                             adDomain = args[i];
-                        }
                     }
 
-                    // If no domain specified, try to get the current domain or forest root
                     if (string.IsNullOrEmpty(adDomain))
                     {
                         try
                         {
                             var currentDomain = System.DirectoryServices.ActiveDirectory.Domain.GetCurrentDomain();
-                            if (useGlobalCatalog)
-                            {
-                                // For forest-wide search, use the forest root domain
-                                adDomain = currentDomain.Forest.RootDomain.Name;
-                            }
-                            else
-                            {
-                                adDomain = currentDomain.Name;
-                            }
+                            adDomain = useGlobalCatalog
+                                ? currentDomain.Forest.RootDomain.Name
+                                : currentDomain.Name;
                         }
                         catch (Exception ex)
                         {
                             throw new ArgumentException($"Failed to auto-detect domain: {ex.Message}.");
-
                         }
                     }
 
@@ -252,7 +238,6 @@ namespace MSSQLand.Utilities
                 {
                     int timeoutMs = 3000;
 
-                    // Parse optional arguments
                     for (int i = 1; i < args.Length; i++)
                     {
                         if (args[i] == "--timeout" || args[i] == "-t")
@@ -269,89 +254,20 @@ namespace MSSQLand.Utilities
                     return (ParseResultType.UtilityMode, null);
                 }
 
-                // First pass: extract --trace, --debug, --silent, and --format flags from anywhere in the arguments
-                var filteredArgs = new List<string>();
-                for (int i = 0; i < args.Length; i++)
+                // Single unified pass: global flags are consumed wherever they appear,
+                // including after the action name. Unrecognised tokens after the action are
+                // collected verbatim as action arguments.
+                while (currentIndex < args.Length)
                 {
-                    if (args[i] == "--trace")
+                    string arg = args[currentIndex];
+
+                    // Per-host utility modes — only valid before the action is established.
+                    if (actionName == null && hostArg != null && (arg == "--browse" || arg == "--browser"))
                     {
-                        Logger.MinimumLogLevel = LogLevel.Trace;
-                    }
-                    else if (args[i] == "--debug")
-                    {
-                        Logger.MinimumLogLevel = LogLevel.Debug;
-                    }
-                    else if (args[i] == "--silent")
-                    {
-                        Logger.IsSilentModeEnabled = true;
-                    }
-                    else if (args[i].StartsWith("--output-format", StringComparison.OrdinalIgnoreCase) ||
-                             args[i].StartsWith("--output=", StringComparison.OrdinalIgnoreCase) ||
-                             args[i].StartsWith("--format", StringComparison.OrdinalIgnoreCase))
-                    {
-                        string formatValue = null;
-                        int sepIndex = args[i].IndexOfAny(new[] { ':', '=' });
-                        if (sepIndex > 0 && sepIndex < args[i].Length - 1)
-                        {
-                            formatValue = args[i].Substring(sepIndex + 1);
-                        }
-                        else if (i + 1 < args.Length && !args[i + 1].StartsWith("-"))
-                        {
-                            formatValue = args[++i];
-                        }
-
-                        if (!string.IsNullOrEmpty(formatValue))
-                        {
-                            try
-                            {
-                                OutputFormatter.SetFormat(formatValue);
-                            }
-                            catch (ArgumentException ex)
-                            {
-                                var availableFormats = string.Join(", ", OutputFormatter.GetAvailableFormats());
-                                throw new ArgumentException($"{ex.Message}. Available formats: {availableFormats}");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        filteredArgs.Add(args[i]);
-                    }
-                }
-
-                // Continue parsing with filtered arguments
-                args = filteredArgs.ToArray();
-                currentIndex = 0;
-
-                // First positional argument: HOST (mandatory)
-                if (currentIndex >= args.Length || IsFlag(args[currentIndex]))
-                {
-                    Logger.Error("Missing Host positional argument.");
-                    Logger.ErrorNested("Usage: <host> [options] <action> [action-options]");
-                    return (ParseResultType.InvalidInput, null);
-                }
-
-                hostArg = args[currentIndex++];
-                parsedArgs.Host = Server.ParseServer(hostArg);
-
-                // DNS resolution is deferred to SqlConnection for normal auth
-                // Only resolve for utility modes that need the IP address upfront
-                IPAddress resolvedIp = null;
-
-                // Check for utility modes that work on a specific host
-                if (currentIndex < args.Length)
-                {
-                    string nextArg = args[currentIndex];
-
-                    if (nextArg == "--browse" || nextArg == "--browser")
-                    {
-                        // Resolve DNS for utility mode
+                        IPAddress resolvedIp = null;
                         if (!parsedArgs.Host.UsesNamedPipe)
                         {
-                            try
-                            {
-                                resolvedIp = ResolveDnsIfNeeded(parsedArgs.Host.Hostname);
-                            }
+                            try { resolvedIp = ResolveDnsIfNeeded(parsedArgs.Host.Hostname); }
                             catch (Exception ex)
                             {
                                 Logger.Error($"DNS resolution failed: {ex.Message}");
@@ -362,19 +278,15 @@ namespace MSSQLand.Utilities
                         Logger.Info($"Querying SQL Browser service on {hostArg} (UDP 1434)");
                         var instances = SqlBrowser.Query(resolvedIp, hostArg);
                         SqlBrowser.LogInstances(hostArg, instances);
-
                         return (ParseResultType.UtilityMode, null);
                     }
 
-                    if (nextArg == "--portscan")
+                    if (actionName == null && hostArg != null && arg == "--portscan")
                     {
-                        // Resolve DNS for utility mode
+                        IPAddress resolvedIp = null;
                         if (!parsedArgs.Host.UsesNamedPipe)
                         {
-                            try
-                            {
-                                resolvedIp = ResolveDnsIfNeeded(parsedArgs.Host.Hostname);
-                            }
+                            try { resolvedIp = ResolveDnsIfNeeded(parsedArgs.Host.Hostname); }
                             catch (Exception ex)
                             {
                                 Logger.Error($"DNS resolution failed: {ex.Message}");
@@ -382,7 +294,6 @@ namespace MSSQLand.Utilities
                             }
                         }
 
-                        // Check for port specification or flags
                         int[] customPorts = null;
                         bool scanAll = false;
 
@@ -390,12 +301,9 @@ namespace MSSQLand.Utilities
                         {
                             string nextVal = args[currentIndex + 1];
                             if (nextVal == "--all" || nextVal == "-a")
-                            {
                                 scanAll = true;
-                            }
                             else if (!nextVal.StartsWith("-"))
                             {
-                                // Parse port specification: single, range (49152-65535), or list (1433,5000,65184)
                                 customPorts = ParsePortSpec(nextVal);
                                 if (customPorts == null || customPorts.Length == 0)
                                 {
@@ -415,44 +323,56 @@ namespace MSSQLand.Utilities
                         {
                             Logger.Info($"Scanning {hostArg} for SQL Server ports (TDS validation)");
                             if (scanAll)
-                            {
                                 Logger.InfoNested("Find all instances (full ephemeral range)");
-                            }
                             else
-                            {
                                 Logger.InfoNested("Stop on first hit (use --all to find all)");
-                            }
                             PortScanner.Scan(resolvedIp, hostArg, stopOnFirst: !scanAll);
                         }
 
                         return (ParseResultType.UtilityMode, null);
                     }
-                }
 
-                // Parse global flags until we hit the action (non-flag positional arg)
-                while (currentIndex < args.Length)
-                {
-                    string arg = args[currentIndex];
-
-                    // If it's not a flag, it's the action
-                    if (!IsFlag(arg))
-                    {
-                        actionName = arg;
-                        currentIndex++;
-                        break;
-                    }
-
-                    if (arg.Equals("--probe", StringComparison.OrdinalIgnoreCase))
-                    {
+                    // Boolean global flags
+                    if (arg == "--trace")
+                        Logger.MinimumLogLevel = LogLevel.Trace;
+                    else if (arg == "--debug")
+                        Logger.MinimumLogLevel = LogLevel.Debug;
+                    else if (arg == "--silent")
+                        Logger.IsSilentModeEnabled = true;
+                    else if (arg.Equals("--probe", StringComparison.OrdinalIgnoreCase))
                         parsedArgs.CredentialType = "probe";
-                        currentIndex++;
-                        continue;
-                    }
-
-                    // Parse global flags
-                    if (IsGlobalArgument(arg, "credentials", "c"))
+                    else if (arg == "--no-encrypt" || arg == "--disable-encrypt")
+                        enableEncryption = false;
+                    else if (arg == "--no-trust-cert" || arg == "--disable-trust-cert")
+                        trustServerCertificate = false;
+                    // Output format (multiple accepted forms)
+                    else if (arg.StartsWith("--output-format", StringComparison.OrdinalIgnoreCase) ||
+                             arg.StartsWith("--output=", StringComparison.OrdinalIgnoreCase) ||
+                             arg.StartsWith("--format", StringComparison.OrdinalIgnoreCase))
                     {
-                        // Check if -c is used without a value - show available credential types
+                        string formatValue = null;
+                        int sepIndex = arg.IndexOfAny(new[] { ':', '=' });
+                        if (sepIndex > 0 && sepIndex < arg.Length - 1)
+                            formatValue = arg.Substring(sepIndex + 1);
+                        else if (currentIndex + 1 < args.Length && !args[currentIndex + 1].StartsWith("-"))
+                            formatValue = args[++currentIndex];
+
+                        if (!string.IsNullOrEmpty(formatValue))
+                        {
+                            try
+                            {
+                                OutputFormatter.SetFormat(formatValue);
+                            }
+                            catch (ArgumentException ex)
+                            {
+                                var availableFormats = string.Join(", ", OutputFormatter.GetAvailableFormats());
+                                throw new ArgumentException($"{ex.Message}. Available formats: {availableFormats}");
+                            }
+                        }
+                    }
+                    // Value global flags
+                    else if (IsGlobalArgument(arg, "credentials", "c"))
+                    {
                         int separatorIndex = arg.IndexOfAny(new[] { ':', '=' });
                         bool hasInlineValue = separatorIndex > 0 && separatorIndex < arg.Length - 1;
                         bool hasNextValue = currentIndex + 1 < args.Length && !IsFlag(args[currentIndex + 1]);
@@ -466,106 +386,101 @@ namespace MSSQLand.Utilities
                         parsedArgs.CredentialType = ExtractFlagValue(arg, args, ref currentIndex);
                     }
                     else if (IsGlobalArgument(arg, "links", "l"))
-                    {
                         parsedArgs.LinkedServers = new LinkedServers(ExtractFlagValue(arg, args, ref currentIndex));
-                    }
                     else if (IsGlobalArgument(arg, "timeout", null))
                     {
                         if (connectionTimeout.HasValue)
-                        {
                             Logger.Warning($"--timeout specified multiple times. Using last value.");
-                        }
                         string timeoutValue = ExtractFlagValue(arg, args, ref currentIndex);
                         if (!int.TryParse(timeoutValue, out int parsedTimeout) || parsedTimeout <= 0)
-                        {
                             throw new ArgumentException($"Invalid timeout value: {timeoutValue}. Timeout must be a positive integer (seconds).");
-                        }
                         connectionTimeout = parsedTimeout;
                     }
                     else if (IsGlobalArgument(arg, "username", "u"))
                     {
                         if (username != null)
-                        {
                             Logger.Warning($"-u/--username specified multiple times. Using last value.");
-                        }
                         username = ExtractFlagValue(arg, args, ref currentIndex);
                     }
                     else if (IsGlobalArgument(arg, "password", "p"))
                     {
                         if (password != null)
-                        {
                             Logger.Warning($"-p/--password specified multiple times. Using last value.");
-                        }
                         password = ExtractFlagValue(arg, args, ref currentIndex);
                     }
                     else if (IsGlobalArgument(arg, "domain", "d"))
                     {
                         if (domain != null)
-                        {
                             Logger.Warning($"-d/--domain specified multiple times. Using last value.");
-                        }
                         domain = ExtractFlagValue(arg, args, ref currentIndex);
                     }
                     else if (IsGlobalArgument(arg, "app-name", null))
                     {
                         if (appName != null)
-                        {
                             Logger.Warning($"--app-name specified multiple times. Using last value.");
-                        }
                         appName = ExtractFlagValue(arg, args, ref currentIndex);
                     }
                     else if (IsGlobalArgument(arg, "workstation-id", null))
                     {
                         if (workstationId != null)
-                        {
                             Logger.Warning($"--workstation-id specified multiple times. Using last value.");
-                        }
                         workstationId = ExtractFlagValue(arg, args, ref currentIndex);
                     }
                     else if (IsGlobalArgument(arg, "packet-size", null))
                     {
                         if (packetSize.HasValue)
-                        {
                             Logger.Warning($"--packet-size specified multiple times. Using last value.");
-                        }
                         string packetSizeValue = ExtractFlagValue(arg, args, ref currentIndex);
                         if (!int.TryParse(packetSizeValue, out int parsedPacketSize) || parsedPacketSize <= 0)
-                        {
                             throw new ArgumentException($"Invalid packet-size value: {packetSizeValue}. Must be a positive integer (bytes).");
-                        }
                         packetSize = parsedPacketSize;
                     }
-                    else if (arg == "--no-encrypt" || arg == "--disable-encrypt")
+                    else if (IsFlag(arg))
                     {
-                        enableEncryption = false;
-                    }
-                    else if (arg == "--no-trust-cert" || arg == "--disable-trust-cert")
-                    {
-                        trustServerCertificate = false;
+                        if (actionName != null)
+                            actionArgs.Add(arg);  // unrecognised flag after action → pass verbatim
+                        else
+                        {
+                            Logger.Error($"Unknown global argument: {arg}");
+                            Logger.ErrorNested("Use -h or --help to see available options");
+                            return (ParseResultType.InvalidInput, null);
+                        }
                     }
                     else
                     {
-                        Logger.Error($"Unknown global argument: {arg}");
-                        Logger.ErrorNested("Use -h or --help to see available options");
-                        return (ParseResultType.InvalidInput, null);
+                        // Non-flag positional: first = host, second = action, rest = action args.
+                        if (actionName != null)
+                        {
+                            actionArgs.Add(arg);
+                        }
+                        else if (hostArg == null)
+                        {
+                            hostArg = arg;
+                            parsedArgs.Host = Server.ParseServer(hostArg);
+                        }
+                        else
+                        {
+                            actionName = arg;
+                        }
                     }
 
                     currentIndex++;
                 }
 
-                // Collect remaining arguments as action arguments
-                while (currentIndex < args.Length)
+                if (hostArg == null)
                 {
-                    actionArgs.Add(args[currentIndex++]);
+                    Logger.Error("Missing Host positional argument.");
+                    Logger.ErrorNested("Usage: [options] <host> [options] <action> [action-options]");
+                    return (ParseResultType.InvalidInput, null);
                 }
 
-                // No credentials specified — default to probe (connectivity test only)
+                // No credentials specified — default to probe (connectivity test only).
                 if (string.IsNullOrWhiteSpace(parsedArgs.CredentialType))
                 {
                     parsedArgs.CredentialType = "probe";
                 }
 
-                // Probe is connectivity-check only; actions and linked server traversal both require real auth
+                // Probe is connectivity-check only; actions and linked server traversal both require real auth.
                 if (parsedArgs.CredentialType.Equals("probe", StringComparison.OrdinalIgnoreCase))
                 {
                     if (!string.IsNullOrWhiteSpace(actionName))
@@ -588,7 +503,6 @@ namespace MSSQLand.Utilities
                     parsedArgs.ConnectionTimeout = connectionTimeout.Value;
                 }
 
-                // Assign connection string customization parameters
                 parsedArgs.AppName = appName;
                 parsedArgs.WorkstationId = workstationId;
                 if (packetSize.HasValue)
@@ -596,11 +510,10 @@ namespace MSSQLand.Utilities
                     parsedArgs.PacketSize = packetSize.Value;
                 }
 
-                // Assign connection string boolean overrides
                 parsedArgs.EnableEncryption = enableEncryption;
                 parsedArgs.TrustServerCertificate = trustServerCertificate;
 
-                // Parse embedded domain from username (DOMAIN\user or user@domain)
+                // Parse embedded domain from username (DOMAIN\user or user@domain).
                 if (!string.IsNullOrEmpty(username))
                 {
                     var (parsedUsername, embeddedDomain) = NetworkHelper.ParseUsernameWithDomain(username);
@@ -608,7 +521,6 @@ namespace MSSQLand.Utilities
                     {
                         if (!string.IsNullOrEmpty(domain))
                         {
-                            // Explicit -d takes precedence, warn about ignored embedded domain
                             Logger.Warning($"Domain '{embeddedDomain}' in username ignored. Using explicit -d value: {domain}");
                         }
                         else
@@ -620,7 +532,6 @@ namespace MSSQLand.Utilities
                     }
                 }
 
-                // Probe is a mode, not a credential type — skip credential validation
                 if (parsedArgs.CredentialType.Equals("probe", StringComparison.OrdinalIgnoreCase))
                 {
                     if (!string.IsNullOrEmpty(username) || !string.IsNullOrEmpty(password) || !string.IsNullOrEmpty(domain))
@@ -631,12 +542,10 @@ namespace MSSQLand.Utilities
                     ValidateCredentialArguments(parsedArgs.CredentialType, username, password, domain);
                 }
 
-                // Assign optional arguments to parsedArgs
                 parsedArgs.Username = username;
                 parsedArgs.Password = password;
                 parsedArgs.Domain = domain;
 
-                // Get the action from the factory and pass action arguments (only if action was specified)
                 if (!string.IsNullOrWhiteSpace(actionName))
                 {
                     try
@@ -645,7 +554,6 @@ namespace MSSQLand.Utilities
                     }
                     catch (ActionNotFoundException ex)
                     {
-                        // Try to find actions that start with the given name
                         var matches = ActionFactory.GetActionsByPrefix(ex.ActionName);
 
                         if (matches.Count > 0)

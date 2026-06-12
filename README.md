@@ -22,9 +22,11 @@ MSSQLand is a C# Microsoft SQL Server (MSSQL / MS SQL) post-exploitation tool bu
 ## 🧸 Usage
 
 ```shell
-MSSQLand.exe <host> -c <cred> [options] <action> [action-options]
+MSSQLand.exe [options] <host> [options] <action> [action-options]
 MSSQLand.exe <host> --probe
 ```
+
+Global flags (`-c`, `-l`, `--debug`, etc.) are accepted in any position, including after the action name; unrecognised tokens after the action are passed verbatim to the action.
 
 > [!NOTE]
 > Omitting `<action>` performs a connection test only. It authenticates and exits without running queries. Ideal for credential validation with minimal OPSEC footprint.
