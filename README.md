@@ -4,7 +4,7 @@ Land gracefully in your target Microsoft SQL Server (MS SQL) DBMS, as if arrivin
 
 ![MSSQLand chaining capabilities](./media/chain.png)
 
-MSSQLand is a C# Microsoft SQL Server (MSSQL / MS SQL) post-exploitation tool built for red team operators. Designed to run inside the target environment directly through your beacons (e.g., using `execute-assembly` in Cobalt Strike or Havoc), it allows you to traverse linked server chains, impersonate any login encountered along the way, and emerge from the last hop with any desired action — all with minimal OPSEC footprint and no external dependencies.
+MSSQLand is a C# Microsoft SQL Server (MSSQL / MS SQL) post-exploitation tool built for red team operators. Designed to run inside the target environment directly through your beacons (e.g., using `execute-assembly` in Cobalt Strike or Havoc or any `dotnet` command), it allows you to traverse linked server chains, impersonate any login encountered along the way, and emerge from the last hop with any desired action. All with minimal OPSEC footprint and no external dependencies.
 
 - **Linked server traversal**: automatic `OPENQUERY` / `EXEC AT` wrapping across arbitrarily deep chains
 - **Impersonation**: `EXECUTE AS LOGIN` at every hop with cascading multi-user impersonation
