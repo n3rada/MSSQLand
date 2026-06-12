@@ -40,6 +40,23 @@ namespace MSSQLand.Utilities
         /// </summary>
         public static bool IsSilentModeEnabled { get; set; } = false;
 
+        /// <summary>
+        /// True once any visible output has been written. Used to avoid a leading blank line before the end banner.
+        /// </summary>
+        public static bool HasOutput { get; set; } = false;
+
+        /// <summary>
+        /// True when the last write already ended with a blank line (e.g. OutputFormatter output via Console.WriteLine).
+        /// Prevents doubling up the blank line before the end banner.
+        /// </summary>
+        public static bool EndsWithBlankLine { get; set; } = false;
+
+        private static void MarkWritten(bool trailingBlank = false)
+        {
+            HasOutput = true;
+            EndsWithBlankLine = trailingBlank;
+        }
+
 /// <summary>
         /// Indicates whether output is suppressed by TemporarilySilent().
         /// Unlike IsSilentModeEnabled, this allows Trace-level messages through
@@ -83,6 +100,7 @@ namespace MSSQLand.Utilities
         {
             if (IsSilenced) return;
             Console.Out.WriteLine();
+            MarkWritten(trailingBlank: true);
         }
 
         public static int Banner(string message, char borderChar = '=', int totalWidth = 0)
@@ -133,6 +151,7 @@ namespace MSSQLand.Utilities
             Console.ForegroundColor = ConsoleColor.White;
             Console.Out.WriteLine($"[i] {message}");
             Console.ResetColor();
+            MarkWritten();
         }
 
         public static void Success(string message)
@@ -141,6 +160,7 @@ namespace MSSQLand.Utilities
             Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.Out.WriteLine($"[+] {message}");
             Console.ResetColor();
+            MarkWritten();
         }
 
         public static void Debug(string message)
@@ -149,6 +169,7 @@ namespace MSSQLand.Utilities
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Out.WriteLine($"[*] {message}");
             Console.ResetColor();
+            MarkWritten();
         }
 
         public static void Trace(string message)
@@ -157,6 +178,7 @@ namespace MSSQLand.Utilities
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Out.WriteLine($"[~] {message}");
             Console.ResetColor();
+            MarkWritten();
         }
 
         public static void Warning(string message)
@@ -165,6 +187,7 @@ namespace MSSQLand.Utilities
             Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.Out.WriteLine($"[!] {message}");
             Console.ResetColor();
+            MarkWritten();
         }
 
         public static void Error(string message)
@@ -173,6 +196,7 @@ namespace MSSQLand.Utilities
             Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.Out.WriteLine($"[-] {message}");
             Console.ResetColor();
+            MarkWritten();
         }
 
         public static void InfoNested(string message, int indentLevel = 0, string symbol = "|->")
@@ -182,6 +206,7 @@ namespace MSSQLand.Utilities
             string indent = new(' ', indentLevel * 4);
             Console.Out.WriteLine($"{indent}{symbol} {message}");
             Console.ResetColor();
+            MarkWritten();
         }
 
         public static void SuccessNested(string message, int indentLevel = 0, string symbol = "|->")
@@ -191,6 +216,7 @@ namespace MSSQLand.Utilities
             string indent = new(' ', indentLevel * 4);
             Console.Out.WriteLine($"{indent}{symbol} {message}");
             Console.ResetColor();
+            MarkWritten();
         }
 
         public static void DebugNested(string message, int indentLevel = 0, string symbol = "|->")
@@ -200,6 +226,7 @@ namespace MSSQLand.Utilities
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Out.WriteLine($"{indent}{symbol} {message}");
             Console.ResetColor();
+            MarkWritten();
         }
 
         public static void TraceNested(string message, int indentLevel = 0, string symbol = "|->")
@@ -209,6 +236,7 @@ namespace MSSQLand.Utilities
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Out.WriteLine($"{indent}{symbol} {message}");
             Console.ResetColor();
+            MarkWritten();
         }
 
         public static void ErrorNested(string message, int indentLevel = 0, string symbol = "|->")
@@ -218,6 +246,7 @@ namespace MSSQLand.Utilities
             Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.Out.WriteLine($"{indent}{symbol} {message}");
             Console.ResetColor();
+            MarkWritten();
         }
 
         public static void WarningNested(string message, int indentLevel = 0, string symbol = "|->")
@@ -227,6 +256,7 @@ namespace MSSQLand.Utilities
             Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.Out.WriteLine($"{indent}{symbol} {message}");
             Console.ResetColor();
+            MarkWritten();
         }
     }
 }

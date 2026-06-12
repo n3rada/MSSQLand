@@ -268,6 +268,7 @@ namespace MSSQLand
                     {
                         // Execute action
                         Logger.Info($"Executing action '{arguments.Action.GetName()}' against {databaseContext.QueryService.ExecutionServer.Hostname}");
+                        Logger.NewLine();
                         arguments.Action.Execute(databaseContext);
                     }
                     else
@@ -303,7 +304,8 @@ namespace MSSQLand
                             : elapsed.TotalMinutes >= 1
                                 ? $"{elapsed.Minutes}m {elapsed.Seconds}s"
                                 : $"{elapsed.TotalSeconds:F2}s";
-                        Logger.NewLine();
+                        if (Logger.HasOutput && !Logger.EndsWithBlankLine)
+                            Logger.NewLine();
                         Logger.Banner($"End at {endTime:yyyy-MM-dd HH:mm:ss:fffff} UTC\nTotal duration: {durationStr}", totalWidth: bannerWidth);
                     }
                 }

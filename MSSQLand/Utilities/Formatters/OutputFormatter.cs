@@ -55,7 +55,7 @@ namespace MSSQLand.Utilities.Formatters
         public static string ConvertDictionary(Dictionary<string, string> dictionary, string columnOneHeader, string columnTwoHeader)
         {
             string result = _currentFormatter.ConvertDictionary(dictionary, columnOneHeader, columnTwoHeader);
-            return string.IsNullOrEmpty(result) ? result : "\n" + result + "\n";
+            return WrapResult(result);
         }
 
         /// <summary>
@@ -64,7 +64,7 @@ namespace MSSQLand.Utilities.Formatters
         public static string ConvertSqlDataReader(SqlDataReader reader)
         {
             string result = _currentFormatter.ConvertSqlDataReader(reader);
-            return string.IsNullOrEmpty(result) ? result : "\n" + result + "\n";
+            return WrapResult(result);
         }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace MSSQLand.Utilities.Formatters
         public static string ConvertList(List<string> list, string columnName)
         {
             string result = _currentFormatter.ConvertList(list, columnName);
-            return string.IsNullOrEmpty(result) ? result : "\n" + result + "\n";
+            return WrapResult(result);
         }
 
         /// <summary>
@@ -82,7 +82,20 @@ namespace MSSQLand.Utilities.Formatters
         public static string ConvertDataTable(DataTable table)
         {
             string result = _currentFormatter.ConvertDataTable(table);
-            return string.IsNullOrEmpty(result) ? result : "\n" + result + "\n";
+            return WrapResult(result);
+        }
+
+        // Wraps a formatted result with surrounding newlines.
+        // The leading \n is omitted when the previous output already ended with a blank line
+        // (e.g. after Logger.NewLine()), to avoid double blank lines.
+        // Marks Logger state so the end-banner logic knows a trailing blank line was produced.
+        private static string WrapResult(string result)
+        {
+            if (string.IsNullOrEmpty(result)) return result;
+            string leading = Logger.EndsWithBlankLine ? "" : "\n";
+            Logger.HasOutput = true;
+            Logger.EndsWithBlankLine = true;
+            return leading + result + "\n";
         }
     }
 }
