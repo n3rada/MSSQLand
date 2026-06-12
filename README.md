@@ -4,7 +4,14 @@ Land gracefully in your target Microsoft SQL Server (MS SQL) DBMS, as if arrivin
 
 ![MSSQLand chaining capabilities](./media/chain.png)
 
-MSSQLand is built for interacting with [Microsoft SQL Server](https://en.wikipedia.org/wiki/Microsoft_SQL_Server) database management system (DBMS) during your red team activities or any security audit. Designed to run inside the target environment directly through your beacons (e.g., using assembly execution), it allows you to pave your way across multiple linked servers and impersonate whoever you can along the way, emerging from the last hop with any desired action.
+MSSQLand is a C# Microsoft SQL Server (MSSQL / MS SQL) post-exploitation tool built for red team operators. Designed to run inside the target environment directly through your beacons (e.g., using `execute-assembly` in Cobalt Strike or Havoc), it allows you to traverse linked server chains, impersonate any login encountered along the way, and emerge from the last hop with any desired action — all with minimal OPSEC footprint and no external dependencies.
+
+- **Linked server traversal**: automatic `OPENQUERY` / `EXEC AT` wrapping across arbitrarily deep chains
+- **Impersonation**: `EXECUTE AS LOGIN` at every hop with cascading multi-user impersonation
+- **Authentication**: current Windows token, pass-the-hash via beacon token impersonation, Kerberos
+- **Discovery**: SQL Browser (UDP 1434), Active Directory SPN enumeration via LDAP, broadcast, TDS port scan
+- **ConfigMgr / SCCM / MECM**: dedicated `cm-*` actions for recon and exploitation of Microsoft Configuration Manager databases
+- **Output**: Markdown-friendly tables with timestamps, CSV export for clean pentest deliverables
 
 > [!TIP]
 > MSSQLand is built using `.NET Framework 4.8`, with assembly execution in mind, using current context. If you need to connect using NT/LM hashes or a Kerberos ticket, see [Pass-the-Hash](#-pass-the-hash).
