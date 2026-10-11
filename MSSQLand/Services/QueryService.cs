@@ -75,7 +75,11 @@ namespace MSSQLand.Services
                    s.Contains("SP_CONFIGURE") ||
                    s.Contains("RECONFIGURE") ||
                    s.Contains("XP_") ||
-                   s.Contains("CREATE ENDPOINT");
+                   s.Contains("CREATE ENDPOINT") ||
+                   s.Contains("SP_INVOKE_EXTERNAL_REST_ENDPOINT") ||
+                   s.Contains("CREATE EXTERNAL MODEL") ||
+                   s.Contains("DROP EXTERNAL MODEL") ||
+                   s.Contains("ALTER DATABASE SCOPED CONFIGURATION");
         }
 
         /// <summary>

@@ -141,6 +141,9 @@
     <Compile Include="Actions\Remote\Links.cs" />
     <Compile Include="Actions\Remote\RemoteProcedureCall.cs" />
     <Compile Include="Actions\Remote\UncProbe.cs" />
+    <Compile Include="Actions\Remote\AiModels.cs" />
+    <Compile Include="Actions\Remote\AiRest.cs" />
+    <Compile Include="Actions\Remote\AiCoerce.cs" />
     <Compile Include="Actions\ConfigMgr\CMInfo.cs" />
     <Compile Include="Actions\ConfigMgr\CMLogTrace.cs" />
     <Compile Include="Actions\ConfigMgr\CMDeploymentType.cs" />

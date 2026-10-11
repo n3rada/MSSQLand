@@ -103,41 +103,6 @@ When adding or changing an action:
 - **Never** call `Logger.NewLine()` after `Console.WriteLine(OutputFormatter.ConvertDataTable(...))` or any other `OutputFormatter` method — those already wrap their output in leading and trailing newlines (`"\n" + result + "\n"`), so adding `Logger.NewLine()` after them creates redundant blank lines.
 - Prefer formatter pipeline output over ad-hoc table rendering; see [MSSQLand/Utilities/Formatters](MSSQLand/Utilities/Formatters).
 
-## OPSEC and IOC Discipline
-
-MSSQLand is a professional tool. Static detection by AV, EDR, or SIEM commonly targets complete flagged string literals in binaries. **Never write a known IOC as a plain, complete string literal in source.**
-
-### What counts as a flagged string
-
-- SQL stored procedure names with known signatures: the procedure name used in `XpCmd`, the `sp_OA*` family, `xp_reg*`, `sp_addsrvrolemember`, and similar.
-- T-SQL fragments that are well-known attack patterns when seen as whole strings.
-- LDAP filter strings associated with enumeration queries.
-
-### Canonical construction pattern
-
-Split flagged strings at runtime so no complete form appears in the compiled binary. See [`MSSQLand/Actions/Execution/XpCmd.cs`](MSSQLand/Actions/Execution/XpCmd.cs) as the reference:
-
-```csharp
-// Wrong - complete IOC string present in binary:
-string proc = "xp_cmdshell";
-
-// Correct - assembled at runtime, no complete string in static analysis:
-string proc = "x" + "p" + "_" + "cmdTest";
-proc = proc.Replace("Test", "shell");
-```
-
-Alternatives: character arrays, `string.Concat`, `StringBuilder`, or `string.Format` with non-obvious indices. Choose whichever reads most naturally for the specific case.
-
-### Where this rule applies
-
-- **SQL query strings** sent to the server: highest priority.
-- **Log and error messages**: do not echo the raw flagged procedure name back to stdout. Log the intent ("enable command shell"), not the literal token.
-- **Help text and action descriptions**: describe what the action does functionally. Do not reproduce the exact SQL identifier in user-visible strings.
-
-### Where this rule does NOT apply
-
-C# symbol names (class names, method names, variable names) are not IOCs. They do not appear as runtime strings in the binary the same way SQL query strings do. `XpCmd` as a class name is fine; `"xp_cmdshell"` as a query string is not.
-
 ## Definition of Done for Code Changes
 
 A change is not complete until all are true:

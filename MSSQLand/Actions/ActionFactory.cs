@@ -96,7 +96,12 @@ namespace MSSQLand.Actions
             { "ext-creds", (typeof(ExternalCredentials), "Enumerate database-scoped credentials used by External Data Sources.", null) },
             { "ext-tables", (typeof(ExternalTables), "Enumerate external tables and their remote data locations.", null) },
 
-            { "unc", (typeof(UncProbe), "Force SMB authentication to a specified UNC path to capture Net-NTLMv2 challenge/response.", new[] { "coerce", "smb", "ntlm" }) },
+            { "unc", (typeof(UncProbe), "Force SMB authentication to a specified UNC path to capture Net-NTLMv2 challenge/response.", new[] { "smb", "ntlm" }) },
+
+            // SQL SERVER 2025 AI FEATURES
+            { "ai-models", (typeof(AiModels), "Enumerate registered external AI models (sys.external_models) and AI-related configuration options introduced in SQL Server 2025.", new[] { "ext-models" }) },
+            { "ai-rest", (typeof(AiRest), "Invoke an HTTPS endpoint via sp_invoke_external_rest_endpoint (SQL Server 2025). Use for SSRF probing or out-of-band data exfiltration.", new[] { "ssrf", "rest-probe" }) },
+            { "ai-coerce", (typeof(AiCoerce), "Force NTLM authentication to a UNC path by registering a throwaway EXTERNAL MODEL (SQL Server 2025) and invoking AI_GENERATE_EMBEDDINGS against it.", new[] { "model-coerce" }) },
 
 #if CONFIGMGR
             // CONFIGURATION MANAGER ACTIONS (ConfigMgr / SCCM / MECM)
