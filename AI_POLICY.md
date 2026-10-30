@@ -1,6 +1,6 @@
 # AI Policy
 
-MSSQLand was built entirely by humans. The [`AI.md`](AI.md) and [`DEVELOPMENT.md`](DEVELOPMENT.md) files exist to give AI tools enough context to assist contributors without working against the existing architecture.
+MSSQLand was built entirely by humans. The [`AGENTS.md`](AGENTS.md) and [`DEVELOPMENT.md`](DEVELOPMENT.md) files give AI tools enough context to assist contributors without working against the existing architecture.
 
 ## AI is Welcome
 

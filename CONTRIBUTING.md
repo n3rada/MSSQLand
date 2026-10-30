@@ -31,11 +31,11 @@ Thank you for considering contributing to MSSQLand! Your efforts help make this 
 
 ## Testing
 
-Before submitting:
+Before submitting, build on Windows with Visual Studio MSBuild from a Developer Command Prompt. MSSQLand targets .NET Framework 4.8 and should not be built with `dotnet build`:
 
 1. **Build the project**
-   ```bash
-   dotnet build MSSQLand/MSSQLand.sln
+   ```bat
+   msbuild MSSQLand\MSSQLand.csproj /p:Configuration=Release
    ```
 2. **Test against a real SQL Server** instance
 3. **Verify no warnings** during build
