@@ -6,6 +6,8 @@ MSSQLand is a C#/.NET Framework 4.8 SQL Server post-exploitation tool designed t
 
 Read [`DEVELOPMENT.md`](DEVELOPMENT.md) when changing architecture, authentication, query routing, impersonation, linked-server behavior, actions, logging, output, or build configuration. For focused changes, read only the relevant section and its linked source files.
 
+Before preparing a commit, pull the current branch with `git pull --rebase --autostash`; never commit against stale remote history. Then follow the human contribution and commit conventions in [`DEVELOPMENT.md`](DEVELOPMENT.md).
+
 ## Core contracts
 
 - Keep transport and linked-server routing in `QueryService`, identity orchestration in `DatabaseContext` and `UserService`, and user-facing capabilities in focused action classes.

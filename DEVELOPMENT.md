@@ -609,3 +609,16 @@ namespace MSSQLand.Actions.Database
 5. Consider both `Release` and `Release-NoCM` configurations.
 6. Build with Visual Studio MSBuild on Windows, then exercise the affected behavior against SQL Server.
 
+## 🤝 Contribution and Commit Conventions
+
+- Submit one focused, signed commit for a completed change. Amend it during iteration instead of adding fixup commits.
+- Use the [Conventional Commits 1.0.0 specification](https://www.conventionalcommits.org/en/v1.0.0/) with one-line subjects and no commit body: `type(scope): summary` or `type: summary`.
+- Use `feat`, `fix`, `refactor`, `test`, `docs`, or `chore` as appropriate. Omit the scope rather than using empty parentheses.
+- Commit with the human contributor's configured identity. Never add an AI or LLM as a co-author or include AI-generated attribution trailers.
+- The human contributor is responsible for understanding, reviewing, signing, and owning every submitted change.
+- Preserve another contributor's commits and authorship on shared pull requests unless a history rewrite is explicitly agreed.
+
+Examples: `feat(actions): add SQL Agent history`, `fix(routing): preserve database context`, `test(parser): cover aliases`, and `docs: explain impersonation`.
+
+Avoid vague subjects such as `fix stuff`, empty scopes such as `feat(): add an action`, multi-line messages, and AI `Co-authored-by` trailers.
+
