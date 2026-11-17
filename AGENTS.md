@@ -4,7 +4,7 @@
 
 MSSQLand is a C#/.NET Framework 4.8 SQL Server post-exploitation tool designed to run in the target environment, commonly through beacon assembly execution. It unifies identity impersonation, linked-server traversal, and database context.
 
-Read [`DEVELOPMENT.md`](DEVELOPMENT.md) when changing architecture, authentication, query routing, impersonation, linked-server behavior, actions, logging, output, or build configuration. For focused changes, read only the relevant section and its linked source files.
+Read [`DEVELOPMENT.md`](DEVELOPMENT.md) when changing architecture, authentication, query routing, impersonation, linked-server behavior, actions, logging, output, or build configuration. For focused changes, read only the relevant section and its linked source files. See [`PLATFORMS.md`](PLATFORMS.md) for cloud-specific constraints (Azure SQL, RDS).
 
 Before preparing a commit, pull the current branch with `git pull --rebase --autostash`; never commit against stale remote history. Then follow the human contribution and commit conventions in [`DEVELOPMENT.md`](DEVELOPMENT.md).
 

@@ -141,6 +141,13 @@
     <Compile Include="Actions\Remote\Links.cs" />
     <Compile Include="Actions\Remote\RemoteProcedureCall.cs" />
     <Compile Include="Actions\Remote\UncProbe.cs" />
+    <Compile Include="Actions\Cloud\Azure\AzureDetect.cs" />
+    <Compile Include="Actions\Cloud\Azure\AzureFirewall.cs" />
+    <Compile Include="Actions\Cloud\Azure\AzureUsers.cs" />
+    <Compile Include="Actions\Cloud\Rds\RdsDetect.cs" />
+    <Compile Include="Actions\Cloud\Rds\RdsTasks.cs" />
+    <Compile Include="Actions\Cloud\Rds\RdsS3.cs" />
+    <Compile Include="Actions\Cloud\Rds\RdsBackup.cs" />
     <Compile Include="Actions\Remote\AiModels.cs" />
     <Compile Include="Actions\Remote\AiRest.cs" />
     <Compile Include="Actions\Remote\AiCoerce.cs" />

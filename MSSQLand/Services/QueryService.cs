@@ -502,6 +502,30 @@ SELECT @result AS Result, @error AS Error";
         }
 
         /// <summary>
+        /// Returns whether the execution server is Amazon RDS for SQL Server.
+        /// Checks for the rdsadmin database. Result is cached on the Server model.
+        /// </summary>
+        public bool IsRds()
+        {
+            if (ExecutionServer.IsRds.HasValue)
+            {
+                return ExecutionServer.IsRds.Value;
+            }
+
+            try
+            {
+                object result = ExecuteScalar("SELECT DB_ID('rdsadmin')");
+                ExecutionServer.IsRds = result != null;
+            }
+            catch
+            {
+                ExecutionServer.IsRds = false;
+            }
+
+            return ExecutionServer.IsRds.Value;
+        }
+
+        /// <summary>
         /// Resolves the execution server context (hostname, version, database) for linked servers.
         /// For direct connections, ExecutionServer is already set with version from authentication.
         /// </summary>

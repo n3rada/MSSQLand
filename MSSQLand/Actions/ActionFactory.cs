@@ -10,6 +10,8 @@ using MSSQLand.Actions.Execution;
 using MSSQLand.Actions.Domain;
 using MSSQLand.Actions.Administration;
 using MSSQLand.Actions.Agent;
+using MSSQLand.Actions.Cloud.Azure;
+using MSSQLand.Actions.Cloud.Rds;
 #if CONFIGMGR
 using MSSQLand.Actions.ConfigMgr;
 #endif
@@ -97,6 +99,21 @@ namespace MSSQLand.Actions
             { "ext-tables", (typeof(ExternalTables), "Enumerate external tables and their remote data locations.", null) },
 
             { "unc", (typeof(UncProbe), "Force SMB authentication to a specified UNC path to capture Net-NTLMv2 challenge/response.", new[] { "smb", "ntlm" }) },
+
+            // CLOUD ACTIONS - AZURE SQL
+            { "azure-detect", (typeof(AzureDetect), "Detect Azure SQL Database: service tier, edition, TDE status, geo-replication links, and feature availability.", new[] { "azure" }) },
+            { "azure-firewall", (typeof(AzureFirewall), "Enumerate Azure SQL server-level and database-level firewall rules. Flags dangerous rules (Allow Azure Services, open to internet).", new[] { "azure-fw" }) },
+            { "azure-users", (typeof(AzureUsers), "Enumerate contained database users, Entra ID (Azure AD) principals, and their database role memberships in Azure SQL Database.", null) },
+
+            // CLOUD ACTIONS - AMAZON RDS
+            { "rds-detect", (typeof(RdsDetect), "Detect Amazon RDS for SQL Server: enumerate rds_* procedures, check permissions, and show Multi-AZ failover status.", new[] { "rds" }) },
+            { "rds-tasks", (typeof(RdsTasks), "List RDS task history (backups, restores, S3 transfers). Reveals S3 bucket ARNs, KMS keys, and operational patterns.", null) },
+            { "rds-s3-list", (typeof(RdsS3List), @"List files in the RDS staging directory (D:\S3\).", new[] { "rds-ls" }) },
+            { "rds-s3-download", (typeof(RdsS3Download), @"Download a file from S3 to the RDS instance staging directory (D:\S3\).", null) },
+            { "rds-s3-upload", (typeof(RdsS3Upload), @"Upload a file from the RDS staging directory (D:\S3\) to S3.", null) },
+            { "rds-s3-delete", (typeof(RdsS3Delete), @"Delete a file from the RDS staging directory (D:\S3\).", new[] { "rds-rm" }) },
+            { "rds-backup", (typeof(RdsBackup), "Backup an RDS database to S3 for data exfiltration when the IAM role allows s3:PutObject to attacker-controlled buckets.", new[] { "rds-exfil" }) },
+            { "rds-restore", (typeof(RdsRestore), "Restore a database from an S3 backup on RDS. Can import weaponized databases or restore exfiltrated backups.", null) },
 
             // SQL SERVER 2025 AI FEATURES
             { "ai-models", (typeof(AiModels), "Enumerate registered external AI models (sys.external_models) and AI-related configuration options introduced in SQL Server 2025.", new[] { "ext-models" }) },

@@ -86,6 +86,13 @@ namespace MSSQLand.Models
         public bool IsAzureSQL { get; set; } = false;
 
         /// <summary>
+        /// Whether this server is Amazon RDS for SQL Server.
+        /// Detected by checking for the rdsadmin database.
+        /// Once set, the value is cached for subsequent checks.
+        /// </summary>
+        public bool? IsRds { get; set; } = null;
+
+        /// <summary>
         /// Whether to connect using a Dedicated Admin Connection (DAC).
         /// Prefixes the Data Source with "admin:" in the connection string.
         /// Requires remote admin connections = 1 for remote use.
@@ -158,6 +165,7 @@ namespace MSSQLand.Models
                 MajorVersion = this.MajorVersion,
                 IsLegacy = this.IsLegacy,
                 IsAzureSQL = this.IsAzureSQL,
+                IsRds = this.IsRds,
                 IsDac = this.IsDac,
                 Port = this.Port,
                 NamedPipe = this.NamedPipe,
