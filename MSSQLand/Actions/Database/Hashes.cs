@@ -23,7 +23,7 @@ namespace MSSQLand.Actions.Database
     {
         public override object Execute(DatabaseContext databaseContext)
         {
-            if (databaseContext.QueryService.IsAzureSQL())
+            if (databaseContext.QueryService.ExecutionServer.IsAzureSQL)
             {
                 Logger.Warning("Azure SQL Database does not expose password hashes");
                 return null;

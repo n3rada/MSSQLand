@@ -74,7 +74,7 @@ namespace MSSQLand.Actions.Database
             Logger.Info("Retrieving SQL Server information");
 
             var results = new Dictionary<string, string>();
-            bool isAzureSQL = databaseContext.QueryService.IsAzureSQL();
+            bool isAzureSQL = databaseContext.QueryService.ExecutionServer.IsAzureSQL;
 
             // Determine which query sets to use
             var querySets = new List<Dictionary<string, string>> { _queries["all"] };

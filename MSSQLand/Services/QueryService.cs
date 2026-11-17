@@ -493,15 +493,6 @@ SELECT @result AS Result, @error AS Error";
         }
 
         /// <summary>
-        /// Returns whether the execution server is Azure SQL Database (PaaS).
-        /// Detection happens automatically when FullVersionString is set.
-        /// </summary>
-        public bool IsAzureSQL()
-        {
-            return ExecutionServer.IsAzureSQL;
-        }
-
-        /// <summary>
         /// Returns whether the execution server is Amazon RDS for SQL Server.
         /// Checks for the rdsadmin database. Result is cached on the Server model.
         /// </summary>
