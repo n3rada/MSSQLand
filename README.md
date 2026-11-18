@@ -1,6 +1,6 @@
 # ✈️ MSSQLand
 
-Land gracefully in your target Microsoft SQL Server (MS SQL) DBMS, as if arriving on a business-class flight with a champagne glass in hand. 🥂
+Land gracefully in your target Microsoft SQL Server (MS SQL) DBMS, as if arriving on a business-class flight with a champagne glass in hand.
 
 ![MSSQLand chaining capabilities](./media/chain.png)
 

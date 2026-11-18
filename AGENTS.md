@@ -16,6 +16,7 @@ Before preparing a commit, pull the current branch with `git pull --rebase --aut
 - Preserve `Release` with `CONFIGMGR` and `Release-NoCM` without it; guard ConfigMgr-only code consistently.
 - Use structured logging and the formatter pipeline; do not duplicate parsing, routing, rendering, or logging logic inside actions.
 - Preserve existing CLI, linked-server fallback, timeout, retry, and output semantics unless the task intentionally changes them.
+- In Markdown, omit horizontal rules and use emoji only in headings.
 
 ## Verification
 

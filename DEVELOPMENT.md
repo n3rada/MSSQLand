@@ -95,8 +95,6 @@ References (treat these the way Python treats PEP 8):
 - [Common C# Code Conventions (Microsoft Learn)](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/common-coding-conventions)
 - [Google C# Style Guide](https://google.github.io/styleguide/csharp-style.html)
 
----
-
 ## 🏗️ Architecture
 
 MSSQLand is built on a clean, OOP-driven architecture designed for extensibility:
@@ -298,8 +296,6 @@ classDiagram
     BaseAction ..> DatabaseContext : receives
 ```
 
----
-
 ## 🔐 Security Context Model
 
 A core design decision in MSSQLand is that **impersonation, linked server traversal, and database context are unified**, not separate execution modes. Understanding how the security context flows through the system is essential for working on the codebase.
@@ -434,8 +430,6 @@ flowchart TD
 
 Actions receive a [`DatabaseContext`](MSSQLand/Services/DatabaseContext.cs) and call [`QueryService`](MSSQLand/Services/QueryService.cs)`.ExecuteTable(query)` (or `ExecuteScalar`, `Execute`, etc.). They never need to know whether impersonation or linked servers are active; the [`QueryService`](MSSQLand/Services/QueryService.cs)`.PrepareQuery()` pipeline transparently wraps their raw SQL with the correct nesting. An action written for a direct connection works identically through a five-hop linked server chain with cascading impersonation at each hop.
 
----
-
 ## 🪵 Logging and Output
 
 [`Logger`](MSSQLand/Utilities/Logger.cs) separates messages by their audience, while [`OutputFormatter`](MSSQLand/Utilities/Formatters/OutputFormatter.cs) owns result rendering:
@@ -448,8 +442,6 @@ Actions receive a [`DatabaseContext`](MSSQLand/Services/DatabaseContext.cs) and 
 - Reuse the formatter pipeline rather than implementing tables inside actions.
 
 Preserve the observable timeout, retry, linked-server fallback, and output behavior unless a change explicitly targets it.
-
----
 
 ## 📁 Project Structure
 
@@ -486,8 +478,6 @@ This directory contains all the specific operations that MSSQLand can perform. E
 #### [Utilities](MSSQLand/Utilities)
 
 Helper classes like [`Logger`](MSSQLand/Utilities/Logger.cs) and [`MarkdownFormatter`](MSSQLand/Utilities/Formatters/MarkdownFormatter.cs) that make your life easier.
-
----
 
 ## 🎬 Adding a New Action
 
