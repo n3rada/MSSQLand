@@ -60,7 +60,7 @@ namespace MSSQLand.Actions
             // DOMAIN ACTIONS
             { "ad-domain", (typeof(AdDomain), "Resolve the AD domain name and SID the SQL Server is joined to, using the Domain Admins group as the pivot principal.", null) },
             { "ad-sid", (typeof(AdSid), "Resolve the current login's Security Identifier (SID) with domain SID prefix and RID breakdown for AD accounts.", null) },
-            { "ad-users", (typeof(AdUsers), "Enumerate domain accounts by iterating RIDs and resolving each to a login name. Accepts a max RID limit and output format: default (plain list), table, bash, or python.", new[] { "rid-brute" }) },
+            { "ad-users", (typeof(AdUsers), "Enumerate domain accounts by iterating RIDs and resolving each to a login name. Accepts a max RID limit and --style: default (plain list), table, bash, or python.", new[] { "rid-brute" }) },
             { "adsi-add", (typeof(AdsiAdd), "Create an ADSI linked server (auto-generates name if omitted).", null) },
             { "adsi-del", (typeof(AdsiDel), "Delete an ADSI linked server by name.", new[] { "adsi-delete", "adsi-drop" }) },
             { "adsi-query", (typeof(AdsiQuery), "Execute LDAP queries against Active Directory via an ADSI linked server using OPENQUERY.", new[] { "ldap" }) },

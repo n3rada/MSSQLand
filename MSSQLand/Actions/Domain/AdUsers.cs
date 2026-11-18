@@ -17,13 +17,13 @@ namespace MSSQLand.Actions.Domain
         private const int DefaultMaxRid = 10000;
         private const int BatchSize = 1000;
 
-        private enum OutputFormat { Default, Bash, Python, Table }
+        private enum OutputStyle { Default, Bash, Python, Table }
 
         [ArgumentMetadata(Position = 0, Description = "Maximum RID to enumerate")]
         private int _maxRid = DefaultMaxRid;
 
-        [ArgumentMetadata(LongName = "format", Description = "Output format: bash, python, or table")]
-        private OutputFormat _format = OutputFormat.Default;
+        [ArgumentMetadata(LongName = "style", Description = "Output style: default (plain list), bash, python, or table")]
+        private OutputStyle _style = OutputStyle.Default;
 
         public override void ValidateArguments(string[] args)
         {
@@ -133,7 +133,7 @@ namespace MSSQLand.Actions.Domain
                 // Print results if any found
                 if (results.Count > 0)
                 {
-                    if (_format == OutputFormat.Bash)
+                    if (_style == OutputStyle.Bash)
                     {
                         // Output in bash associative array format
                         Logger.Info("Bash associative array format");
@@ -151,7 +151,7 @@ namespace MSSQLand.Actions.Domain
 
                         Console.WriteLine(")");
                     }
-                    else if (_format == OutputFormat.Python)
+                    else if (_style == OutputStyle.Python)
                     {
                         // Output in Python dictionary format
                         Logger.Info("Python dictionary format");
@@ -172,7 +172,7 @@ namespace MSSQLand.Actions.Domain
 
                         Console.WriteLine("}");
                     }
-                    else if (_format == OutputFormat.Table)
+                    else if (_style == OutputStyle.Table)
                     {
                         // Detailed table output
                         DataTable resultTable = new();
